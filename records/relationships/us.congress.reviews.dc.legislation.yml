@@ -1,0 +1,13 @@
+id: us.congress.reviews.dc.legislation
+record_type: relationship
+name: Congress reviews District legislation under Home Rule mechanics
+relationship_type_id: reviews
+source_actor:
+  kind: civic_unit
+  id: us.congress
+target_actor:
+  kind: civic_unit
+  id: dc.council
+status: active
+source_refs:
+  - dc_code

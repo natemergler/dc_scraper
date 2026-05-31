@@ -1,0 +1,398 @@
+{
+  "source_id": "pass.contracts",
+  "source_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/37",
+  "fetched_at": "2026-05-31T16:45:00.015Z",
+  "status": "success",
+  "content_hash": "sha256:4cfa3f6a23b741914d4ea26c2adcf1fbe0343c3c2edb65c80ecf862fab17238d",
+  "payload": {
+    "source_title": "PASS Contracts",
+    "table_name": "government_operations.pass_contracts",
+    "metadata": {
+      "currentVersion": 11.5,
+      "cimVersion": "3.5.0",
+      "id": 37,
+      "name": "PASS Contracts",
+      "type": "Table",
+      "description": "Contract data that comes from the District of Columbia’s Procurement Automated Support System (PASS). The Office of Contracting and Procurement (OCP) is required to post contract awards valued at $100,000 or more for agencies served by OCP. The awarded contracts database includes a caption describing the type of goods or services provided, the contract number, the ordering agency, the contract amount, the period of time covered by the contract award, the contractor receiving the award, and the market type. To obtain a copy of any contract, you may submit a FOIA request onlinevia the DC government Public FOIA Portal. Questions regarding details within the data, contact the Office of Contract and Procurement at https://contracts.ocp.dc.gov/contact.",
+      "copyrightText": null,
+      "hasAttachments": false,
+      "htmlPopupType": "esriServerHTMLPopupTypeNone",
+      "displayField": "AGENCY_NAME",
+      "typeIdField": null,
+      "subtypeFieldName": null,
+      "subtypeField": null,
+      "defaultSubtypeCode": null,
+      "fields": [
+        {
+          "name": "PROCUREMENTMETHODDESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "Procurement Method Description",
+          "length": 100,
+          "domain": null
+        },
+        {
+          "name": "AGENCY_ACRONYM",
+          "type": "esriFieldTypeString",
+          "alias": "Agency Acronym",
+          "length": 500,
+          "domain": null
+        },
+        {
+          "name": "AGENCY_NAME",
+          "type": "esriFieldTypeString",
+          "alias": "Agency Name",
+          "length": 3000,
+          "domain": null
+        },
+        {
+          "name": "ROW_ID",
+          "type": "esriFieldTypeDouble",
+          "alias": "ROW Identifier",
+          "domain": null
+        },
+        {
+          "name": "AGENCY",
+          "type": "esriFieldTypeString",
+          "alias": "Agency",
+          "length": 384,
+          "domain": null
+        },
+        {
+          "name": "AWARDDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "Award Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTAMOUNT",
+          "type": "esriFieldTypeDouble",
+          "alias": "Contract Amount",
+          "domain": null
+        },
+        {
+          "name": "ENDDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "End Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTNUMBER",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Number",
+          "length": 150,
+          "domain": null
+        },
+        {
+          "name": "STARTDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "Start Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTSTATUS",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Status",
+          "length": 90,
+          "domain": null
+        },
+        {
+          "name": "TITLE",
+          "type": "esriFieldTypeString",
+          "alias": "Title",
+          "length": 1017,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTINGOFFICER",
+          "type": "esriFieldTypeString",
+          "alias": "Contracting Officer",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "FISCALYEAR",
+          "type": "esriFieldTypeString",
+          "alias": "Fiscal Year",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "MARKETTYPE",
+          "type": "esriFieldTypeString",
+          "alias": "Market Type",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "COMMODITYCODE",
+          "type": "esriFieldTypeString",
+          "alias": "Commodity Code",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "COMMODITYDESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "Commodity Description",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "CURRENTOPTIONPERIOD",
+          "type": "esriFieldTypeString",
+          "alias": "Current Option Period",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "TOTALOPTIONPERIODS",
+          "type": "esriFieldTypeString",
+          "alias": "Total Option Periods",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "SUPPLIER",
+          "type": "esriFieldTypeString",
+          "alias": "Supplier",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "DESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "Description",
+          "length": 4000,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTTYPEDESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Type Description",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTINGOFFICEREMAIL",
+          "type": "esriFieldTypeString",
+          "alias": "Contracting Officer Email",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "VENDORADDRESS",
+          "type": "esriFieldTypeString",
+          "alias": "Vendor Address",
+          "length": 1000,
+          "domain": null
+        },
+        {
+          "name": "VENDORCITY",
+          "type": "esriFieldTypeString",
+          "alias": "Vendor City",
+          "length": 500,
+          "domain": null
+        },
+        {
+          "name": "VENDORSTATE",
+          "type": "esriFieldTypeString",
+          "alias": "Vendor State",
+          "length": 500,
+          "domain": null
+        },
+        {
+          "name": "VENDORZIP",
+          "type": "esriFieldTypeString",
+          "alias": "Vendor Zip",
+          "length": 60,
+          "domain": null
+        },
+        {
+          "name": "PUBLISHEDVERSIONID",
+          "type": "esriFieldTypeInteger",
+          "alias": "Published Version Identifier",
+          "domain": null
+        },
+        {
+          "name": "DOCUMENTVERSION",
+          "type": "esriFieldTypeInteger",
+          "alias": "Document Version",
+          "domain": null
+        },
+        {
+          "name": "LASTMODIFIED",
+          "type": "esriFieldTypeDate",
+          "alias": "Last Modified",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTINGSPLST",
+          "type": "esriFieldTypeString",
+          "alias": "Contracting SPLST",
+          "length": 255,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTINGSPLSTEMAIL",
+          "type": "esriFieldTypeString",
+          "alias": "Contracting SPLST Email",
+          "length": 200,
+          "domain": null
+        },
+        {
+          "name": "SOURCE",
+          "type": "esriFieldTypeString",
+          "alias": "Source",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "CONTRACT_DETAILS_LINK",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Details Link",
+          "length": 4000,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTADMINISTRATORNAME",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Administrator Name",
+          "length": 255,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTADMINISTRATOREMAIL",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Administrator Email",
+          "length": 255,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTADMINISTRATORPHONE",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Administrator Phone",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTOFFICERPHONE",
+          "type": "esriFieldTypeString",
+          "alias": "Contract Officer Phone",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "CWINTERNALID",
+          "type": "esriFieldTypeString",
+          "alias": "CW Internal Identifier",
+          "length": 150,
+          "domain": null
+        },
+        {
+          "name": "CORPORATEPHONE",
+          "type": "esriFieldTypeString",
+          "alias": "Corporate Phone",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "CORPORATEEMAILADDRESS",
+          "type": "esriFieldTypeString",
+          "alias": "Corporate Email Address",
+          "length": 255,
+          "domain": null
+        },
+        {
+          "name": "REC_CREATED_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "Record Created Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "REC_UPDATED_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "Record Updated Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "DCS_LAST_MOD_DTTM",
+          "type": "esriFieldTypeDate",
+          "alias": "Last Modified Date",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "OBJECTID",
+          "type": "esriFieldTypeOID",
+          "alias": "OBJECTID",
+          "domain": null
+        }
+      ],
+      "indexes": null,
+      "subtypes": [],
+      "relationships": [],
+      "capabilities": "Data,Map,Query",
+      "maxRecordCount": 1000,
+      "supportsStatistics": true,
+      "supportsExceedsLimitStatistics": true,
+      "supportsAdvancedQueries": true,
+      "supportedQueryFormats": "JSON, PBF",
+      "isDataVersioned": false,
+      "useStandardizedQueries": true,
+      "advancedQueryCapabilities": {
+        "useStandardizedQueries": true,
+        "supportsStatistics": true,
+        "supportsPercentileStatistics": true,
+        "supportsHavingClause": true,
+        "supportsOrderBy": true,
+        "supportsDistinct": true,
+        "supportsCountDistinct": true,
+        "supportsPagination": true,
+        "supportsTrueCurve": false,
+        "supportsReturningQueryExtent": true,
+        "supportsQueryWithDistance": true,
+        "supportsSqlExpression": true,
+        "supportsTimeRelation": true,
+        "supportsAdvancedQueryRelated": true,
+        "supportsQueryRelatedPagination": true,
+        "supportsSqlFormat": false,
+        "supportsQueryAnalytic": true,
+        "supportsCurrentUserQueries": true
+      },
+      "advancedQueryAnalyticCapabilities": {
+        "supportsLinearRegression": true,
+        "supportsAsync": false,
+        "supportsPercentileAnalytic": true
+      },
+      "dateFieldsTimeReference": {
+        "timeZone": "Eastern Standard Time",
+        "timeZoneIANA": "America/New_York",
+        "respectsDaylightSaving": true
+      },
+      "preferredTimeReference": null,
+      "datesInUnknownTimezone": false,
+      "hasMetadata": true,
+      "isDataArchived": false,
+      "archivingInfo": {
+        "supportsQueryWithHistoricMoment": false,
+        "startArchivingMoment": -1
+      },
+      "uniqueIdInfo": {
+        "type": "simple",
+        "fields": [
+          "OBJECTID"
+        ],
+        "OIDFieldContainsHashValue": false
+      },
+      "maxUniqueIDCount": 100000
+    },
+    "row_count": 49403,
+    "row_capture": "metadata_only"
+  }
+}

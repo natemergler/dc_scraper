@@ -1,0 +1,8 @@
+id: legal_materials_manifest
+record_type: pipeline
+name: Track statutory and administrative legal source systems before deeper parsing.
+update_strategy: Track statutory and administrative legal source systems before deeper parsing.
+status: active
+source_refs:
+  - dc_code
+  - dcregs

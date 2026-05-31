@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.21
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.criminal.justice.coordinating.council
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "21"
+generated_at: "2026-05-31T04:39:57.439Z"
+record:
+  id: dc.criminal.justice.coordinating.council
+  record_type: civic_unit
+  name: Criminal Justice Coordinating Council
+  aliases:
+    - CJCC
+  legal_authority_notes:
+    - D.C. Code § 22–4232
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 21
+    NAME: Criminal Justice Coordinating Council
+    SHORT_NAME: Criminal Justice Coordinating Council
+    ACRONYM: CJCC
+    GOVERNING_AGENCY: null
+    ADDRESS: "441 4th Street NW, Suite 715 North"
+    TYPE: Council
+    WEB_URL: "https://cjcc.dc.gov/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 22–4232
+    OBJECTID: 21
+    CLUSTER_DC: null
+  official_url: "https://cjcc.dc.gov/"

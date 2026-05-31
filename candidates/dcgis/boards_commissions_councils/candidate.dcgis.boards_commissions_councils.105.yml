@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.105
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.lottery.and.charitable.games.control.board
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "105"
+generated_at: "2026-05-31T04:39:57.461Z"
+record:
+  id: dc.lottery.and.charitable.games.control.board
+  record_type: civic_unit
+  name: Lottery and Charitable Games Control Board
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 3–1301
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 105
+    NAME: Lottery and Charitable Games Control Board
+    SHORT_NAME: Lottery and Charitable Games Control Board
+    ACRONYM: null
+    GOVERNING_AGENCY: null
+    ADDRESS: null
+    TYPE: Board
+    WEB_URL: "https://oah.dc.gov/page/lottery-and-charitable-games-control-board"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 3–1301
+    OBJECTID: 105
+    CLUSTER_DC: null
+  official_url: "https://oah.dc.gov/page/lottery-and-charitable-games-control-board"

@@ -1,0 +1,30 @@
+id: dc.historic.preservation.review.board.hprb
+record_type: civic_unit
+name: Historic Preservation Review Board (HPRB)
+aliases:
+  - HPRB
+legal_authority_notes:
+  - D.C. Code § 6-1103
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 98
+  NAME: Historic Preservation Review Board (HPRB)
+  SHORT_NAME: Historic Preservation Review Board (HPRB)
+  ACRONYM: HPRB
+  GOVERNING_AGENCY: Office of Planning
+  ADDRESS: "1100 4th Street SW, Suite 650 East"
+  TYPE: Board
+  WEB_URL: "https://planning.dc.gov/page/historic-preservation-review-board"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 6-1103
+  OBJECTID: 98
+  CLUSTER_DC: null
+official_url: "https://planning.dc.gov/page/historic-preservation-review-board"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.98
+  source_row_key: "98"

@@ -1,0 +1,6 @@
+id: council_hms
+record_type: source
+name: Council HMS hearings
+official_url: "https://lims.dccouncil.gov/hearings"
+source_type: hearing_system
+status: active

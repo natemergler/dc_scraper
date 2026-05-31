@@ -1,0 +1,24 @@
+{
+  "source_id": "dcgis.agencies",
+  "source_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6",
+  "captured_at": "2026-05-31T16:46:43.682Z",
+  "kind": "arcgis_table",
+  "field_names": [
+    "ACRONYM",
+    "ADDRESS",
+    "AGENCY_ID",
+    "AGENCY_NAME",
+    "BRANCH",
+    "BUDGETCODE",
+    "LEGISLATION",
+    "MAYORAL_CLUSTER",
+    "MAYORAL_OR_NOT",
+    "OBJECTID",
+    "OBP_BFA_APPROPRIATION_TITLE",
+    "SHORT_NAME",
+    "SOURCE",
+    "TYPE",
+    "WEB_URL"
+  ],
+  "row_count": 151
+}

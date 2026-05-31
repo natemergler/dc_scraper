@@ -1,0 +1,29 @@
+id: dc.commission.on.african.affairs
+record_type: civic_unit
+name: Commission on African Affairs
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 2-1393
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 65
+  NAME: Commission on African Affairs
+  SHORT_NAME: Commission on African Affairs
+  ACRONYM: null
+  GOVERNING_AGENCY: Mayor's Office on African Affairs
+  ADDRESS: "2000 14th Street NW, Suite 401"
+  TYPE: Commission
+  WEB_URL: "https://oaa.dc.gov/page/role-commission-african-affairs-0"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 2-1393
+  OBJECTID: 65
+  CLUSTER_DC: null
+official_url: "https://oaa.dc.gov/page/role-commission-african-affairs-0"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.65
+  source_row_key: "65"

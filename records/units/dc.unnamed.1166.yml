@@ -1,0 +1,31 @@
+id: dc.unnamed.1166
+record_type: civic_unit
+name: Unnamed 1166
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1166
+  AGENCY_NAME: null
+  SHORT_NAME: Unemployment Insurance Trust Fund
+  ACRONYM: null
+  BUDGETCODE: UI0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: null
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: null
+  SOURCE: null
+  OBP_BFA_APPROPRIATION_TITLE: Enterprise and Other Funds
+  OBJECTID: 145
+  MAYORAL_OR_NOT: Non-Mayoral
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1166
+  source_row_key: "1166"

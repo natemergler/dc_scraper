@@ -1,0 +1,9 @@
+id: anc_resolutions_manifest_refresh
+record_type: pipeline
+name: Track ANC resolution metadata and attachment manifests.
+update_strategy: >-
+  Fetch the ANC resolutions portal JSON manifest and inspect document attachment
+  metadata before deeper attachment downloading or ANC/SMD expansion.
+status: active
+source_refs:
+  - anc_resolutions

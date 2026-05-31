@@ -1,0 +1,33 @@
+id: dc.washington.metropolitan.area.transportation.authority
+record_type: civic_unit
+name: Washington Metropolitan Area Transportation Authority
+aliases:
+  - WMATA
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1151
+  AGENCY_NAME: Washington Metropolitan Area Transportation Authority
+  SHORT_NAME: Washington Metropolitan Area Transportation Authority
+  ACRONYM: WMATA
+  BUDGETCODE: KE0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Operations and Infrastructure
+  BRANCH: Other
+  ADDRESS: "600 5th Street NW "
+  TYPE: Non-DC Government
+  WEB_URL: "https://www.wmata.com/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Operations and Infrastructure
+  OBJECTID: 130
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://www.wmata.com/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1151
+  source_row_key: "1151"

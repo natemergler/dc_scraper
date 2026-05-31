@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.28
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.board.for.the.condemnation.of.insanitary.buildings
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "28"
+generated_at: "2026-05-31T04:39:57.440Z"
+record:
+  id: dc.board.for.the.condemnation.of.insanitary.buildings
+  record_type: civic_unit
+  name: Board for the Condemnation of Insanitary Buildings
+  aliases:
+    - BCIB
+  legal_authority_notes:
+    - D.C. Code § 6-902
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 28
+    NAME: Board for the Condemnation of Insanitary Buildings
+    SHORT_NAME: Board for the Condemnation of Insanitary Buildings
+    ACRONYM: BCIB
+    GOVERNING_AGENCY: Department of Buildings
+    ADDRESS: 1100 4th Street SW
+    TYPE: Board
+    WEB_URL: "https://dob.dc.gov/page/board-condemnation-insanitary-buildings-bcib"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 6-902
+    OBJECTID: 28
+    CLUSTER_DC: null
+  official_url: "https://dob.dc.gov/page/board-condemnation-insanitary-buildings-bcib"

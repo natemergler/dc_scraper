@@ -1,0 +1,30 @@
+id: dc.domestic.violence.fatality.review.board
+record_type: civic_unit
+name: Domestic Violence Fatality Review Board
+aliases:
+  - DVFRB
+legal_authority_notes:
+  - D.C. Code § 16-1052
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 92
+  NAME: Domestic Violence Fatality Review Board
+  SHORT_NAME: Domestic Violence Fatality Review Board
+  ACRONYM: DVFRB
+  GOVERNING_AGENCY: Office of Victim Services and Justice Grants
+  ADDRESS: "441 4th Street NW, Suite 727N"
+  TYPE: Board
+  WEB_URL: "https://ovsjg.dc.gov/service/domestic-violence-fatality-review-board"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 16-1052
+  OBJECTID: 92
+  CLUSTER_DC: null
+official_url: "https://ovsjg.dc.gov/service/domestic-violence-fatality-review-board"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.92
+  source_row_key: "92"

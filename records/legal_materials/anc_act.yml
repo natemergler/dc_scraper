@@ -1,0 +1,8 @@
+id: anc_act
+record_type: legal_material
+name: Advisory Neighborhood Commissions Act
+law_family: statutory
+update_tracking_model: congressional_review
+status: active
+source_refs:
+  - dc_code

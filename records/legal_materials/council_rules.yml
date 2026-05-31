@@ -1,0 +1,8 @@
+id: council_rules
+record_type: legal_material
+name: Council rules
+law_family: procedural
+update_tracking_model: council_publication
+status: active
+source_refs:
+  - council_lims

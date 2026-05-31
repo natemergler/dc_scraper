@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1143
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.public.service.commission
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1143"
+generated_at: "2026-05-31T04:39:57.423Z"
+record:
+  id: dc.public.service.commission
+  record_type: civic_unit
+  name: Public Service Commission
+  aliases:
+    - PSC
+  legal_authority_notes:
+    - § 1-204.93
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1143
+    AGENCY_NAME: Public Service Commission
+    SHORT_NAME: Public Service Commission
+    ACRONYM: PSC
+    BUDGETCODE: DH0
+    LEGISLATION: § 1-204.93
+    MAYORAL_CLUSTER: Government Operations
+    BRANCH: Other
+    ADDRESS: "1325 G Street NW, Suite 800"
+    TYPE: Agency
+    WEB_URL: "https://www.dcpsc.org/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Operations and Infrastructure
+    OBJECTID: 123
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://www.dcpsc.org/"

@@ -1,0 +1,7 @@
+id: confirms
+record_type: relationship_type
+name: confirms
+definition: Actor confirms a nomination or appointment.
+status: active
+source_refs:
+  - dc_code

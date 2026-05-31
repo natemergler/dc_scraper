@@ -1,0 +1,9 @@
+id: district.voters
+record_type: civic_unit
+name: District voters
+unit_kind: external_actor
+operating_layers:
+  - federal_interface
+status: active
+source_refs:
+  - dc_code

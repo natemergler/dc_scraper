@@ -1,0 +1,7 @@
+id: dcgis.agencies
+record_type: source
+name: District Government Agencies table
+official_url: >-
+  https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6
+source_type: arcgis_table
+status: active

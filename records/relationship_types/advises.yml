@@ -1,0 +1,7 @@
+id: advises
+record_type: relationship_type
+name: advises
+definition: Actor advises another civic unit or process.
+status: active
+source_refs:
+  - dc_code

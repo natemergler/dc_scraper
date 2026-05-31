@@ -1,0 +1,29 @@
+id: dc.criminal.code.reform.commission
+record_type: civic_unit
+name: Criminal Code Reform Commission
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 3-151
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 86
+  NAME: Criminal Code Reform Commission
+  SHORT_NAME: Criminal Code Reform Commission
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: "441 4th Street NW, 1C001S"
+  TYPE: Commission
+  WEB_URL: "https://ccrc.dc.gov/"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-151
+  OBJECTID: 86
+  CLUSTER_DC: null
+official_url: "https://ccrc.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.86
+  source_row_key: "86"

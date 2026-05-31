@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1077
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.open.government
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1077"
+generated_at: "2026-05-31T04:39:57.408Z"
+record:
+  id: dc.office.of.open.government
+  record_type: civic_unit
+  name: Office of Open Government
+  aliases:
+    - OOG
+  legal_authority_notes:
+    - § 2-592
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1077
+    AGENCY_NAME: Office of Open Government
+    SHORT_NAME: Office of Open Government
+    ACRONYM: OOG
+    BUDGETCODE: AV0
+    LEGISLATION: § 2-592
+    MAYORAL_CLUSTER: Internal Services
+    BRANCH: Other
+    ADDRESS: "441 4th Street NW, Suite 540 South"
+    TYPE: Agency
+    WEB_URL: "https://www.open-dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+    OBJECTID: 70
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://www.open-dc.gov/"

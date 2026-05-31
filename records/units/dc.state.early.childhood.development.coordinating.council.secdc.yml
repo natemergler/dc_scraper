@@ -1,0 +1,32 @@
+id: dc.state.early.childhood.development.coordinating.council.secdc
+record_type: civic_unit
+name: State Early Childhood Development Coordinating Council (SECDC)
+aliases:
+  - SECDC
+legal_authority_notes:
+  - D.C. Code § 38-271.07
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 7
+  NAME: State Early Childhood Development Coordinating Council (SECDC)
+  SHORT_NAME: State Early Childhood Development Coordinating Council (SECDC)
+  ACRONYM: SECDC
+  GOVERNING_AGENCY: Deputy Mayor for Health and Human Services
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: >-
+    https://osse.dc.gov/service/state-early-childhood-development-coordinating-council-secdcc
+  AUTHORIZING_ORDER_LAW: D.C. Code § 38-271.07
+  OBJECTID: 7
+  CLUSTER_DC: null
+official_url: >-
+  https://osse.dc.gov/service/state-early-childhood-development-coordinating-council-secdcc
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.7
+  source_row_key: "7"

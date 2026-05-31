@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1067
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.metropolitan.police.department
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1067"
+generated_at: "2026-05-31T04:39:57.402Z"
+record:
+  id: dc.metropolitan.police.department
+  record_type: civic_unit
+  name: Metropolitan Police Department
+  aliases:
+    - MPD
+  legal_authority_notes:
+    - § 5-101-01; 5-101.03
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1067
+    AGENCY_NAME: Metropolitan Police Department
+    SHORT_NAME: Metropolitan Police Department
+    ACRONYM: MPD
+    BUDGETCODE: FA0
+    LEGISLATION: § 5-101-01; 5-101.03
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: 300 Indiana Avenue NW
+    TYPE: Agency
+    WEB_URL: "https://mpdc.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 53
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://mpdc.dc.gov/"

@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.56
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.board.of.respiratory.care
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "56"
+generated_at: "2026-05-31T04:39:57.447Z"
+record:
+  id: dc.board.of.respiratory.care
+  record_type: civic_unit
+  name: Board of Respiratory Care
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 3-1202.14
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 56
+    NAME: Board of Respiratory Care
+    SHORT_NAME: Board of Respiratory Care
+    ACRONYM: null
+    GOVERNING_AGENCY: DC Health
+    ADDRESS: 899 North Capitol Street NE
+    TYPE: Board
+    WEB_URL: "https://dchealth.dc.gov/service/respiratory-care-licensing"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 3-1202.14
+    OBJECTID: 56
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://dchealth.dc.gov/service/respiratory-care-licensing"

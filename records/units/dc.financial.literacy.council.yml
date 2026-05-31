@@ -1,0 +1,29 @@
+id: dc.financial.literacy.council
+record_type: civic_unit
+name: Financial Literacy Council
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 38-731.03
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 12
+  NAME: Financial Literacy Council
+  SHORT_NAME: Financial Literacy Council
+  ACRONYM: null
+  GOVERNING_AGENCY: "Department of Insurance, Securities and Banking"
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: "https://disb.dc.gov/page/district-columbia-financial-literacy-council"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 38-731.03
+  OBJECTID: 12
+  CLUSTER_DC: null
+official_url: "https://disb.dc.gov/page/district-columbia-financial-literacy-council"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.12
+  source_row_key: "12"

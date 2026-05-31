@@ -1,0 +1,7 @@
+id: elects
+record_type: relationship_type
+name: elects
+definition: Actor elects an office or body.
+status: active
+source_refs:
+  - dc_code

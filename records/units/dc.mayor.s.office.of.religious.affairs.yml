@@ -1,0 +1,33 @@
+id: dc.mayor.s.office.of.religious.affairs
+record_type: civic_unit
+name: Mayor's Office of Religious Affairs
+aliases:
+  - MORA
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1059
+  AGENCY_NAME: Mayor's Office of Religious Affairs
+  SHORT_NAME: Mayor's Office of Religious Affairs
+  ACRONYM: MORA
+  BUDGETCODE: AA0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Executive
+  BRANCH: Executive
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 332"
+  TYPE: Agency
+  WEB_URL: "https://ora.dc.gov/"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 75
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://ora.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1059
+  source_row_key: "1059"

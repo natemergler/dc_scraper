@@ -1,0 +1,46 @@
+id: candidate.dcgis.agencies.1001
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.alcoholic.beverage.and.cannabis.administration
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1001"
+generated_at: "2026-05-31T04:39:57.380Z"
+record:
+  id: dc.alcoholic.beverage.and.cannabis.administration
+  record_type: civic_unit
+  name: Alcoholic Beverage and Cannabis Administration
+  aliases:
+    - ABCA
+  legal_authority_notes:
+    - "§ 25–202 - https://code.dccouncil.gov/us/dc/council/code/sections/25-202"
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+    - dcgis.boards_commissions_councils
+  source_context:
+    AGENCY_ID: 1001
+    AGENCY_NAME: Alcoholic Beverage and Cannabis Administration
+    SHORT_NAME: Alcoholic Beverage and Cannabis Administration
+    ACRONYM: ABCA
+    BUDGETCODE: LQ0
+    LEGISLATION: "§ 25–202 - https://code.dccouncil.gov/us/dc/council/code/sections/25-202"
+    MAYORAL_CLUSTER: Planning and Economic Development
+    BRANCH: Executive
+    ADDRESS: "899 North Capitol Street NE, Suite 4200-A/B"
+    TYPE: Agency
+    WEB_URL: "https://abca.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Operations and Infrastructure
+    OBJECTID: 1
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://abca.dc.gov/"
+  caveats:
+    - >-
+        Appears in both the DCGIS agencies table and boards/commissions/councils
+        table; treated as one curated civic unit.
+patch_ids:
+  - patch.dc_alcoholic_beverage_and_cannabis_administration

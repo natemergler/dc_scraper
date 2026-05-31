@@ -1,0 +1,32 @@
+id: dc.mayor.s.advisory.commission.on.caribbean.community.affairs.maccca
+record_type: civic_unit
+name: Mayor's Advisory Commission on Caribbean Community Affairs (MACCCA)
+aliases:
+  - MACCCA
+legal_authority_notes:
+  - Mayor's Order 2012-127
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 106
+  NAME: Mayor's Advisory Commission on Caribbean Community Affairs (MACCCA)
+  SHORT_NAME: Mayor's Advisory Commission on Caribbean Community Affairs (MACCCA)
+  ACRONYM: MACCCA
+  GOVERNING_AGENCY: Mayor's Office of Community Affairs
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 332"
+  TYPE: Commission
+  WEB_URL: >-
+    https://moca.dc.gov/page/mayor%E2%80%99s-advisory-commission-caribbean-community-affairs
+  AUTHORIZING_ORDER_LAW: Mayor's Order 2012-127
+  OBJECTID: 106
+  CLUSTER_DC: null
+official_url: >-
+  https://moca.dc.gov/page/mayor%E2%80%99s-advisory-commission-caribbean-community-affairs
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.106
+  source_row_key: "106"

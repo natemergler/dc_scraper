@@ -1,0 +1,6 @@
+id: enterprise_dataset_inventory
+record_type: source
+name: Enterprise Dataset Inventory
+official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/11"
+source_type: arcgis_metadata_table
+status: active

@@ -1,0 +1,32 @@
+id: dc.water.and.sewer.authority.board.of.directors.wasa
+record_type: civic_unit
+name: Water and Sewer Authority Board of Directors (WASA)
+aliases:
+  - WASA
+legal_authority_notes:
+  - D.C. Code § 34-2202.02
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 130
+  NAME: Water and Sewer Authority Board of Directors (WASA)
+  SHORT_NAME: Water and Sewer Authority Board of Directors (WASA)
+  ACRONYM: WASA
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Board
+  WEB_URL: >-
+    https://www.open-dc.gov/public-bodies/water-and-sewer-authority-board-directors-wasa
+  AUTHORIZING_ORDER_LAW: D.C. Code § 34-2202.02
+  OBJECTID: 130
+  CLUSTER_DC: null
+official_url: >-
+  https://www.open-dc.gov/public-bodies/water-and-sewer-authority-board-directors-wasa
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.130
+  source_row_key: "130"

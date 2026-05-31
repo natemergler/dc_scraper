@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.112
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.police.complaints.board
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "112"
+generated_at: "2026-05-31T04:39:57.462Z"
+record:
+  id: dc.police.complaints.board
+  record_type: civic_unit
+  name: Police Complaints Board
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 5-1104
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 112
+    NAME: Police Complaints Board
+    SHORT_NAME: Police Complaints Board
+    ACRONYM: null
+    GOVERNING_AGENCY: null
+    ADDRESS: "1400 I Street NW, Suite 700"
+    TYPE: Board
+    WEB_URL: "https://policecomplaints.dc.gov/page/opc-police-complaints-board"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 5-1104
+    OBJECTID: 112
+    CLUSTER_DC: null
+  official_url: "https://policecomplaints.dc.gov/page/opc-police-complaints-board"

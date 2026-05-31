@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.131
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.zoning.commission
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "131"
+generated_at: "2026-05-31T04:39:57.467Z"
+record:
+  id: dc.zoning.commission
+  record_type: civic_unit
+  name: Zoning Commission
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 6-621.01
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 131
+    NAME: Zoning Commission
+    SHORT_NAME: Zoning Commission
+    ACRONYM: null
+    GOVERNING_AGENCY: null
+    ADDRESS: "441 4th Street NW, Suite 200S"
+    TYPE: Commission
+    WEB_URL: "https://dcoz.dc.gov/zc/about"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 6-621.01
+    OBJECTID: 131
+    CLUSTER_DC: null
+  official_url: "https://dcoz.dc.gov/zc/about"

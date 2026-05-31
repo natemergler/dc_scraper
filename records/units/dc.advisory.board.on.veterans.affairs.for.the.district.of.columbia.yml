@@ -1,0 +1,29 @@
+id: dc.advisory.board.on.veterans.affairs.for.the.district.of.columbia
+record_type: civic_unit
+name: Advisory Board on Veterans Affairs for the District of Columbia
+aliases: []
+legal_authority_notes:
+  - Mayor's Order 2001-92 Amended 2002-142
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 132
+  NAME: Advisory Board on Veterans Affairs for the District of Columbia
+  SHORT_NAME: Advisory Board on Veterans Affairs
+  ACRONYM: null
+  GOVERNING_AGENCY: Mayor's Office of Veterans Affairs
+  ADDRESS: "441 4th Street NW, Suite 707 North"
+  TYPE: Board
+  WEB_URL: "https://ova.dc.gov/page/advisory-board-dc-veterans-affairs"
+  AUTHORIZING_ORDER_LAW: Mayor's Order 2001-92 Amended 2002-142
+  OBJECTID: 132
+  CLUSTER_DC: null
+official_url: "https://ova.dc.gov/page/advisory-board-dc-veterans-affairs"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.132
+  source_row_key: "132"

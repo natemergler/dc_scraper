@@ -1,0 +1,38 @@
+id: dc.department.of.behavioral.health
+record_type: civic_unit
+name: Department of Behavioral Health
+aliases:
+  - DBH
+legal_authority_notes:
+  - >-
+      § 7–1141.02 -
+      https://code.dccouncil.gov/us/dc/council/code/sections/7-1141.02
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1028
+  AGENCY_NAME: Department of Behavioral Health
+  SHORT_NAME: Department of Behavioral Health
+  ACRONYM: DBH
+  BUDGETCODE: RM0
+  LEGISLATION: >-
+    § 7–1141.02 -
+    https://code.dccouncil.gov/us/dc/council/code/sections/7-1141.02
+  MAYORAL_CLUSTER: Health and Human Services
+  BRANCH: Executive
+  ADDRESS: "64 New York Avenue NE, 3rd Floor"
+  TYPE: Agency
+  WEB_URL: "https://dbh.dc.gov/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+  OBJECTID: 5
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://dbh.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1028
+  source_row_key: "1028"

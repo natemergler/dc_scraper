@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1032
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.department.of.employment.services
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1032"
+generated_at: "2026-05-31T04:39:57.398Z"
+record:
+  id: dc.department.of.employment.services
+  record_type: civic_unit
+  name: Department of Employment Services
+  aliases:
+    - DOES
+  legal_authority_notes:
+    - "D.C. ST. D.I., T.1, Ch. 15, Subch. IV, Part A, 1980 Plan 1"
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1032
+    AGENCY_NAME: Department of Employment Services
+    SHORT_NAME: Department of Employment Services
+    ACRONYM: DOES
+    BUDGETCODE: CF0
+    LEGISLATION: "D.C. ST. D.I., T.1, Ch. 15, Subch. IV, Part A, 1980 Plan 1"
+    MAYORAL_CLUSTER: Education
+    BRANCH: Executive
+    ADDRESS: 899 North Capitol Street NE
+    TYPE: Agency
+    WEB_URL: "https://does.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Education System
+    OBJECTID: 39
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://does.dc.gov/"

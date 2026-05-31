@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1012
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.council.of.the.district.of.columbia
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1012"
+generated_at: "2026-05-31T04:39:57.387Z"
+record:
+  id: dc.council.of.the.district.of.columbia
+  record_type: civic_unit
+  name: Council of the District of Columbia
+  aliases:
+    - DCCOUNCIL
+  legal_authority_notes:
+    - § 1-204.55
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1012
+    AGENCY_NAME: Council of the District of Columbia
+    SHORT_NAME: Council of the District of Columbia
+    ACRONYM: DCCOUNCIL
+    BUDGETCODE: AB0
+    LEGISLATION: § 1-204.55
+    MAYORAL_CLUSTER: Governmental Direction and Support
+    BRANCH: Legislative
+    ADDRESS: 1350 Pennsylvania Avenue NW
+    TYPE: Agency
+    WEB_URL: "https://dccouncil.us/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+    OBJECTID: 7
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://dccouncil.us/"

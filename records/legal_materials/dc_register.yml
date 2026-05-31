@@ -1,0 +1,8 @@
+id: dc_register
+record_type: legal_material
+name: District of Columbia Register
+law_family: administrative
+update_tracking_model: publication_to_codification
+status: active
+source_refs:
+  - dcregs

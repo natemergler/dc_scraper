@@ -1,0 +1,31 @@
+id: dc.inaugural.expenses
+record_type: civic_unit
+name: Inaugural Expenses
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1119
+  AGENCY_NAME: Inaugural Expenses
+  SHORT_NAME: Inaugural Expenses
+  ACRONYM: null
+  BUDGETCODE: SB0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Financing and Other
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: null
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Financing and Other
+  OBJECTID: 101
+  MAYORAL_OR_NOT: Non-Mayoral
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1119
+  source_row_key: "1119"

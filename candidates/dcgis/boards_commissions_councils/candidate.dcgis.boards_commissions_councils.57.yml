@@ -1,0 +1,33 @@
+id: candidate.dcgis.boards_commissions_councils.57
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.board.of.review.for.anti.deficiency.violations
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "57"
+generated_at: "2026-05-31T04:39:57.448Z"
+record:
+  id: dc.board.of.review.for.anti.deficiency.violations
+  record_type: civic_unit
+  name: Board of Review for Anti-Deficiency Violations
+  aliases: []
+  legal_authority_notes:
+    - Mayor's Order 2003-156
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 57
+    NAME: Board of Review for Anti-Deficiency Violations
+    SHORT_NAME: Board of Review for Anti-Deficiency Violations
+    ACRONYM: null
+    GOVERNING_AGENCY: Office of the Deputy Mayor for Public Safety and Justice
+    ADDRESS: null
+    TYPE: Board
+    WEB_URL: null
+    AUTHORIZING_ORDER_LAW: Mayor's Order 2003-156
+    OBJECTID: 57
+    CLUSTER_DC: null

@@ -1,0 +1,32 @@
+id: dc.pay.as.you.go.capital.fund
+record_type: civic_unit
+name: Pay-As-You-Go Capital Fund
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1125
+  AGENCY_NAME: Pay-As-You-Go Capital Fund
+  SHORT_NAME: Pay-As-You-Go Capital Fund
+  ACRONYM: null
+  BUDGETCODE: PA0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Financing and Other
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://cfo.dc.gov/publication/2021-pa0-pay-you-go-capital-fund"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Financing and Other
+  OBJECTID: 107
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://cfo.dc.gov/publication/2021-pa0-pay-you-go-capital-fund"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1125
+  source_row_key: "1125"

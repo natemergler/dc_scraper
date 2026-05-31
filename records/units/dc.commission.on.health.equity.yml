@@ -1,0 +1,28 @@
+id: dc.commission.on.health.equity
+record_type: civic_unit
+name: Commission on Health Equity
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 7–756.01
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 72
+  NAME: Commission on Health Equity
+  SHORT_NAME: Commission on Health Equity
+  ACRONYM: null
+  GOVERNING_AGENCY: DC Health
+  ADDRESS: 899 North Capitol Street NE
+  TYPE: Commission
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: D.C. Code § 7–756.01
+  OBJECTID: 72
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.72
+  source_row_key: "72"

@@ -1,0 +1,29 @@
+id: dc.board.of.barber.and.cosmetology
+record_type: civic_unit
+name: Board of Barber and Cosmetology
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 47-2853.06
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 32
+  NAME: Board of Barber and Cosmetology
+  SHORT_NAME: Board of Barber and Cosmetology
+  ACRONYM: null
+  GOVERNING_AGENCY: DC Health
+  ADDRESS: 1100 4th Street SW
+  TYPE: Board
+  WEB_URL: "https://dchealth.dc.gov/service/barber-cosmetology-and-personal-grooming"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 47-2853.06
+  OBJECTID: 32
+  CLUSTER_DC: null
+official_url: "https://dchealth.dc.gov/service/barber-cosmetology-and-personal-grooming"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.32
+  source_row_key: "32"

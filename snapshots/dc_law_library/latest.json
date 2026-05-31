@@ -1,0 +1,135 @@
+{
+  "source_id": "dc_law_library",
+  "source_url": "https://code.dccouncil.gov/",
+  "fetched_at": "2026-05-31T16:41:38.677Z",
+  "status": "success",
+  "content_hash": "sha256:db08c559795445f4042a7d9d28dbe04f118f18f74f7cd4736858d26bc52b8056",
+  "payload": {
+    "source_title": "D.C. Law Library",
+    "page_title": "D.C. Law Library",
+    "fetched_url": "https://code.dccouncil.gov/",
+    "link_count": 9,
+    "asset_count": 20,
+    "manifest_item_count": 29,
+    "links": [
+      {
+        "url": "https://code.dccouncil.gov/",
+        "text": ""
+      },
+      {
+        "url": "https://code.dccouncil.gov/#",
+        "text": "D.C. Law Library"
+      },
+      {
+        "url": "https://code.dccouncil.gov/dclaws",
+        "text": "D.C. Laws Codified in the D.C. Code"
+      },
+      {
+        "url": "https://code.dccouncil.gov/fedlaws",
+        "text": "Federal Laws Codified in the D.C. Code"
+      },
+      {
+        "url": "https://code.dccouncil.gov/uk",
+        "text": "Laws of the United Kingdom Codified in the D.C. Code"
+      },
+      {
+        "url": "https://code.dccouncil.gov/us/dc/council/code",
+        "text": "Code of the District of Columbia"
+      },
+      {
+        "url": "https://github.com/dccouncil/law-html",
+        "text": "HTML"
+      },
+      {
+        "url": "https://github.com/dccouncil/law-xml",
+        "text": "XML"
+      },
+      {
+        "url": "https://www.openlawlib.org/",
+        "text": "Open Law Library"
+      }
+    ],
+    "assets": [
+      {
+        "kind": "apple-touch-icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/apple-touch-icon.png"
+      },
+      {
+        "kind": "apple-touch-icon-precomposed",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/apple-touch-icon-152x152-precomposed.png"
+      },
+      {
+        "kind": "apple-touch-icon-precomposed",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/apple-touch-icon-180x180-precomposed.png"
+      },
+      {
+        "kind": "apple-touch-icon-precomposed",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/apple-touch-icon-60x60-precomposed.png"
+      },
+      {
+        "kind": "apple-touch-icon-precomposed",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/apple-touch-icon-76x76-precomposed.png"
+      },
+      {
+        "kind": "icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/favicon-16x16.png"
+      },
+      {
+        "kind": "icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/favicon-32x32.png"
+      },
+      {
+        "kind": "icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/favicon-48x48.png"
+      },
+      {
+        "kind": "manifest",
+        "url": "https://code.dccouncil.gov/manifest.json"
+      },
+      {
+        "kind": "mask-icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/safari-pinned-tab.svg"
+      },
+      {
+        "kind": "prefetch",
+        "url": "https://code.dccouncil.gov/index.json"
+      },
+      {
+        "kind": "script",
+        "url": "https://code.dccouncil.gov/_reader/js/main.js"
+      },
+      {
+        "kind": "shortcut icon",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/images/favicons/favicon.ico"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/_reader/styles/main.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/biticons/biticons.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/fonts/droid-serif/droid-serif.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/fonts/open-sans/open-sans.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/styles/main.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/styles/print.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://code.dccouncil.gov/us/dc/_document/v2/styles/responsive.min.css"
+      }
+    ]
+  }
+}

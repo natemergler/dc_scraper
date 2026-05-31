@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1033
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.department.of.energy.and.environment
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1033"
+generated_at: "2026-05-31T04:39:57.398Z"
+record:
+  id: dc.department.of.energy.and.environment
+  record_type: civic_unit
+  name: Department of Energy and Environment
+  aliases:
+    - DOEE
+  legal_authority_notes:
+    - § 8-171.04 et seq
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1033
+    AGENCY_NAME: Department of Energy and Environment
+    SHORT_NAME: Department of Energy and Environment
+    ACRONYM: DOEE
+    BUDGETCODE: KG0
+    LEGISLATION: § 8-171.04 et seq
+    MAYORAL_CLUSTER: Government Operations
+    BRANCH: Executive
+    ADDRESS: 1200 First Street NE
+    TYPE: Agency
+    WEB_URL: "https://doee.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Operations and Infrastructure
+    OBJECTID: 38
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://doee.dc.gov/"

@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1034
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.department.of.forensic.sciences
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1034"
+generated_at: "2026-05-31T04:39:57.394Z"
+record:
+  id: dc.department.of.forensic.sciences
+  record_type: civic_unit
+  name: Department of Forensic Sciences
+  aliases:
+    - DFS
+  legal_authority_notes:
+    - 5-1501.02
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1034
+    AGENCY_NAME: Department of Forensic Sciences
+    SHORT_NAME: Department of Forensic Sciences
+    ACRONYM: DFS
+    BUDGETCODE: FR0
+    LEGISLATION: 5-1501.02
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: 401 E Street SW
+    TYPE: Agency
+    WEB_URL: "https://dfs.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 26
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://dfs.dc.gov/"

@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1080
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.police.complaints
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1080"
+generated_at: "2026-05-31T04:39:57.391Z"
+record:
+  id: dc.office.of.police.complaints
+  record_type: civic_unit
+  name: Office of Police Complaints
+  aliases:
+    - DCPC
+  legal_authority_notes:
+    - § 6-623.01
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1080
+    AGENCY_NAME: Office of Police Complaints
+    SHORT_NAME: Office of Police Complaints
+    ACRONYM: DCPC
+    BUDGETCODE: FH0
+    LEGISLATION: § 6-623.01
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Other
+    ADDRESS: "1400 I Street NW, Suite 700"
+    TYPE: Agency
+    WEB_URL: "https://policecomplaints.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 16
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://policecomplaints.dc.gov/"

@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.84
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.construction.codes.coordinating.board
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "84"
+generated_at: "2026-05-31T04:39:57.454Z"
+record:
+  id: dc.construction.codes.coordinating.board
+  record_type: civic_unit
+  name: Construction Codes Coordinating Board
+  aliases:
+    - CCCB
+  legal_authority_notes:
+    - Mayor's Order 2009-22
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 84
+    NAME: Construction Codes Coordinating Board
+    SHORT_NAME: Construction Codes Coordinating Board
+    ACRONYM: CCCB
+    GOVERNING_AGENCY: Department of Buildings
+    ADDRESS: 1100 4th Street SW
+    TYPE: Board
+    WEB_URL: "https://dob.dc.gov/service/construction-codes-coordinating-board-1"
+    AUTHORIZING_ORDER_LAW: Mayor's Order 2009-22
+    OBJECTID: 84
+    CLUSTER_DC: null
+  official_url: "https://dob.dc.gov/service/construction-codes-coordinating-board-1"

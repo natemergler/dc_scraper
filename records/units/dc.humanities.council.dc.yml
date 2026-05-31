@@ -1,0 +1,27 @@
+id: dc.humanities.council.dc
+record_type: civic_unit
+name: Humanities Council DC
+aliases: []
+legal_authority_notes: []
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 16
+  NAME: Humanities Council DC
+  SHORT_NAME: Humanities Council DC
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: null
+  OBJECTID: 16
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.16
+  source_row_key: "16"

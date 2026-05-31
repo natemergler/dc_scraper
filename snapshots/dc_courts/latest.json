@@ -1,0 +1,1343 @@
+{
+  "source_id": "dc_courts",
+  "source_url": "https://www.dccourts.gov/",
+  "fetched_at": "2026-05-31T16:41:41.029Z",
+  "status": "success",
+  "content_hash": "sha256:960afee80b83bd7e7161394becd54605bb4f4491960d555db13ce76c7a8a4fd1",
+  "payload": {
+    "source_title": "District of Columbia Courts",
+    "page_title": "DC Courts Homepage | District of Columbia Courts",
+    "fetched_url": "https://www.dccourts.gov/",
+    "link_count": 202,
+    "asset_count": 129,
+    "manifest_item_count": 331,
+    "links": [
+      {
+        "url": "https://efile.dcappeals.gov/login.do",
+        "text": "File Online (eFiling)"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/news-stories/2026-multi-door-dispute-resolution-division-mediator-appreciation-event",
+        "text": "2026 Multi-Door Dispute Resolution Division Mediator Appreciation Event!"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/news-stories/investiture-ceremony-recap-the-honorable-elana-s-suttenberg",
+        "text": "Investiture Ceremony Recap: The Honorable Elana S. Suttenberg"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/d-c-community-leaders-appointed-to-d-c-access-to-justice-commission",
+        "text": "D.C. Community Leaders Appointed to D.C. Access to Justice Commission"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/dc-courts-connects-with-sousa-middle-school-students-to-inspire-future-careers-ensuring-access-to-justice",
+        "text": "DC Courts Connects with Sousa Middle School Students to Inspire Future Careers Ensuring Access to Justice"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/dc-courts-welcome-and-host-judicial-delegation-from-kenya",
+        "text": "DC Courts Welcome and Host Judicial Delegation from Kenya"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/local-students-donate-serve-neighbors-at-dc-superior-court",
+        "text": "Local Students Donate, Serve Neighbors at DC Superior Court"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/releases-20260205",
+        "text": "DC Courts Issue Order Advancing Community Justice Worker Program and Other Innovations to Expand Access to Civil Legal Help"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/releases-20260326",
+        "text": "Commission on Judicial Disabilities and Tenure Announces Fitness Reviews of Judges Seeking Reappointment as Associate Judge and Reappointment as Senior Judges of the District of Columbia Court of Appeals and the Superior Court of the District of Columbia"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/releases-20260421",
+        "text": "D.C. Courts Release 2025 Capital Pro Bono Honor Roll"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/the-melvin-r-wright-youth-law-fair-hosted-at-moultrie-courthouse",
+        "text": "The Melvin R. Wright Youth Law Fair Hosted at Moultrie Courthouse"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/this-saturday-local-students-step-into-the-courtroom-at-the-2026-melvin-r-wrtight-youth-law-fair",
+        "text": "This Saturday - Local Students Step Into The Courtroom at the 2026 Melvin R. Wright Youth Law Fair"
+      },
+      {
+        "url": "https://newsroom.dccourts.gov/press-releases/unstoppable-vows-dc-courts-marriage-bureau-deemed-shutdown-essential-by-federal-government",
+        "text": "Unstoppable Vows: DC Courts’ Marriage Bureau Deemed Shutdown Essential by Federal Government"
+      },
+      {
+        "url": "https://virtualdccourts.org/",
+        "text": "Virtual Tour"
+      },
+      {
+        "url": "https://www.dccourts.gov/",
+        "text": "Home"
+      },
+      {
+        "url": "https://www.dccourts.gov/ada-and-language-accessibility",
+        "text": "ADA and Language Accessibility"
+      },
+      {
+        "url": "https://www.dccourts.gov/ada-and-language-accessibility/ada-accessibility",
+        "text": "ADA Accessibility"
+      },
+      {
+        "url": "https://www.dccourts.gov/ada-and-language-accessibility/for-interpreters",
+        "text": "For Interpreters"
+      },
+      {
+        "url": "https://www.dccourts.gov/ada-and-language-accessibility/language-access-services",
+        "text": "Language Access Services"
+      },
+      {
+        "url": "https://www.dccourts.gov/ada-and-language-accessibility/language-access-services/language-access-feedback-form",
+        "text": "Language Access Feedback Form"
+      },
+      {
+        "url": "https://www.dccourts.gov/am/",
+        "text": "Amharic"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals",
+        "text": "Court of Appeals"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-case-calendars",
+        "text": "Court of Appeals Case Calendars"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-case-calendars/oral-arguments",
+        "text": "Watch an Oral Argument"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-case-search-and-efiling",
+        "text": "Court of Appeals Case Search and E-Filing"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-clerks-office",
+        "text": "Court of Appeals Clerk&#039;s Office"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-judges",
+        "text": "Judges and Clerkships"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-judges/blackburne-rigsby-judge-anna",
+        "text": "Chief Judge Anna Blackburne-Rigsby"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-judges/blackburne-rigsby-judge-anna/investiture-of-judge-anna-blackburne-rigsby",
+        "text": "Investiture of Judge Anna Blackburne-Rigsby"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-judges/court-of-appeals-clerkships",
+        "text": "Court of Appeals Clerkships"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-orders-and-notices",
+        "text": "Court of Appeals Orders and Notices"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-resources",
+        "text": "Court of Appeals Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-resources/appellate-mediation",
+        "text": "Appellate Mediation"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-resources/forms-and-orders-containing-redaction-guidelines",
+        "text": "Forms and Orders Containing Redaction Guidelines"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-resources/rules-of-the-dc-court-of-appeals",
+        "text": "Rules of the Court of Appeals"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/court-of-appeals-resources/the-appeals-process",
+        "text": "The Appeals Process"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/dc-bar-admissions",
+        "text": "Learn more"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/dc-bar-admissions/attorney-discipline",
+        "text": "Attorney Discipline"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/dc-bar-admissions/committee-on-unauthorized-practice-of-law",
+        "text": "Committee on Unauthorized Practice of Law"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/how-to-appeal",
+        "text": "How to Appeal"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-of-appeals/opinions-and-memorandum-of-judgments",
+        "text": "Opinions & Memorandum Opinion and Judgements (MOJs)"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources",
+        "text": "Court Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/court-appointed-attorney-panels",
+        "text": "Court-Appointed Attorney Panels"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/legal-glossary",
+        "text": "Legal Glossary"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/pro-bono-opportunities",
+        "text": "Pro Bono Opportunities"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/search-cases",
+        "text": "Search Cases"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/search-forms",
+        "text": "View All Forms"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-resources/virtual-tours",
+        "text": "Virtual DC Courts Tours"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services",
+        "text": "Court Services"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/court-navigator-program",
+        "text": "Court Navigator Program"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/courthouse-amenities",
+        "text": "Courthouse Amenities"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/courthouse-child-care",
+        "text": "Learn more"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/dc-court-libraries",
+        "text": "DC Court Libraries"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/dc-court-libraries#ask-a-librarian",
+        "text": "Ask a Librarian"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/make-a-payment",
+        "text": "Make a Payment"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/mediation",
+        "text": "Mediation"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/request-a-transcript",
+        "text": "Request a Transcript"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/request-an-interpreter",
+        "text": "Request an Interpreter"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/supervised-visitation",
+        "text": "Supervised Visitation"
+      },
+      {
+        "url": "https://www.dccourts.gov/court-services/web-voucher-system",
+        "text": "Web Voucher System"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts",
+        "text": "DC Courts"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/address-confidentiality-program",
+        "text": "Address Confidentiality Program"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/artificial-Intelligence",
+        "text": "Artificial Intelligence and the DC Courts"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/careers-at-dc-courts",
+        "text": "Careers"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/civil-legal-regulatory-reform-task-force",
+        "text": "Civil Legal Regulatory Reform Task Force"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/contact-us-and-directions",
+        "text": "Contact Us and Directions&nbsp;"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/contact-us-and-directions/court-visitor-program",
+        "text": "Court Visitor Program"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/court-operating-status",
+        "text": "Court Operating Status"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/data-requests",
+        "text": "Learn more"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions",
+        "text": "Executive Office and Court System Divisions"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/access-to-justice-unit",
+        "text": "Access to Justice Unit"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/administrative-services-division",
+        "text": "Administrative Services Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/budget-and-finance-division",
+        "text": "Budget and Finance Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/capital-projects-and-facilities-management",
+        "text": "Capital Projects and Facilities Management"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/center-for-education-and-training",
+        "text": "Center for Education and Training"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/court-reporting-division",
+        "text": "Court Reporting Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/executive-officer",
+        "text": "Executive Officer"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/human-resources-division",
+        "text": "Human Resources Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/human-resources-division/employee-dispute-resolution-plan",
+        "text": "Employee Dispute Resolution Plan"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/information-technology",
+        "text": "Information Technology"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/office-of-general-counsel",
+        "text": "Office of General Counsel"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/executive-office-and-court-system-divisions/strategic-management-division",
+        "text": "Strategic Management Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/fraud-waste-or-abuse-reporting",
+        "text": "Fraud, Waste, or Abuse Reporting"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/frequently-asked-questions",
+        "text": "Frequently Asked Questions"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/historic-courthouse",
+        "text": "Historic Courthouse"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/policies",
+        "text": "Policies"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/policies/code-of-judicial-conduct",
+        "text": "Code of Judicial Conduct"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/policies/disclaimer",
+        "text": "Disclaimer"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/policies/privacy-policy",
+        "text": "Privacy Policy"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/safety-security",
+        "text": "Safety & Security"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/solicitations",
+        "text": "Solicitations"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/solicitations/bidders-list-application",
+        "text": "Bidder’s List Application"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/strategic-plan",
+        "text": "Strategic Plan"
+      },
+      {
+        "url": "https://www.dccourts.gov/dc-courts/strategic-plan/annual-reports",
+        "text": "Annual Reports"
+      },
+      {
+        "url": "https://www.dccourts.gov/dcappealstour",
+        "text": "Virtual Tour"
+      },
+      {
+        "url": "https://www.dccourts.gov/es/",
+        "text": "Spanish"
+      },
+      {
+        "url": "https://www.dccourts.gov/file-a-case",
+        "text": "File a Case"
+      },
+      {
+        "url": "https://www.dccourts.gov/fr/",
+        "text": "French"
+      },
+      {
+        "url": "https://www.dccourts.gov/get-legal-help",
+        "text": "Get Legal Help"
+      },
+      {
+        "url": "https://www.dccourts.gov/jurors",
+        "text": "Jurors"
+      },
+      {
+        "url": "https://www.dccourts.gov/jurors/about-your-jury-duty",
+        "text": "About Your Jury Duty"
+      },
+      {
+        "url": "https://www.dccourts.gov/jurors/access-to-ejuror",
+        "text": "Access to eJuror"
+      },
+      {
+        "url": "https://www.dccourts.gov/ko/",
+        "text": "Korean"
+      },
+      {
+        "url": "https://www.dccourts.gov/site-map",
+        "text": "Site map"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court",
+        "text": "Superior Court"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/clerk-of-the-superior-court",
+        "text": "Clerk of the Superior Court"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/file-online-efiling",
+        "text": "File Online (eFiling)"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/file-online-efiling/file-online-updates",
+        "text": "File Online updates"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/hearing-information",
+        "text": "Hearing Information"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-case-calendars",
+        "text": "Superior Court Case Calendars"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-case-calendars/criminal-attorney-case-calendar",
+        "text": "Criminal Attorney Case Calendar"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-case-calendars/criminal-case-calendar",
+        "text": "Criminal Case Calendar"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-case-calendars/todays-superior-court-cases",
+        "text": "Today’s Superior Court Cases"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-case-search",
+        "text": "Superior Court Case Search"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions",
+        "text": "Superior Court Divisions"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
+        "text": "Civil Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/additional-civil-resources",
+        "text": "Additional Civil Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/civil-actions",
+        "text": "Civil Actions"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/housing-matters",
+        "text": "Housing Matters"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/landlord-and-tenant",
+        "text": "View Eviction Information"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/name-changes-gender-marker-changes-and-vital-records-amendments",
+        "text": "Name Changes, Gender Marker Changes, and Vital Records Amendments"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/small-claims",
+        "text": "Small Claims"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division/temporary-restraining-order-civil",
+        "text": "Temporary Restraining Order Civil"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/crime-victims-compensation-program",
+        "text": "Crime Victims Compensation Program"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/crime-victims-compensation-program/application",
+        "text": "Application"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/crime-victims-compensation-program/compensable-costs",
+        "text": "Compensable Costs"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/crime-victims-compensation-program/eligibility",
+        "text": "Eligibility"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division",
+        "text": "Criminal Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/additional-resources",
+        "text": "Additional Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/arraignment",
+        "text": "Arraignment"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/arrests",
+        "text": "Find Out About an Arrest"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/criminal-division-problem-solving-courts",
+        "text": "Criminal Division Problem Solving Courts"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/criminal-forms-and-lists",
+        "text": "Criminal Forms and Lists"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/misdemeanors",
+        "text": "Misdemeanors"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/posting-bond",
+        "text": "Posting Bond"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/sealing-criminal-records",
+        "text": "Sealing Criminal Records"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division/traffic-violations",
+        "text": "Traffic Violations"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/domestic-violence-division",
+        "text": "Domestic Violence Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/domestic-violence-division/additional-domestic-violence-resources",
+        "text": "Additional Domestic Violence Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/domestic-violence-division/get-a-protection-order",
+        "text": "Get a Protection Order"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/domestic-violence-division/orders-against-me",
+        "text": "Orders Against Me"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division",
+        "text": "Family Court Operations Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/abuse-and-neglect",
+        "text": "Abuse and Neglect"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/additional-family-court-resources",
+        "text": "Additional Family Court Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/adoption",
+        "text": "Adoption"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/divorce",
+        "text": "Get a Divorce"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/domestic-relations-branch",
+        "text": "Domestic Relations Branch"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/family-court-central-intake-center",
+        "text": "Family Court Central Intake Center"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/family-court-self-help-center",
+        "text": "Family Court Self-Help Center"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/family-court-wait-time",
+        "text": "Family Court Wait Time"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/family-treatment-court",
+        "text": "Family Treatment Court"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/fathering-court",
+        "text": "Fathering Court"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/juvenile-and-neglect-branch",
+        "text": "Juvenile and Neglect Branch"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/marriage",
+        "text": "Get a Marriage License"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/mental-health-and-habilitation",
+        "text": "Mental Health and Habilitation"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-operations-division/parentage-and-child-support-branch",
+        "text": "Parentage and Child Support Branch"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division",
+        "text": "Family Court Social Services Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters",
+        "text": "Juvenile Matters"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/child-guidance-clinic",
+        "text": "Child Guidance Clinic"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/delinquency-prevention-unit",
+        "text": "Delinquency Prevention Unit"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/intake-offices",
+        "text": "Intake Offices"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/juvenile-arrests",
+        "text": "Juvenile Arrests"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/juvenile-behavioral-diversion-program",
+        "text": "Juvenile Behavioral Diversion Program"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/supervision-services",
+        "text": "Supervision Services"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division/juvenile-matters/truancy-and-pins-information",
+        "text": "Truancy and PINs Information"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division",
+        "text": "Multi-Door Dispute Resolution Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division/mediation",
+        "text": "Mediation"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/office-of-the-auditor-master",
+        "text": "Office of the Auditor-Master"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division",
+        "text": "Process a Probate Matter"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/additional-probate-resources",
+        "text": "Additional Probate Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/disclaimers",
+        "text": "Disclaimers"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/estates",
+        "text": "Estates"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/filing-a-will",
+        "text": "Filing a Will"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/guardianship-and-conservatorship",
+        "text": "Guardianship and Conservatorship"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/major-litigation",
+        "text": "Major Litigation"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/probate-division-administrative-orders",
+        "text": "Probate Division Administrative Orders"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/probate-division-appointments",
+        "text": "Probate Division Appointments"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/probate-practice-standards",
+        "text": "Probate Practice Standards"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/probate-self-help-center",
+        "text": "Probate Self-Help Center"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/request-for-probate-searches-and-copies",
+        "text": "Request for Probate Searches and Copies"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/probate-division/trusts-and-wills",
+        "text": "Trusts"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division",
+        "text": "Special Operations Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division/juror-office",
+        "text": "Juror Office"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division",
+        "text": "Tax Division"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division/filing-a-tax-petition",
+        "text": "Filing a Tax Petition"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division/tax-case-calendar",
+        "text": "Tax Case Calendar"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-judges",
+        "text": "Judges and Clerkships"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-judges/clerkships-and-internships",
+        "text": "Clerkships and Internships"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-judges/lee-jr-judge-milton-c",
+        "text": "Chief Judge Milton C. Lee, Jr."
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-judges/magistrate-judge-application",
+        "text": "Magistrate Judge Application"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-resources",
+        "text": "Superior Court Resources"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-resources/alternative-service",
+        "text": "Alternative Service"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-resources/rules-committee",
+        "text": "Rules Committee"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-resources/rules-of-the-superior-court",
+        "text": "Rules of the Superior Court"
+      },
+      {
+        "url": "https://www.dccourts.gov/superior-court/superior-court-resources/superior-court-orders",
+        "text": "Superior Court Orders"
+      },
+      {
+        "url": "https://www.dccourts.gov/vi/",
+        "text": "Vietnamese"
+      },
+      {
+        "url": "https://www.dccourts.gov/zh-TW/",
+        "text": "Chinese (Traditional)"
+      },
+      {
+        "url": "https://www.facebook.com/share/1PhuetM4mj/?mibextid=wwXIfr",
+        "text": ""
+      },
+      {
+        "url": "https://www.instagram.com/DC_Courts",
+        "text": ""
+      },
+      {
+        "url": "https://www.linkedin.com/company/dc-courts/",
+        "text": ""
+      },
+      {
+        "url": "https://www.youtube.com/DCCourtsChannel",
+        "text": ""
+      },
+      {
+        "url": "https://x.com/dc_courts",
+        "text": ""
+      }
+    ],
+    "assets": [
+      {
+        "kind": "canonical",
+        "url": "https://www.dccourts.gov/homepage"
+      },
+      {
+        "kind": "icon",
+        "url": "https://www.dccourts.gov/sites/default/files/favicon.ico"
+      },
+      {
+        "kind": "script",
+        "url": "https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/jquery.validate.min.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/data-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/disable-selection-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/focusable-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/form-reset-mixin-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/jquery-patch-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/keycode-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/labels-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/plugin-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/scroll-parent-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/unique-id-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/version-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widget-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/button-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/checkboxradio-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/controlgroup-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/dialog-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/draggable-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/mouse-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/ui/widgets/resizable-min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery/jquery.min.js?v=4.0.0"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/loadjs/loadjs.min.js?v=4.3.0"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/once/once.min.js?v=1.0.1"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/tabbable/index.umd.min.js?v=6.3.0"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/tua-body-scroll-lock/tua-bsl.umd.min.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/assets/vendor/underscore/underscore-min.js?v=1.13.8"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/ajax.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/announce.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/debounce.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/dialog/dialog-deprecation.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/dialog/dialog.ajax.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/dialog/dialog.jquery-ui.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/dialog/dialog.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/dialog/dialog.position.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/displace.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/drupal.init.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/drupal.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/drupalSettingsLoader.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/jquery.form.js?v=4.3.0"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/message.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/position.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/misc/progress.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/modules/ckeditor5/js/ckeditor5.dialog.fix.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/modules/views/js/ajax_view.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/core/modules/views/js/base.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/libraries/select2/dist/js/select2.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/libraries/sticky/jquery.sticky.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/ajax_loader/js/ajax-throbber.js?v=1.x"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/better_exposed_filters/js/bef_reset_ajax.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/better_exposed_filters/js/better_exposed_filters.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/clientside_validation/clientside_validation_jquery/js/cv.jquery.validate.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/extlink/js/extlink.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/google_analytics/js/google_analytics.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/simple_popup_blocks/js/simple_popup_blocks.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/statistics/statistics.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/status_messages/js/status_messages.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/contrib/sticky/js/sticky.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/dccr_gtranslate/js/ajax-content-translation.js?v=1.x"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/dccr_gtranslate/js/confirm-switch.js?v=1.x"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/dccr_gtranslate/js/dropdown.js?v=1.x"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/dccr_views_adjustments/js/category-nested.js?v=1.x"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/form_placeholder/js/form_placeholder.js?v=11.3.10"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/modules/custom/id_dccr_admin/assets/js/shs.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/accordion-controls.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/alert.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/bef-modal-manager.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/bidders-list-services-inline.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/clearable-input.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/coa_order_notices_ajax_submit.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/cookies.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/custom-menu.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/date-time-picker.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/forms-submit.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/input.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/operating_status_modal.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/operating-status-delay.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/preloader.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/script.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/search-container.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/select2.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/simplebar.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/swiper-init.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/tabs.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/textarea-counter.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/topics-component-responsivity.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/view_filter_value.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/js/view-submit-on-enter.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/%40eonasdan/tempus-dominus/dist/js/tempus-dominus.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/%40popperjs/core/dist/umd/popper.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/bootstrap/dist/js/bootstrap.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/resize-observer-polyfill/dist/ResizeObserver.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/simplebar/dist/simplebar.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/swiper/swiper-bundle.min.js?tfps0m"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.googletagmanager.com/gtag/js?id=UA-49403384-1"
+      },
+      {
+        "kind": "shortlink",
+        "url": "https://www.dccourts.gov/node/58784"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/button.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/checkboxradio.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/controlgroup.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/core.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/dialog.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/resizable.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/assets/vendor/jquery.ui/themes/base/theme.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/modules/ckeditor5/css/ckeditor5.dialog.fix.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/core/components/ajax-progress.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/core/components/progress.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/system/components/align.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/system/components/clearfix.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/system/components/container-inline.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/system/components/hidden.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/system/components/js.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/core/themes/stable9/css/views/views.module.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/libraries/select2/dist/css/select2.min.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/ajax_loader/css/double-bounce.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/ajax_loader/css/throbber-general.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/better_exposed_filters/css/better_exposed_filters.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/extlink/css/extlink.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/paragraphs/css/paragraphs.unpublished.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/simple_popup_blocks/css/simple_popup_blocks.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/social_media_links/css/social_media_links.theme.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/contrib/status_messages/css/status_messages.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/modules/custom/dccr_gtranslate/css/confirm-switch.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/dist/css/style.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/%40eonasdan/tempus-dominus/dist/css/tempus-dominus.min.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/simplebar/dist/simplebar.min.css?tfps0m"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dccourts.gov/themes/custom/dccourts/node_modules/swiper/swiper-bundle.min.css?tfps0m"
+      }
+    ]
+  }
+}

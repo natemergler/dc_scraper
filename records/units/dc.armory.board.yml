@@ -1,0 +1,29 @@
+id: dc.armory.board
+record_type: civic_unit
+name: Armory Board
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 3-302
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 27
+  NAME: Armory Board
+  SHORT_NAME: Armory Board
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Board
+  WEB_URL: "https://www.open-dc.gov/public-bodies/armory-board"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-302
+  OBJECTID: 27
+  CLUSTER_DC: null
+official_url: "https://www.open-dc.gov/public-bodies/armory-board"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.27
+  source_row_key: "27"

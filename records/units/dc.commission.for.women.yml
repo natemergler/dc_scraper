@@ -1,0 +1,30 @@
+id: dc.commission.for.women
+record_type: civic_unit
+name: Commission for Women
+aliases:
+  - OWPI
+legal_authority_notes:
+  - D.C. Code § 3-702
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 64
+  NAME: Commission for Women
+  SHORT_NAME: Commission for Women
+  ACRONYM: OWPI
+  GOVERNING_AGENCY: Mayor's Office on Women’s Policy and Initiatives
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 327"
+  TYPE: Commission
+  WEB_URL: "https://owpi.dc.gov/page/dc-commission-women"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-702
+  OBJECTID: 64
+  CLUSTER_DC: null
+official_url: "https://owpi.dc.gov/page/dc-commission-women"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.64
+  source_row_key: "64"

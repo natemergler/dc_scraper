@@ -1,0 +1,34 @@
+id: dc.department.of.aging.and.community.living
+record_type: civic_unit
+name: Department of Aging and Community Living
+aliases:
+  - DACL
+legal_authority_notes:
+  - "§ 7–503.01 - https://code.dccouncil.gov/us/dc/council/code/sections/7-503.01"
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1020
+  AGENCY_NAME: Department of Aging and Community Living
+  SHORT_NAME: Department of Aging and Community Living
+  ACRONYM: DACL
+  BUDGETCODE: BY0
+  LEGISLATION: "§ 7–503.01 - https://code.dccouncil.gov/us/dc/council/code/sections/7-503.01"
+  MAYORAL_CLUSTER: Health and Human Services
+  BRANCH: Executive
+  ADDRESS: 500 K Street NE
+  TYPE: Agency
+  WEB_URL: "https://dacl.dc.gov/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+  OBJECTID: 14
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://dacl.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1020
+  source_row_key: "1020"

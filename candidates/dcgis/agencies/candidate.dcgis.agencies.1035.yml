@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1035
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.department.of.for.hire.vehicles
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1035"
+generated_at: "2026-05-31T04:39:57.394Z"
+record:
+  id: dc.department.of.for.hire.vehicles
+  record_type: civic_unit
+  name: Department of For-Hire Vehicles
+  aliases:
+    - DFHV
+  legal_authority_notes:
+    - § 50-301.04
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1035
+    AGENCY_NAME: Department of For-Hire Vehicles
+    SHORT_NAME: Department of For-Hire Vehicles
+    ACRONYM: DFHV
+    BUDGETCODE: TC0
+    LEGISLATION: § 50-301.04
+    MAYORAL_CLUSTER: Government Operations
+    BRANCH: Executive
+    ADDRESS: "2235 Shannon Place SE, Suite 2001/Suite 3001"
+    TYPE: Agency
+    WEB_URL: "https://dfhv.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Operations and Infrastructure
+    OBJECTID: 25
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://dfhv.dc.gov/"

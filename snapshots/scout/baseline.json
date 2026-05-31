@@ -1,0 +1,19 @@
+{
+  "source_id": "scout",
+  "source_url": "https://scout.dcra.dc.gov/",
+  "captured_at": "2026-05-31T16:46:43.705Z",
+  "kind": "page_manifest",
+  "link_urls": [],
+  "asset_urls": [
+    "https://fonts.gstatic.com/",
+    "https://maps.googleapis.com/maps/api/js?key=AIzaSyACNtlSqyGOghpeDMxRd_qEgPrGe9b7voc",
+    "https://scout.dcra.dc.gov/assets/webcrypto-shim.min.js",
+    "https://scout.dcra.dc.gov/favicon.ico",
+    "https://scout.dcra.dc.gov/main.3b1e1fc3597469b2.js",
+    "https://scout.dcra.dc.gov/polyfills.7c7dad62a2a3d675.js",
+    "https://scout.dcra.dc.gov/runtime.664e4f04b2c11443.js",
+    "https://scout.dcra.dc.gov/scripts.741ee885fb11861c.js",
+    "https://scout.dcra.dc.gov/styles.93903ef0cffb1913.css",
+    "https://www.googletagmanager.com/gtag/js?id=UA-162862851-1"
+  ]
+}

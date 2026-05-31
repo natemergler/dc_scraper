@@ -1,0 +1,10 @@
+id: dc.council
+record_type: civic_unit
+name: Council of the District of Columbia
+unit_kind: legislative_body
+operating_layers:
+  - municipal
+  - state_equivalent
+status: active
+source_refs:
+  - dc_code

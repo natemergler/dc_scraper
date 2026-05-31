@@ -1,0 +1,33 @@
+id: dc.office.of.the.senior.advisor
+record_type: civic_unit
+name: Office of the Senior Advisor
+aliases:
+  - OSA
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1096
+  AGENCY_NAME: Office of the Senior Advisor
+  SHORT_NAME: Office of the Senior Advisor
+  ACRONYM: OSA
+  BUDGETCODE: AI0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Governmental Direction and Support
+  BRANCH: Executive
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 324"
+  TYPE: Agency
+  WEB_URL: "https://osa.dc.gov/"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 79
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://osa.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1096
+  source_row_key: "1096"

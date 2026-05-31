@@ -1,0 +1,30 @@
+id: dc.mayor.s.interfaith.council.mic
+record_type: civic_unit
+name: Mayor's Interfaith Council (MIC)
+aliases:
+  - MIC
+legal_authority_notes:
+  - Mayor's Order 2011-110
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 3
+  NAME: Mayor's Interfaith Council (MIC)
+  SHORT_NAME: Mayor's Interfaith Council (MIC)
+  ACRONYM: MIC
+  GOVERNING_AGENCY: Office of Religious Affairs
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 332"
+  TYPE: Council
+  WEB_URL: "https://ora.dc.gov/page/mayors-interfaith-council"
+  AUTHORIZING_ORDER_LAW: Mayor's Order 2011-110
+  OBJECTID: 3
+  CLUSTER_DC: null
+official_url: "https://ora.dc.gov/page/mayors-interfaith-council"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.3
+  source_row_key: "3"

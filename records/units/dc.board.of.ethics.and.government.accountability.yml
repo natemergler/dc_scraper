@@ -1,0 +1,34 @@
+id: dc.board.of.ethics.and.government.accountability
+record_type: civic_unit
+name: Board of Ethics and Government Accountability
+aliases:
+  - BEGA
+legal_authority_notes:
+  - § 1-1162.02
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1138
+  AGENCY_NAME: Board of Ethics and Government Accountability
+  SHORT_NAME: Board of Ethics and Government Accountability
+  ACRONYM: BEGA
+  BUDGETCODE: AG0
+  LEGISLATION: § 1-1162.02
+  MAYORAL_CLUSTER: Government Operations
+  BRANCH: Other
+  ADDRESS: "1030 15th Street NW, Suite 700 West"
+  TYPE: Agency
+  WEB_URL: "https://bega.dc.gov/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 118
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://bega.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1138
+  source_row_key: "1138"

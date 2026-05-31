@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.99
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.homeland.security.commission
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "99"
+generated_at: "2026-05-31T04:39:57.459Z"
+record:
+  id: dc.homeland.security.commission
+  record_type: civic_unit
+  name: Homeland Security Commission
+  aliases:
+    - HSC
+  legal_authority_notes:
+    - D.C. Code § 7-2271.02
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 99
+    NAME: Homeland Security Commission
+    SHORT_NAME: Homeland Security Commission
+    ACRONYM: HSC
+    GOVERNING_AGENCY: Homeland Security and Emergency Management Agency
+    ADDRESS: 2720 Martin Luther King Jr Avenue SE
+    TYPE: Commission
+    WEB_URL: "https://hsema.dc.gov/page/homeland-security-commission"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 7-2271.02
+    OBJECTID: 99
+    CLUSTER_DC: null
+  official_url: "https://hsema.dc.gov/page/homeland-security-commission"

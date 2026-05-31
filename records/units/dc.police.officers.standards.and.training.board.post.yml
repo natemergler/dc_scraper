@@ -1,0 +1,32 @@
+id: dc.police.officers.standards.and.training.board.post
+record_type: civic_unit
+name: Police Officers Standards and Training Board (POST)
+aliases:
+  - POST
+legal_authority_notes:
+  - D.C. Code § 5-107.03
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 113
+  NAME: Police Officers Standards and Training Board (POST)
+  SHORT_NAME: Police Officers Standards and Training Board (POST)
+  ACRONYM: POST
+  GOVERNING_AGENCY: Metropolitan Police Department
+  ADDRESS: "300 Indiana Avenue NW, Room 5059"
+  TYPE: Board
+  WEB_URL: >-
+    https://mpdc.dc.gov/page/dc-post-board-police-officers-standards-and-training-board
+  AUTHORIZING_ORDER_LAW: D.C. Code § 5-107.03
+  OBJECTID: 113
+  CLUSTER_DC: null
+official_url: >-
+  https://mpdc.dc.gov/page/dc-post-board-police-officers-standards-and-training-board
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.113
+  source_row_key: "113"

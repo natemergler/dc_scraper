@@ -1,0 +1,31 @@
+id: dc.children.and.youth.investment.collaborative
+record_type: civic_unit
+name: Children and Youth Investment Collaborative
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1137
+  AGENCY_NAME: Children and Youth Investment Collaborative
+  SHORT_NAME: Children and Youth Investment Collaborative
+  ACRONYM: null
+  BUDGETCODE: JZ0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: null
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: null
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+  OBJECTID: 91
+  MAYORAL_OR_NOT: Non-Mayoral
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1137
+  source_row_key: "1137"

@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1149
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.mayor.s.office.on.volunteerism.and.partnerships
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1149"
+generated_at: "2026-05-31T04:39:57.424Z"
+record:
+  id: dc.mayor.s.office.on.volunteerism.and.partnerships
+  record_type: civic_unit
+  name: Mayor's Office on Volunteerism and Partnerships
+  aliases:
+    - SERVEDC
+  legal_authority_notes:
+    - Mayor's Order 2013-171
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1149
+    AGENCY_NAME: Mayor's Office on Volunteerism and Partnerships
+    SHORT_NAME: Serve DC
+    ACRONYM: SERVEDC
+    BUDGETCODE: RS0
+    LEGISLATION: Mayor's Order 2013-171
+    MAYORAL_CLUSTER: Executive
+    BRANCH: Executive
+    ADDRESS: "2235 Shannon Place SE, Suite 3040"
+    TYPE: Agency
+    WEB_URL: "https://serve.dc.gov/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+    OBJECTID: 128
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://serve.dc.gov/"

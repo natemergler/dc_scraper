@@ -1,0 +1,10 @@
+id: dc.courts
+record_type: civic_unit
+name: District of Columbia Courts
+unit_kind: judicial_body
+operating_layers:
+  - federalized_local
+status: active
+source_refs:
+  - dc_code
+  - dc_courts

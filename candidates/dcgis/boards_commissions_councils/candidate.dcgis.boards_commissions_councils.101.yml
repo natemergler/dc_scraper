@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.101
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.housing.finance.agency.board.of.directors
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "101"
+generated_at: "2026-05-31T04:39:57.459Z"
+record:
+  id: dc.housing.finance.agency.board.of.directors
+  record_type: civic_unit
+  name: Housing Finance Agency Board of Directors
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 42-2702.02
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 101
+    NAME: Housing Finance Agency Board of Directors
+    SHORT_NAME: Housing Finance Agency Board of Directors
+    ACRONYM: null
+    GOVERNING_AGENCY: null
+    ADDRESS: 815 Florida Avenue NW
+    TYPE: Board
+    WEB_URL: "https://www.dchfa.org/board-of-directors/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 42-2702.02
+    OBJECTID: 101
+    CLUSTER_DC: null
+  official_url: "https://www.dchfa.org/board-of-directors/"

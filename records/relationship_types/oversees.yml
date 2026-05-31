@@ -1,0 +1,7 @@
+id: oversees
+record_type: relationship_type
+name: oversees
+definition: Actor oversees or exercises oversight over another civic unit.
+status: active
+source_refs:
+  - dc_code

@@ -1,0 +1,33 @@
+id: dc.public.employee.relations.board
+record_type: civic_unit
+name: Public Employee Relations Board
+aliases:
+  - PERB
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1101
+  AGENCY_NAME: Public Employee Relations Board
+  SHORT_NAME: Public Employee Relations Board
+  ACRONYM: PERB
+  BUDGETCODE: CG0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Government Operations
+  BRANCH: Other
+  ADDRESS: "899 North Capitol Street NE, Suite 8600"
+  TYPE: Agency
+  WEB_URL: "https://perb.dc.gov/"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 86
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://perb.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1101
+  source_row_key: "1101"

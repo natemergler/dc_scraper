@@ -1,0 +1,31 @@
+id: dc.housing.production.trust.fund
+record_type: civic_unit
+name: Housing Production Trust Fund
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1167
+  AGENCY_NAME: Housing Production Trust Fund
+  SHORT_NAME: Housing Production Trust Fund
+  ACRONYM: null
+  BUDGETCODE: UZ0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: null
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: null
+  SOURCE: null
+  OBP_BFA_APPROPRIATION_TITLE: Enterprise and Other Funds
+  OBJECTID: 146
+  MAYORAL_OR_NOT: Non-Mayoral
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1167
+  source_row_key: "1167"

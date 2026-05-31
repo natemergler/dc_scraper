@@ -1,0 +1,29 @@
+id: dc.board.of.psychology
+record_type: civic_unit
+name: Board of Psychology
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 3-1202.11
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 54
+  NAME: Board of Psychology
+  SHORT_NAME: Board of Psychology
+  ACRONYM: null
+  GOVERNING_AGENCY: DC Health
+  ADDRESS: 899 North Capitol Street NE
+  TYPE: Board
+  WEB_URL: "https://dchealth.dc.gov/node/160282"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-1202.11
+  OBJECTID: 54
+  CLUSTER_DC: Health and Human Services
+official_url: "https://dchealth.dc.gov/node/160282"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.54
+  source_row_key: "54"

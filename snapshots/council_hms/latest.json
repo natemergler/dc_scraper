@@ -1,0 +1,82 @@
+{
+  "source_id": "council_hms",
+  "source_url": "https://lims.dccouncil.gov/hearings",
+  "fetched_at": "2026-05-31T16:41:40.291Z",
+  "status": "success",
+  "content_hash": "sha256:aca812dfdd642a224c2087b3a9a6bf8ef3a3c9beceefa61c28c824d7f0d36228",
+  "payload": {
+    "source_title": "Council HMS hearings",
+    "page_url": "https://lims.dccouncil.gov/hearings",
+    "endpoint_count": 2,
+    "total_item_count": 10,
+    "endpoints": [
+      {
+        "id": "upcoming_hearings",
+        "url": "https://lims.dccouncil.gov/Hearings/API/Public/GetUpcomingHearings",
+        "method": "POST",
+        "status": 200,
+        "ok": true,
+        "item_count": 10,
+        "sample": [
+          {
+            "hearingId": 2343,
+            "committeeName": "Public Works and Operations",
+            "jointHearingCommittees": "",
+            "hearingDateTime": "2026-05-28T13:00:00",
+            "hearingType": "Roundtable",
+            "hearingTypeBGColor": "#caf0f8",
+            "hearingTypeBorderColor": "#5fa8d3",
+            "topics": [
+              "PR26-0661 - Commission on Human Rights Isabelle Vladoiu Confirmation Resolution of 2026",
+              "PR26-0662 - Commission on Human Rights Carmen Moreno Sanz Confirmation Resolution of 2026",
+              "PR26-0663 - Commission on Human Rights Adam Maier Confirmation Resolution of 2026",
+              "PR26-0664 - Commission on Human Rights Jordyn White Confirmation Resolution of 2026",
+              "PR26-0665 - Commission on Human Rights Joel Castón Confirmation Resolution of 2026",
+              "PR26-0673 - Alcoholic Beverage and Cannabis Board Monte Monash Confirmation Resolution of 2026",
+              "PR26-0710 - Commission on Human Rights Reverend Thomas Bowen Confirmation Resolution of 2026",
+              "PR26-0714 - Commission on Human Rights Pratima Narayan Confirmation Resolution of 2026",
+              "PR26-0715 - Commission on Human Rights Joshua Blecher-Cohen Confirmation Resolution of 2026",
+              "PR26-0716 - Commission on Human Rights Dr. Krista Bywater Confirmation Resolution of 2026"
+            ],
+            "isToday": false
+          },
+          {
+            "hearingId": 2329,
+            "committeeName": "Legislative Meeting",
+            "jointHearingCommittees": "",
+            "hearingDateTime": "2026-05-27T09:30:00",
+            "hearingType": "Meeting",
+            "hearingTypeBGColor": "#caf0f8",
+            "hearingTypeBorderColor": "#5fa8d3",
+            "topics": [
+              "Budget Work Session"
+            ],
+            "isToday": false
+          },
+          {
+            "hearingId": 2335,
+            "committeeName": "Public Works and Operations",
+            "jointHearingCommittees": "",
+            "hearingDateTime": "2026-05-26T12:00:00",
+            "hearingType": "Roundtable",
+            "hearingTypeBGColor": "#caf0f8",
+            "hearingTypeBorderColor": "#5fa8d3",
+            "topics": [
+              "State of the For-Hire Vehicle Industry"
+            ],
+            "isToday": false
+          }
+        ]
+      },
+      {
+        "id": "hearings_calendar",
+        "url": "https://lims.dccouncil.gov/Hearings/API/Public/GetHearingsCalendar",
+        "method": "POST",
+        "status": 200,
+        "ok": true,
+        "item_count": 0,
+        "sample": []
+      }
+    ]
+  }
+}

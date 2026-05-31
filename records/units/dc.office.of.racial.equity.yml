@@ -1,0 +1,33 @@
+id: dc.office.of.racial.equity
+record_type: civic_unit
+name: Office of Racial Equity
+aliases:
+  - ORE
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1178
+  AGENCY_NAME: Office of Racial Equity
+  SHORT_NAME: Office of Racial Equity
+  ACRONYM: ORE
+  BUDGETCODE: AE0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Executive
+  BRANCH: Executive
+  ADDRESS: 1350 Pennsylvania Avenue NW
+  TYPE: Agency
+  WEB_URL: "https://ore.dc.gov"
+  SOURCE: null
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 159
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://ore.dc.gov"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1178
+  source_row_key: "1178"

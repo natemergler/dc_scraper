@@ -1,0 +1,32 @@
+id: dc.housing.authority.subsidy
+record_type: civic_unit
+name: Housing Authority Subsidy
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1117
+  AGENCY_NAME: Housing Authority Subsidy
+  SHORT_NAME: Housing Authority Subsidy
+  ACRONYM: null
+  BUDGETCODE: HY0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Economic Development and Regulation
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://cfo.dc.gov/publication/2020-hy0-housing-authority-subsidy"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Economic Development and Regulation
+  OBJECTID: 99
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://cfo.dc.gov/publication/2020-hy0-housing-authority-subsidy"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1117
+  source_row_key: "1117"

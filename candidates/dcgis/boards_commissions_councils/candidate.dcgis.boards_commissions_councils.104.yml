@@ -1,0 +1,33 @@
+id: candidate.dcgis.boards_commissions_councils.104
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.lactation.commission
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "104"
+generated_at: "2026-05-31T04:39:57.460Z"
+record:
+  id: dc.lactation.commission
+  record_type: civic_unit
+  name: Lactation Commission
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 104
+    NAME: Lactation Commission
+    SHORT_NAME: Lactation Commission
+    ACRONYM: null
+    GOVERNING_AGENCY: DC Health
+    ADDRESS: 899 North Capitol Street NE
+    TYPE: Commission
+    WEB_URL: "https://dchealth.dc.gov/service/dc-lactation-commission"
+    AUTHORIZING_ORDER_LAW: null
+    OBJECTID: 104
+    CLUSTER_DC: null
+  official_url: "https://dchealth.dc.gov/service/dc-lactation-commission"

@@ -1,0 +1,131 @@
+{
+  "source_id": "council_lims",
+  "source_url": "https://lims.dccouncil.gov/",
+  "fetched_at": "2026-05-31T16:41:40.113Z",
+  "status": "success",
+  "content_hash": "sha256:dca706cedbe43a5d0780fdd3abe40afafe747421b14bac11a2f9855779f2cf89",
+  "payload": {
+    "source_title": "Council LIMS",
+    "page_url": "https://lims.dccouncil.gov/",
+    "endpoint_count": 3,
+    "total_item_count": 10,
+    "endpoints": [
+      {
+        "id": "search_master",
+        "url": "https://lims.dccouncil.gov/api/Search/GetSearchMaster",
+        "method": "GET",
+        "status": 200,
+        "ok": true,
+        "item_count": 0,
+        "sample": {
+          "searchString": "",
+          "councilPeriodId": {
+            "groupFilterIdName": "councilPeriodId",
+            "groupFilterName": "councilPeriod",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "legislationCategoryId": {
+            "groupFilterIdName": "legislationCategoryId",
+            "groupFilterName": "legislationCategory",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "legislationSubCategoryId": {
+            "groupFilterIdName": "legislationSubCategoryId",
+            "groupFilterName": "legislationSubCategory",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "requestorId": {
+            "groupFilterIdName": "requestorId",
+            "groupFilterName": "requestor",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "statusId": {
+            "groupFilterIdName": "statusId",
+            "groupFilterName": "status",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "introducer": {
+            "groupFilterIdName": "introducers.id",
+            "groupFilterName": "introducers.name",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          },
+          "coSponsor": {
+            "groupFilterIdName": "cosponsors.id",
+            "groupFilterName": "cosponsors.name",
+            "ids": [],
+            "names": [],
+            "isFocus": false
+          }
+        }
+      },
+      {
+        "id": "whats_new",
+        "url": "https://lims.dccouncil.gov/api/Search/GetWhatsNew",
+        "method": "GET",
+        "status": 200,
+        "ok": true,
+        "item_count": 5,
+        "sample": [
+          {
+            "legislationId": 61981,
+            "legislationNumber": "PR26-0732",
+            "date": "0001-01-01T00:00:00",
+            "title": "Clemency Board Waiver Authority Second Congressional Review Emergency Declaration Resolution of 2026",
+            "url": "https://lims.dccouncil.gov/LegislationDetails/GetLegislationDetails/PR26-0732",
+            "legislationType": null
+          },
+          {
+            "legislationId": 61982,
+            "legislationNumber": "PR26-0733",
+            "date": "0001-01-01T00:00:00",
+            "title": "Pretrial Detention Reporting Second Congressional Review Emergency Declaration Resolution of 2026",
+            "url": "https://lims.dccouncil.gov/LegislationDetails/GetLegislationDetails/PR26-0733",
+            "legislationType": null
+          },
+          {
+            "legislationId": 61983,
+            "legislationNumber": "RC26-0219",
+            "date": "0001-01-01T00:00:00",
+            "title": "Department of Insurance, Securities and Banking (DISB) Behavioral Health Parity Act of 2018 Compliance Report: Fiscal Year (FY) 2025",
+            "url": "https://lims.dccouncil.gov/LegislationDetails/GetLegislationDetails/RC26-0219",
+            "legislationType": null
+          }
+        ]
+      },
+      {
+        "id": "trending",
+        "url": "https://lims.dccouncil.gov/api/Search/GetTrendingList",
+        "method": "GET",
+        "status": 200,
+        "ok": true,
+        "item_count": 5,
+        "sample": [
+          {
+            "legislationNumber": "B25-0291",
+            "title": "B25-0291 - Safer Stronger Amendment Act of 2023"
+          },
+          {
+            "legislationNumber": "B25-0154",
+            "title": "B25-0154 - William Dorsey Swann Street Designation Act of 2023"
+          },
+          {
+            "legislationNumber": "B25-0202",
+            "title": "B25-0202 - Fiscal Year 2024 Budget Support Act of 2023"
+          }
+        ]
+      }
+    ]
+  }
+}

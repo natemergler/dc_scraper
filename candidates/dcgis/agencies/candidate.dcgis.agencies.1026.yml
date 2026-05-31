@@ -1,0 +1,38 @@
+id: candidate.dcgis.agencies.1026
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.dc.superior.court
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1026"
+generated_at: "2026-05-31T04:39:57.388Z"
+record:
+  id: dc.dc.superior.court
+  record_type: civic_unit
+  name: DC Superior Court
+  aliases:
+    - DCCOURTS
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1026
+    AGENCY_NAME: DC Superior Court
+    SHORT_NAME: Superior Court
+    ACRONYM: DCCOURTS
+    BUDGETCODE: null
+    LEGISLATION: null
+    MAYORAL_CLUSTER: null
+    BRANCH: Judicial
+    ADDRESS: 430 E Street NW
+    TYPE: Agency
+    WEB_URL: "https://www.dccourts.gov/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: null
+    OBJECTID: 9
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://www.dccourts.gov/"

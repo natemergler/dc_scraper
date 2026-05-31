@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.109
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.new.columbia.statehood.commission
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "109"
+generated_at: "2026-05-31T04:39:57.462Z"
+record:
+  id: dc.new.columbia.statehood.commission
+  record_type: civic_unit
+  name: New Columbia Statehood Commission
+  aliases:
+    - DCSIC
+  legal_authority_notes:
+    - D.C. Code § 1-129.31
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 109
+    NAME: New Columbia Statehood Commission
+    SHORT_NAME: New Columbia Statehood Commission
+    ACRONYM: DCSIC
+    GOVERNING_AGENCY: null
+    ADDRESS: 1350 Pennsylvania Avenue NW
+    TYPE: Commission
+    WEB_URL: "https://statehood.dc.gov/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 1-129.31
+    OBJECTID: 109
+    CLUSTER_DC: null
+  official_url: "https://statehood.dc.gov/"

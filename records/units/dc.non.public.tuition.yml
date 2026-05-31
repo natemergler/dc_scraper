@@ -1,0 +1,32 @@
+id: dc.non.public.tuition
+record_type: civic_unit
+name: Non-Public Tuition
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1123
+  AGENCY_NAME: Non-Public Tuition
+  SHORT_NAME: Non-Public Tuition
+  ACRONYM: null
+  BUDGETCODE: GN0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Public Education System
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://cfo.dc.gov/publication/2021-gn0-non-public-tuition"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Public Education System
+  OBJECTID: 105
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://cfo.dc.gov/publication/2021-gn0-non-public-tuition"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1123
+  source_row_key: "1123"

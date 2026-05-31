@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.5
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.mayor.s.council.on.physical.fitness.health.and.nutrition
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "5"
+generated_at: "2026-05-31T04:39:57.435Z"
+record:
+  id: dc.mayor.s.council.on.physical.fitness.health.and.nutrition
+  record_type: civic_unit
+  name: 'Mayor''s Council on Physical Fitness, Health, and Nutrition'
+  aliases:
+    - MCPFHN
+  legal_authority_notes:
+    - D.C. Code § 7-121
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 5
+    NAME: 'Mayor''s Council on Physical Fitness, Health, and Nutrition'
+    SHORT_NAME: 'Mayor''s Council on Physical Fitness, Health, and Nutrition'
+    ACRONYM: MCPFHN
+    GOVERNING_AGENCY: DC Health
+    ADDRESS: null
+    TYPE: Council
+    WEB_URL: "https://dmhhs.dc.gov/physicalfitness"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 7-121
+    OBJECTID: 5
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://dmhhs.dc.gov/physicalfitness"

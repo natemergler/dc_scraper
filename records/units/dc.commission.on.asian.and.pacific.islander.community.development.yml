@@ -1,0 +1,30 @@
+id: dc.commission.on.asian.and.pacific.islander.community.development
+record_type: civic_unit
+name: Commission on Asian and Pacific Islander Community Development
+aliases:
+  - CAPIA
+legal_authority_notes:
+  - D.C. Code § 2-1374
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 68
+  NAME: Commission on Asian and Pacific Islander Community Development
+  SHORT_NAME: Commission on Asian and Pacific Islander Community Development
+  ACRONYM: CAPIA
+  GOVERNING_AGENCY: Mayor's Office on Asian and Pacific Islander Affairs
+  ADDRESS: "441 4th Street NW, Suite 721 "
+  TYPE: Commission
+  WEB_URL: "https://apia.dc.gov/page/commission-api-affairs"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 2-1374
+  OBJECTID: 68
+  CLUSTER_DC: null
+official_url: "https://apia.dc.gov/page/commission-api-affairs"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.68
+  source_row_key: "68"

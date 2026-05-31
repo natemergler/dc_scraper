@@ -1,0 +1,28 @@
+id: dc.innovation.and.technology.council
+record_type: civic_unit
+name: Innovation and Technology Council
+aliases: []
+legal_authority_notes: []
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 17
+  NAME: Innovation and Technology Council
+  SHORT_NAME: Innovation and Technology Council
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: "https://dmped.dc.gov/page/innovation-technology-inclusion-council-itic"
+  AUTHORIZING_ORDER_LAW: null
+  OBJECTID: 17
+  CLUSTER_DC: null
+official_url: "https://dmped.dc.gov/page/innovation-technology-inclusion-council-itic"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.17
+  source_row_key: "17"

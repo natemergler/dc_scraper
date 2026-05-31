@@ -1,0 +1,29 @@
+id: dc.combat.sports.commission
+record_type: civic_unit
+name: Combat Sports Commission
+aliases: []
+legal_authority_notes:
+  - D.C. Law 22-228. Boxing and Wrestling Commission Amendment Act of 2018
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 62
+  NAME: Combat Sports Commission
+  SHORT_NAME: Combat Sports Commission
+  ACRONYM: null
+  GOVERNING_AGENCY: DC Department of Licensing and Consumer Protection
+  ADDRESS: 1100 4th Street SW
+  TYPE: Commission
+  WEB_URL: "https://dlcp.dc.gov/node/1617416"
+  AUTHORIZING_ORDER_LAW: D.C. Law 22-228. Boxing and Wrestling Commission Amendment Act of 2018
+  OBJECTID: 62
+  CLUSTER_DC: null
+official_url: "https://dlcp.dc.gov/node/1617416"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.62
+  source_row_key: "62"

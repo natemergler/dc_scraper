@@ -1,0 +1,6 @@
+id: scout
+record_type: source
+name: SCOUT
+official_url: "https://scout.dcra.dc.gov/"
+source_type: ui_heavy_source
+status: active

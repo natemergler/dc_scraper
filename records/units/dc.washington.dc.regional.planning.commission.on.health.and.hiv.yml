@@ -1,0 +1,30 @@
+id: dc.washington.dc.regional.planning.commission.on.health.and.hiv
+record_type: civic_unit
+name: Washington DC Regional Planning Commission on Health and HIV
+aliases: []
+legal_authority_notes: []
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 127
+  NAME: Washington DC Regional Planning Commission on Health and HIV
+  SHORT_NAME: Washington DC Regional Planning Commission on Health and HIV
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Commission
+  WEB_URL: >-
+    https://dchealth.dc.gov/service/washington-dc-regional-planning-commission-health-and-hiv-cohah
+  AUTHORIZING_ORDER_LAW: null
+  OBJECTID: 127
+  CLUSTER_DC: null
+official_url: >-
+  https://dchealth.dc.gov/service/washington-dc-regional-planning-commission-health-and-hiv-cohah
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.127
+  source_row_key: "127"

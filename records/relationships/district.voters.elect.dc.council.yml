@@ -1,0 +1,13 @@
+id: district.voters.elect.dc.council
+record_type: relationship
+name: District voters elect the Council
+relationship_type_id: elects
+source_actor:
+  kind: civic_unit
+  id: district.voters
+target_actor:
+  kind: civic_unit
+  id: dc.council
+status: active
+source_refs:
+  - dc_code

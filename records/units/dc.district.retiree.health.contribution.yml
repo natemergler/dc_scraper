@@ -1,0 +1,32 @@
+id: dc.district.retiree.health.contribution
+record_type: civic_unit
+name: District Retiree Health Contribution
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1113
+  AGENCY_NAME: District Retiree Health Contribution
+  SHORT_NAME: District Retiree Health Contribution
+  ACRONYM: null
+  BUDGETCODE: RH0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Financing and Other
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://cfo.dc.gov/publication/2021-debt-service"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Financing and Other
+  OBJECTID: 95
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://cfo.dc.gov/publication/2021-debt-service"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1113
+  source_row_key: "1113"

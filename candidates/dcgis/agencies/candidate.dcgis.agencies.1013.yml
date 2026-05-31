@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1013
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.criminal.justice.coordinating.council
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1013"
+generated_at: "2026-05-31T04:39:57.385Z"
+record:
+  id: dc.criminal.justice.coordinating.council
+  record_type: civic_unit
+  name: Criminal Justice Coordinating Council
+  aliases:
+    - CJCC
+  legal_authority_notes:
+    - 4-1303.01a
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1013
+    AGENCY_NAME: Criminal Justice Coordinating Council
+    SHORT_NAME: Criminal Justice Coordinating Council
+    ACRONYM: CJCC
+    BUDGETCODE: FJ0
+    LEGISLATION: 4-1303.01a
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Other
+    ADDRESS: "441 4th Street NW, Suite 715 North"
+    TYPE: Agency
+    WEB_URL: "https://cjcc.dc.gov/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 4
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://cjcc.dc.gov/"

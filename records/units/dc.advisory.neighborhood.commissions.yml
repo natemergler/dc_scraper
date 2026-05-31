@@ -1,0 +1,30 @@
+id: dc.advisory.neighborhood.commissions
+record_type: civic_unit
+name: Advisory Neighborhood Commissions
+aliases:
+  - ANC
+legal_authority_notes:
+  - B21-0697
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 25
+  NAME: Advisory Neighborhood Commissions
+  SHORT_NAME: Advisory Neighborhood Commissions
+  ACRONYM: ANC
+  GOVERNING_AGENCY: null
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 11"
+  TYPE: Commission
+  WEB_URL: "https://anc.dc.gov/"
+  AUTHORIZING_ORDER_LAW: B21-0697
+  OBJECTID: 25
+  CLUSTER_DC: null
+official_url: "https://anc.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.25
+  source_row_key: "25"

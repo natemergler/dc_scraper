@@ -1,0 +1,37 @@
+id: candidate.dcgis.agencies.1107
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.business.improvements.districts.transfer
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1107"
+generated_at: "2026-05-31T04:39:57.413Z"
+record:
+  id: dc.business.improvements.districts.transfer
+  record_type: civic_unit
+  name: Business Improvements Districts Transfer
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1107
+    AGENCY_NAME: Business Improvements Districts Transfer
+    SHORT_NAME: Business Improvements Districts Transfer
+    ACRONYM: null
+    BUDGETCODE: ID0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: Economic Development and Regulation
+    BRANCH: Other
+    ADDRESS: null
+    TYPE: Budgetary
+    WEB_URL: "https://dslbd.dc.gov/service/business-improvement-districts-bids"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Economic Development and Regulation
+    OBJECTID: 89
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://dslbd.dc.gov/service/business-improvement-districts-bids"

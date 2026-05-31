@@ -1,0 +1,32 @@
+id: dc.employees.compensation.fund
+record_type: civic_unit
+name: Employees' Compensation Fund
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1115
+  AGENCY_NAME: Employees' Compensation Fund
+  SHORT_NAME: Employees' Compensation Fund
+  ACRONYM: null
+  BUDGETCODE: BG0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Governmental Direction and Support
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://does.dc.gov/page/workers-compensation-does"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 97
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://does.dc.gov/page/workers-compensation-does"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1115
+  source_row_key: "1115"

@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.67
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.commission.on.aging
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "67"
+generated_at: "2026-05-31T04:39:57.450Z"
+record:
+  id: dc.commission.on.aging
+  record_type: civic_unit
+  name: Commission on Aging
+  aliases:
+    - COA
+  legal_authority_notes:
+    - D.C. Code § 7-504.01
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 67
+    NAME: Commission on Aging
+    SHORT_NAME: Commission on Aging
+    ACRONYM: COA
+    GOVERNING_AGENCY: Department of Aging and Community Living
+    ADDRESS: 500 K Street NE
+    TYPE: Commission
+    WEB_URL: "https://dcoa.dc.gov/page/commission-aging"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 7-504.01
+    OBJECTID: 67
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://dcoa.dc.gov/page/commission-aging"

@@ -1,0 +1,34 @@
+id: dc.dc.housing.finance.agency
+record_type: civic_unit
+name: DC Housing Finance Agency
+aliases:
+  - DCHFA
+legal_authority_notes:
+  - § 6-202
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1017
+  AGENCY_NAME: DC Housing Finance Agency
+  SHORT_NAME: Housing Finance Agency
+  ACRONYM: DCHFA
+  BUDGETCODE: HF0
+  LEGISLATION: § 6-202
+  MAYORAL_CLUSTER: Planning and Economic Development
+  BRANCH: Other
+  ADDRESS: 815 Florida Avenue NW
+  TYPE: Agency
+  WEB_URL: "https://www.dchfa.org/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Enterprise and Other Funds
+  OBJECTID: 11
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://www.dchfa.org/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1017
+  source_row_key: "1017"

@@ -1,0 +1,13 @@
+id: pass
+record_type: source
+name: PASS procurement and payment data
+official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer"
+source_type: arcgis_tables
+status: active
+source_refs:
+  - pass.purchase_orders
+  - pass.payments
+  - pass.forecast
+  - pass.contracts
+  - pass.solicitations
+  - pass.solicitation_attachments

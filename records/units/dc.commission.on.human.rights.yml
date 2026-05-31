@@ -1,0 +1,29 @@
+id: dc.commission.on.human.rights
+record_type: civic_unit
+name: Commission on Human Rights
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 2-1404.01
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 73
+  NAME: Commission on Human Rights
+  SHORT_NAME: Commission on Human Rights
+  ACRONYM: null
+  GOVERNING_AGENCY: Office of Human Rights
+  ADDRESS: "441 4th Street NW, Suite 570 "
+  TYPE: Commission
+  WEB_URL: "https://ohr.dc.gov/commission"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 2-1404.01
+  OBJECTID: 73
+  CLUSTER_DC: null
+official_url: "https://ohr.dc.gov/commission"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.73
+  source_row_key: "73"

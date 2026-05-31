@@ -1,0 +1,177 @@
+{
+  "source_id": "pass.solicitation_attachments",
+  "source_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/20",
+  "fetched_at": "2026-05-31T16:46:38.873Z",
+  "status": "success",
+  "content_hash": "sha256:ee61ff682e3bfc741f5d56fa97323d8b76e111f60ad8f941c19169e965e1a5af",
+  "payload": {
+    "source_title": "PASS Solicitations Attachments",
+    "table_name": "government_operations.pass_solicitation_attachments",
+    "metadata": {
+      "currentVersion": 11.5,
+      "cimVersion": "3.5.0",
+      "id": 20,
+      "name": "PASS Solicitations Attachments",
+      "type": "Table",
+      "description": null,
+      "copyrightText": null,
+      "hasAttachments": false,
+      "htmlPopupType": "esriServerHTMLPopupTypeNone",
+      "displayField": "DOCNAME",
+      "typeIdField": null,
+      "subtypeFieldName": null,
+      "subtypeField": null,
+      "defaultSubtypeCode": null,
+      "fields": [
+        {
+          "name": "SOLICITATIONNUM",
+          "type": "esriFieldTypeString",
+          "alias": "SOLICITATIONNUM",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "DOCUMENTNUM",
+          "type": "esriFieldTypeString",
+          "alias": "DOCUMENTNUM",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "DOCUMENTTYPE",
+          "type": "esriFieldTypeString",
+          "alias": "DOCUMENTTYPE",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "DOCNAME",
+          "type": "esriFieldTypeString",
+          "alias": "DOCNAME",
+          "length": 1000,
+          "domain": null
+        },
+        {
+          "name": "DOCSIZE",
+          "type": "esriFieldTypeString",
+          "alias": "DOCSIZE",
+          "length": 20,
+          "domain": null
+        },
+        {
+          "name": "GUID",
+          "type": "esriFieldTypeString",
+          "alias": "GUID",
+          "length": 1000,
+          "domain": null
+        },
+        {
+          "name": "SOURCE",
+          "type": "esriFieldTypeString",
+          "alias": "SOURCE",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "RECEIPTDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "RECEIPTDATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "ACTIVE",
+          "type": "esriFieldTypeSmallInteger",
+          "alias": "ACTIVE",
+          "domain": null
+        },
+        {
+          "name": "REC_CREATED_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "REC_CREATED_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "REC_UPDATED_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "REC_UPDATED_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "DCS_LOAD_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "DCS_LOAD_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "OBJECTID",
+          "type": "esriFieldTypeOID",
+          "alias": "OBJECTID",
+          "domain": null
+        }
+      ],
+      "indexes": null,
+      "subtypes": [],
+      "relationships": [],
+      "capabilities": "Data,Map,Query",
+      "maxRecordCount": 1000,
+      "supportsStatistics": true,
+      "supportsExceedsLimitStatistics": true,
+      "supportsAdvancedQueries": true,
+      "supportedQueryFormats": "JSON, PBF",
+      "isDataVersioned": false,
+      "useStandardizedQueries": true,
+      "advancedQueryCapabilities": {
+        "useStandardizedQueries": true,
+        "supportsStatistics": true,
+        "supportsPercentileStatistics": true,
+        "supportsHavingClause": true,
+        "supportsOrderBy": true,
+        "supportsDistinct": true,
+        "supportsCountDistinct": true,
+        "supportsPagination": true,
+        "supportsTrueCurve": false,
+        "supportsReturningQueryExtent": true,
+        "supportsQueryWithDistance": true,
+        "supportsSqlExpression": true,
+        "supportsTimeRelation": true,
+        "supportsAdvancedQueryRelated": true,
+        "supportsQueryRelatedPagination": true,
+        "supportsSqlFormat": false,
+        "supportsQueryAnalytic": true,
+        "supportsCurrentUserQueries": true
+      },
+      "advancedQueryAnalyticCapabilities": {
+        "supportsLinearRegression": true,
+        "supportsAsync": false,
+        "supportsPercentileAnalytic": true
+      },
+      "dateFieldsTimeReference": {
+        "timeZone": "Eastern Standard Time",
+        "timeZoneIANA": "America/New_York",
+        "respectsDaylightSaving": true
+      },
+      "preferredTimeReference": null,
+      "datesInUnknownTimezone": false,
+      "hasMetadata": true,
+      "isDataArchived": false,
+      "archivingInfo": {
+        "supportsQueryWithHistoricMoment": false,
+        "startArchivingMoment": -1
+      },
+      "uniqueIdInfo": {
+        "type": "simple",
+        "fields": [
+          "OBJECTID"
+        ],
+        "OIDFieldContainsHashValue": false
+      },
+      "maxUniqueIDCount": 100000
+    },
+    "row_count": 704,
+    "row_capture": "metadata_only"
+  }
+}

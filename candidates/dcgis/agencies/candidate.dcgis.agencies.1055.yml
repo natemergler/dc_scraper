@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1055
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.homeland.security.and.emergency.management.agency
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1055"
+generated_at: "2026-05-31T04:39:57.401Z"
+record:
+  id: dc.homeland.security.and.emergency.management.agency
+  record_type: civic_unit
+  name: Homeland Security and Emergency Management Agency
+  aliases:
+    - HSEMA
+  legal_authority_notes:
+    - § 7-2202
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1055
+    AGENCY_NAME: Homeland Security and Emergency Management Agency
+    SHORT_NAME: Homeland Security and Emergency Management Agency
+    ACRONYM: HSEMA
+    BUDGETCODE: BN0
+    LEGISLATION: § 7-2202
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: 2720 Martin Luther King Jr Avenue SE
+    TYPE: Agency
+    WEB_URL: "https://hsema.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 50
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://hsema.dc.gov/"

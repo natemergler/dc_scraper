@@ -1,0 +1,6 @@
+id: boe_maps
+record_type: source
+name: DC Board of Elections maps
+official_url: "https://www.dcboe.org/data%2C-maps%2C-forms/maps"
+source_type: publication_page
+status: active

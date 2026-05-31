@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1144
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.real.property.tax.appeals.commission
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1144"
+generated_at: "2026-05-31T04:39:57.423Z"
+record:
+  id: dc.real.property.tax.appeals.commission
+  record_type: civic_unit
+  name: Real Property Tax Appeals Commission
+  aliases:
+    - RPTAC
+  legal_authority_notes:
+    - § 47-825.01a
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1144
+    AGENCY_NAME: Real Property Tax Appeals Commission
+    SHORT_NAME: Real Property Tax Appeals Commission
+    ACRONYM: RPTAC
+    BUDGETCODE: DA0
+    LEGISLATION: § 47-825.01a
+    MAYORAL_CLUSTER: Planning and Economic Development
+    BRANCH: Other
+    ADDRESS: "441 4th Street NW, Suite 360 North"
+    TYPE: Agency
+    WEB_URL: "https://rptac.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Economic Development and Regulation
+    OBJECTID: 124
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://rptac.dc.gov/"

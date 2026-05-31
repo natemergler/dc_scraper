@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1099
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.unified.communications
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1099"
+generated_at: "2026-05-31T04:39:57.411Z"
+record:
+  id: dc.office.of.unified.communications
+  record_type: civic_unit
+  name: Office of Unified Communications
+  aliases:
+    - OUC
+  legal_authority_notes:
+    - § 1-327.52
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1099
+    AGENCY_NAME: Office of Unified Communications
+    SHORT_NAME: Office of Unified Communications
+    ACRONYM: OUC
+    BUDGETCODE: UC0
+    LEGISLATION: § 1-327.52
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: 2720 Martin Luther King Jr Avenue SE
+    TYPE: Agency
+    WEB_URL: "https://ouc.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 82
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://ouc.dc.gov/"

@@ -1,0 +1,30 @@
+id: dc.commission.on.judicial.disabilities.and.tenure
+record_type: civic_unit
+name: Commission on Judicial Disabilities and Tenure
+aliases:
+  - CJDT
+legal_authority_notes:
+  - D.C. Code § 11-1521
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 74
+  NAME: Commission on Judicial Disabilities and Tenure
+  SHORT_NAME: Commission on Judicial Disabilities and Tenure
+  ACRONYM: CJDT
+  GOVERNING_AGENCY: null
+  ADDRESS: "515 5th Street NW, Suite 246"
+  TYPE: Commission
+  WEB_URL: "https://cjdt.dc.gov/"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 11-1521
+  OBJECTID: 74
+  CLUSTER_DC: null
+official_url: "https://cjdt.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.74
+  source_row_key: "74"

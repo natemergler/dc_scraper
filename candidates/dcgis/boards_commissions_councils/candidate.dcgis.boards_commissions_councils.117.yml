@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.117
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.real.estate.commission
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "117"
+generated_at: "2026-05-31T04:39:57.463Z"
+record:
+  id: dc.real.estate.commission
+  record_type: civic_unit
+  name: Real Estate Commission
+  aliases: []
+  legal_authority_notes:
+    - D.C. Code § 47-2853.06
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 117
+    NAME: Real Estate Commission
+    SHORT_NAME: Real Estate Commission
+    ACRONYM: null
+    GOVERNING_AGENCY: Department of Buildings
+    ADDRESS: null
+    TYPE: Commission
+    WEB_URL: "https://www.dcopla.com/realestate/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 47-2853.06
+    OBJECTID: 117
+    CLUSTER_DC: null
+  official_url: "https://www.dcopla.com/realestate/"

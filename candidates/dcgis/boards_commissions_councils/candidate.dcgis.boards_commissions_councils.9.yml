@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.9
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.interagency.council.on.homelessness.ich
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "9"
+generated_at: "2026-05-31T04:39:57.436Z"
+record:
+  id: dc.interagency.council.on.homelessness.ich
+  record_type: civic_unit
+  name: Interagency Council on Homelessness (ICH)
+  aliases:
+    - ICH
+  legal_authority_notes:
+    - D.C. Code § 4-752.01
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 9
+    NAME: Interagency Council on Homelessness (ICH)
+    SHORT_NAME: Interagency Council on Homelessness (ICH)
+    ACRONYM: ICH
+    GOVERNING_AGENCY: Deputy Mayor for Health and Human Services
+    ADDRESS: "1350 Pennsylvania Avenue NW, Suite 223"
+    TYPE: Council
+    WEB_URL: "https://ich.dc.gov/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 4-752.01
+    OBJECTID: 9
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://ich.dc.gov/"

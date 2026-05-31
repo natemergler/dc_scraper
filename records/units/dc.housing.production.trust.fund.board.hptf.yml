@@ -1,0 +1,30 @@
+id: dc.housing.production.trust.fund.board.hptf
+record_type: civic_unit
+name: Housing Production Trust Fund Board (HPTF)
+aliases:
+  - HPTF
+legal_authority_notes:
+  - D.C. Code § 42-2802.01
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 102
+  NAME: Housing Production Trust Fund Board (HPTF)
+  SHORT_NAME: Housing Production Trust Fund Board (HPTF)
+  ACRONYM: HPTF
+  GOVERNING_AGENCY: Department of Housing and Community Development
+  ADDRESS: 1800 Martin Luther King Jr Avenue SE
+  TYPE: Board
+  WEB_URL: "https://dhcd.dc.gov/page/housing-production-trust-fund-advisory-board"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 42-2802.01
+  OBJECTID: 102
+  CLUSTER_DC: null
+official_url: "https://dhcd.dc.gov/page/housing-production-trust-fund-advisory-board"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.102
+  source_row_key: "102"

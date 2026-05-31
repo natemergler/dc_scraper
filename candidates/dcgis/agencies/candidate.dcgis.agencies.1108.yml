@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1108
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.washington.convention.and.sports.authority
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1108"
+generated_at: "2026-05-31T04:39:57.400Z"
+record:
+  id: dc.washington.convention.and.sports.authority
+  record_type: civic_unit
+  name: Washington Convention and Sports Authority
+  aliases:
+    - EVENTSDC
+  legal_authority_notes:
+    - § 10-1202.02
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1108
+    AGENCY_NAME: Washington Convention and Sports Authority
+    SHORT_NAME: Washington Convention and Sports Authority
+    ACRONYM: EVENTSDC
+    BUDGETCODE: ES0
+    LEGISLATION: § 10-1202.02
+    MAYORAL_CLUSTER: Planning and Economic Development
+    BRANCH: Other
+    ADDRESS: 801 Allen Y. Lew Place NW
+    TYPE: Agency
+    WEB_URL: "https://www.eventsdc.com/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Enterprise and Other Funds
+    OBJECTID: 47
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://www.eventsdc.com/"

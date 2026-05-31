@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1174
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.the.deputy.mayor.for.public.safety.and.justice
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1174"
+generated_at: "2026-05-31T04:39:57.431Z"
+record:
+  id: dc.office.of.the.deputy.mayor.for.public.safety.and.justice
+  record_type: civic_unit
+  name: Office of the Deputy Mayor for Public Safety and Justice
+  aliases:
+    - DMPSJ
+  legal_authority_notes:
+    - § 1-301.191
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1174
+    AGENCY_NAME: Office of the Deputy Mayor for Public Safety and Justice
+    SHORT_NAME: Office of the Deputy Mayor for Public Safety and Justice
+    ACRONYM: DMPSJ
+    BUDGETCODE: FQ0
+    LEGISLATION: § 1-301.191
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: "1350 Pennsylvania Avenue NW, Suite 533"
+    TYPE: Agency
+    WEB_URL: "https://dmpsj.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 153
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://dmpsj.dc.gov/"

@@ -1,0 +1,28 @@
+id: dc.uniform.law.commission.ulc
+record_type: civic_unit
+name: Uniform Law Commission (ULC)
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 3-1431
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 124
+  NAME: Uniform Law Commission (ULC)
+  SHORT_NAME: Uniform Law Commission (ULC)
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Commission
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-1431
+  OBJECTID: 124
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.124
+  source_row_key: "124"

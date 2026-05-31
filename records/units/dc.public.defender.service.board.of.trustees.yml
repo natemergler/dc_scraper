@@ -1,0 +1,28 @@
+id: dc.public.defender.service.board.of.trustees
+record_type: civic_unit
+name: Public Defender Service Board of Trustees
+aliases: []
+legal_authority_notes:
+  - D.C. Code §§2-1601 to 1608
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 134
+  NAME: Public Defender Service Board of Trustees
+  SHORT_NAME: Public Defender Service Board of Trustees
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Board
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: D.C. Code §§2-1601 to 1608
+  OBJECTID: 134
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.134
+  source_row_key: "134"

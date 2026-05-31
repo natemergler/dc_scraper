@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1031
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.department.on.disability.services
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1031"
+generated_at: "2026-05-31T04:39:57.393Z"
+record:
+  id: dc.department.on.disability.services
+  record_type: civic_unit
+  name: Department on Disability Services
+  aliases:
+    - DDS
+  legal_authority_notes:
+    - § 7-761.03
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1031
+    AGENCY_NAME: Department on Disability Services
+    SHORT_NAME: Department on Disability Services
+    ACRONYM: DDS
+    BUDGETCODE: JM0
+    LEGISLATION: § 7-761.03
+    MAYORAL_CLUSTER: Health and Human Services
+    BRANCH: Executive
+    ADDRESS: 250 E Street SW
+    TYPE: Agency
+    WEB_URL: "https://dds.dc.gov/"
+    SOURCE: STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+    OBJECTID: 24
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://dds.dc.gov/"

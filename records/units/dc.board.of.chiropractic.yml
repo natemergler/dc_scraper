@@ -1,0 +1,29 @@
+id: dc.board.of.chiropractic
+record_type: civic_unit
+name: Board of Chiropractic
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 3-1202.16
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 33
+  NAME: Board of Chiropractic
+  SHORT_NAME: Board of Chiropractic
+  ACRONYM: null
+  GOVERNING_AGENCY: DC Health
+  ADDRESS: 899 North Capitol Street NE
+  TYPE: Board
+  WEB_URL: "https://dchealth.dc.gov/service/board-chiropractic"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-1202.16
+  OBJECTID: 33
+  CLUSTER_DC: Health and Human Services
+official_url: "https://dchealth.dc.gov/service/board-chiropractic"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.33
+  source_row_key: "33"

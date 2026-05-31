@@ -1,0 +1,38 @@
+id: candidate.dcgis.agencies.1081
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.policy.and.legislative.affairs
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1081"
+generated_at: "2026-05-31T04:39:57.409Z"
+record:
+  id: dc.office.of.policy.and.legislative.affairs
+  record_type: civic_unit
+  name: Office of Policy and Legislative Affairs
+  aliases:
+    - OPLA
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1081
+    AGENCY_NAME: Office of Policy and Legislative Affairs
+    SHORT_NAME: Office of Policy and Legislative Affairs
+    ACRONYM: OPLA
+    BUDGETCODE: AA0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: null
+    BRANCH: Executive
+    ADDRESS: "1350 Pennsylvania Avenue NW, Suite 324"
+    TYPE: Agency
+    WEB_URL: "https://osa.dc.gov/page/office-policy-and-legislative-affairs"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+    OBJECTID: 74
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://osa.dc.gov/page/office-policy-and-legislative-affairs"

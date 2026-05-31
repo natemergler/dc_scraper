@@ -1,0 +1,22 @@
+{
+  "source_id": "pass.solicitation_attachments",
+  "source_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/20",
+  "captured_at": "2026-05-31T16:46:43.703Z",
+  "kind": "arcgis_metadata",
+  "field_names": [
+    "ACTIVE",
+    "DCS_LOAD_DATE",
+    "DOCNAME",
+    "DOCSIZE",
+    "DOCUMENTNUM",
+    "DOCUMENTTYPE",
+    "GUID",
+    "OBJECTID",
+    "RECEIPTDATE",
+    "REC_CREATED_DATE",
+    "REC_UPDATED_DATE",
+    "SOLICITATIONNUM",
+    "SOURCE"
+  ],
+  "row_count": 704
+}

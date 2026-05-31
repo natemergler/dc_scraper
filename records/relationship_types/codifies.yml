@@ -1,0 +1,7 @@
+id: codifies
+record_type: relationship_type
+name: codifies
+definition: Actor codifies legal or administrative material.
+status: active
+source_refs:
+  - dc_code

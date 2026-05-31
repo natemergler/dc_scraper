@@ -1,0 +1,33 @@
+id: dc.statehood.initiatives.agency
+record_type: civic_unit
+name: Statehood Initiatives Agency
+aliases:
+  - SIA
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1105
+  AGENCY_NAME: Statehood Initiatives Agency
+  SHORT_NAME: Statehood Initiatives Agency
+  ACRONYM: SIA
+  BUDGETCODE: AR0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Governmental Direction and Support
+  BRANCH: Other
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 326"
+  TYPE: Agency
+  WEB_URL: "https://statehood.dc.gov/"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 87
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://statehood.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1105
+  source_row_key: "1105"

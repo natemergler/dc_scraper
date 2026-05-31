@@ -1,0 +1,6 @@
+id: crime_incidents
+record_type: source
+name: Crime incidents
+official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/41"
+source_type: arcgis_metadata_layer
+status: active

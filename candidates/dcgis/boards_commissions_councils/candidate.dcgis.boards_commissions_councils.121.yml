@@ -1,0 +1,33 @@
+id: candidate.dcgis.boards_commissions_councils.121
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.science.advisory.board
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "121"
+generated_at: "2026-05-31T04:39:57.464Z"
+record:
+  id: dc.science.advisory.board
+  record_type: civic_unit
+  name: Science Advisory Board
+  aliases: []
+  legal_authority_notes:
+    - 'D.C. Law 19-18, D.C. Official Code § 5-1501.11/Mayor''s Order 2013-225'
+  unit_kind: board
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 121
+    NAME: Science Advisory Board
+    SHORT_NAME: Science Advisory Board
+    ACRONYM: null
+    GOVERNING_AGENCY: Department of Forensic Sciences
+    ADDRESS: null
+    TYPE: Board
+    WEB_URL: null
+    AUTHORIZING_ORDER_LAW: 'D.C. Law 19-18, D.C. Official Code § 5-1501.11/Mayor''s Order 2013-225'
+    OBJECTID: 121
+    CLUSTER_DC: null

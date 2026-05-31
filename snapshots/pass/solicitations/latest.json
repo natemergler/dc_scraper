@@ -1,0 +1,407 @@
+{
+  "source_id": "pass.solicitations",
+  "source_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/19",
+  "fetched_at": "2026-05-31T16:45:50.573Z",
+  "status": "success",
+  "content_hash": "sha256:51ef3de0299d089f6bcf7e53d51fea71dbb055e686823fee7c0f22dedad778dd",
+  "payload": {
+    "source_title": "PASS Solicitations",
+    "table_name": "government_operations.pass_solicitations",
+    "metadata": {
+      "currentVersion": 11.5,
+      "cimVersion": "3.5.0",
+      "id": 19,
+      "name": "PASS Solicitations",
+      "type": "Table",
+      "description": null,
+      "copyrightText": null,
+      "hasAttachments": false,
+      "htmlPopupType": "esriServerHTMLPopupTypeNone",
+      "displayField": "AGENCY_NAME",
+      "typeIdField": null,
+      "subtypeFieldName": null,
+      "subtypeField": null,
+      "defaultSubtypeCode": null,
+      "fields": [
+        {
+          "name": "AGENCY_ACRONYM",
+          "type": "esriFieldTypeString",
+          "alias": "AGENCY_ACRONYM",
+          "length": 500,
+          "domain": null
+        },
+        {
+          "name": "AGENCY_NAME",
+          "type": "esriFieldTypeString",
+          "alias": "AGENCY_NAME",
+          "length": 3000,
+          "domain": null
+        },
+        {
+          "name": "SOLICITATIONNUMBER",
+          "type": "esriFieldTypeString",
+          "alias": "SOLICITATIONNUMBER",
+          "length": 150,
+          "domain": null
+        },
+        {
+          "name": "SOLICITATIONPROJECTNUMBER",
+          "type": "esriFieldTypeString",
+          "alias": "SOLICITATIONPROJECTNUMBER",
+          "length": 150,
+          "domain": null
+        },
+        {
+          "name": "SOLICITATIONTITLE",
+          "type": "esriFieldTypeString",
+          "alias": "SOLICITATIONTITLE",
+          "length": 4000,
+          "domain": null
+        },
+        {
+          "name": "AGENCYCODE",
+          "type": "esriFieldTypeString",
+          "alias": "AGENCYCODE",
+          "length": 500,
+          "domain": null
+        },
+        {
+          "name": "AGENCYDESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "AGENCYDESCRIPTION",
+          "length": 1000,
+          "domain": null
+        },
+        {
+          "name": "CITYWIDE",
+          "type": "esriFieldTypeString",
+          "alias": "CITYWIDE",
+          "length": 10,
+          "domain": null
+        },
+        {
+          "name": "SUBCONTRACTING_REQ",
+          "type": "esriFieldTypeString",
+          "alias": "SUBCONTRACTING_REQ",
+          "length": 70,
+          "domain": null
+        },
+        {
+          "name": "SOLICITATIONSTATUS",
+          "type": "esriFieldTypeString",
+          "alias": "SOLICITATIONSTATUS",
+          "length": 90,
+          "domain": null
+        },
+        {
+          "name": "DUE_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "DUE_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "NIGPCODE",
+          "type": "esriFieldTypeString",
+          "alias": "NIGPCODE",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "NIGPCODEDESCRIPTION",
+          "type": "esriFieldTypeString",
+          "alias": "NIGPCODEDESCRIPTION",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "MARKETTYPE",
+          "type": "esriFieldTypeString",
+          "alias": "MARKETTYPE",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "WORKSITELOCATION",
+          "type": "esriFieldTypeString",
+          "alias": "WORKSITELOCATION",
+          "length": 2000,
+          "domain": null
+        },
+        {
+          "name": "TYPE",
+          "type": "esriFieldTypeString",
+          "alias": "TYPE",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "PICKUPLOCATION",
+          "type": "esriFieldTypeString",
+          "alias": "PICKUPLOCATION",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "SOLFEE",
+          "type": "esriFieldTypeDouble",
+          "alias": "SOLFEE",
+          "domain": null
+        },
+        {
+          "name": "ISSUANCEDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "ISSUANCEDATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "OPENDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "OPENDATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "CLOSEDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "CLOSEDATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "OWNER",
+          "type": "esriFieldTypeString",
+          "alias": "OWNER",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "OWNERAGENCY",
+          "type": "esriFieldTypeString",
+          "alias": "OWNERAGENCY",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "PHONE",
+          "type": "esriFieldTypeString",
+          "alias": "PHONE",
+          "length": 210,
+          "domain": null
+        },
+        {
+          "name": "FAXNUMBER",
+          "type": "esriFieldTypeString",
+          "alias": "FAXNUMBER",
+          "length": 210,
+          "domain": null
+        },
+        {
+          "name": "EMAIL",
+          "type": "esriFieldTypeString",
+          "alias": "EMAIL",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTINGOFFICER",
+          "type": "esriFieldTypeString",
+          "alias": "CONTRACTINGOFFICER",
+          "length": 765,
+          "domain": null
+        },
+        {
+          "name": "COEMAILADDRESS",
+          "type": "esriFieldTypeString",
+          "alias": "COEMAILADDRESS",
+          "length": 255,
+          "domain": null
+        },
+        {
+          "name": "AWARD_TO",
+          "type": "esriFieldTypeString",
+          "alias": "AWARD_TO",
+          "length": 100,
+          "domain": null
+        },
+        {
+          "name": "AWARD_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "AWARD_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "PROCUREMENTMETHOD",
+          "type": "esriFieldTypeString",
+          "alias": "PROCUREMENTMETHOD",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "CONTRACTTYPE",
+          "type": "esriFieldTypeString",
+          "alias": "CONTRACTTYPE",
+          "length": 300,
+          "domain": null
+        },
+        {
+          "name": "EVENTSTATUS",
+          "type": "esriFieldTypeString",
+          "alias": "EVENTSTATUS",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "EVENTDISPLAYSTATUS",
+          "type": "esriFieldTypeString",
+          "alias": "EVENTDISPLAYSTATUS",
+          "length": 50,
+          "domain": null
+        },
+        {
+          "name": "SOURCE",
+          "type": "esriFieldTypeString",
+          "alias": "SOURCE",
+          "length": 40,
+          "domain": null
+        },
+        {
+          "name": "SYNOPSIS",
+          "type": "esriFieldTypeString",
+          "alias": "SYNOPSIS",
+          "length": 4000,
+          "domain": null
+        },
+        {
+          "name": "PRECONFERENCEDATE",
+          "type": "esriFieldTypeDate",
+          "alias": "PRECONFERENCEDATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "PRECONFERENCELOCATION",
+          "type": "esriFieldTypeString",
+          "alias": "PRECONFERENCELOCATION",
+          "length": 1000,
+          "domain": null
+        },
+        {
+          "name": "FISCALYEAR",
+          "type": "esriFieldTypeString",
+          "alias": "FISCALYEAR",
+          "length": 20,
+          "domain": null
+        },
+        {
+          "name": "REC_CREATE_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "REC_CREATE_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "REC_LASTMODIFIED_DATE",
+          "type": "esriFieldTypeDate",
+          "alias": "REC_LASTMODIFIED_DATE",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "DOCUMENTVERSION",
+          "type": "esriFieldTypeSmallInteger",
+          "alias": "DOCUMENTVERSION",
+          "domain": null
+        },
+        {
+          "name": "OCTO_POSTED",
+          "type": "esriFieldTypeString",
+          "alias": "OCTO_POSTED",
+          "length": 10,
+          "domain": null
+        },
+        {
+          "name": "DCS_REC_CRT_DTTM",
+          "type": "esriFieldTypeDate",
+          "alias": "DCS_REC_CRT_DTTM",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "DCS_LAST_MOD_DTTM",
+          "type": "esriFieldTypeDate",
+          "alias": "DCS_LAST_MOD_DTTM",
+          "length": 8,
+          "domain": null
+        },
+        {
+          "name": "OBJECT_ID",
+          "type": "esriFieldTypeOID",
+          "alias": "OBJECT_ID",
+          "domain": null
+        }
+      ],
+      "indexes": null,
+      "subtypes": [],
+      "relationships": [],
+      "capabilities": "Data,Map,Query",
+      "maxRecordCount": 1000,
+      "supportsStatistics": true,
+      "supportsExceedsLimitStatistics": true,
+      "supportsAdvancedQueries": true,
+      "supportedQueryFormats": "JSON, PBF",
+      "isDataVersioned": false,
+      "useStandardizedQueries": true,
+      "advancedQueryCapabilities": {
+        "useStandardizedQueries": true,
+        "supportsStatistics": true,
+        "supportsPercentileStatistics": true,
+        "supportsHavingClause": true,
+        "supportsOrderBy": true,
+        "supportsDistinct": true,
+        "supportsCountDistinct": true,
+        "supportsPagination": true,
+        "supportsTrueCurve": false,
+        "supportsReturningQueryExtent": true,
+        "supportsQueryWithDistance": true,
+        "supportsSqlExpression": true,
+        "supportsTimeRelation": true,
+        "supportsAdvancedQueryRelated": true,
+        "supportsQueryRelatedPagination": true,
+        "supportsSqlFormat": false,
+        "supportsQueryAnalytic": true,
+        "supportsCurrentUserQueries": true
+      },
+      "advancedQueryAnalyticCapabilities": {
+        "supportsLinearRegression": true,
+        "supportsAsync": false,
+        "supportsPercentileAnalytic": true
+      },
+      "dateFieldsTimeReference": {
+        "timeZone": "Eastern Standard Time",
+        "timeZoneIANA": "America/New_York",
+        "respectsDaylightSaving": true
+      },
+      "preferredTimeReference": null,
+      "datesInUnknownTimezone": false,
+      "hasMetadata": true,
+      "isDataArchived": false,
+      "archivingInfo": {
+        "supportsQueryWithHistoricMoment": false,
+        "startArchivingMoment": -1
+      },
+      "uniqueIdInfo": {
+        "type": "simple",
+        "fields": [
+          "OBJECT_ID"
+        ],
+        "OIDFieldContainsHashValue": false
+      },
+      "maxUniqueIDCount": 100000
+    },
+    "row_count": 24970,
+    "row_capture": "metadata_only"
+  }
+}

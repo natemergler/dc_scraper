@@ -1,0 +1,29 @@
+id: dc.for.hire.vehicle.advisory.council
+record_type: civic_unit
+name: For-Hire Vehicle Advisory Council
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 50-301.10a
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 13
+  NAME: For-Hire Vehicle Advisory Council
+  SHORT_NAME: For-Hire Vehicle Advisory Council
+  ACRONYM: null
+  GOVERNING_AGENCY: Department of For-Hire Vehicles
+  ADDRESS: 2235 Shannon Place SE
+  TYPE: Council
+  WEB_URL: "https://dfhv.dc.gov/page/hire-vehicle-advisory-council"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 50-301.10a
+  OBJECTID: 13
+  CLUSTER_DC: null
+official_url: "https://dfhv.dc.gov/page/hire-vehicle-advisory-council"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.13
+  source_row_key: "13"

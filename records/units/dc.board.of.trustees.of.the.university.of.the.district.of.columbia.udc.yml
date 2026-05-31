@@ -1,0 +1,29 @@
+id: dc.board.of.trustees.of.the.university.of.the.district.of.columbia.udc
+record_type: civic_unit
+name: Board of Trustees of the University of the District of Columbia (UDC)
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 38-1202.06
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 59
+  NAME: Board of Trustees of the University of the District of Columbia (UDC)
+  SHORT_NAME: Board of Trustees of the University of the District of Columbia (UDC)
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: 4200 Connecticut Avenue NW
+  TYPE: Board
+  WEB_URL: "https://www.udc.edu/board-of-trustees/"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 38-1202.06
+  OBJECTID: 59
+  CLUSTER_DC: null
+official_url: "https://www.udc.edu/board-of-trustees/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.59
+  source_row_key: "59"

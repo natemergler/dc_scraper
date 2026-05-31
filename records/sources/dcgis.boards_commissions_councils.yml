@@ -1,0 +1,7 @@
+id: dcgis.boards_commissions_councils
+record_type: source
+name: "District Boards, Commissions, and Councils table"
+official_url: >-
+  https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24
+source_type: arcgis_table
+status: active

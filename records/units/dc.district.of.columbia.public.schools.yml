@@ -1,0 +1,34 @@
+id: dc.district.of.columbia.public.schools
+record_type: civic_unit
+name: District of Columbia Public Schools
+aliases:
+  - DCPS
+legal_authority_notes:
+  - § 39-101
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1050
+  AGENCY_NAME: District of Columbia Public Schools
+  SHORT_NAME: District of Columbia Public Schools
+  ACRONYM: DCPS
+  BUDGETCODE: GA0
+  LEGISLATION: § 39-101
+  MAYORAL_CLUSTER: Education
+  BRANCH: Executive
+  ADDRESS: 1200 First Street NE
+  TYPE: Agency
+  WEB_URL: "https://dcps.dc.gov/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Public Education System
+  OBJECTID: 18
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://dcps.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1050
+  source_row_key: "1050"

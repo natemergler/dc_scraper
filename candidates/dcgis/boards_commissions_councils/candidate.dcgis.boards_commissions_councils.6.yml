@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.6
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.state.rehabilitation.council.src
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "6"
+generated_at: "2026-05-31T04:39:57.435Z"
+record:
+  id: dc.state.rehabilitation.council.src
+  record_type: civic_unit
+  name: State Rehabilitation Council (SRC)
+  aliases:
+    - SRC
+  legal_authority_notes:
+    - Mayor's Order 2001-173
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 6
+    NAME: State Rehabilitation Council (SRC)
+    SHORT_NAME: State Rehabilitation Council (SRC)
+    ACRONYM: SRC
+    GOVERNING_AGENCY: Department on Disability Services
+    ADDRESS: 250 E Street SW
+    TYPE: Council
+    WEB_URL: "https://dds.dc.gov/page/dc-state-rehabilitation-council"
+    AUTHORIZING_ORDER_LAW: Mayor's Order 2001-173
+    OBJECTID: 6
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://dds.dc.gov/page/dc-state-rehabilitation-council"

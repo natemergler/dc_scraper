@@ -1,0 +1,59 @@
+{
+  "source_id": "ocp_transparency_portal",
+  "source_url": "https://contracts.ocp.dc.gov/",
+  "fetched_at": "2026-05-31T16:41:39.313Z",
+  "status": "success",
+  "content_hash": "sha256:e81da146ff3018f303f50b8b757bfccdcc0cae87c489532956d72f8b853b5a77",
+  "payload": {
+    "source_title": "OCP Contracts and Procurement Transparency Portal",
+    "page_title": "Contracts and Procurement Transparency Portal",
+    "fetched_url": "https://contracts.ocp.dc.gov/",
+    "link_count": 1,
+    "asset_count": 9,
+    "manifest_item_count": 10,
+    "links": [
+      {
+        "url": "https://contracts.ocp.dc.gov/faq",
+        "text": "frequently asked questions"
+      }
+    ],
+    "assets": [
+      {
+        "kind": "icon",
+        "url": "https://contracts.ocp.dc.gov/favicon.ico"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/main-es2015.d099986dd73eff10e802.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/main-es5.d099986dd73eff10e802.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/polyfills-es2015.17d4add24d48f612d6f0.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/polyfills-es5.9578a4fa3be0abbf06f5.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/runtime-es2015.dced5ac508778295e5a2.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://contracts.ocp.dc.gov/runtime-es5.dced5ac508778295e5a2.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.googletagmanager.com/gtag/js?id=UA-2638726-1"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://contracts.ocp.dc.gov/styles.a2d1656db197122d12eb.css"
+      }
+    ]
+  }
+}

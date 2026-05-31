@@ -1,0 +1,9 @@
+id: source_discovery_metadata_refresh
+record_type: pipeline
+name: Track source-discovery metadata from the Enterprise Dataset Inventory.
+update_strategy: >-
+  Fetch Enterprise Dataset Inventory metadata and row counts before generating
+  source candidates or deeper source-discovery records.
+status: active
+source_refs:
+  - enterprise_dataset_inventory

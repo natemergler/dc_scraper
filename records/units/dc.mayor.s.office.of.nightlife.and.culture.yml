@@ -1,0 +1,33 @@
+id: dc.mayor.s.office.of.nightlife.and.culture
+record_type: civic_unit
+name: Mayor's Office of Nightlife and Culture
+aliases:
+  - MONC
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1170
+  AGENCY_NAME: Mayor's Office of Nightlife and Culture
+  SHORT_NAME: Mayor's Office of Nightlife and Culture
+  ACRONYM: MONC
+  BUDGETCODE: AA0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Executive
+  BRANCH: Executive
+  ADDRESS: "1350 Pennsylvania Avenue NW, Suite 316"
+  TYPE: Agency
+  WEB_URL: "https://communityaffairs.dc.gov/monc"
+  SOURCE: null
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 149
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://communityaffairs.dc.gov/monc"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1170
+  source_row_key: "1170"

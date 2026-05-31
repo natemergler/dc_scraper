@@ -1,0 +1,9 @@
+id: propertyquest_api_deferred
+record_type: gap
+name: propertyquest api deferred
+description: PropertyQuest is a UI-heavy source; public/bulk API investigation is deferred.
+severity: warning
+release_relevant: true
+status: open
+source_refs:
+  - propertyquest

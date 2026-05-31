@@ -1,0 +1,34 @@
+id: dc.department.of.housing.and.community.development
+record_type: civic_unit
+name: Department of Housing and Community Development
+aliases:
+  - DHCD
+legal_authority_notes:
+  - "DC ST D.I, T.1, Ch. 15, Subch. I, Pt. B, 1975 Plan 3"
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1039
+  AGENCY_NAME: Department of Housing and Community Development
+  SHORT_NAME: Department of Housing and Community Development
+  ACRONYM: DHCD
+  BUDGETCODE: DB0
+  LEGISLATION: "DC ST D.I, T.1, Ch. 15, Subch. I, Pt. B, 1975 Plan 3"
+  MAYORAL_CLUSTER: Planning and Economic Development
+  BRANCH: Executive
+  ADDRESS: 1800 Martin Luther King Jr Avenue SE
+  TYPE: Agency
+  WEB_URL: "https://dhcd.dc.gov/"
+  SOURCE: STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Economic Development and Regulation
+  OBJECTID: 28
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://dhcd.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1039
+  source_row_key: "1039"

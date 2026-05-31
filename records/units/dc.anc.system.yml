@@ -1,0 +1,10 @@
+id: dc.anc.system
+record_type: civic_unit
+name: Advisory Neighborhood Commission system
+unit_kind: anc_system
+operating_layers:
+  - neighborhood_advisory
+status: active
+source_refs:
+  - anc_source
+  - dc_code

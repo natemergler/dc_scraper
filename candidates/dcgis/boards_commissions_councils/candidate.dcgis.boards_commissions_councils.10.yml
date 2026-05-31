@@ -1,0 +1,35 @@
+id: candidate.dcgis.boards_commissions_councils.10
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.statewide.health.coordinating.council.shcc
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "10"
+generated_at: "2026-05-31T04:39:57.436Z"
+record:
+  id: dc.statewide.health.coordinating.council.shcc
+  record_type: civic_unit
+  name: Statewide Health Coordinating Council (SHCC)
+  aliases:
+    - SHCC
+  legal_authority_notes:
+    - D.C. Code § 44-403
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 10
+    NAME: Statewide Health Coordinating Council (SHCC)
+    SHORT_NAME: Statewide Health Coordinating Council (SHCC)
+    ACRONYM: SHCC
+    GOVERNING_AGENCY: Department of Behavioral Health
+    ADDRESS: null
+    TYPE: Council
+    WEB_URL: "https://dbh.dc.gov/"
+    AUTHORIZING_ORDER_LAW: D.C. Code § 44-403
+    OBJECTID: 10
+    CLUSTER_DC: Health and Human Services
+  official_url: "https://dbh.dc.gov/"

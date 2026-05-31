@@ -1,0 +1,41 @@
+id: candidate.dcgis.agencies.1175
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.for.the.deaf.deafblind.and.hard.of.hearing
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1175"
+generated_at: "2026-05-31T04:39:57.431Z"
+record:
+  id: dc.office.for.the.deaf.deafblind.and.hard.of.hearing
+  record_type: civic_unit
+  name: "Office for the Deaf, DeafBlind, and Hard of Hearing"
+  aliases:
+    - ODDHH
+  legal_authority_notes:
+    - REACH Act (D.C. Act 23-521)
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1175
+    AGENCY_NAME: "Office for the Deaf, DeafBlind, and Hard of Hearing"
+    SHORT_NAME: "Office for the Deaf, DeafBlind, and Hard of Hearing"
+    ACRONYM: ODDHH
+    BUDGETCODE: JS0
+    LEGISLATION: REACH Act (D.C. Act 23-521)
+    MAYORAL_CLUSTER: Governmental Direction and Support
+    BRANCH: Executive
+    ADDRESS: "2000 14th Street NW, Suite 101"
+    TYPE: Agency
+    WEB_URL: >-
+      https://communityaffairs.dc.gov/content/mayors-office-deaf-deafblind-and-hard-hearing
+    SOURCE: null
+    OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+    OBJECTID: 154
+    MAYORAL_OR_NOT: Mayoral
+  official_url: >-
+    https://communityaffairs.dc.gov/content/mayors-office-deaf-deafblind-and-hard-hearing

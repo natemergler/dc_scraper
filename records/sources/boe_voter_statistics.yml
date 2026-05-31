@@ -1,0 +1,6 @@
+id: boe_voter_statistics
+record_type: source
+name: DC Board of Elections voter statistics
+official_url: "https://www.dcboe.org/data%2C-maps%2C-forms/voter-registration-statistics"
+source_type: publication_page
+status: active

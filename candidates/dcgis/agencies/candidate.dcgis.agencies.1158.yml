@@ -1,0 +1,39 @@
+id: candidate.dcgis.agencies.1158
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.captive.insurance.agency
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1158"
+generated_at: "2026-05-31T04:39:57.427Z"
+record:
+  id: dc.captive.insurance.agency
+  record_type: civic_unit
+  name: Captive Insurance Agency
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1158
+    AGENCY_NAME: Captive Insurance Agency
+    SHORT_NAME: Captive Insurance Agency
+    ACRONYM: null
+    BUDGETCODE: RJ0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: Governmental Direction and Support
+    BRANCH: Other
+    ADDRESS: null
+    TYPE: Agency
+    WEB_URL: >-
+      https://orm.dc.gov/page/captive-insurance-agency-medical-malpractice-non-profit-health-centers
+    SOURCE: null
+    OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+    OBJECTID: 137
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: >-
+    https://orm.dc.gov/page/captive-insurance-agency-medical-malpractice-non-profit-health-centers

@@ -1,0 +1,27 @@
+id: dc.metropolitan.washington.council.of.governments.board.of.directors.cog
+record_type: civic_unit
+name: Metropolitan Washington Council of Governments Board of Directors (COG)
+aliases: []
+legal_authority_notes: []
+unit_kind: board
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 136
+  NAME: Metropolitan Washington Council of Governments Board of Directors (COG)
+  SHORT_NAME: Metropolitan Washington Council of Governments Board of Directors (COG)
+  ACRONYM: null
+  GOVERNING_AGENCY: null
+  ADDRESS: null
+  TYPE: Board
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: null
+  OBJECTID: 136
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.136
+  source_row_key: "136"

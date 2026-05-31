@@ -1,0 +1,29 @@
+id: dc.food.policy.council
+record_type: civic_unit
+name: Food Policy Council
+aliases: []
+legal_authority_notes:
+  - D.C. Code § 48-312
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 19
+  NAME: Food Policy Council
+  SHORT_NAME: Food Policy Council
+  ACRONYM: null
+  GOVERNING_AGENCY: Office of Planning
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: "https://dcfoodpolicy.org/"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 48-312
+  OBJECTID: 19
+  CLUSTER_DC: null
+official_url: "https://dcfoodpolicy.org/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.19
+  source_row_key: "19"

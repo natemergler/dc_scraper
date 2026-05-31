@@ -1,0 +1,6 @@
+id: pass.forecast
+record_type: source
+name: PASS Forecast
+official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/18"
+source_type: arcgis_metadata_table
+status: active

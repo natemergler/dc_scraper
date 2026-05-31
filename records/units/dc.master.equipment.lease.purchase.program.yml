@@ -1,0 +1,32 @@
+id: dc.master.equipment.lease.purchase.program
+record_type: civic_unit
+name: Master Equipment Lease/Purchase Program
+aliases: []
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1122
+  AGENCY_NAME: Master Equipment Lease/Purchase Program
+  SHORT_NAME: Master Equipment Lease/Purchase Program
+  ACRONYM: null
+  BUDGETCODE: ELO
+  LEGISLATION: null
+  MAYORAL_CLUSTER: null
+  BRANCH: Other
+  ADDRESS: null
+  TYPE: Budgetary
+  WEB_URL: "https://cfo.dc.gov/node/1539586"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Financing and Other
+  OBJECTID: 104
+  MAYORAL_OR_NOT: Non-Mayoral
+official_url: "https://cfo.dc.gov/node/1539586"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1122
+  source_row_key: "1122"

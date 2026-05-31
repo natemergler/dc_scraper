@@ -1,0 +1,30 @@
+id: dc.district.of.columbia.sentencing.commission
+record_type: civic_unit
+name: District of Columbia Sentencing Commission
+aliases:
+  - SCDC
+legal_authority_notes:
+  - D.C. Code § 3-101
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 90
+  NAME: District of Columbia Sentencing Commission
+  SHORT_NAME: District of Columbia Sentencing Commission
+  ACRONYM: SCDC
+  GOVERNING_AGENCY: District of Columbia Sentencing Commission
+  ADDRESS: "441 4th Street NW, Suite #430"
+  TYPE: Commission
+  WEB_URL: "https://scdc.dc.gov/"
+  AUTHORIZING_ORDER_LAW: D.C. Code § 3-101
+  OBJECTID: 90
+  CLUSTER_DC: null
+official_url: "https://scdc.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.90
+  source_row_key: "90"

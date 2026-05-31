@@ -1,0 +1,37 @@
+id: candidate.dcgis.agencies.1136
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.certificates.of.participation
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1136"
+generated_at: "2026-05-31T04:39:57.413Z"
+record:
+  id: dc.certificates.of.participation
+  record_type: civic_unit
+  name: Certificates of Participation
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1136
+    AGENCY_NAME: Certificates of Participation
+    SHORT_NAME: Certificates of Participation
+    ACRONYM: null
+    BUDGETCODE: CP0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: null
+    BRANCH: Other
+    ADDRESS: null
+    TYPE: Budgetary
+    WEB_URL: "https://app.cfo.dc.gov/budget/budget/pdf/cp.pdf"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Financing and Other
+    OBJECTID: 90
+    MAYORAL_OR_NOT: Non-Mayoral
+  official_url: "https://app.cfo.dc.gov/budget/budget/pdf/cp.pdf"

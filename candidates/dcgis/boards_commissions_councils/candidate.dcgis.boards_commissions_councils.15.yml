@@ -1,0 +1,33 @@
+id: candidate.dcgis.boards_commissions_councils.15
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.green.buildings.advisory.council
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "15"
+generated_at: "2026-05-31T04:39:57.438Z"
+record:
+  id: dc.green.buildings.advisory.council
+  record_type: civic_unit
+  name: Green Buildings Advisory Council
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: council
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 15
+    NAME: Green Buildings Advisory Council
+    SHORT_NAME: Green Buildings Advisory Council
+    ACRONYM: null
+    GOVERNING_AGENCY: null
+    ADDRESS: null
+    TYPE: Council
+    WEB_URL: "https://doee.dc.gov/publication/green-building-advisory-council"
+    AUTHORIZING_ORDER_LAW: null
+    OBJECTID: 15
+    CLUSTER_DC: null
+  official_url: "https://doee.dc.gov/publication/green-building-advisory-council"

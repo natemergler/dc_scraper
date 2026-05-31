@@ -1,0 +1,43 @@
+id: candidate.dcgis.agencies.1155
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.office.of.neighborhood.safety.and.engagement
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1155"
+generated_at: "2026-05-31T04:39:57.425Z"
+record:
+  id: dc.office.of.neighborhood.safety.and.engagement
+  record_type: civic_unit
+  name: Office of Neighborhood Safety and Engagement
+  aliases:
+    - ONSE
+  legal_authority_notes:
+    - >-
+        § 7–2411 -
+        https://code.dccouncil.gov/us/dc/council/code/titles/7/chapters/24A
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1155
+    AGENCY_NAME: Office of Neighborhood Safety and Engagement
+    SHORT_NAME: Office of Neighborhood Safety and Engagement
+    ACRONYM: ONSE
+    BUDGETCODE: NS0
+    LEGISLATION: >-
+      § 7–2411 -
+      https://code.dccouncil.gov/us/dc/council/code/titles/7/chapters/24A
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: 100 42nd Street NE
+    TYPE: Agency
+    WEB_URL: "https://onse.dc.gov/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 134
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://onse.dc.gov/"

@@ -1,0 +1,34 @@
+id: candidate.dcgis.boards_commissions_councils.81
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.commission.on.the.martin.luther.king.jr.holiday
+source_family: dcgis
+source_table: government_operations.boards_commissions_councils
+source_row_key: "81"
+generated_at: "2026-05-31T04:39:57.453Z"
+record:
+  id: dc.commission.on.the.martin.luther.king.jr.holiday
+  record_type: civic_unit
+  name: "Commission on the Martin Luther King, Jr. Holiday"
+  aliases: []
+  legal_authority_notes:
+    - Mayor's Order 2013-243
+  unit_kind: commission
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.boards_commissions_councils
+  source_context:
+    ENTITY_ID: 81
+    NAME: "Commission on the Martin Luther King, Jr. Holiday"
+    SHORT_NAME: "Commission on the Martin Luther King, Jr. Holiday"
+    ACRONYM: null
+    GOVERNING_AGENCY: Office of the Secretary
+    ADDRESS: null
+    TYPE: Commission
+    WEB_URL: "https://os.dc.gov/page/commission-martin-luther-king-jr-holiday"
+    AUTHORIZING_ORDER_LAW: Mayor's Order 2013-243
+    OBJECTID: 81
+    CLUSTER_DC: null
+  official_url: "https://os.dc.gov/page/commission-martin-luther-king-jr-holiday"

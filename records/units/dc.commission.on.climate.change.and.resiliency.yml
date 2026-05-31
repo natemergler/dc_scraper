@@ -1,0 +1,29 @@
+id: dc.commission.on.climate.change.and.resiliency
+record_type: civic_unit
+name: Commission on Climate Change and Resiliency
+aliases: []
+legal_authority_notes:
+  - Mayor's Orders 2017-314
+unit_kind: commission
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 69
+  NAME: Commission on Climate Change and Resiliency
+  SHORT_NAME: Commission on Climate Change and Resiliency
+  ACRONYM: null
+  GOVERNING_AGENCY: Office of the City Administrator
+  ADDRESS: null
+  TYPE: Commission
+  WEB_URL: "https://doee.dc.gov/publication/commission-climate-change-and-resiliency"
+  AUTHORIZING_ORDER_LAW: Mayor's Orders 2017-314
+  OBJECTID: 69
+  CLUSTER_DC: null
+official_url: "https://doee.dc.gov/publication/commission-climate-change-and-resiliency"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.69
+  source_row_key: "69"

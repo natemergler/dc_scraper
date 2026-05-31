@@ -1,0 +1,36 @@
+id: candidate.dcgis.agencies.1164
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.unnamed.1164
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1164"
+generated_at: "2026-05-31T04:39:57.428Z"
+record:
+  id: dc.unnamed.1164
+  record_type: civic_unit
+  name: Unnamed 1164
+  aliases: []
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1164
+    AGENCY_NAME: null
+    SHORT_NAME: Not-For-Profit Hospital Corporation Subsidy
+    ACRONYM: null
+    BUDGETCODE: HX0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: null
+    BRANCH: Other
+    ADDRESS: null
+    TYPE: Budgetary
+    WEB_URL: null
+    SOURCE: null
+    OBP_BFA_APPROPRIATION_TITLE: Human Support Services
+    OBJECTID: 143
+    MAYORAL_OR_NOT: Non-Mayoral

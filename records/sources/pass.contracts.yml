@@ -1,0 +1,6 @@
+id: pass.contracts
+record_type: source
+name: PASS Contracts
+official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/37"
+source_type: arcgis_metadata_table
+status: active

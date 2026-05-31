@@ -1,0 +1,28 @@
+id: dc.developmental.disabilities.state.planning.council.dd.council
+record_type: civic_unit
+name: Developmental Disabilities State Planning Council (DD Council)
+aliases: []
+legal_authority_notes:
+  - Mayor's Order 2009-165
+unit_kind: council
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.boards_commissions_councils
+source_context:
+  ENTITY_ID: 4
+  NAME: Developmental Disabilities State Planning Council (DD Council)
+  SHORT_NAME: Developmental Disabilities State Planning Council (DD Council)
+  ACRONYM: null
+  GOVERNING_AGENCY: Office of Disability Rights
+  ADDRESS: null
+  TYPE: Council
+  WEB_URL: null
+  AUTHORIZING_ORDER_LAW: Mayor's Order 2009-165
+  OBJECTID: 4
+  CLUSTER_DC: null
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.boards_commissions_councils.4
+  source_row_key: "4"

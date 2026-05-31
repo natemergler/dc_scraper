@@ -1,0 +1,38 @@
+id: candidate.dcgis.agencies.1066
+record_type: candidate
+proposed_record_type: civic_unit
+proposed_record_id: dc.mayor.s.office.on.returning.citizen.affairs
+source_family: dcgis
+source_table: government_operations.agencies
+source_row_key: "1066"
+generated_at: "2026-05-31T04:39:57.410Z"
+record:
+  id: dc.mayor.s.office.on.returning.citizen.affairs
+  record_type: civic_unit
+  name: Mayor's Office on Returning Citizen Affairs
+  aliases:
+    - MORCA
+  legal_authority_notes: []
+  unit_kind: agency
+  operating_layers:
+    - municipal
+  status: needs_review
+  source_refs:
+    - dcgis.agencies
+  source_context:
+    AGENCY_ID: 1066
+    AGENCY_NAME: Mayor's Office on Returning Citizen Affairs
+    SHORT_NAME: Mayor's Office on Returning Citizen Affairs
+    ACRONYM: MORCA
+    BUDGETCODE: AA0
+    LEGISLATION: null
+    MAYORAL_CLUSTER: Public Safety and Justice
+    BRANCH: Executive
+    ADDRESS: "2100 Martin Luther King Jr Avenue SE, Suite 100"
+    TYPE: Agency
+    WEB_URL: "https://orca.dc.gov/"
+    SOURCE: NON-STATUTORY
+    OBP_BFA_APPROPRIATION_TITLE: Public Safety and Justice
+    OBJECTID: 76
+    MAYORAL_OR_NOT: Mayoral
+  official_url: "https://orca.dc.gov/"

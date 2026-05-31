@@ -1,0 +1,33 @@
+id: dc.mayor.s.office.of.talent.and.appointments
+record_type: civic_unit
+name: Mayor's Office of Talent and Appointments
+aliases:
+  - MOTA
+legal_authority_notes: []
+unit_kind: agency
+operating_layers:
+  - municipal
+status: needs_review
+source_refs:
+  - dcgis.agencies
+source_context:
+  AGENCY_ID: 1147
+  AGENCY_NAME: Mayor's Office of Talent and Appointments
+  SHORT_NAME: Mayor's Office of Talent and Appointments
+  ACRONYM: MOTA
+  BUDGETCODE: AA0
+  LEGISLATION: null
+  MAYORAL_CLUSTER: Executive
+  BRANCH: Executive
+  ADDRESS: "1350 Pennsylvania Avenue NW, 6th Floor"
+  TYPE: Agency
+  WEB_URL: "https://mota.dc.gov/"
+  SOURCE: NON-STATUTORY
+  OBP_BFA_APPROPRIATION_TITLE: Governmental Direction and Support
+  OBJECTID: 126
+  MAYORAL_OR_NOT: Mayoral
+official_url: "https://mota.dc.gov/"
+record_origin: generated_curated
+derived_from:
+  candidate_id: candidate.dcgis.agencies.1147
+  source_row_key: "1147"

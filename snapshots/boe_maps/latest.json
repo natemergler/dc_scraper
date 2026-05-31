@@ -1,0 +1,1795 @@
+{
+  "source_id": "boe_maps",
+  "source_url": "https://www.dcboe.org/data%2C-maps%2C-forms/maps",
+  "fetched_at": "2026-05-31T16:41:41.355Z",
+  "status": "success",
+  "content_hash": "sha256:c425f24c2cc3ae8c6daaecee0cc4b0435957216c65a89c2950661b7300dfe43c",
+  "payload": {
+    "source_title": "DC Board of Elections maps",
+    "page_title": "Maps | District of Columbia Board of Elections",
+    "fetched_url": "https://www.dcboe.org/data%2C-maps%2C-forms/maps",
+    "link_count": 433,
+    "asset_count": 11,
+    "manifest_item_count": 444,
+    "links": [
+      {
+        "url": "https://apps.dcboe.org/VRS",
+        "text": "Check your Voter Registration Status"
+      },
+      {
+        "url": "https://earlyvoting.dcboe.org/",
+        "text": "Early Vote Centers"
+      },
+      {
+        "url": "https://electionresults.dcboe.org/",
+        "text": "Election Results"
+      },
+      {
+        "url": "https://twitter.com/Vote4DC",
+        "text": ""
+      },
+      {
+        "url": "https://vr.dcboe.org/230363516728053",
+        "text": "this form"
+      },
+      {
+        "url": "https://www.dcboe.org/",
+        "text": "District of Columbia"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/about-the-board/about-the-board",
+        "text": "About the Board"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/careers/careers",
+        "text": "Careers"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/meetings-and-hearings/notices,-agendas,-and-minutes",
+        "text": "Notices, Agendas, and Minutes"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/office-of-the-general-counsel/administrative-orders",
+        "text": "Administrative Orders"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/office-of-the-general-counsel/advisory-opinions",
+        "text": "Advisory Opinions"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/office-of-the-general-counsel/d-c-hava-plan",
+        "text": "D.C. HAVA Plan"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/office-of-the-general-counsel/election-laws-and-regulations",
+        "text": "Election Laws and Regulations"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/office-of-the-general-counsel/rulemaking",
+        "text": "Rulemaking"
+      },
+      {
+        "url": "https://www.dcboe.org/about-us/the-nvra/the-national-voter-registration-act-of-1993-(nvra)",
+        "text": "Resources for Voter Registration Agencies"
+      },
+      {
+        "url": "https://www.dcboe.org/Accessibility",
+        "text": "Accessibility"
+      },
+      {
+        "url": "https://www.dcboe.org/ballot-measures/current-measures",
+        "text": "Current Measures"
+      },
+      {
+        "url": "https://www.dcboe.org/ballot-measures/initiative-measures-referenda",
+        "text": "Initiative Measures & Referenda"
+      },
+      {
+        "url": "https://www.dcboe.org/ballot-measures/recall-process",
+        "text": "Recall Process"
+      },
+      {
+        "url": "https://www.dcboe.org/ballot-measures/related-documents",
+        "text": "Related Documents"
+      },
+      {
+        "url": "https://www.dcboe.org/Best-Viewed",
+        "text": "Best Viewed"
+      },
+      {
+        "url": "https://www.dcboe.org/candidates/anc-advisory-neighborhood-commissioners",
+        "text": "ANC - Advisory Neighborhood Commissioners"
+      },
+      {
+        "url": "https://www.dcboe.org/candidates/campaign-finance",
+        "text": "Campaign Finance"
+      },
+      {
+        "url": "https://www.dcboe.org/candidates/candidate-ballot-access-information",
+        "text": "Candidate Ballot Access Information"
+      },
+      {
+        "url": "https://www.dcboe.org/candidates/petition-challenge-process",
+        "text": "Petition Challenge Process"
+      },
+      {
+        "url": "https://www.dcboe.org/community-outreach/get-involved",
+        "text": "Get Involved"
+      },
+      {
+        "url": "https://www.dcboe.org/community-outreach/media",
+        "text": "Media"
+      },
+      {
+        "url": "https://www.dcboe.org/contact",
+        "text": "Contact"
+      },
+      {
+        "url": "https://www.dcboe.org/data-breach",
+        "text": "Data Breach"
+      },
+      {
+        "url": "https://www.dcboe.org/data,-maps,-forms/forms-and-resources",
+        "text": "Forms and Resources"
+      },
+      {
+        "url": "https://www.dcboe.org/data,-maps,-forms/maps",
+        "text": "Maps"
+      },
+      {
+        "url": "https://www.dcboe.org/data,-maps,-forms/voter-registration-list-maintenance",
+        "text": "Voter Registration List Maintenance"
+      },
+      {
+        "url": "https://www.dcboe.org/data,-maps,-forms/voter-registration-statistics",
+        "text": "Voter Registration Statistics"
+      },
+      {
+        "url": "https://www.dcboe.org/election-workers/election-worker-applications",
+        "text": "Election Worker Applications"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/2024-elections",
+        "text": "2024 Elections"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/2026-elections",
+        "text": "2026 Elections"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/current-elected-officials",
+        "text": "Current Elected Officials"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/election-results-archives",
+        "text": "Election Results Archives"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/election-security-voting-equipment",
+        "text": "Election Security & Voting Equipment"
+      },
+      {
+        "url": "https://www.dcboe.org/elections/ward_8_special_election",
+        "text": "2025 Ward 8 Special Election"
+      },
+      {
+        "url": "https://www.dcboe.org/events",
+        "text": "Events Calendar"
+      },
+      {
+        "url": "https://www.dcboe.org/faqs/accessible-voting-and-language-access",
+        "text": "Accessible Voting And Language Access FAQs"
+      },
+      {
+        "url": "https://www.dcboe.org/faqs/community-outreach",
+        "text": "FAQs"
+      },
+      {
+        "url": "https://www.dcboe.org/faqs/election-workers",
+        "text": "Election Workers FAQs"
+      },
+      {
+        "url": "https://www.dcboe.org/faqs/voter-registration",
+        "text": "FAQS"
+      },
+      {
+        "url": "https://www.dcboe.org/Feedback",
+        "text": "Submit Feedback"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/00567add-4917-4b58-baa5-43bb536e1971/3C02-2023.pdf",
+        "text": "3C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/01f8cbee-11f2-45cf-9c2f-ab3d3ee6caa6/1_Ward_ANC_23.pdf",
+        "text": "WARD 1"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/035842f1-0270-482e-8b1c-7b5189149dd1/3C03-2023.pdf",
+        "text": "3C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/03A3D9A4-AC39-4A5B-8FE9-A6C5B7EBF43A/6C06-2023.pdf",
+        "text": "6C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/04e703f9-7748-4076-92ec-f7d65e3bb16a/1E04-2023.pdf",
+        "text": "1E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0554B0C7-9918-4AF5-904A-5F5CBDB015EA/8E07-2023.pdf",
+        "text": "8E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0570af06-0c06-4317-88d0-c8d49e07b84f/2G06-2023.pdf",
+        "text": "2G06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/05af280d-36e3-405f-8202-1c8217943f07/4E05-2023.pdf",
+        "text": "4E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0693226E-1B0C-43CA-93AF-F099AB0B40FB/7D02-2023.pdf",
+        "text": "7D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/072ab791-d748-4209-978b-274ec4876ada/3C08-2023.pdf",
+        "text": "3C08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0739FB46-2614-4294-87AD-0129203A67F8/8D03-2023.pdf",
+        "text": "8D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/08025A7D-2BE7-4E36-AECD-03CF9370C4A3/8B03-2023.pdf",
+        "text": "8B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0a88f756-517a-4a51-a348-6ca6fbca72fc/3B02-2023.pdf",
+        "text": "3B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0B3C345F-0A42-424C-BB6F-E26DB51C4B7E/6_8F05-2023.pdf",
+        "text": "6/8F05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0b620a95-cb37-469c-a23f-551dcc585ca9/2A03-2023.pdf",
+        "text": "2A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0bf5be4b-a2ad-4ccc-b915-a81b85a28d04/2F07-2023.pdf",
+        "text": "2F07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0CA04E60-F04B-4555-A918-F1172BE06735/8E03-2023.pdf",
+        "text": "8E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0D0D9D93-94BD-4587-BB67-A53D6B604C89/6A04-2023.pdf",
+        "text": "6A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0d2b9cd6-5dcd-4953-bf84-ff5fafd0c572/Ward5_ANCSMD2023_Map.pdf",
+        "text": "Ward 5 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0d357857-54a2-45fe-b676-c2d2be1477d5/5B07-2023.pdf",
+        "text": "5B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0D57DAD3-B57E-49E7-B7FA-F1A9564151E6/6_8F01-2023.pdf",
+        "text": "6/8F01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0E0F76D5-684F-449B-ADE5-477431CC519A/6_8F03-2023.pdf",
+        "text": "6/8F03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0f11f104-9960-4c70-99fe-116b93f17506/5F02-2023.pdf",
+        "text": "5F02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/0f8d0919-9f83-4a83-87e1-00b71783a8fa/5D09-2023.pdf",
+        "text": "5D09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/10a43e0f-6c8b-4676-a632-dfbddbe1ab65/1C04-2023.pdf",
+        "text": "1C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/11443FA1-E654-4390-8A75-3D5DE5DE9B68/6D04-2023.pdf",
+        "text": "6D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/117951c9-be85-4951-af6a-07efa74fdfa9/5F01-2023.pdf",
+        "text": "5F01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1194e61a-4344-461b-b763-1ab3449a6bb8/5A02-2023.pdf",
+        "text": "5A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/11AE96A7-EEE9-42D7-84AA-2841ED945240/7F04-2023.pdf",
+        "text": "7F04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/125d921d-ca75-41c1-8095-e4f08e9a5ea1/2C01-2023.pdf",
+        "text": "2C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/12af7988-4e70-4749-90f8-0a9d0ebc05da/4D04-2023.pdf",
+        "text": "4D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/12DE402E-AF21-4511-9C5B-BEBA9CBB5617/6D03-2023.pdf",
+        "text": "6D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/132470FB-0387-4C7E-9AF4-56F029A0C8C9/6B05-2023.pdf",
+        "text": "6B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/138D1D18-2A5B-4B62-8EA1-681A393DA7CE/6D08-2023-05192023.pdf",
+        "text": "6D08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/13bdd565-1301-4453-9866-1cf2e6837ca6/3E03-2023.pdf",
+        "text": "3E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/13EC2D80-DB16-4BB8-93FA-59F1289069D6/6D02-2023-05192023.pdf",
+        "text": "6D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1487b2de-49fc-4c05-b719-f2f5117cb49c/3F05-2023.pdf",
+        "text": "3F05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1509f2ff-cc3b-4237-93ad-67b5d3619aa6/1A08-2023.pdf",
+        "text": "1A08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/15FA950F-34F2-4CC9-8C87-89A0A4ECDE6C/8E06-2023.pdf",
+        "text": "8E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/16709163-9c9e-470e-b42a-31a12f53f9b6/1D06-2023.pdf",
+        "text": "1D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/18f0ee39-f4d7-49a9-ab55-73da9a855f17/4B01-2023.pdf",
+        "text": "4B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1A24D7DE-51A5-4465-A5AC-A54B403B2063/6E09-2023.pdf",
+        "text": "6E09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1a3b02d3-27f7-4823-8896-119e056d5568/1E02-2023.pdf",
+        "text": "1E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1b66e0ee-b82c-447a-8b4d-93d1b3076f29/5D02-2023.pdf",
+        "text": "5D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1be5d9df-468f-4119-acd4-11ea2e42dc2b/3A02-2023.pdf",
+        "text": "3A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1bec201a-2900-4922-b510-ed8abd3198c1/5D01-2023.pdf",
+        "text": "5D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1C2E58D4-8D68-4F12-8AF0-DB70216C69E3/7F08-2023.pdf",
+        "text": "7F08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1ccd125b-cc37-4381-8141-69688823d806/5E03-2023.pdf",
+        "text": "5E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1d1a8ce0-3060-43a6-99eb-b2b16da60029/3E05-2023.pdf",
+        "text": "3E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1D7E6067-7096-457A-877F-1A30D076BCEF/7C09-2023.pdf",
+        "text": "7C09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1DB939CD-C2BF-4C41-BA02-CA442E3D8DF7/6B06-2023.pdf",
+        "text": "6B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1f4d1c7c-3b37-41a3-8f00-0c97e99b5ae9/5C07-2023.pdf",
+        "text": "5C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1F4E1B0D-E63F-4B69-90F2-9178296AFCC4/7F01-2023.pdf",
+        "text": "7F01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1F56D3AF-1C53-4A8C-91DE-99FF2495381E/8A01-2023.pdf",
+        "text": "8A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/1FC27A85-5328-4DB8-8236-CEBC2FD6C57E/7D01-2023.pdf",
+        "text": "7D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/203b2d60-e02e-4860-8d61-0329c6e8945b/1E01-2023.pdf",
+        "text": "1E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/210A95E6-B847-4150-A88C-B832C99CD74F/8C08-2023.pdf",
+        "text": "8C08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/213f74d6-c8ab-4c1b-b8e5-414ae1683596/3C06-2023.pdf",
+        "text": "3C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/218A784F-3009-4222-8E21-A0FBB3533E02/8E04-2023.pdf",
+        "text": "8E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/219e5c65-4950-4e7e-8558-d6059bbf9a10/2B07-2023.pdf",
+        "text": "2B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/22A83D44-0CEF-469E-A564-D83761F5F4E1/7D08-2023.pdf",
+        "text": "7D08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/231288be-cf46-4a6c-bb84-0d7119b893d2/5C03-2023.pdf",
+        "text": "5C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/24449218-6443-4391-B636-9898490A6E16/8E01-2023.pdf",
+        "text": "8E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/248be73f-db2a-43ae-8176-69af9750b1dc/5D03-2023.pdf",
+        "text": "5D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/24B48A83-9BBA-443C-A202-D6D9348E5B56/8E02-2023.pdf",
+        "text": "8E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/256e1391-b6e8-4f1c-bae3-79c10dd8c6b5/2E08-2023.pdf",
+        "text": "2E08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/261bde0c-4075-47a2-a4fb-76121fd67067/1E07-2023.pdf",
+        "text": "1E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/26f135b2-704d-473a-af3c-87fcd8955475/1D02-2023.pdf",
+        "text": "1D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/271BF4DD-3ACE-4B81-BA6A-E10ECFBD9EB1/6D06-2023.pdf",
+        "text": "6D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/271ee2b4-73fb-40fc-81f5-50438c92bd57/4E06-2023.pdf",
+        "text": "4E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/27246a53-ce8f-4d93-bedb-5156b23e4f47/2G02-2023.pdf",
+        "text": "2G02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/27826EB3-7008-47F3-890E-7673E1915435/8B01-2023.pdf",
+        "text": "8B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/285b319d-ad53-4487-8f86-c572e320740d/1E05-2023.pdf",
+        "text": "1E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/28f7bdf0-8109-4baa-a1c0-ed8eb264cee3/4D01-2023.pdf",
+        "text": "4D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/296BC827-6150-42B1-AD3F-BD539997DEE7/8B02-2023.pdf",
+        "text": "8B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/29dfc973-4ab2-412f-9221-6af7e64dd47a/2A02-2023.pdf",
+        "text": "2A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/2C5C7501-87C8-46D8-BF9E-996676EDBCB4/7C08-2023.pdf",
+        "text": "7C08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/2D58FEC7-727D-49DE-B263-36EA5C5C04E3/6D01-2023.pdf",
+        "text": "6D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/2ed30080-3754-49d1-ada0-7b7206bbcc7c/3E04-2023.pdf",
+        "text": "3E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/2f3bb52c-1747-4b66-ab10-8dc9d8670bda/3E01-2023.pdf",
+        "text": "3E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3051C7DB-9B4F-4C0C-8A97-012896448D1B/7D09-2023.pdf",
+        "text": "7D09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/30837299-303f-464a-bc0d-c067ab830a4b/4B06-2023.pdf",
+        "text": "4B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/31e9edf4-5dfa-42d1-83d1-88fe1dd1401d/1A10-2023.pdf",
+        "text": "1A10"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/31f0fbf5-ef80-4d6b-9900-f0f99e277233/8B06-2023.pdf",
+        "text": "8B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/32419fae-c180-4777-a4d6-bccfd6d0ee02/4A03-2023.pdf",
+        "text": "4A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/33dd06fd-9139-4336-9154-343ddaf1a29b/6B03-2023.pdf",
+        "text": "6B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/347098BB-BDD4-4D4C-8DAC-0092EE19C8BA/8C01-2023.pdf",
+        "text": "8C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/34ca1554-67a9-4d9a-89c4-6851aea96fdc/4D08-2023.pdf",
+        "text": "4D08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/368d09ab-2ad3-4cd9-a48c-46d89a04fb2c/4E02-2023.pdf",
+        "text": "4E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/36c7947b-31c3-49b7-ae11-872eb556f333/1B04-2023.pdf",
+        "text": "1B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/394e0e92-12db-45e7-b2b7-8f8611f68b96/4B04-2023.pdf",
+        "text": "4B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/396F60C6-1105-48C6-96AE-128CE1319952/7C06-2023.pdf",
+        "text": "7C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3988D188-5DF4-4615-BE4C-BB59C4BEB079/8B05-2023.pdf",
+        "text": "8B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/39c2c1fa-e169-417b-ab21-cd04041448e2/4C04-2023.pdf",
+        "text": "4C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/39c577f7-3033-492b-a6e2-13eeca316625/4E01-2023.pdf",
+        "text": "4E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3a931e31-69f3-4ea0-a576-f5059d13c150/2A05-2023.pdf",
+        "text": "2A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3bb5744c-c550-4c9a-af9a-ed9a98a74fb0/5D06-2023.pdf",
+        "text": "5D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3c70fc7e-0a24-4c27-8d1f-6bac29d513b6/2D02-2023.pdf",
+        "text": "2D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3C71F9F9-52CA-4F8E-AC10-F5AF2642D654/7E05-2023.pdf",
+        "text": "7E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3caf8767-ad2d-4fd9-822f-c31c97714f08/2E07-2023.pdf",
+        "text": "2E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3e78fc99-bf42-4df1-a5e1-58f416d35cc2/2B03-2023.pdf",
+        "text": "2B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3EAFA21D-CDBD-4BC6-A27F-3E117786A892/8D06-2023.pdf",
+        "text": "8D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3ECAF31D-287F-4C55-B734-D0A8D25A4537/6C05-2023.pdf",
+        "text": "6C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/3fd3f2f5-4232-41b1-9950-05dd088886e0/4D03-2023.pdf",
+        "text": "4D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/40965b55-20e0-4f9b-b93a-1aa0c0860c71/4C06-2023.pdf",
+        "text": "4C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4129e5fe-0420-4bbd-86e1-dfa6c7f01b84/5C01-2023.pdf",
+        "text": "5C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/41680D38-BEDB-421F-90A8-76523F26EAE6/8B04-2023.pdf",
+        "text": "8B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/41f65321-3aa7-4f54-ac54-66a294e8bd04/2F01-2023.pdf",
+        "text": "2F01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/437e9d31-5e35-4669-8951-fd2c43841830/1C08-2023.pdf",
+        "text": "1C08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/43a63667-76f4-4e22-91ba-fa854d13c74c/3D04-2023.pdf",
+        "text": "3D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/43d7e5d9-38f4-4467-8714-4d0a1d049396/Ward2_ANCSMD2023_Map.pdf",
+        "text": "Ward 2 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4494514E-3805-4C86-BA7D-EB0ABBA019EB/6A07-2023.pdf",
+        "text": "6A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/44b9cd94-f7d8-4deb-acbe-caabb0ac10d7/3D01-2023.pdf",
+        "text": "3D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/454475CF-B9AA-4AE0-A31E-C395F70DC432/8D08-2023.pdf",
+        "text": "8D08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/45790B13-BF54-4164-81E4-E5DC98F794DC/7E04-2023.pdf",
+        "text": "7E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/463c3ade-ff8c-452b-931d-dae9829be978/3A04-2023.pdf",
+        "text": "3A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/46a78388-aa3c-4a9a-9ecc-95bdd79d5254/3_4G06-2023.pdf",
+        "text": "3/4G06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/46DECA50-E4E5-4D96-81EE-7FB90BE62F3A/6B04-2023.pdf",
+        "text": "6B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/471aba3d-a396-41b0-8fc3-c5d9b390c759/4B03-2023.pdf",
+        "text": "4B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/472960A9-1D60-48D6-A9CE-D15EBA4B6C90/8C07-2023.pdf",
+        "text": "8C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4950e6b0-b7c9-4dae-ae0e-f561029480f2/1D03-2023.pdf",
+        "text": "1D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/49ce3fb1-59d2-4259-8f39-b28317b80683/2B01-2023.pdf",
+        "text": "2B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4A5AED3E-6383-4EB0-BCDD-084625173D52/7C07-2023.pdf",
+        "text": "7C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4a631165-f0b0-4531-b6e6-08243c21f43e/5_Ward_ANC_23.pdf",
+        "text": "WARD 5"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4A90F07F-C624-42D0-8C05-AACAB91F0453/7B06-2023.pdf",
+        "text": "7B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4c7fe69f-1354-4441-ba68-916cae53cb09/2B06-2023.pdf",
+        "text": "2B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4d3a4365-b686-4dcb-a136-eb204b9cd2c2/2E01-2023.pdf",
+        "text": "2E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4e0171b4-342e-4f0e-9cd2-dd02326a7f4f/3F04-2023.pdf",
+        "text": "3F04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/4f847bc9-6f2b-4cab-b0b9-781814015d5b/3_4G01-2023.pdf",
+        "text": "3/4G01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/50dc46d4-8813-4a8b-97f5-14a2ba6768ef/2E05-2023.pdf",
+        "text": "2E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/517BB6C9-71BE-47EE-8BCD-2A75CED5A730/6E04-2023.pdf",
+        "text": "6E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/51c5730f-a48d-41fb-b4a6-3c287a9681df/3F03-2023.pdf",
+        "text": "3F03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/52b0cf65-3587-4dc5-9f04-ffba7b3fed21/3D05-2023.pdf",
+        "text": "3D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/52b4f588-25b6-4430-aa62-1a7dc717265a/5A01-2023.pdf",
+        "text": "5A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/52F8EFA9-2A85-4F6E-A5B0-9FF9CFF11BB2/8C05-2023.pdf",
+        "text": "8C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/54ccdd5b-7665-4f33-9a1a-41b462855347/2B02-2023.pdf",
+        "text": "2B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/551dc03c-abcf-42f8-ada6-67e68dadea4f/2B08-2023.pdf",
+        "text": "2B08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/558159bd-6581-4f79-ba36-3802a69cf167/3C01-2023.pdf",
+        "text": "3C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/58392647-d3c9-4e41-b63f-9958c155bb09/1D01-2023.pdf",
+        "text": "1D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/58c0803a-a1ba-49b4-80a8-f79306e505b8/5A04-2023.pdf",
+        "text": "5A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/595f24a2-94c5-4fcd-a17c-2e8f22037b28/5B06-2023.pdf",
+        "text": "5B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5963889E-D658-41F4-B194-AC6B0920E9DC/8C06-2023.pdf",
+        "text": "8C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5988E28E-5BE6-4E3B-B6E3-B33980C4AFE2/6C02-2023.pdf",
+        "text": "6C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5aa88785-d68b-4595-ab74-4d00daae44bd/1C03-2023.pdf",
+        "text": "1C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5addf99c-8fab-4b44-8826-2b0702dce37b/2G03-2023.pdf",
+        "text": "2G03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5b1978a7-e83d-4da8-be3f-f2246282bf95/Ward8_ANCSMD2023_Map.pdf",
+        "text": "Ward 8 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5b3dd152-2c21-479c-a677-61245a37966b/5D07-2023.pdf",
+        "text": "5D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5bef3499-3fee-4c7d-8132-d0fae751b444/3_4G05-2023.pdf",
+        "text": "3/4G05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5BEF7BAF-737E-4357-80B8-6B140C45340D/7F06-2023.pdf",
+        "text": "7F06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5BF73846-C44A-49A6-972E-FB07BE501E96/7D03-2023.pdf",
+        "text": "7D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5C076E1F-960F-48D9-8E42-1FF96D3DAA5E/7B04-2023.pdf",
+        "text": "7B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5c18aa54-b164-4b5a-bd03-e52e89634835/5C05-2023.pdf",
+        "text": "5C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5de53c3a-3824-4de9-aebf-bbf96d66a0a5/1C06-2023.pdf",
+        "text": "1C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5e48780a-2650-43d9-a821-4cb4c51c8b45/1D07-2023.pdf",
+        "text": "1D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5e6aa64c-b1b4-471a-bba2-d12795c8fed6/5B01-2023.pdf",
+        "text": "5B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5f0d1f42-1c2b-4be3-bbc7-0c157671f509/1D04-2023.pdf",
+        "text": "1D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5f107b7b-15c8-4074-8959-dd8468eab67e/2F03-2023.pdf",
+        "text": "2F03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5F1FCA06-4434-4F4C-A673-8AFCE937C689/7E06-2023.pdf",
+        "text": "7E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/5ffd4b36-baf0-4eba-96a6-201030d16ff6/3E08-2023.pdf",
+        "text": "3E08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/609ae059-ad4c-459f-b3c8-200b663691d8/1A02-2023.pdf",
+        "text": "1A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6118fe5f-0a79-459d-a23d-64fa2826ae65/1C07-2023.pdf",
+        "text": "1C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/61e069b5-6c1a-48fc-b358-3850403c0b89/3F01-2023.pdf",
+        "text": "3F01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/61e4a1ac-3f58-499f-b8fb-7353238707d3/3D07-2023.pdf",
+        "text": "3D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/62176c28-a3e9-4bab-a941-bead4ec21a8f/4A07-2023.pdf",
+        "text": "4A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/631eba3b-54e9-422d-94ac-170b75ef7b66/4C02-2023.pdf",
+        "text": "4C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/63758263-6613-40fa-b469-4ba815da5fbb/4B05-2023.pdf",
+        "text": "4B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6378e817-ce4e-41ea-8d23-84b198413354/2B05-2023.pdf",
+        "text": "2B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/64BC90D5-5880-4FDF-927D-E70ABFB1A555/6C07-2023.pdf",
+        "text": "6C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/656db3f0-318f-4996-ab28-0215cfa67fa8/2C03-2023.pdf",
+        "text": "2C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/657b0784-067c-4241-964a-822f88bc7ed2/3A05-2023.pdf",
+        "text": "3A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/65E8898A-494B-4EE8-9748-9E8D85C6DFAF/6A03-2023.pdf",
+        "text": "6A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6623f380-3142-4472-8370-328de4bbc1dc/1B02-2023.pdf",
+        "text": "1B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/67cddca3-4128-4c93-8758-2bfcee411dd8/1A09-2023.pdf",
+        "text": "1A09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/682ba5c2-0e9d-47df-aed8-86348426d4e2/4A04-2023.pdf",
+        "text": "4A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/68645502-52de-4895-a8dc-f04b0648e5cc/5A09-2023.pdf",
+        "text": "5A09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/68b223d6-4671-425d-bc5a-4b2f86fe92ca/4E03-2023.pdf",
+        "text": "4E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/69d1f7f7-1250-4da5-8626-3e71875d11c9/1A04-2023.pdf",
+        "text": "1A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6A71F19E-6DE7-4652-B92D-F4184E0E0D28/8D05-2023.pdf",
+        "text": "8D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6aa56dab-50e7-4c87-98fb-8e85934fc4bd/4A01-2023.pdf",
+        "text": "4A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6ABBC0D5-3F66-4A84-989A-94325F976EA9/6A05-2023.pdf",
+        "text": "6A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6ac58e8b-914f-4ead-8ad3-6eb73254c0bc/4B10-2023.pdf",
+        "text": "4B10"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6bcdbc34-a8ba-422d-a4c2-4b0e1eb57c25/3C04-2023.pdf",
+        "text": "3C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6CF66819-15B7-47D2-A4C6-DF1616D3DE7B/6_8F04-2023.pdf",
+        "text": "6/8F04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/6fc00eef-8893-4d10-b090-bb85b783630b/2E03-2023.pdf",
+        "text": "2E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/705b3bba-4d5e-48ff-bb1f-ed2cc21a54cd/5C04-2023.pdf",
+        "text": "5C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/70A50DEB-C4CC-4433-A287-9E5ACEA833B8/7B03-2023.pdf",
+        "text": "7B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/727E6CF8-7F9E-4F99-8947-7EB777C8C49F/7B08-2023.pdf",
+        "text": "7B08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/735f6414-e820-4190-a768-b248db7a99d6/2B04-2023.pdf",
+        "text": "2B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/73681ba3-077c-4efe-a465-73e1699aa6be/1A05-2023.pdf",
+        "text": "1A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7558FEF7-5416-41E8-9F6D-E188225D715D/6E03-2023.pdf",
+        "text": "6E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/75a1f1da-e404-4560-998c-6dc6ed331438/2E04-2023.pdf",
+        "text": "2E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/75e781c7-8d98-41eb-b4d5-10f8f59ab71c/1B05-2023.pdf",
+        "text": "1B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7731dac2-e816-4581-ae2e-dd2f58f60c8c/5E01-2023.pdf",
+        "text": "5E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/78095259-76CF-4DC0-9796-DA933DDF60B3/6A01-2023.pdf",
+        "text": "6A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/784eb280-d822-4920-9159-f4adc3fc0859/2A07-2023.pdf",
+        "text": "2A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7888ECE7-1C88-4047-BAEF-355768BDCDB8/8E05-2023.pdf",
+        "text": "8E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/79b28b0e-dbda-44d5-a402-7f01d048b6b2/1B06-2023.pdf",
+        "text": "1B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7a0c12d2-43c0-4e35-a410-4098ce5a4b73/5E05-2023.pdf",
+        "text": "5E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7DFB5C9F-FF1E-4402-BF23-D6ACBA8E131D/8A06-2023.pdf",
+        "text": "8A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7e2150f9-b28c-448d-b28d-776b8354c222/3_4G04-2023.pdf",
+        "text": "3/4G04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7E447033-B76D-4475-B4E3-E31CA0A83CF8/8B07-2023.pdf",
+        "text": "8B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/7F86B501-46BB-4551-AEB1-BD71F11E2DF6/8D04-2023.pdf",
+        "text": "8D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/80790e26-b9b1-41f5-b04d-53d0c3899439/1C05-2023.pdf",
+        "text": "1C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/80d7e4b5-5fbe-4a45-8da1-77508232bfff/5E02-2023.pdf",
+        "text": "5E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/828C1BF1-0257-4765-A763-F469C87BB420/7C03-2023.pdf",
+        "text": "7C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/849ebfa9-6e09-42e6-860c-4384a308c81b/1A07-2023.pdf",
+        "text": "1A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/84df277b-233b-43ec-b85e-effad6169816/4C01-2023.pdf",
+        "text": "4C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/86bdbd05-8764-4fb5-932b-7e1347f11a8d/4D06-2023.pdf",
+        "text": "4D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/878C7E51-4AB1-4567-A897-27BDCE14B6AD/6_8F02-2023.pdf",
+        "text": "6/8F02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/89425B3C-8556-4209-82C0-C14C29AD7D51/6B09-2023.pdf",
+        "text": "6B09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/895F8792-EA95-4C33-AEB5-BFC653F74281/6E02-2023.pdf",
+        "text": "6E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/8b97ddd2-e807-4156-a413-b6b064dd6779/5C02-2023.pdf",
+        "text": "5C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/8E899385-7FEF-4222-A535-29577858D9C2/7C02-2023.pdf",
+        "text": "7C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/8f43a584-3df2-4ba2-b7f6-5fb6f380b8bf/2F06-2023.pdf",
+        "text": "2F06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/90076854-905f-415b-b95e-e0a1af568f9e/4D05-2023.pdf",
+        "text": "4D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9016d239-7d51-4104-b0cf-0ad4cc880b30/1C09-2023.pdf",
+        "text": "1C09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/90d4f61c-642c-48e3-81f5-78c01c42352e/5B05-2023.pdf",
+        "text": "5B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/912208D8-99A0-4100-92F5-C5928033E7E1/6C04-2023.pdf",
+        "text": "6C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9230a02b-585a-44e3-bb4c-7dfa4710220e/5A07-2023.pdf",
+        "text": "5A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/94485adb-516a-48f4-a59e-f45b78b41380/Ward3_ANCSMD2023_Map.pdf",
+        "text": "Ward 3 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/946105af-645e-4635-bb97-5ceede14f8b8/5A03-2023.pdf",
+        "text": "5A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/94E0F23E-789D-468E-B448-63DF322F00AD/7E03-2023.pdf",
+        "text": "7E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/95a3b70a-6f7b-41c7-aa34-13449271fcfd/1C02-2023.pdf",
+        "text": "1C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/965dd637-c311-4b23-9c02-5c05e3bf31a3/2F08-2023.pdf",
+        "text": "2F08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/96746e52-9bdb-4ca0-9491-dee1f1093366/3D02-2023.pdf",
+        "text": "3D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/971235cf-382d-4815-8848-06ec56a25e3c/5D04-2023.pdf",
+        "text": "5D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/97c587d4-5331-49f0-95b6-9fe7dcdc4a78/4A06-2023.pdf",
+        "text": "4A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/97F3C50F-4A5B-458D-B977-D25F5B1EA59C/6E07-2023.pdf",
+        "text": "6E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/98035435-94f7-4bb6-95c1-30f4250b8407/7_Ward_ANC_23.pdf",
+        "text": "WARD 7"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/98421c42-73d0-484a-96f0-edfe4f4a5f78/2F05-2023.pdf",
+        "text": "2F05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/99017072-63b5-4ce8-8c89-fa6db9df1f47/4_Ward_ANC_23.pdf",
+        "text": "WARD 4"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9a658596-7402-4512-b871-cfb42a987856/3B04-2023.pdf",
+        "text": "3B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9ab19248-6985-40a0-8a78-ee6b62d02724/2_Ward_ANC_23.pdf",
+        "text": "WARD 2"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9afcdf6b-6cdd-481b-944a-2efa4351d0a1/4B07-2023.pdf",
+        "text": "4B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9bbd7c2a-6507-4352-9fbb-4572953a969d/2G01-2023.pdf",
+        "text": "2G01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9beac47a-0c28-430b-ba87-001474c7802e/3C05-2023.pdf",
+        "text": "3C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9D4E140C-7E6E-4332-9FBF-A2F94A59E277/7F05-2023.pdf",
+        "text": "7F05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9EBE01C1-E97A-4568-A296-CED48CE4E9A0/7D04-2023.pdf",
+        "text": "7D04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/9fe9fd65-bee5-41be-84f0-98c710f98b69/6_Ward_ANC_23-05192023.pdf",
+        "text": "WARD 6"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a008003b-47ab-452e-bd2a-914f970e9fb5/6B01-2023c.pdf",
+        "text": "6B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a02edd79-d8ca-4d35-9ebc-ce32bfc7df08/3B01-2023.pdf",
+        "text": "3B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a073a415-6e3d-462c-aad7-a0469ac853b9/4B08-2023.pdf",
+        "text": "4B08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a0adbf63-ad3e-44ae-89e3-52e739628b62/Ward7_ANCSMD2023_Map.pdf",
+        "text": "Ward 7 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a1f5756a-9422-4b73-b1b6-3d388cf7e67d/3A01-2023.pdf",
+        "text": "3A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a3938f21-78f7-46ce-9c2b-3156bd18199b/3B03-2023.pdf",
+        "text": "3B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/A3B10D67-BE2B-452E-BDA1-E5E8603389A7/6E01-2023.pdf",
+        "text": "6E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/A4C77247-F2A6-462E-801F-117D9A78D766/8A04-2023.pdf",
+        "text": "8A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/A56A6EF9-A919-4FD8-A454-936C5C30EE3D/8A02-2023.pdf",
+        "text": "8A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/A57AE97F-8E27-4B60-999E-E1E431A7ED03/8A03-2023.pdf",
+        "text": "8A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/A5E52093-8E74-43A4-9DCC-51CE0A4A3372/8A07-2023.pdf",
+        "text": "8A07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a6a96ec7-02d0-4f99-a7f3-10355357eb94/2A06-2023.pdf",
+        "text": "2A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a7285c27-0866-4980-80e5-a1403c22966c/2F02-2023.pdf",
+        "text": "2F02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a7d6af07-51b1-4aad-9b03-2ea4d2f4695e/1B01-2023.pdf",
+        "text": "1B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/a86aafac-c35d-464f-8a81-6b7c8b00af91/3_4G02-2023.pdf",
+        "text": "3/4G02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/aa16adaf-1f92-4681-a608-1fa20cee70b9/1E03-2023.pdf",
+        "text": "1E03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ab443328-e967-40e9-9af3-75ab3decc616/5F04-2023.pdf",
+        "text": "5F04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ac015ddf-9efa-480f-88a9-6e9f12a083cf/3F06-2023.pdf",
+        "text": "3F06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ae03ce45-bc1a-4554-a113-5f262779a796/5F05-2023.pdf",
+        "text": "5F05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ae0d31b0-d2c8-4cdf-8845-fd7442cc9d61/5C06-2023.pdf",
+        "text": "5C06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ae989bb3-70be-409d-aa73-145095778779/2E02-2023.pdf",
+        "text": "2E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/aee577ae-3e73-44e6-873c-ede7a3a72e33/1C01-2023.pdf",
+        "text": "1C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/af1c4b0a-8538-4acd-be32-a372834522d0/2C02-2023.pdf",
+        "text": "2C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B0D08714-AE29-4EAF-9AB8-223534E9A090/8C03-2023.pdf",
+        "text": "8C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B1866584-8B96-4656-83BE-2B6697577820/6E06-2023.pdf",
+        "text": "6E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b2123f50-17aa-445c-b194-d689b56c8ccd/6B02-2023.pdf",
+        "text": "6B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B2833652-1E24-4635-92F8-491395CFD533/7E07-2023.pdf",
+        "text": "7E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b4460f16-8040-4fcc-a2bd-88d7f517933a/3_4G03-2023.pdf",
+        "text": "3/4G03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b57fb932-4314-49ec-80ed-b5aabb336dde/2A08-2023.pdf",
+        "text": "2A08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B599E1DF-6BF1-4EB9-BB5D-C77EAA72935A/6C01-2023.pdf",
+        "text": "6C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b656a90f-88af-40df-8585-bf9e6eb056f2/5D05-2023.pdf",
+        "text": "5D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B6D3B8CE-5DCA-4532-A76E-B8AC71EE5F9D/6E08-2023.pdf",
+        "text": "6E08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B7231095-4C4A-4455-AF66-2AFFA18817F7/7D07-2023.pdf",
+        "text": "7D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b75b8801-91a2-4956-85a2-e6093ee60f06/5A05-2023.pdf",
+        "text": "5A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b7712653-7f94-491f-9541-78ff07e05420/3D03-2023.pdf",
+        "text": "3D03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B7BDDBF2-23B7-4EDD-91A3-8FC2FDD8DAF5/8E09-2023.pdf",
+        "text": "8E09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/b7d8552c-1e93-4a82-baeb-2ef60f568c12/3E02-2023.pdf",
+        "text": "3E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B8765044-CAC1-4EEA-BB7F-80721C12CFED/6A02-2023.pdf",
+        "text": "6A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/B9E7056D-31AC-42B0-AAAE-5F8AEF523A99/8D02-2023.pdf",
+        "text": "8D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ba4581dc-5e28-4434-b8e7-f726227cd585/5B02-2023.pdf",
+        "text": "5B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/bad5a0f5-0f44-4529-a8b0-0a9da66246c0/1E06-2023.pdf",
+        "text": "1E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/bb48c86a-cb79-4541-95fc-30f37a3af748/5E06-2023.pdf",
+        "text": "5E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/BC57ACA8-3A20-48CD-A999-EC0B14B2F7CB/6E05-2023.pdf",
+        "text": "6E05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/BC8D7C95-E879-40D7-9F48-8D38D8B2FF86/8C02-2023.pdf",
+        "text": "8C02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/bccce89a-d1da-46bd-8f04-59693fa8d896/2A09-2023.pdf",
+        "text": "2A09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/BCE6BFC2-94D1-4514-B1C7-5C472270219C/8D01-2023.pdf",
+        "text": "8D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/bd545655-d73d-4e92-b2aa-55c1be2ee072/5A08-2023.pdf",
+        "text": "5A08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c049fca0-8a46-45af-9898-63775e6199da/3A03-2023.pdf",
+        "text": "3A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/C067BF90-4409-4B8F-BB17-DB5FE6D10B2C/7D10-2023.pdf",
+        "text": "7D10"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c3a80a89-8a6a-42b3-bc35-f89b9f715332/4C03-2023.pdf",
+        "text": "4C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c41eb1e5-c5f0-4316-9386-833b330613ee/1B08-2023.pdf",
+        "text": "1B08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c448aa19-14fd-41c8-993d-9a3e7b70b5cb/4D07-2023.pdf",
+        "text": "4D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c573f031-bafd-4034-8c08-d2cdf938933a/4C05-2023.pdf",
+        "text": "4C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/c9cef6cf-e2f1-4869-9746-4029f59412b3/1B09-2023.pdf",
+        "text": "1B09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ccc3b97f-3e9e-4c20-9011-fc74d096d76c/2B09-2023.pdf",
+        "text": "2B09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/CCCCB459-245D-4D2E-8F36-C992BEC1B9B8/6D07-2023-05192023.pdf",
+        "text": "6D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ccfa1e73-dadd-42c8-9fdf-c78c6cfd3a46/2F04-2023.pdf",
+        "text": "2F04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/cd1ebc16-2255-4077-8ad2-a76d2f23507b/1B07-2023.pdf",
+        "text": "1B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/cf2ebda3-04ad-44f8-8076-6bb8f5765315/5A06-2023.pdf",
+        "text": "5A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/cf4d1949-f25a-46b3-9f30-bab1158915c0/1B03-2023.pdf",
+        "text": "1B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d0377277-c5d6-4fbc-90b2-e8c3155ef99f/4B02-2023.pdf",
+        "text": "4B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D0F78FB8-3D5F-4315-8DB4-9FA6825E918E/7C04-2023.pdf",
+        "text": "7C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d109b226-78f9-4da2-9ac1-d1724f75f534/1A03-2023.pdf",
+        "text": "1A03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d1230634-f414-41d2-a823-fe3229e69d96/3D06-2023.pdf",
+        "text": "3D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d17059c1-eefc-4c51-b6c7-b994eccf95a1/2G05-2023.pdf",
+        "text": "2G05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d1d993f3-99e5-46bd-aa06-bea58dd157c8/5B04-2023.pdf",
+        "text": "5B04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D22B132C-315C-4BEC-AB8F-848B62530485/7C05-2023.pdf",
+        "text": "7C05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D667DE61-EE3C-48F6-B953-192D431F230B/6D05-2023-05192023.pdf",
+        "text": "6D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d6f4ade8-fc99-44b5-b94d-52785bf13603/5D08-2023.pdf",
+        "text": "5D08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d6f85638-6059-4d68-aa13-7ed9e9355768/5F06-2023.pdf",
+        "text": "5F06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D7399215-AE38-4685-9015-D2081D55B5B0/6B08-2023.pdf",
+        "text": "6B08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D8083389-056F-49AA-A540-F2AA74889EE2/7F03-2023.pdf",
+        "text": "7F03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D8101B19-FB56-4ACF-B586-6027FE5FE8F4/7D05-2023.pdf",
+        "text": "7D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D92FBD61-942F-43BD-8D90-0719E20E5D01/7E02-2023.pdf",
+        "text": "7E02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/d95c8510-0cc7-4e86-8bda-1f51c23a07fe/2C04-2023.pdf",
+        "text": "2C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D9739BCD-DCC7-4CA0-A814-E04C5E34E9C2/8C04-2023.pdf",
+        "text": "8C04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/D9E2B3FC-1C6E-400C-86B2-812CF856F225/7B02-2023.pdf",
+        "text": "7B02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DA32EA42-05DA-4C51-AE45-417E2B84E1A7/6A06-2023.pdf",
+        "text": "6A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DA5B11A4-BC5E-4670-8DDA-89477DA86924/7B09-2023.pdf",
+        "text": "7B09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DAE2D3D6-F6AD-4C03-901C-BE08B392D15A/7B07-2023.pdf",
+        "text": "7B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/db5bb13f-2247-469d-b9ab-8361e3a9988b/4A02-2023.pdf",
+        "text": "4A02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/db9d5b5c-7e28-465e-a3f9-9f9b4005bf5a/Ward4_ANCSMD2023_Map.pdf",
+        "text": "Ward 4 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DBA6DBEF-047D-4C2A-8397-B359CD398DDB/7F02-2023.pdf",
+        "text": "7F02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DC8CDB29-4AFC-47B3-8AE0-2CC03D3348A8/7B01-2023.pdf",
+        "text": "7B01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/DCA99890-8CBB-4BCE-AB76-95914D9C6A45/7F07-2023.pdf",
+        "text": "7F07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/dcc6979e-224a-4175-bfbc-d6bb741272bc/3E06-2023.pdf",
+        "text": "3E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/de663f70-4041-4b8f-9bc4-e2bc0b2026b4/5E04-2023.pdf",
+        "text": "5E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ded86f58-6ab3-4fef-a6e4-a5218167eda5/4B09-2023.pdf",
+        "text": "4B09"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e3f11d74-724b-4cde-acd7-5d3a765dc3d5/Ward6_ANCSMD2023_Map.pdf",
+        "text": "Ward 6 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/E4208C9E-D423-4376-B95B-D34618C77AB9/7C01-2023.pdf",
+        "text": "7C01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e4a439e6-d5fc-4ad1-822e-787d5c0be46d/3B05-2023.pdf",
+        "text": "3B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e4bb3e0c-7d01-4427-b0b4-c8d2cc59e75f/5F03-2023.pdf",
+        "text": "5F03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e6e0b16a-5543-48bb-bb9d-21a524f6d387/3E07-2023.pdf",
+        "text": "3E07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e6fbe9d6-2182-4631-8fe6-bf86fc14cb97/4A05-2023.pdf",
+        "text": "4A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/E7D2B4DC-AC46-4DD3-B6C7-750CA6F49280/8A05-2023.pdf",
+        "text": "8A05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e7d4ddaa-f08d-44bb-a7cb-df1d1224bb43/4D02-2023.pdf",
+        "text": "4D02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e7f736de-251b-4cb5-a0e1-5b64791a7c7b/2A04-2023.pdf",
+        "text": "2A04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e8dfa5c9-539e-4580-87ee-d88b3d025243/2A01-2023.pdf",
+        "text": "2A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/E910952D-E75E-412E-BCD8-1E783B4F7352/8E08-2023.pdf",
+        "text": "8E08"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/e94f5a0c-7f61-4410-b5e2-a2e0ade842b8/2E06-2023.pdf",
+        "text": "2E06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ea56d043-09b7-420d-8ccc-e19cab6fd0cc/3B06-2023.pdf",
+        "text": "3B06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/EB1002E3-8CAC-40BC-9835-D1FDA001090B/7B05-2023.pdf",
+        "text": "7B05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/EC15461D-A031-4DC2-A76E-5BB34FF4F13F/6B07-2023.pdf",
+        "text": "6B07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/eda6c6d7-3855-4210-9308-fcbb21e886eb/3_4G07-2023.pdf",
+        "text": "3/4G07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/EEAF0F72-F803-4224-85B6-E3D4FAFA5415/6C03-2023.pdf",
+        "text": "6C03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/ef4b7181-acef-469f-95df-5bb9e7581ed6/3_Ward_ANC_23.pdf",
+        "text": "WARD 3"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/EFE76E58-87AB-4A83-AC05-0631FB2B1244/7E01-2023.pdf",
+        "text": "7E01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f0441846-0637-4f67-add9-76293654be06/Ward1_ANCSMD2023_Map.pdf",
+        "text": "Ward 1 Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/F118BC31-98BA-464A-83C0-BC595C92C3AF/8D07-2023.pdf",
+        "text": "8D07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f1695669-bda4-441b-b6c4-27c5289841ff/1D05-2023.pdf",
+        "text": "1D05"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f177c33d-be06-428f-8e19-70f03833ff53/4C07-2023.pdf",
+        "text": "4C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f1fd269e-2bb9-4e86-984f-4f96d3659f9b/1A06-2023.pdf",
+        "text": "1A06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f2e4f616-dd9e-4836-a7b9-35b7358e2600/2G04-2023.pdf",
+        "text": "2G04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f3b3b89b-72ee-464a-bc44-64bf3ddcf677/3C07-2023.pdf",
+        "text": "3C07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f479a7f8-545b-44e1-853a-925fbe7af028/1A01-2023.pdf",
+        "text": "1A01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f4bbff2a-0a37-404e-81e4-13d5be19f202/3F02-2023.pdf",
+        "text": "3F02"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f5683c91-9e26-4887-b21e-f855d4b2b265/4E04-2023.pdf",
+        "text": "4E04"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f5cb8169-82c0-4454-b8a8-24abf1d65ef5/5F07-2023.pdf",
+        "text": "5F07"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f7a33dc3-cb4d-4d66-a07c-25c18235ac6e/2023-Citywide-ANCs-and-SMDs-Map.pdf",
+        "text": "Citywide Ward Map"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/F90FA536-91CC-4517-AB7F-4E0C084654E2/7D06-2023.pdf",
+        "text": "7D06"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/f93cedee-8074-47ff-9fcc-4cad2443ebe2/5B03-2023.pdf",
+        "text": "5B03"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/fd6951a2-7c37-4f16-87a6-8640f8182185/2D01-2023.pdf",
+        "text": "2D01"
+      },
+      {
+        "url": "https://www.dcboe.org/getmedia/fe0f972d-1b92-4a95-82e5-f88b22d78883/8_Ward_ANC_23.pdf",
+        "text": "WARD 8"
+      },
+      {
+        "url": "https://www.dcboe.org/news",
+        "text": "News"
+      },
+      {
+        "url": "https://www.dcboe.org/open-government,-reports,-foia",
+        "text": "Open Government, Reports, & FOIA"
+      },
+      {
+        "url": "https://www.dcboe.org/rcv",
+        "text": "Ranked Choice Voting"
+      },
+      {
+        "url": "https://www.dcboe.org/Search",
+        "text": "Search"
+      },
+      {
+        "url": "https://www.dcboe.org/Sitemap",
+        "text": "Site Map"
+      },
+      {
+        "url": "https://www.dcboe.org/Subscription",
+        "text": "Subscribe to get email updates"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/accessible-voting/accessible-remote-ballot-(arb)-marking-system",
+        "text": "Accessible Remote Ballot (ARB) Marking System"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/accessible-voting/accessible-voting-and-language-access",
+        "text": "Accessible Voting and Language Access"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/accessible-voting/arb-marking-system-faqs",
+        "text": "ARB Frequently Asked Questions (FAQ)"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/casting-your-vote/mail-ballot-instructions",
+        "text": "Mail Ballot Instructions"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/casting-your-vote/mail-ballot-request",
+        "text": "Request A Mail Ballot"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/casting-your-vote/military-and-overseas-voters-(uocava)",
+        "text": "Military and Overseas Voters (UOCAVA)"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/casting-your-vote/voting-by-live-ballot",
+        "text": "Voting by Live Ballot"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/casting-your-vote/voting-by-special-ballot",
+        "text": "Voting by Special Ballot"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/find-out-where-to-vote/election-day-vote-centers",
+        "text": "Election Day Vote Centers"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/find-out-where-to-vote/mail-ballot-drop-box-locations",
+        "text": "Mail Ballot Drop Box Locations"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/find-out-where-to-vote/vote-center-locator-tool",
+        "text": "Vote Center Locator Tool"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/information-for-new-residents/improving-voter-registration-for-new-tenants-and-homeowners-amendment-act-of-2020",
+        "text": "Improving Voter Registration for New Tenants and Homeowners Amendment Act of 2020"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/register-to-vote/cancel-your-voter-registration",
+        "text": "Cancel Your Voter Registration"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/register-to-vote/canvass-card",
+        "text": "Canvass Card"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/register-to-vote/non-citizen",
+        "text": "Non-US Citizen DC Resident"
+      },
+      {
+        "url": "https://www.dcboe.org/voters/register-to-vote/register-update-voter-registration",
+        "text": "Register/Update Voter Registration"
+      },
+      {
+        "url": "https://www.facebook.com/Vote4DC/",
+        "text": ""
+      },
+      {
+        "url": "https://www.instagram.com/vote4dc/",
+        "text": ""
+      },
+      {
+        "url": "https://www.youtube.com/channel/UCXMvT2yptWuxdOIXUePqhxg",
+        "text": ""
+      }
+    ],
+    "assets": [
+      {
+        "kind": "script",
+        "url": "https://www.dcboe.org/_content/Kentico.Content.Web.Rcl/Content/Bundles/Public/systemFormComponents.min.js"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dcboe.org/content/bundles/js/bundle.js?v=1.3"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dcboe.org/content/bundles/js/custom.js?v=1.3"
+      },
+      {
+        "kind": "script",
+        "url": "https://www.dcboe.org/content/bundles/js/fullcalendar.min.js"
+      },
+      {
+        "kind": "shortcut icon",
+        "url": "https://www.dcboe.org/content/images/favicon.ico"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://fonts.googleapis.com/css?family=Crete+Round|Open+Sans:300,400,600,700,800"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dcboe.org/_content/Kentico.Content.Web.Rcl/Content/Bundles/Public/systemPageComponents.min.css"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dcboe.org/content/bundles/css/bundle.css?v=1.3"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dcboe.org/content/bundles/css/custom.css?v=1.3"
+      },
+      {
+        "kind": "stylesheet",
+        "url": "https://www.dcboe.org/content/bundles/css/fullcalendar.min.css"
+      }
+    ]
+  }
+}
