@@ -1,0 +1,68 @@
+[
+  {
+    "id": "anc_act",
+    "record_type": "legal_material",
+    "name": "Advisory Neighborhood Commissions Act",
+    "law_family": "statutory",
+    "update_tracking_model": "congressional_review",
+    "status": "active",
+    "source_refs": [
+      "dc_code"
+    ]
+  },
+  {
+    "id": "council_rules",
+    "record_type": "legal_material",
+    "name": "Council rules",
+    "law_family": "procedural",
+    "update_tracking_model": "council_publication",
+    "status": "active",
+    "source_refs": [
+      "council_lims"
+    ]
+  },
+  {
+    "id": "dc_code_legal_corpus",
+    "record_type": "legal_material",
+    "name": "D.C. Code",
+    "law_family": "statutory",
+    "update_tracking_model": "codified_statutory_law",
+    "status": "active",
+    "source_refs": [
+      "dc_code"
+    ]
+  },
+  {
+    "id": "dc_register",
+    "record_type": "legal_material",
+    "name": "District of Columbia Register",
+    "law_family": "administrative",
+    "update_tracking_model": "publication_to_codification",
+    "status": "active",
+    "source_refs": [
+      "dcregs"
+    ]
+  },
+  {
+    "id": "dcmr_legal_corpus",
+    "record_type": "legal_material",
+    "name": "District of Columbia Municipal Regulations",
+    "law_family": "administrative",
+    "update_tracking_model": "register_to_dcmr",
+    "status": "active",
+    "source_refs": [
+      "dcregs"
+    ]
+  },
+  {
+    "id": "home_rule_act",
+    "record_type": "legal_material",
+    "name": "District of Columbia Home Rule Act",
+    "law_family": "statutory",
+    "update_tracking_model": "congressional_review",
+    "status": "active",
+    "source_refs": [
+      "dc_code"
+    ]
+  }
+]

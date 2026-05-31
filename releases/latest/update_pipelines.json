@@ -1,0 +1,91 @@
+[
+  {
+    "id": "anc_resolutions_manifest_refresh",
+    "record_type": "pipeline",
+    "name": "Track ANC resolution metadata and attachment manifests.",
+    "update_strategy": "Fetch the ANC resolutions portal JSON manifest and inspect document attachment metadata before deeper attachment downloading or ANC/SMD expansion.",
+    "status": "active",
+    "source_refs": [
+      "anc_resolutions"
+    ]
+  },
+  {
+    "id": "legal_materials_manifest",
+    "record_type": "pipeline",
+    "name": "Track statutory and administrative legal source systems before deeper parsing.",
+    "update_strategy": "Track statutory and administrative legal source systems before deeper parsing.",
+    "status": "active",
+    "source_refs": [
+      "dc_code",
+      "dcregs"
+    ]
+  },
+  {
+    "id": "official_registry_refresh",
+    "record_type": "pipeline",
+    "name": "Fetch DCGIS registry snapshots, generate candidates, promote broad thin records.",
+    "update_strategy": "Fetch DCGIS registry snapshots, generate candidates, promote broad thin records.",
+    "status": "active",
+    "source_refs": [
+      "dcgis.agencies",
+      "dcgis.boards_commissions_councils"
+    ]
+  },
+  {
+    "id": "operational_metadata_refresh",
+    "record_type": "pipeline",
+    "name": "Track operational ArcGIS feed metadata before row-level ingestion.",
+    "update_strategy": "Fetch metadata and row counts for 311 service requests, crime incidents, building permits, and business licenses before deeper delta or row-level ingestion.",
+    "status": "active",
+    "source_refs": [
+      "service_requests_311",
+      "crime_incidents",
+      "building_permits",
+      "business_licenses"
+    ]
+  },
+  {
+    "id": "pass_metadata_refresh",
+    "record_type": "pipeline",
+    "name": "Track PASS procurement and payment table metadata before row-level ingestion.",
+    "update_strategy": "Fetch PASS ArcGIS table metadata and row counts for purchase orders, payments, forecast, contracts, solicitations, and solicitation attachments before deeper row-level ingestion.",
+    "status": "active",
+    "source_refs": [
+      "pass.purchase_orders",
+      "pass.payments",
+      "pass.forecast",
+      "pass.contracts",
+      "pass.solicitations",
+      "pass.solicitation_attachments"
+    ]
+  },
+  {
+    "id": "publication_manifest_refresh",
+    "record_type": "pipeline",
+    "name": "Manifest OCFO, BOE, Council, Courts, and ANC publication pages before PDF/table parsing.",
+    "update_strategy": "Manifest OCFO, BOE, Council, Courts, and ANC publication pages before PDF/table parsing.",
+    "status": "active",
+    "source_refs": [
+      "council_hearings_page",
+      "council_oversight_budget_schedules",
+      "dc_courts",
+      "ocfo_budget",
+      "ocfo_financial_reports",
+      "boe_results",
+      "boe_voter_statistics",
+      "anc_source",
+      "scout",
+      "propertyquest"
+    ]
+  },
+  {
+    "id": "source_discovery_metadata_refresh",
+    "record_type": "pipeline",
+    "name": "Track source-discovery metadata from the Enterprise Dataset Inventory.",
+    "update_strategy": "Fetch Enterprise Dataset Inventory metadata and row counts before generating source candidates or deeper source-discovery records.",
+    "status": "active",
+    "source_refs": [
+      "enterprise_dataset_inventory"
+    ]
+  }
+]

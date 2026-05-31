@@ -1,0 +1,10 @@
+definition,id,name,record_type,source_refs,status
+Actor advises another civic unit or process.,advises,advises,relationship_type,"[""dc_code""]",active
+"Actor appoints a civic unit, office, board member, or officer.",appoints,appoints,relationship_type,"[""dc_code""]",active
+Actor codifies legal or administrative material.,codifies,codifies,relationship_type,"[""dc_code""]",active
+Actor confirms a nomination or appointment.,confirms,confirms,relationship_type,"[""dc_code""]",active
+Actor elects an office or body.,elects,elects,relationship_type,"[""dc_code""]",active
+Actor gives great weight to ANC recommendations.,gives_great_weight_to,gives great weight to,relationship_type,"[""dc_code""]",active
+Actor oversees or exercises oversight over another civic unit.,oversees,oversees,relationship_type,"[""dc_code""]",active
+Actor publishes legal or administrative material.,publishes,publishes,relationship_type,"[""dc_code""]",active
+Actor reviews a District law or action.,reviews,reviews,relationship_type,"[""dc_code""]",active

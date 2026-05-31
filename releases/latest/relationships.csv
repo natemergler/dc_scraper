@@ -1,0 +1,4 @@
+id,name,record_type,relationship_type_id,source_actor,source_refs,status,target_actor
+district.voters.elect.dc.council,District voters elect the Council,relationship,elects,"{""kind"":""civic_unit"",""id"":""district.voters""}","[""dc_code""]",active,"{""kind"":""civic_unit"",""id"":""dc.council""}"
+district.voters.elect.dc.mayor,District voters elect the Mayor,relationship,elects,"{""kind"":""civic_unit"",""id"":""district.voters""}","[""dc_code""]",active,"{""kind"":""civic_unit"",""id"":""dc.mayor""}"
+us.congress.reviews.dc.legislation,Congress reviews District legislation under Home Rule mechanics,relationship,reviews,"{""kind"":""civic_unit"",""id"":""us.congress""}","[""dc_code""]",active,"{""kind"":""civic_unit"",""id"":""dc.council""}"

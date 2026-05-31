@@ -1,0 +1,298 @@
+[
+  {
+    "id": "anc_resolutions",
+    "record_type": "source",
+    "name": "ANC resolutions portal",
+    "official_url": "https://resolutions.anc.dc.gov/",
+    "source_type": "json_api_manifest",
+    "status": "active"
+  },
+  {
+    "id": "anc_source",
+    "record_type": "source",
+    "name": "Advisory Neighborhood Commission source materials",
+    "official_url": "https://anc.dc.gov/",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "boe_maps",
+    "record_type": "source",
+    "name": "DC Board of Elections maps",
+    "official_url": "https://www.dcboe.org/data%2C-maps%2C-forms/maps",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "boe_results",
+    "record_type": "source",
+    "name": "DC Board of Elections results",
+    "official_url": "https://www.dcboe.org/Elections/Election-Results-Archives/",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "boe_voter_statistics",
+    "record_type": "source",
+    "name": "DC Board of Elections voter statistics",
+    "official_url": "https://www.dcboe.org/data%2C-maps%2C-forms/voter-registration-statistics",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "building_permits",
+    "record_type": "source",
+    "name": "Building permits",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/18",
+    "source_type": "arcgis_metadata_layer",
+    "status": "active"
+  },
+  {
+    "id": "business_licenses",
+    "record_type": "source",
+    "name": "Business licenses",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/0",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "council_hearings_page",
+    "record_type": "source",
+    "name": "Council hearings page",
+    "official_url": "https://dccouncil.gov/hearings/",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "council_hms",
+    "record_type": "source",
+    "name": "Council HMS hearings",
+    "official_url": "https://lims.dccouncil.gov/hearings",
+    "source_type": "hearing_system",
+    "status": "active"
+  },
+  {
+    "id": "council_lims",
+    "record_type": "source",
+    "name": "Council LIMS",
+    "official_url": "https://lims.dccouncil.gov/",
+    "source_type": "legislative_system",
+    "status": "active"
+  },
+  {
+    "id": "council_oversight_budget_schedules",
+    "record_type": "source",
+    "name": "Council oversight and budget schedules",
+    "official_url": "https://dccouncil.gov/2025-2026-performance-oversight-fy-2027-budget-schedules/",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "crime_incidents",
+    "record_type": "source",
+    "name": "Crime incidents",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/41",
+    "source_type": "arcgis_metadata_layer",
+    "status": "active"
+  },
+  {
+    "id": "dc_code",
+    "record_type": "source",
+    "name": "D.C. Code",
+    "official_url": "https://code.dccouncil.gov/us/dc/council/code",
+    "source_type": "legal_corpus",
+    "status": "active"
+  },
+  {
+    "id": "dc_courts",
+    "record_type": "source",
+    "name": "District of Columbia Courts",
+    "official_url": "https://www.dccourts.gov/",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "dc_government_directories",
+    "record_type": "source",
+    "name": "District Government Directories",
+    "official_url": "https://dc.gov/page/district-government-directories",
+    "source_type": "portal",
+    "status": "active"
+  },
+  {
+    "id": "dc_law_library",
+    "record_type": "source",
+    "name": "D.C. Law Library",
+    "official_url": "https://code.dccouncil.gov/",
+    "source_type": "legal_portal",
+    "status": "active"
+  },
+  {
+    "id": "dcgis.agencies",
+    "record_type": "source",
+    "name": "District Government Agencies table",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6",
+    "source_type": "arcgis_table",
+    "status": "active"
+  },
+  {
+    "id": "dcgis.boards_commissions_councils",
+    "record_type": "source",
+    "name": "District Boards, Commissions, and Councils table",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+    "source_type": "arcgis_table",
+    "status": "active"
+  },
+  {
+    "id": "dcgis.government_operations",
+    "record_type": "source",
+    "name": "DCGIS Government Operations ArcGIS service",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer",
+    "source_type": "arcgis_service",
+    "status": "active"
+  },
+  {
+    "id": "dcregs",
+    "record_type": "source",
+    "name": "D.C. Register and DCMR",
+    "official_url": "https://dcregs.dc.gov/",
+    "source_type": "administrative_law_portal",
+    "status": "active"
+  },
+  {
+    "id": "enterprise_dataset_inventory",
+    "record_type": "source",
+    "name": "Enterprise Dataset Inventory",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/11",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "ocfo_budget",
+    "record_type": "source",
+    "name": "OCFO budget and capital plan publications",
+    "official_url": "https://cfo.dc.gov/budget",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "ocfo_financial_reports",
+    "record_type": "source",
+    "name": "OCFO annual financial reports",
+    "official_url": "https://cfo.dc.gov/service/annual-comprehensive-financial-reports-0",
+    "source_type": "publication_page",
+    "status": "active"
+  },
+  {
+    "id": "ocp_transparency_portal",
+    "record_type": "source",
+    "name": "OCP Contracts and Procurement Transparency Portal",
+    "official_url": "https://contracts.ocp.dc.gov/",
+    "source_type": "portal",
+    "status": "active"
+  },
+  {
+    "id": "open_data_dc",
+    "record_type": "source",
+    "name": "Open Data DC",
+    "official_url": "https://opendata.dc.gov/",
+    "source_type": "portal",
+    "status": "active"
+  },
+  {
+    "id": "open_dc_public_bodies",
+    "record_type": "source",
+    "name": "Open DC Public Bodies",
+    "official_url": "https://www.open-dc.gov/public-bodies",
+    "source_type": "portal",
+    "status": "active"
+  },
+  {
+    "id": "pass",
+    "record_type": "source",
+    "name": "PASS procurement and payment data",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer",
+    "source_type": "arcgis_tables",
+    "status": "active",
+    "source_refs": [
+      "pass.purchase_orders",
+      "pass.payments",
+      "pass.forecast",
+      "pass.contracts",
+      "pass.solicitations",
+      "pass.solicitation_attachments"
+    ]
+  },
+  {
+    "id": "pass.contracts",
+    "record_type": "source",
+    "name": "PASS Contracts",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/37",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "pass.forecast",
+    "record_type": "source",
+    "name": "PASS Forecast",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/18",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "pass.payments",
+    "record_type": "source",
+    "name": "PASS Payments",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/17",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "pass.purchase_orders",
+    "record_type": "source",
+    "name": "PASS Purchase Orders",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/16",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "pass.solicitation_attachments",
+    "record_type": "source",
+    "name": "PASS Solicitations Attachments",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/20",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "pass.solicitations",
+    "record_type": "source",
+    "name": "PASS Solicitations",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/19",
+    "source_type": "arcgis_metadata_table",
+    "status": "active"
+  },
+  {
+    "id": "propertyquest",
+    "record_type": "source",
+    "name": "PropertyQuest",
+    "official_url": "https://propertyquest.dc.gov/",
+    "source_type": "ui_heavy_source",
+    "status": "active"
+  },
+  {
+    "id": "scout",
+    "record_type": "source",
+    "name": "SCOUT",
+    "official_url": "https://scout.dcra.dc.gov/",
+    "source_type": "ui_heavy_source",
+    "status": "active"
+  },
+  {
+    "id": "service_requests_311",
+    "record_type": "source",
+    "name": "311 service requests",
+    "official_url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21",
+    "source_type": "arcgis_metadata_layer",
+    "status": "active"
+  }
+]

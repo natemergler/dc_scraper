@@ -1,0 +1,37 @@
+id,name,official_url,record_type,source_refs,source_type,status
+anc_resolutions,ANC resolutions portal,https://resolutions.anc.dc.gov/,source,,json_api_manifest,active
+anc_source,Advisory Neighborhood Commission source materials,https://anc.dc.gov/,source,,publication_page,active
+boe_maps,DC Board of Elections maps,https://www.dcboe.org/data%2C-maps%2C-forms/maps,source,,publication_page,active
+boe_results,DC Board of Elections results,https://www.dcboe.org/Elections/Election-Results-Archives/,source,,publication_page,active
+boe_voter_statistics,DC Board of Elections voter statistics,https://www.dcboe.org/data%2C-maps%2C-forms/voter-registration-statistics,source,,publication_page,active
+building_permits,Building permits,https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/18,source,,arcgis_metadata_layer,active
+business_licenses,Business licenses,https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/0,source,,arcgis_metadata_table,active
+council_hearings_page,Council hearings page,https://dccouncil.gov/hearings/,source,,publication_page,active
+council_hms,Council HMS hearings,https://lims.dccouncil.gov/hearings,source,,hearing_system,active
+council_lims,Council LIMS,https://lims.dccouncil.gov/,source,,legislative_system,active
+council_oversight_budget_schedules,Council oversight and budget schedules,https://dccouncil.gov/2025-2026-performance-oversight-fy-2027-budget-schedules/,source,,publication_page,active
+crime_incidents,Crime incidents,https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/41,source,,arcgis_metadata_layer,active
+dc_code,D.C. Code,https://code.dccouncil.gov/us/dc/council/code,source,,legal_corpus,active
+dc_courts,District of Columbia Courts,https://www.dccourts.gov/,source,,publication_page,active
+dc_government_directories,District Government Directories,https://dc.gov/page/district-government-directories,source,,portal,active
+dc_law_library,D.C. Law Library,https://code.dccouncil.gov/,source,,legal_portal,active
+dcgis.agencies,District Government Agencies table,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6,source,,arcgis_table,active
+dcgis.boards_commissions_councils,"District Boards, Commissions, and Councils table",https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24,source,,arcgis_table,active
+dcgis.government_operations,DCGIS Government Operations ArcGIS service,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer,source,,arcgis_service,active
+dcregs,D.C. Register and DCMR,https://dcregs.dc.gov/,source,,administrative_law_portal,active
+enterprise_dataset_inventory,Enterprise Dataset Inventory,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/11,source,,arcgis_metadata_table,active
+ocfo_budget,OCFO budget and capital plan publications,https://cfo.dc.gov/budget,source,,publication_page,active
+ocfo_financial_reports,OCFO annual financial reports,https://cfo.dc.gov/service/annual-comprehensive-financial-reports-0,source,,publication_page,active
+ocp_transparency_portal,OCP Contracts and Procurement Transparency Portal,https://contracts.ocp.dc.gov/,source,,portal,active
+open_data_dc,Open Data DC,https://opendata.dc.gov/,source,,portal,active
+open_dc_public_bodies,Open DC Public Bodies,https://www.open-dc.gov/public-bodies,source,,portal,active
+pass,PASS procurement and payment data,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer,source,"[""pass.purchase_orders"",""pass.payments"",""pass.forecast"",""pass.contracts"",""pass.solicitations"",""pass.solicitation_attachments""]",arcgis_tables,active
+pass.contracts,PASS Contracts,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/37,source,,arcgis_metadata_table,active
+pass.forecast,PASS Forecast,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/18,source,,arcgis_metadata_table,active
+pass.payments,PASS Payments,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/17,source,,arcgis_metadata_table,active
+pass.purchase_orders,PASS Purchase Orders,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/16,source,,arcgis_metadata_table,active
+pass.solicitation_attachments,PASS Solicitations Attachments,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/20,source,,arcgis_metadata_table,active
+pass.solicitations,PASS Solicitations,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/19,source,,arcgis_metadata_table,active
+propertyquest,PropertyQuest,https://propertyquest.dc.gov/,source,,ui_heavy_source,active
+scout,SCOUT,https://scout.dcra.dc.gov/,source,,ui_heavy_source,active
+service_requests_311,311 service requests,https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21,source,,arcgis_metadata_layer,active

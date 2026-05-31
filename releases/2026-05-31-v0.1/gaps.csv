@@ -1,0 +1,6 @@
+description,id,name,record_type,release_relevant,severity,source_refs,status
+Current officeholder people and tenures are intentionally deferred from the contract release.,current_officeholders_deferred,current officeholders deferred,gap,true,warning,"[""boe_results""]",open
+Legal authority strings from registry rows are preserved but not fully normalized.,legal_authority_crosswalk,legal authority crosswalk,gap,true,warning,"[""dc_code"",""dcgis.agencies""]",open
+Council LIMS public API documentation is thin; discovered endpoints are snapshotted but should be periodically reverified.,lims_api_documentation,lims api documentation,gap,true,warning,"[""council_lims""]",open
+PropertyQuest is a UI-heavy source; public/bulk API investigation is deferred.,propertyquest_api_deferred,propertyquest api deferred,gap,true,warning,"[""propertyquest""]",open
+SCOUT is a UI-heavy source; public/bulk API investigation is deferred.,scout_api_deferred,scout api deferred,gap,true,warning,"[""scout""]",open
