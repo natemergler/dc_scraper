@@ -1622,6 +1622,30 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
     ],
   }).output();
   assertStringIncludes(new TextDecoder().decode(searchOutput.stdout), "dc.board_of_accountancy");
+  const searchJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "search",
+      "accountancy",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const searchJson = JSON.parse(
+    new TextDecoder().decode(searchJsonOutput.stdout),
+  ) as Array<{ entityId: string; name: string }>;
+  assertEquals(searchJsonOutput.code, 0);
+  assertEquals(searchJson[0].entityId, "dc.board_of_accountancy");
   const showOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -1645,6 +1669,34 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   assertStringIncludes(showText, "evidence:");
   assertStringIncludes(showText, "@");
   assertStringIncludes(showText, "legal_refs:");
+  const showJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "show",
+      "dc.board_of_accountancy",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const showJson = JSON.parse(new TextDecoder().decode(showJsonOutput.stdout)) as {
+    entityId: string;
+    evidence: Array<{ fieldPath: string }>;
+    legalRefs: Array<{ refType: string }>;
+  };
+  assertEquals(showJsonOutput.code, 0);
+  assertEquals(showJson.entityId, "dc.board_of_accountancy");
+  assert(showJson.evidence.some((row) => row.fieldPath === "name"));
+  assert(showJson.legalRefs.some((row) => row.refType === "dc_code"));
 });
 
 Deno.test("interactive review Enter accepts the default action", async () => {

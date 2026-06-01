@@ -178,6 +178,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     workbench.init();
     const rows = workbench.searchEntities(readFreeTextArgument(args, 2));
     workbench.close();
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(rows, null, 2));
+      return true;
+    }
     for (const row of rows) {
       const placeholderTag = row.isPlaceholder ? " placeholder" : "";
       console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}${placeholderTag}`);
@@ -189,6 +193,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     workbench.init();
     const view = workbench.entityView(args[2]);
     workbench.close();
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(view, null, 2));
+      return true;
+    }
     console.log(renderEntityView(view));
     return true;
   }
