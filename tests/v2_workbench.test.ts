@@ -1888,6 +1888,163 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   );
 });
 
+Deno.test("relationship raw-value filter narrows branch review slices and safe batch acceptance", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const mixedBranchRowsFixture = {
+    features: [
+      ...dcgisRowsFixture.features,
+      {
+        attributes: {
+          AGENCY_ID: 2001,
+          AGENCY_NAME: "District of Columbia Courts",
+          TYPE: "Agency",
+          BRANCH: "Judicial",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "https://dccourts.gov/",
+          LEGISLATION: "",
+        },
+      },
+      {
+        attributes: {
+          AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Settlement Fund",
+          TYPE: "Fund",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+    ],
+  };
+  const bodyForUrl = (url: string): string => {
+    switch (url) {
+      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+        return JSON.stringify(dcgisMetadataFixture);
+      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        return JSON.stringify(mixedBranchRowsFixture);
+      default:
+        throw new Error(`Unexpected url ${url}`);
+    }
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => bodyForUrl(url),
+    json: async <T>() => JSON.parse(bodyForUrl(url)) as T,
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const commonArgs = [
+    "run",
+    "--allow-read",
+    "--allow-write",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+    "--allow-ffi",
+    "scripts/dc.ts",
+  ];
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dcgis.agencies",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+
+  const executiveListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "review",
+      "list",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.dcgis.agencies",
+      "--raw-value",
+      "Executive",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const executiveList = JSON.parse(
+    new TextDecoder().decode(executiveListOutput.stdout),
+  ) as {
+    count: number;
+    items: Array<{ details: { rawValue: string } }>;
+  };
+  assertEquals(executiveListOutput.code, 0);
+  assertEquals(executiveList.count, 2);
+  assert(executiveList.items.every((item) => item.details.rawValue === "Executive"));
+
+  const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.dcgis.agencies",
+      "--raw-value",
+      "Executive",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(relationshipBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatchOutput.stdout),
+    "Accepted 2 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const relationshipCount = reopened.db.prepare(
+    "select count(*) as count from canonical_relationships",
+  ).get() as { count: number };
+  const remainingBranches = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.dcgis.agencies",
+  }).map((item) => item.details.rawValue);
+  reopened.close();
+  assertEquals(relationshipCount.count, 2);
+  assert(remainingBranches.includes("Judicial"));
+  assert(remainingBranches.includes("Other"));
+  assert(!remainingBranches.includes("Executive"));
+});
+
 Deno.test("resolution replay accepts entities, merges duplicates, accepts one directed relationship, and surfaces inverse display", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

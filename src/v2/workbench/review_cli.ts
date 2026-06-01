@@ -81,6 +81,9 @@ function renderResumeCommand(filters: ReviewItemFilters): string {
   if (filters.relationshipType) {
     parts.push("--relationship-type", quoteShellArg(filters.relationshipType));
   }
+  if (filters.rawValue) {
+    parts.push("--raw-value", quoteShellArg(filters.rawValue));
+  }
   return parts.join(" ");
 }
 
