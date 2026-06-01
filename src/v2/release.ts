@@ -104,6 +104,7 @@ export async function buildV2Release(
       legalRefs,
     ),
   );
+  assertReleaseFilesDoNotContainContactInfo(files);
   for (const [name, content] of files) {
     await Deno.writeTextFile(join(outDir, name), content);
   }
@@ -128,11 +129,24 @@ export async function buildV2Release(
     release_summary: summary,
     source_artifacts: sourceArtifacts,
   };
-  await Deno.writeTextFile(join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2));
+  const manifestText = JSON.stringify(manifest, null, 2);
+  assertNoEmailContactInfo("manifest.json", manifestText);
+  await Deno.writeTextFile(join(outDir, "manifest.json"), manifestText);
   return {
     outDir,
     fileNames: [...Array.from(manifest.files, (file) => file.name), "manifest.json"],
   };
+}
+
+function assertReleaseFilesDoNotContainContactInfo(files: Map<string, string>): void {
+  for (const [name, content] of files) {
+    assertNoEmailContactInfo(name, content);
+  }
+}
+
+function assertNoEmailContactInfo(name: string, content: string): void {
+  if (!/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(content)) return;
+  throw new Error(`Release output contains email-shaped contact info in ${name}`);
 }
 
 async function buildReleaseSqlite(
