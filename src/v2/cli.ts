@@ -93,6 +93,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     workbench.init();
     const summary = sourceSummaryOrConfigured(workbench, args[2]);
     workbench.close();
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(summary, null, 2));
+      return true;
+    }
     console.log(`${summary.sourceId} - ${summary.title}`);
     console.log(`Latest status: ${summary.latestStatus ?? "unfetched"}`);
     console.log(`Latest run: ${summary.latestRunFinishedAt ?? "n/a"}`);
