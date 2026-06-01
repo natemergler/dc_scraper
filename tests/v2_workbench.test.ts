@@ -1243,10 +1243,20 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
     parsed.relationshipCandidates?.filter((candidate) =>
       candidate.relationshipType === "overseen_by"
     ) ?? [];
-  assertEquals(oversightCandidates.length, 2);
+  assertEquals(oversightCandidates.length, 4);
   assert(
     oversightCandidates.every((candidate) =>
       candidate.sourceItemKey.includes(":oversight") && candidate.needsReview === true
+    ),
+  );
+  assertEquals(
+    oversightCandidates.some((candidate) => candidate.rawValue === "twitter"),
+    false,
+  );
+  assert(
+    parsed.reviewItems?.some((item) =>
+      item.subjectId === "relationship.council.committees.committee_on_health_oversight_1" &&
+      item.reason === "Review Council committee oversight relationship"
     ),
   );
 });
@@ -1815,6 +1825,40 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       item.details.relationshipType === "part_of"
     ),
   );
+
+  const limitedJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--limit",
+      "1",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const limitedJson = JSON.parse(new TextDecoder().decode(limitedJsonOutput.stdout)) as {
+    count: number;
+    items: Array<{ itemType: string }>;
+  };
+  assertEquals(limitedJsonOutput.code, 0);
+  assertEquals(limitedJson.count, 1);
+  assertEquals(limitedJson.items.length, 1);
 
   const allStatusJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
