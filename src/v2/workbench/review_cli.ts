@@ -24,11 +24,12 @@ export async function runInteractiveReview(
       return;
     }
     console.log(renderReviewItem(workbench, item));
-    const action = await promptLine("Action [a/r/m/d/q/e]: ");
-    if (!action || action === "q") {
+    const promptedAction = await promptLine("Action [enter/a/r/m/d/q/e]: ");
+    if (promptedAction === undefined || promptedAction === "q") {
       console.log("Review stopped without corrupting state.");
       return;
     }
+    const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
     const event = await actionToEvent(item, action);
     if (!event) {
       console.log("That action is not available for this item.");
@@ -177,6 +178,13 @@ async function actionToEvent(
   return undefined;
 }
 
+function defaultActionKey(defaultAction: string): string {
+  if (defaultAction === "accept") return "a";
+  if (defaultAction === "reject") return "r";
+  if (defaultAction === "defer") return "d";
+  return defaultAction;
+}
+
 function renderDetailsBlock(details: Record<string, unknown>): string[] {
   const entries = Object.entries(details).sort(([left], [right]) => left.localeCompare(right));
   if (entries.length === 0) return ["details: none"];
@@ -259,12 +267,15 @@ function formatDetailValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-async function promptLine(promptText: string): Promise<string> {
+async function promptLine(promptText: string): Promise<string | undefined> {
   await Deno.stdout.write(new TextEncoder().encode(promptText));
   while (!stdinBuffer.includes("\n")) {
     const buffer = new Uint8Array(1024);
     const read = await Deno.stdin.read(buffer);
-    if (read === null) break;
+    if (read === null) {
+      if (stdinBuffer.length === 0) return undefined;
+      break;
+    }
     stdinBuffer += new TextDecoder().decode(buffer.subarray(0, read));
   }
   const newlineIndex = stdinBuffer.indexOf("\n");
