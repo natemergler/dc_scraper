@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
+import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -22,8 +23,8 @@ import {
   openDcCommissionFixture,
   openDcIndexFixture,
   openDcTaskForceFixture,
-  quickbaseFixture,
   quickbaseAppointmentsCsvFixture,
+  quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
 
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
@@ -229,12 +230,16 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
   assertEquals(parsed.items?.length, 5);
-  assert(parsed.entityCandidates?.some((candidate) =>
-    candidate.name === "Downtown Revitalization Committee"
-  ));
-  assert(parsed.entityCandidates?.some((candidate) =>
-    candidate.name === "District of Columbia Rental Housing Commission"
-  ));
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Downtown Revitalization Committee"
+    ),
+  );
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "District of Columbia Rental Housing Commission"
+    ),
+  );
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "governed_by"
@@ -246,9 +251,7 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
     ),
   );
   assert(
-    parsed.reviewItems?.some((item) =>
-      item.itemType === "relationship_candidate"
-    ),
+    parsed.reviewItems?.some((item) => item.itemType === "relationship_candidate"),
   );
   assert(
     parsed.datasets?.some((dataset) => dataset.category === "appointments"),
@@ -882,6 +885,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
+  const releaseDb = new Database(join(outDir, "dcgov.sqlite"));
+  const releaseObjects = releaseDb.prepare(
+    "select name from sqlite_master where type in ('table', 'view') and name not like 'sqlite_%' order by name",
+  ).all().map((row) => String((row as { name: string }).name));
+  releaseDb.close();
   workbench.close();
   assertEquals(
     result.fileNames.sort(),
@@ -916,6 +924,14 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertEquals(Array.isArray(manifest.release_summary.entities_by_review_status), true);
   assertEquals(Array.isArray(manifest.source_artifacts), true);
+  assertEquals(releaseObjects, [
+    "datasets",
+    "entities",
+    "incoming_relationships",
+    "legal_refs",
+    "relationships",
+    "sources",
+  ]);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
