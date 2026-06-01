@@ -19,6 +19,7 @@ export interface ReviewItemFilters {
   subjectPrefix?: string;
   relationshipType?: string;
   rawValue?: string;
+  refType?: string;
   limit?: number;
 }
 
@@ -69,6 +70,10 @@ export function listReviewItems(
     where.push("relationship_candidates.raw_value = ?");
     params.push(filters.rawValue);
   }
+  if (filters.refType) {
+    where.push("legal_refs.ref_type = ?");
+    params.push(filters.refType);
+  }
   const whereSql = where.length === 0 ? "1 = 1" : where.join(" and ");
   const sql = `
 select review_items.review_item_id as reviewItemId,
@@ -81,6 +86,7 @@ select review_items.review_item_id as reviewItemId,
 from review_items
 left join entity_candidates on entity_candidates.candidate_id = review_items.subject_id
 left join relationship_candidates on relationship_candidates.relationship_candidate_id = review_items.subject_id
+left join legal_refs on legal_refs.legal_ref_id = review_items.subject_id
 left join canonical_entities as from_entity on from_entity.entity_id = relationship_candidates.from_entity_ref
 left join canonical_entities as to_entity on to_entity.entity_id = relationship_candidates.to_entity_ref
 where ${whereSql}
@@ -105,6 +111,8 @@ order by
   coalesce(relationship_candidates.raw_value, ''),
   coalesce(relationship_candidates.to_entity_ref, ''),
   coalesce(relationship_candidates.from_entity_ref, ''),
+  coalesce(legal_refs.ref_type, ''),
+  coalesce(legal_refs.normalized_citation, ''),
   review_items.created_at,
   review_items.review_item_id
   ${filters.limit === undefined ? "" : "limit ?"}
