@@ -1436,6 +1436,107 @@ Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambi
   assertEquals(pendingItem.details.refType, "dc_register");
 });
 
+Deno.test("batch defer marks scoped legal refs deferred without changing legal ref status", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
+    fetcher: async (url: string) => ({
+      status: 200,
+      text: async () => {
+        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
+          return legalEntrypointsFixture;
+        }
+        throw new Error(`Unexpected url ${url}`);
+      },
+      json: async <T>() => {
+        throw new Error(`No json fixture for ${url}`) as T;
+      },
+    }),
+  }));
+  await workbench.importConnectorResult(result, dataDir);
+  workbench.close();
+
+  const listOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "legal",
+      "--subject-prefix",
+      "legal.legal.entrypoints",
+      "--ref-type",
+      "dc_register",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const listed = JSON.parse(new TextDecoder().decode(listOutput.stdout)) as {
+    count: number;
+    items: Array<{ details: { refType: string } }>;
+  };
+  assertEquals(listOutput.code, 0);
+  assertEquals(listed.count, 1);
+  assertEquals(listed.items[0].details.refType, "dc_register");
+
+  const deferOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer",
+      "--mode",
+      "legal",
+      "--subject-prefix",
+      "legal.legal.entrypoints",
+      "--ref-type",
+      "dc_register",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(deferOutput.code, 0);
+  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 1 review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const deferred = reopened.listReviewItems({
+    mode: "legal",
+    status: "deferred",
+    subjectPrefix: "legal.legal.entrypoints",
+    refType: "dc_register",
+  });
+  const legalRef = reopened.db.prepare(
+    "select review_status as reviewStatus from legal_refs where ref_type = 'dc_register'",
+  ).get() as { reviewStatus: string };
+  reopened.close();
+  assertEquals(deferred.length, 1);
+  assertEquals(legalRef.reviewStatus, "pending");
+});
+
 Deno.test("dc review legal supports scripted normalize-and-quit flow", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -2109,6 +2210,102 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   assert(remainingBranches.includes("Judicial"));
   assert(remainingBranches.includes("Other"));
   assert(!remainingBranches.includes("Executive"));
+});
+
+Deno.test("batch defer marks a scoped relationship review slice deferred", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const mixedBranchRowsFixture = {
+    features: [
+      ...dcgisRowsFixture.features,
+      {
+        attributes: {
+          AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Settlement Fund",
+          TYPE: "Fund",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+    ],
+  };
+  const bodyForUrl = (url: string): string => {
+    switch (url) {
+      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+        return JSON.stringify(dcgisMetadataFixture);
+      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        return JSON.stringify(mixedBranchRowsFixture);
+      default:
+        throw new Error(`Unexpected url ${url}`);
+    }
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => bodyForUrl(url),
+    json: async <T>() => JSON.parse(bodyForUrl(url)) as T,
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const deferOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.dcgis.agencies",
+      "--raw-value",
+      "Other",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(deferOutput.code, 0);
+  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 1 review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const openOther = reopened.listReviewItems({
+    mode: "relationships",
+    status: "open",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.dcgis.agencies",
+    rawValue: "Other",
+  });
+  const deferredOther = reopened.listReviewItems({
+    mode: "relationships",
+    status: "deferred",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.dcgis.agencies",
+    rawValue: "Other",
+  });
+  reopened.close();
+  assertEquals(openOther.length, 0);
+  assertEquals(deferredOther.length, 1);
 });
 
 Deno.test("resolution replay accepts entities, merges duplicates, accepts one directed relationship, and surfaces inverse display", async () => {

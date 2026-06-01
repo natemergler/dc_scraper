@@ -84,6 +84,9 @@ function renderResumeCommand(filters: ReviewItemFilters): string {
   if (filters.rawValue) {
     parts.push("--raw-value", quoteShellArg(filters.rawValue));
   }
+  if (filters.refType) {
+    parts.push("--ref-type", quoteShellArg(filters.refType));
+  }
   return parts.join(" ");
 }
 
@@ -141,6 +144,34 @@ export async function runBatchAcceptSafe(
   if (skipped.length > 0) {
     console.log(`Skipped ${skipped.length} item(s) that were not safe to auto-accept.`);
   }
+}
+
+export async function runBatchDefer(
+  workbench: Pick<Workbench, "listReviewItems" | "appendResolutionEvent">,
+  filters: ReviewItemFilters,
+  resolutionsDir: string,
+): Promise<void> {
+  if (!isScopedBatchDefer(filters)) {
+    throw new Error(
+      "Batch defer requires --mode, --subject-prefix, and at least one narrowing filter.",
+    );
+  }
+  const items = workbench.listReviewItems({ ...filters, status: "open" });
+  for (const item of items) {
+    await workbench.appendResolutionEvent(
+      { eventType: "defer_review_item", subjectId: item.reviewItemId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  console.log(`Deferred ${items.length} review item(s).`);
+}
+
+function isScopedBatchDefer(filters: ReviewItemFilters): boolean {
+  return Boolean(
+    filters.mode &&
+      filters.subjectPrefix &&
+      (filters.type || filters.relationshipType || filters.rawValue || filters.refType),
+  );
 }
 
 function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
