@@ -294,6 +294,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
   const statusFlag = readFlag(args, "--status");
   const typeFlag = readFlag(args, "--type");
   const subjectPrefix = readFlag(args, "--subject-prefix");
+  const relationshipType = readFlag(args, "--relationship-type");
   const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
     ? args[1]
     : undefined;
@@ -302,6 +303,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
     status: statusFlag as ReviewItemFilters["status"] | undefined,
     type: typeFlag as ReviewItemFilters["type"] | undefined,
     subjectPrefix: subjectPrefix ?? undefined,
+    relationshipType: relationshipType ?? undefined,
   };
 }
 
@@ -421,8 +423,8 @@ Usage:
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--json]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
   dc review batch accept-safe [--mode <mode>] [--db <path>] [--resolutions-dir <path>]
   dc entity search <query> [--db <path>] [--json]
   dc entity show <entity-id> [--db <path>] [--json]
@@ -441,8 +443,8 @@ function printReviewHelp(): void {
   console.log(`dc review
 
 Usage:
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--json]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
   dc review batch accept-safe [--mode <mode>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:

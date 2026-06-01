@@ -1517,6 +1517,46 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assert(json.items.every((item) => item.itemType === "entity_candidate"));
   assert(json.items.every((item) => item.subjectId.startsWith("candidate.council.committees")));
 
+  const relationshipTypeJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const relationshipTypeJson = JSON.parse(
+    new TextDecoder().decode(relationshipTypeJsonOutput.stdout),
+  ) as {
+    count: number;
+    items: Array<{ itemType: string; subjectId: string; details: { relationshipType: string } }>;
+  };
+  assertEquals(relationshipTypeJsonOutput.code, 0);
+  assert(relationshipTypeJson.count > 0);
+  assert(
+    relationshipTypeJson.items.every((item) =>
+      item.itemType === "relationship_candidate" &&
+      item.subjectId.startsWith("relationship.council.committees") &&
+      item.details.relationshipType === "part_of"
+    ),
+  );
+
   const allStatusJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [

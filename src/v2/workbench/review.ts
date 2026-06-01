@@ -17,6 +17,7 @@ export interface ReviewItemFilters {
   status?: ReviewStatus | "resolved" | "all";
   type?: ReviewItemRecord["itemType"];
   subjectPrefix?: string;
+  relationshipType?: string;
   limit?: number;
 }
 
@@ -58,6 +59,10 @@ export function listReviewItems(
       `%${filters.subjectPrefix}.%`,
       filters.subjectPrefix,
     );
+  }
+  if (filters.relationshipType) {
+    where.push("relationship_candidates.relationship_type = ?");
+    params.push(filters.relationshipType);
   }
   const whereSql = where.length === 0 ? "1 = 1" : where.join(" and ");
   const sql = `
