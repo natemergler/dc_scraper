@@ -18,15 +18,16 @@ export async function runInteractiveReview(
 ): Promise<void> {
   const encoder = new TextEncoder();
   while (true) {
-    const item = workbench.listReviewItems(filters).at(0);
+    const items = workbench.listReviewItems(filters);
+    const item = items.at(0);
     if (!item) {
       console.log("No review items remain.");
       return;
     }
     console.log(renderReviewItem(workbench, item));
-    const promptedAction = await promptLine("Action [enter/a/r/m/d/q/e]: ");
+    const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);
     if (promptedAction === undefined || promptedAction === "q") {
-      console.log("Review stopped without corrupting state.");
+      console.log(`Review stopped. ${items.length} item(s) remain. Resume with dc review.`);
       return;
     }
     const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
@@ -46,11 +47,14 @@ export function renderReviewItem(
 ): string {
   return [
     `Review item: ${item.reviewItemId}`,
-    `type: ${item.itemType}`,
-    `subject: ${item.subjectId}`,
-    `status: ${item.status}`,
-    `reason: ${item.reason}`,
-    `default action: ${item.defaultAction}`,
+    "What needs review",
+    `- type: ${item.itemType}`,
+    `- subject: ${item.subjectId}`,
+    `- status: ${item.status}`,
+    "Why this matters",
+    item.reason,
+    `Default action: ${renderDefaultAction(item)}`,
+    `Available actions: ${availableActionLabels(item).join(", ")}`,
     ...renderDetailsBlock(item.details),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].join("\n");
@@ -185,6 +189,34 @@ function defaultActionKey(defaultAction: string): string {
   return defaultAction;
 }
 
+function renderDefaultAction(item: ReviewItemRecord): string {
+  return `${item.defaultAction} (Enter or ${defaultActionKey(item.defaultAction)})`;
+}
+
+function actionPrompt(item: ReviewItemRecord): string {
+  const keys = availableActionKeys(item).map((key) => key === "" ? "Enter" : key);
+  return keys.join("/");
+}
+
+function availableActionLabels(item: ReviewItemRecord): string[] {
+  return availableActionKeys(item).map((key) => {
+    if (key === "") return `Enter ${item.defaultAction}`;
+    if (key === "a") return "a accept";
+    if (key === "r") return "r reject";
+    if (key === "m") return "m merge";
+    if (key === "e") return "e edit relationship type";
+    if (key === "d") return "d defer";
+    if (key === "q") return "q quit";
+    return key;
+  });
+}
+
+function availableActionKeys(item: ReviewItemRecord): string[] {
+  if (item.itemType === "entity_candidate") return ["", "a", "r", "m", "d", "q"];
+  if (item.itemType === "relationship_candidate") return ["", "a", "e", "r", "d", "q"];
+  return ["", "d", "q"];
+}
+
 function renderDetailsBlock(details: Record<string, unknown>): string[] {
   const entries = Object.entries(details).sort(([left], [right]) => left.localeCompare(right));
   if (entries.length === 0) return ["details: none"];
@@ -198,9 +230,10 @@ function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
   if (evidence.length === 0) return ["evidence: none"];
   return [
     "evidence:",
-    ...evidence.slice(0, 8).map((row) =>
-      `- ${row.fieldPath} <- ${row.observedValue} [${row.sourceId} @ ${row.artifactPath}]`
-    ),
+    ...evidence.slice(0, 8).flatMap((row) => [
+      `- ${row.fieldPath} <- ${row.observedValue}`,
+      `  source: ${row.sourceId} @ ${row.artifactPath}`,
+    ]),
   ];
 }
 
