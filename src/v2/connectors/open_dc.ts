@@ -16,6 +16,7 @@ import {
 import {
   artifact,
   buildCandidateReviewItem,
+  buildKnownEntityRef,
   captureSingle,
   fieldEvidence,
   toAbsoluteUrl,
@@ -218,7 +219,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         relationshipCandidateId,
         sourceItemKey: itemKey,
         fromEntityRef: proposedEntityId,
-        toEntityRef: buildEntityId(detail.governingAgency),
+        toEntityRef: buildKnownEntityRef(detail.governingAgency),
         relationshipType: "governed_by",
         rawValue: detail.governingAgency,
         evidence: [fieldEvidence("governingAgency", detail.governingAgency, artifactIndex)],
@@ -231,7 +232,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         defaultAction: "accept",
         details: {
           fromEntityRef: proposedEntityId,
-          toEntityRef: buildEntityId(detail.governingAgency),
+          toEntityRef: buildKnownEntityRef(detail.governingAgency),
           relationshipType: "governed_by",
           rawValue: detail.governingAgency,
         },
@@ -246,7 +247,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         relationshipCandidateId,
         sourceItemKey: itemKey,
         fromEntityRef: proposedEntityId,
-        toEntityRef: buildEntityId(detail.administeringAgency),
+        toEntityRef: buildKnownEntityRef(detail.administeringAgency),
         relationshipType: "governed_by",
         rawValue: detail.administeringAgency,
         evidence: [fieldEvidence("administeringAgency", detail.administeringAgency, artifactIndex)],
@@ -259,7 +260,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         defaultAction: "accept",
         details: {
           fromEntityRef: proposedEntityId,
-          toEntityRef: buildEntityId(detail.administeringAgency),
+          toEntityRef: buildKnownEntityRef(detail.administeringAgency),
           relationshipType: "governed_by",
           rawValue: detail.administeringAgency,
         },

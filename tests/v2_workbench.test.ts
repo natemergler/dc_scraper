@@ -647,6 +647,9 @@ Deno.test("failed parsed imports keep artifacts but roll back partial typed rows
 });
 
 Deno.test("quickbase connector parses public CSV appointment rows into entities, relationships, and review items", async () => {
+  const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
+"Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`;
   const result = await getConnector("mota.quickbase").run(
     createConnectorContext({
       fetcher: async (url: string) => {
@@ -655,7 +658,7 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
             case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
               return quickbaseFixture;
             case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return quickbaseAppointmentsCsvFixture;
+              return appointmentsCsvWithAlias;
             default:
               throw new Error(`Unexpected url ${url}`);
           }
@@ -672,7 +675,7 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
   assertEquals(result.endpointResults[1].status, "success");
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
-  assertEquals(parsed.items?.length, 5);
+  assertEquals(parsed.items?.length, 6);
   assert(
     parsed.entityCandidates?.some((candidate) =>
       candidate.name === "Downtown Revitalization Committee"
@@ -690,7 +693,15 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
   );
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "overseen_by" && candidate.toEntityRef === "dc.council"
+      candidate.relationshipType === "overseen_by" &&
+      candidate.toEntityRef === "dc.council_of_the_district_of_columbia"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "governed_by" &&
+      candidate.rawValue === "Alcoholic Beverages and Cannabis Administration (ABCA) Designee" &&
+      candidate.toEntityRef === "dc.alcoholic_beverage_and_cannabis_administration"
     ),
   );
   assert(
@@ -805,10 +816,23 @@ Deno.test("Open DC detail evidence points to the detail artifact rather than the
   ).get("legal.open_dc.public_bodies.adult_career_pathways_task_force_authority") as {
     url: string | null;
   };
+  const endpointAliases = new Map(
+    workbench.db.prepare(
+      "select raw_value as rawValue, to_entity_ref as toEntityRef from relationship_candidates where raw_value in ('DLCP/OPL', 'DOES')",
+    ).all().map((row) => {
+      const alias = row as { rawValue: string; toEntityRef: string };
+      return [alias.rawValue, alias.toEntityRef];
+    }),
+  );
   workbench.close();
   assert(detailItem.artifactPath !== indexItem.artifactPath);
   assertEquals(evidence.artifactPath, detailItem.artifactPath);
   assertEquals(taskForceLegalRef.url, null);
+  assertEquals(
+    endpointAliases.get("DLCP/OPL"),
+    "dc.department_of_licensing_and_consumer_protection",
+  );
+  assertEquals(endpointAliases.get("DOES"), "dc.department_of_employment_services");
 });
 
 Deno.test("Open DC second detail-page shape yields administered and legal-authority relationship candidates plus document links", async () => {
@@ -940,14 +964,15 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
     },
     resolutionsDir,
   );
-  const placeholderView = workbench.entityView("dc.council");
+  const placeholderView = workbench.entityView("dc.council_of_the_district_of_columbia");
   const reviewItems = workbench.listReviewItems("entities");
   workbench.close();
   assertEquals(placeholderView.reviewStatus, "placeholder");
   assertStringIncludes(placeholderView.placeholderReason ?? "", "relationship candidate");
   assert(
     reviewItems.some((item) =>
-      item.itemType === "placeholder_entity" && item.subjectId === "dc.council"
+      item.itemType === "placeholder_entity" &&
+      item.subjectId === "dc.council_of_the_district_of_columbia"
     ),
   );
 });
@@ -988,10 +1013,13 @@ Deno.test("relationship review renders endpoint status and placeholder implicati
   const before = renderReviewItem(workbench, item);
   assertStringIncludes(before, "relationship:");
   assertStringIncludes(before, "- type: part_of");
-  assertStringIncludes(before, "- family: part_of -> dc.council");
+  assertStringIncludes(before, "- family: part_of -> dc.council_of_the_district_of_columbia");
   assertStringIncludes(before, 'dc.committee_of_the_whole "Committee of the Whole"');
   assertStringIncludes(before, "candidate pending");
-  assertStringIncludes(before, "dc.council (missing; accepting will create a placeholder entity)");
+  assertStringIncludes(
+    before,
+    "dc.council_of_the_district_of_columbia (missing; accepting will create a placeholder entity)",
+  );
   assertStringIncludes(before, "e edit type/endpoints and accept");
 
   await workbench.appendResolutionEvent(
@@ -1018,7 +1046,7 @@ Deno.test("relationship review renders endpoint status and placeholder implicati
   assertStringIncludes(after, 'dc.committee_of_the_whole "Committee of the Whole" (accepted)');
   assertStringIncludes(
     after,
-    'dc.council "Council" (placeholder; review placeholder before relying on this edge)',
+    'dc.council_of_the_district_of_columbia "Council Of The District Of Columbia" (placeholder; review placeholder before relying on this edge)',
   );
 });
 
@@ -1388,7 +1416,7 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
   assertEquals(items[0].itemType, "source_status");
   assertEquals(items[0].subjectId, "mota.quickbase");
   assertEquals(items[1].itemType, "placeholder_entity");
-  assertEquals(items[1].subjectId, "dc.council");
+  assertEquals(items[1].subjectId, "dc.council_of_the_district_of_columbia");
   assert(items.slice(2).some((item) => item.itemType === "relationship_candidate"));
   assert(items.slice(2).some((item) => item.itemType === "entity_candidate"));
 });
@@ -1698,7 +1726,7 @@ Deno.test("resolution replay accepts entities, merges duplicates, accepts one di
       eventType: "merge_entity_candidates",
       subjectId: "candidate.council.committees.committee_of_the_whole",
       payload: {
-        entityId: "dc.council",
+        entityId: "dc.council_of_the_district_of_columbia",
         candidateIds: ["candidate.council.committees.committee_of_the_whole"],
       },
     },
@@ -1712,15 +1740,19 @@ Deno.test("resolution replay accepts entities, merges duplicates, accepts one di
     },
     resolutionsDir,
   );
-  const entity = workbench.entityView("dc.council");
+  const entity = workbench.entityView("dc.council_of_the_district_of_columbia");
   await workbench.replayResolutionDirectory(resolutionsDir);
   const firstReplay = workbench.db.prepare(
     "select source_event_id as sourceEventId from canonical_relationships where relationship_id = ?",
-  ).get("dc.committee_of_the_whole:part_of:dc.council") as { sourceEventId: string };
+  ).get("dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia") as {
+    sourceEventId: string;
+  };
   await workbench.replayResolutionDirectory(resolutionsDir);
   const secondReplay = workbench.db.prepare(
     "select source_event_id as sourceEventId from canonical_relationships where relationship_id = ?",
-  ).get("dc.committee_of_the_whole:part_of:dc.council") as { sourceEventId: string };
+  ).get("dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia") as {
+    sourceEventId: string;
+  };
   workbench.close();
   assert(entity.incoming.some((row) => row.sourceEntityId === "dc.committee_of_the_whole"));
   assertEquals(entity.incoming.length, 1);
