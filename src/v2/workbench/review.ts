@@ -19,6 +19,7 @@ export interface ReviewItemFilters {
   subjectPrefix?: string;
   relationshipType?: string;
   rawValue?: string;
+  rawValueContains?: string;
   refType?: string;
   limit?: number;
 }
@@ -69,6 +70,10 @@ export function listReviewItems(
   if (filters.rawValue) {
     where.push("relationship_candidates.raw_value = ?");
     params.push(filters.rawValue);
+  }
+  if (filters.rawValueContains) {
+    where.push("relationship_candidates.raw_value like ? escape '\\'");
+    params.push(`%${escapeSqlLike(filters.rawValueContains)}%`);
   }
   if (filters.refType) {
     where.push("legal_refs.ref_type = ?");
@@ -237,6 +242,10 @@ function normalizeReviewItemFilters(
     return { mode: modeOrFilters };
   }
   return modeOrFilters ?? {};
+}
+
+function escapeSqlLike(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
 
 function parseDetails(detailsJson: string): Record<string, unknown> {
