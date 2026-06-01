@@ -23,6 +23,7 @@ import {
   openDcIndexFixture,
   openDcTaskForceFixture,
   quickbaseFixture,
+  quickbaseAppointmentsCsvFixture,
 } from "./helpers/v2_fixtures.ts";
 
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
@@ -66,7 +67,14 @@ Deno.test("imports representative connector results and source inspection stays 
     ],
     ["https://dccouncil.gov/committees/committee-on-health/", councilCommitteeHealthDetailFixture],
     ["https://lims.dccouncil.gov/api/Search/GetWhatsNew", limsFixture],
-    ["https://octo.quickbase.com/db/bjngwsngm?a=td", quickbaseFixture],
+    [
+      "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0",
+      quickbaseFixture,
+    ],
+    [
+      "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs",
+      quickbaseAppointmentsCsvFixture,
+    ],
     ["https://dc.gov/page/laws-regulations-and-courts", legalEntrypointsFixture],
     [
       "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21?f=json",
@@ -182,13 +190,69 @@ Deno.test("imports representative connector results and source inspection stays 
   assertEquals(dcgis.fieldCount, 7);
   assertEquals(dcgis.entityCandidateCount, 2);
   assertEquals(dcgis.relationshipCandidateCount, 2);
-  assertEquals(quickbase.latestStatus, "failed");
+  assertEquals(quickbase.latestStatus, "success");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
+  assertEquals(quickbase.itemCount > 0, true);
+  assertEquals(quickbase.entityCandidateCount > 0, true);
+  assertEquals(quickbase.relationshipCandidateCount > 0, true);
   assertEquals(hasRegisterRef, true);
   assertEquals(permitSummary.fieldCount > 0, true);
   assertEquals(categories.has("procurement"), true);
   assertEquals(categories.has("budget"), true);
   assertEquals(categories.has("crime_incidents"), true);
+});
+
+Deno.test("quickbase connector parses public CSV appointment rows into entities, relationships, and review items", async () => {
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return quickbaseAppointmentsCsvFixture;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+  assertEquals(result.endpointResults.length, 2);
+  assertEquals(result.endpointResults[1].status, "success");
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 5);
+  assert(parsed.entityCandidates?.some((candidate) =>
+    candidate.name === "Downtown Revitalization Committee"
+  ));
+  assert(parsed.entityCandidates?.some((candidate) =>
+    candidate.name === "District of Columbia Rental Housing Commission"
+  ));
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "governed_by"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "overseen_by" && candidate.toEntityRef === "dc.council"
+    ),
+  );
+  assert(
+    parsed.reviewItems?.some((item) =>
+      item.itemType === "relationship_candidate"
+    ),
+  );
+  assert(
+    parsed.datasets?.some((dataset) => dataset.category === "appointments"),
+  );
 });
 
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
@@ -444,8 +508,10 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
           return councilCommitteeWholeDetailFixture;
         case "https://dccouncil.gov/committees/committee-on-health/":
           return councilCommitteeHealthDetailFixture;
-        case "https://octo.quickbase.com/db/bjngwsngm?a=td":
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
           return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return quickbaseAppointmentsCsvFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
