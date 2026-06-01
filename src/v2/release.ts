@@ -148,7 +148,7 @@ Files:
 - \`dcgov.sqlite\`: release SQLite package
 - \`entities.*\`: canonical entities
 - \`relationships.*\`: directed canonical relationships
-- \`sources.*\`: source inventory and latest artifact pointers
+- \`sources.*\`: source inventory and latest artifact metadata
 - \`datasets.*\`: public dataset inventory
 - \`legal_refs.*\`: normalized and source-backed legal references
 
