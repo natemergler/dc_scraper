@@ -38,8 +38,8 @@ export async function appendResolutionEvent(
     subject_id: event.subjectId,
     payload: event.payload,
   });
-  await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   applyResolutionEvent(store, event, relative(resolutionsDir, filePath), sequenceNumber);
+  await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   return { filePath, sequenceNumber };
 }
 
