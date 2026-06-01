@@ -321,6 +321,86 @@ Deno.test("CLI command errors print a concise message", async () => {
   assert(!stderr.includes(" at "));
 });
 
+Deno.test("focused CLI help exits zero and does not run commands", async () => {
+  const sourceHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "--help",
+    ],
+  }).output();
+  const sourceText = new TextDecoder().decode(sourceHelp.stdout);
+  assertEquals(sourceHelp.code, 0);
+  assertStringIncludes(sourceText, "dc source list");
+  assertStringIncludes(sourceText, "dc source fetch <source-id>");
+  assertStringIncludes(sourceText, "dc source inspect <source-id>");
+
+  const reviewHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--help",
+    ],
+  }).output();
+  const reviewText = new TextDecoder().decode(reviewHelp.stdout);
+  assertEquals(reviewHelp.code, 0);
+  assertStringIncludes(reviewText, "Usage:");
+  assertStringIncludes(reviewText, "dc review [entities|relationships|legal|sources]");
+  assertStringIncludes(reviewText, "dc review list");
+  assert(!reviewText.includes("No review items remain."));
+
+  const entityHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "--help",
+    ],
+  }).output();
+  const entityText = new TextDecoder().decode(entityHelp.stdout);
+  assertEquals(entityHelp.code, 0);
+  assertStringIncludes(entityText, "dc entity search <query>");
+  assertStringIncludes(entityText, "dc entity show <entity-id>");
+
+  const releaseHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "--help",
+    ],
+  }).output();
+  const releaseText = new TextDecoder().decode(releaseHelp.stdout);
+  const releaseError = new TextDecoder().decode(releaseHelp.stderr);
+  assertEquals(releaseHelp.code, 0);
+  assertStringIncludes(releaseText, "Usage:");
+  assertStringIncludes(releaseText, "dc release build");
+  assertStringIncludes(releaseText, "dc release inspect");
+  assertEquals(releaseError, "");
+});
+
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
