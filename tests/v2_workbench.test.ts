@@ -76,6 +76,26 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   assertStringIncludes(new TextDecoder().decode(statusOutput.stdout), "Schema version: 2");
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(sourceListOutput.code, 0);
+  const sourceListText = new TextDecoder().decode(sourceListOutput.stdout);
+  assertStringIncludes(sourceListText, "dcgis.agencies unfetched");
+  assertStringIncludes(sourceListText, "mota.quickbase unfetched");
 });
 
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
