@@ -304,6 +304,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
   const relationshipType = readFlag(args, "--relationship-type");
   const rawValue = readFlag(args, "--raw-value");
   const refType = readFlag(args, "--ref-type");
+  const limit = readNumberFlag(args, "--limit");
   const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
     ? args[1]
     : undefined;
@@ -315,6 +316,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
     relationshipType: relationshipType ?? undefined,
     rawValue: rawValue ?? undefined,
     refType: refType ?? undefined,
+    limit,
   };
 }
 
@@ -435,7 +437,7 @@ Usage:
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--json]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--limit <n>] [--json]
   dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc entity search <query> [--db <path>] [--json]
@@ -456,7 +458,7 @@ function printReviewHelp(): void {
 
 Usage:
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--json]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--limit <n>] [--json]
   dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
