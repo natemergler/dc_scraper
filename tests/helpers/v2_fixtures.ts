@@ -74,6 +74,20 @@ export const openDcTaskForceFixture = `
 </body></html>
 `;
 
+export const openDcStreetHarassmentFixture = `
+<html><body>
+  <h1 class="page-title">Advisory Committee on Street Harassment</h1>
+  <div class="field field-name-field-statute-mayors-order field-type-link-field field-label-inline clearfix">
+    <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+    <div class="field-items"><div class="field-item even"><a href="https://code.dccouncil.us/us/dc/council/code/sections/2-1441">D.C. Official Code § 2-1441</a></div></div>
+  </div>
+  <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+    <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+    <div class="field-items"><div class="field-item even">Office of Human Rights</div></div>
+  </div>
+</body></html>
+`;
+
 export const openDcCommissionFixture = `
 <html><body>
   <h1 class="page-title">Commission on Example Services</h1>
