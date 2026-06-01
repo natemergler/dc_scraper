@@ -1,5 +1,6 @@
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
+import { Database } from "@db/sqlite";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256Hex } from "./domain.ts";
 
@@ -106,7 +107,13 @@ export async function buildV2Release(
   for (const [name, content] of files) {
     await Deno.writeTextFile(join(outDir, name), content);
   }
-  await Deno.copyFile(workbench.dbPath, join(outDir, "dcgov.sqlite"));
+  await buildReleaseSqlite(join(outDir, "dcgov.sqlite"), {
+    entities,
+    relationships,
+    sources,
+    datasets,
+    legalRefs,
+  });
   const readme = buildReadme(summary);
   await Deno.writeTextFile(join(outDir, "README.md"), readme);
   const manifest = {
@@ -126,6 +133,171 @@ export async function buildV2Release(
     outDir,
     fileNames: [...Array.from(manifest.files, (file) => file.name), "manifest.json"],
   };
+}
+
+async function buildReleaseSqlite(
+  path: string,
+  rows: {
+    entities: EntityRow[];
+    relationships: RelationshipRow[];
+    sources: SourceRow[];
+    datasets: DatasetRow[];
+    legalRefs: LegalRefRow[];
+  },
+): Promise<void> {
+  await Deno.remove(path).catch((error) => {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  });
+  const db = new Database(path);
+  try {
+    db.exec(`
+      create table entities (
+        id text primary key,
+        name text not null,
+        kind text not null,
+        branch text,
+        cluster text,
+        official_url text,
+        review_status text not null
+      );
+
+      create table relationships (
+        id text primary key,
+        from_entity_id text not null,
+        relationship_type text not null,
+        to_entity_id text not null,
+        review_status text not null
+      );
+
+      create view incoming_relationships as
+        select
+          relationships.to_entity_id as entity_id,
+          relationships.relationship_type as relationship_type,
+          relationships.from_entity_id as source_entity_id,
+          entities.name as source_name,
+          relationships.review_status as review_status
+        from relationships
+        left join entities on entities.id = relationships.from_entity_id;
+
+      create table sources (
+        source_id text primary key,
+        title text not null,
+        kind text not null,
+        access_method text not null,
+        latest_status text,
+        latest_run_finished_at text,
+        latest_endpoint_id text,
+        latest_artifact_kind text,
+        latest_fetched_url text,
+        latest_content_hash text,
+        latest_size_bytes integer,
+        latest_observed_at text
+      );
+
+      create table datasets (
+        id text primary key,
+        name text not null,
+        category text not null,
+        owner_name text,
+        access_method text not null,
+        artifact_depth text not null,
+        official_url text,
+        review_status text not null
+      );
+
+      create table legal_refs (
+        id text primary key,
+        ref_type text not null,
+        citation_text text not null,
+        normalized_citation text,
+        url text,
+        source_id text not null,
+        source_item_id text not null,
+        source_url text,
+        needs_review integer not null,
+        review_status text not null
+      );
+    `);
+    const insertEntity = db.prepare(
+      "insert into entities(id, name, kind, branch, cluster, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.entities) {
+      insertEntity.run([
+        row.id,
+        row.name,
+        row.kind,
+        row.branch ?? null,
+        row.cluster ?? null,
+        row.official_url ?? null,
+        row.review_status,
+      ]);
+    }
+    const insertRelationship = db.prepare(
+      "insert into relationships(id, from_entity_id, relationship_type, to_entity_id, review_status) values(?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.relationships) {
+      insertRelationship.run([
+        row.id,
+        row.from_entity_id,
+        row.relationship_type,
+        row.to_entity_id,
+        row.review_status,
+      ]);
+    }
+    const insertSource = db.prepare(
+      "insert into sources(source_id, title, kind, access_method, latest_status, latest_run_finished_at, latest_endpoint_id, latest_artifact_kind, latest_fetched_url, latest_content_hash, latest_size_bytes, latest_observed_at) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.sources) {
+      insertSource.run([
+        row.source_id,
+        row.title,
+        row.kind,
+        row.access_method,
+        row.latest_status ?? null,
+        row.latest_run_finished_at ?? null,
+        row.latest_endpoint_id ?? null,
+        row.latest_artifact_kind ?? null,
+        row.latest_fetched_url ?? null,
+        row.latest_content_hash ?? null,
+        row.latest_size_bytes ?? null,
+        row.latest_observed_at ?? null,
+      ]);
+    }
+    const insertDataset = db.prepare(
+      "insert into datasets(id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.datasets) {
+      insertDataset.run([
+        row.id,
+        row.name,
+        row.category,
+        row.owner_name ?? null,
+        row.access_method,
+        row.artifact_depth,
+        row.official_url ?? null,
+        row.review_status,
+      ]);
+    }
+    const insertLegalRef = db.prepare(
+      "insert into legal_refs(id, ref_type, citation_text, normalized_citation, url, source_id, source_item_id, source_url, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.legalRefs) {
+      insertLegalRef.run([
+        row.id,
+        row.ref_type,
+        row.citation_text,
+        row.normalized_citation ?? null,
+        row.url ?? null,
+        row.source_id,
+        row.source_item_id,
+        row.source_url ?? null,
+        row.needs_review,
+        row.review_status,
+      ]);
+    }
+  } finally {
+    db.close();
+  }
 }
 
 function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
