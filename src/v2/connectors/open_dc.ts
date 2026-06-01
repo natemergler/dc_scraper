@@ -19,6 +19,7 @@ import {
   captureSingle,
   fieldEvidence,
   toAbsoluteUrl,
+  toPublicHttpUrl,
 } from "./shared.ts";
 import type { ConnectorContext, ConnectorResult, SourceConnector } from "./shared.ts";
 import { detectEntityKind } from "../domain.ts";
@@ -331,9 +332,12 @@ function parseOpenDcDetail(
 } {
   const slug = detailUrl.split("/").pop() ?? detailUrl;
   const name = captureSingle(html, /<h1 class="page-title">([^<]+)<\/h1>/i) ?? slug;
-  const enablingAuthorityUrl = captureSingle(
-    html,
-    /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a href="([^"]+)"/i,
+  const enablingAuthorityUrl = toPublicHttpUrl(
+    detailUrl,
+    captureSingle(
+      html,
+      /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a href="([^"]+)"/i,
+    ),
   );
   const enablingAuthority = captureSingle(
     html,
@@ -352,18 +356,18 @@ function parseOpenDcDetail(
     /Administering Agency \/ Agency Acronym:[\s\S]*?<div class="field-items"><div class="field-item even">([\s\S]*?)<\/div>/i,
   );
   const meetingCount = [...html.matchAll(/class="view-meetings-calendar"/g)].length;
-  const meetingLinks = [...html.matchAll(/<a href="([^"]*meetings[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
-    (match) => ({
-      href: toAbsoluteUrl(detailUrl, match[1]),
+  const meetingLinks = [...html.matchAll(/<a href="([^"]*meetings[^"]*)"[^>]*>(.*?)<\/a>/gsi)]
+    .map((match) => ({
+      href: toPublicHttpUrl(detailUrl, match[1]),
       label: normalizeName(stripHtml(match[2])),
-    }),
-  );
-  const documentLinks = [...html.matchAll(/<a href="([^"]+\.pdf[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
-    (match) => ({
-      href: toAbsoluteUrl(detailUrl, match[1]),
+    }))
+    .filter((link): link is { href: string; label: string } => link.href !== undefined);
+  const documentLinks = [...html.matchAll(/<a href="([^"]+\.pdf[^"]*)"[^>]*>(.*?)<\/a>/gsi)]
+    .map((match) => ({
+      href: toPublicHttpUrl(detailUrl, match[1]),
       label: normalizeName(stripHtml(match[2])),
-    }),
-  );
+    }))
+    .filter((link): link is { href: string; label: string } => link.href !== undefined);
   return {
     slug,
     name: normalizeName(stripHtml(name)),

@@ -158,6 +158,30 @@ function assertNoContactInfo(name: string, content: string): void {
   if (/\b(?:tel:)?(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]\d{3}[-. ]\d{4}\b/i.test(content)) {
     throw new Error(`Release output contains phone-shaped contact info in ${name}`);
   }
+  if (containsLocalPath(content)) {
+    throw new Error(`Release output contains local path-shaped info in ${name}`);
+  }
+}
+
+function containsLocalPath(content: string): boolean {
+  const decoded = repeatedlyDecodeURIComponent(content).replaceAll("\\", "/");
+  return /\bfile:/i.test(decoded) ||
+    /\b[a-z]:\/Users\//i.test(decoded) ||
+    /(^|[^a-z])\/(?:tmp|var\/home|home)\/[^"',\s]+/i.test(decoded);
+}
+
+function repeatedlyDecodeURIComponent(value: string): string {
+  let decoded = value;
+  for (let index = 0; index < 3; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded;
 }
 
 async function buildReleaseSqlite(
