@@ -10,6 +10,20 @@ import {
 import { Workbench } from "./workbench.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
 
+interface ReleaseManifest {
+  generated_at?: string;
+  files?: Array<{ name: string }>;
+  release_summary?: {
+    entities_by_review_status?: Array<{ review_status: string; count: number }>;
+    relationships_by_review_status?: Array<{ review_status: string; count: number }>;
+    legal_refs_by_type?: Array<{ ref_type: string; count: number }>;
+    legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
+    source_count?: number;
+    failed_source_count?: number;
+    dataset_count?: number;
+  };
+}
+
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
   const dbPath = readFlag(args, "--db") ?? join(Deno.cwd(), "data", "workbench.sqlite");
@@ -148,6 +162,13 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     console.log(`Built v2 release ${result.outDir}`);
     return true;
   }
+  if (args[0] === "release" && args[1] === "inspect") {
+    const manifest = JSON.parse(
+      await Deno.readTextFile(join(outDir, "manifest.json")),
+    ) as ReleaseManifest;
+    console.log(renderReleaseInspection(outDir, manifest));
+    return true;
+  }
   return false;
 }
 
@@ -224,6 +245,32 @@ function nextCommand(options: {
   return "dc release build";
 }
 
+function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): string {
+  const summary = manifest.release_summary ?? {};
+  return [
+    `Release: ${outDir}`,
+    `Generated: ${manifest.generated_at ?? "unknown"}`,
+    `Files: ${(manifest.files?.length ?? 0) + 1}`,
+    `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
+    `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
+    `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
+    `Datasets: total=${summary.dataset_count ?? 0}`,
+    `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
+    `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
+  ].join("\n");
+}
+
+function renderReviewStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
+  return rows.map((row) => `${row.review_status}=${row.count}`).join(", ") || "none";
+}
+
+function renderNamedCounts<T extends string>(
+  rows: Array<Record<T, string> & { count: number }>,
+  nameKey: T,
+): string {
+  return rows.map((row) => `${row[nameKey]}=${row.count}`).join(", ") || "none";
+}
+
 export function printHelp(): void {
   console.log(`dc civic-data workbench
 
@@ -240,6 +287,7 @@ Usage:
   dc entity search <query> [--db <path>]
   dc entity show <entity-id> [--db <path>]
   dc release build [--db <path>] [--out <dir>]
+  dc release inspect [--out <dir>]
 
 Defaults:
   workbench db: data/workbench.sqlite

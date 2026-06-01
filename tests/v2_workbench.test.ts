@@ -1200,6 +1200,25 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "relationships",
     "sources",
   ]);
+  const inspectOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+    ],
+  }).output();
+  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  assertEquals(inspectOutput.code, 0);
+  assertStringIncludes(inspectText, "Files: 13");
+  assertStringIncludes(inspectText, "Entities: accepted=2");
+  assertStringIncludes(inspectText, "Relationships: accepted=1");
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
