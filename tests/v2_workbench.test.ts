@@ -2558,7 +2558,10 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "Review stopped. 2 item(s) remain. Resume with dc review.");
+  assertStringIncludes(
+    reviewText,
+    "Review stopped. 2 item(s) remain. Resume with dc review entities.",
+  );
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -2566,6 +2569,76 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   reopened.close();
   assertEquals(items.length, 2);
   assert(items.every((item) => item.status === "open"));
+});
+
+Deno.test("interactive relationship review quit reports filtered resume command", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--relationship-type",
+      "governed_by",
+      "--subject-prefix",
+      "relationship.open_dc.public_bodies",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const reviewProcess = reviewRun.spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(
+    reviewText,
+    "Resume with dc review relationships --subject-prefix relationship.open_dc.public_bodies --relationship-type governed_by.",
+  );
 });
 
 Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
