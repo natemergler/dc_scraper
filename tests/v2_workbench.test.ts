@@ -1,4 +1,10 @@
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+  assertThrows,
+} from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
@@ -40,9 +46,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 3);
-  assertEquals(second.schemaVersion, 3);
-  assertEquals(second.migrations.length, 3);
+  assertEquals(first.schemaVersion, 4);
+  assertEquals(second.schemaVersion, 4);
+  assertEquals(second.migrations.length, 4);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -54,6 +60,55 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   ) {
     assert(indexes.has(indexName), `missing index ${indexName}`);
   }
+});
+
+Deno.test("workbench schema rejects orphan rows and invalid statuses", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const foreignKeys = workbench.db.prepare("pragma foreign_keys").value<[number]>()?.[0];
+  assertEquals(foreignKeys, 1);
+  assertThrows(
+    () =>
+      workbench.db.prepare(
+        "insert into source_runs(run_id, source_id, endpoint_id, started_at, status) values('run.orphan', 'missing.source', 'missing.endpoint', datetime('now'), 'success')",
+      ).run(),
+    Error,
+    "FOREIGN KEY constraint failed",
+  );
+  assertThrows(
+    () =>
+      workbench.db.prepare(
+        "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values('review.invalid', 'entity_candidate', 'candidate.invalid', 'invalid fixture', 'accept', 'mystery', '{}', datetime('now'), datetime('now'))",
+      ).run(),
+    Error,
+    "CHECK constraint failed",
+  );
+  assertThrows(
+    () =>
+      workbench.db.prepare(
+        "insert into relationship_candidates(relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, needs_review, review_status) values('relationship.invalid', 'missing.item', 'dc.a', 'dc.b', 'sort_of_near', 0, 'pending')",
+      ).run(),
+    Error,
+    "CHECK constraint failed",
+  );
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.a', 'A', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('event.constraint', 'accept_relationship_candidate', 'relationship.constraint', '{}', 'fixture.jsonl', 1, datetime('now'))",
+  ).run();
+  assertThrows(
+    () =>
+      workbench.db.prepare(
+        "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.a:part_of:dc.missing', 'dc.a', 'part_of', 'dc.missing', 'accepted', 'event.constraint', datetime('now'))",
+      ).run(),
+    Error,
+    "FOREIGN KEY constraint failed",
+  );
+  workbench.close();
 });
 
 Deno.test("local workbench artifacts are ignored by git", async () => {
@@ -114,7 +169,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 3");
+  assertStringIncludes(statusText, "Schema version: 4");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
@@ -141,7 +196,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     review: { open: number; deferred: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 3);
+  assertEquals(jsonStatus.schemaVersion, 4);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.nextCommand, "dc source list");
@@ -1403,6 +1458,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
   workbench.db.prepare(
+    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('event.1', 'accept_relationship_candidate', 'relationship.fixture', '{}', 'fixture.jsonl', 1, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:part_of:dc.council', 'dc.board_accountancy', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
   ).run();
   workbench.upsertSource(
@@ -1412,6 +1470,21 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "official_page_html",
     "https://www.open-dc.gov/public-bodies",
   );
+  workbench.upsertEndpoint({
+    endpointId: "open_dc.public_bodies.detail",
+    sourceId: "open_dc.public_bodies",
+    title: "Open DC Public Body Detail",
+    kind: "page",
+    url: "https://www.open-dc.gov/public-bodies/board-accountancy",
+    method: "GET",
+    captureMode: "page",
+  });
+  workbench.db.prepare(
+    "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values('run.privacy', 'open_dc.public_bodies', 'open_dc.public_bodies.detail', datetime('now'), datetime('now'), 'success')",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.privacy', 'run.privacy', 'open_dc.public_bodies.detail', 'page', 'open_dc/public-bodies/detail.html', 'https://www.open-dc.gov/public-bodies/board-accountancy', 'sha256:fixture', 100, datetime('now'))",
+  ).run();
   workbench.db.prepare(
     "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ).run([
@@ -1433,7 +1506,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into datasets(dataset_id, source_item_id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ).run([
     "dataset.council.lims.whats_new",
-    "item.1",
+    "item.private_contact",
     "Council LIMS What's New feed",
     "legislative",
     "Council of the District of Columbia",
@@ -1598,9 +1671,11 @@ Deno.test("release builder rejects relationships with missing endpoint entities"
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source', 'Source Entity', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
+  workbench.db.exec("pragma foreign_keys = off");
   workbench.db.prepare(
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.source:part_of:dc.missing', 'dc.source', 'part_of', 'dc.missing', 'accepted', 'event.1', datetime('now'))",
   ).run();
+  workbench.db.exec("pragma foreign_keys = on");
 
   await assertRejects(
     () => buildV2Release(workbench, join(dir, "release")),

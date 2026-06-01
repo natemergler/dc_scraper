@@ -144,9 +144,11 @@ export async function replayResolutionDirectory(
     }
   }
   withTransaction(store.db, () => {
-    store.db.exec("delete from resolution_events");
+    store.db.exec("delete from relationship_legal_refs");
+    store.db.exec("delete from entity_legal_refs");
     store.db.exec("delete from canonical_relationships");
     store.db.exec("delete from canonical_entities");
+    store.db.exec("delete from resolution_events");
     run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
     run(store.db, "update entity_candidates set review_status = 'pending'");
     run(store.db, "update relationship_candidates set review_status = 'pending'");
