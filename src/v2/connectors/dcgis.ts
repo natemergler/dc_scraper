@@ -119,7 +119,7 @@ function buildDcgisItems(rows: Record<string, unknown>[]): SourceItemInput[] {
 }
 
 function buildDcgisEntityCandidates(items: SourceItemInput[]): EntityCandidateInput[] {
-  return items.map((item) => {
+  const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
     const name = String(row.AGENCY_NAME ?? row.SHORT_NAME ?? item.title);
     return {
@@ -141,6 +141,26 @@ function buildDcgisEntityCandidates(items: SourceItemInput[]): EntityCandidateIn
       ],
     };
   });
+  const branchCandidates: EntityCandidateInput[] = [];
+  const seenBranches = new Set<string>();
+  for (const item of items) {
+    const row = item.body as Record<string, unknown>;
+    const branch = maybeString(row.BRANCH);
+    if (!branch || seenBranches.has(branch)) continue;
+    seenBranches.add(branch);
+    const name = `${branch} Branch`;
+    branchCandidates.push({
+      candidateId: buildCandidateId(dcgisAgenciesSource.sourceId, `branch-${branch}`),
+      sourceItemKey: item.itemKey,
+      proposedEntityId: buildEntityId(name),
+      name,
+      kind: "branch",
+      rawKind: "branch",
+      confidence: 0.99,
+      evidence: [fieldEvidence("BRANCH", branch, 1)],
+    });
+  }
+  return [...agencyCandidates, ...branchCandidates];
 }
 
 function buildDcgisRelationshipCandidates(items: SourceItemInput[]): RelationshipCandidateInput[] {
