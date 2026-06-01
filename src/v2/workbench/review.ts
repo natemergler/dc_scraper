@@ -127,8 +127,13 @@ export function nextReviewItem(
 export function canBatchAcceptReviewItem(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
+  filters: ReviewItemFilters = {},
 ): boolean {
-  if (item.status !== "open" || item.itemType !== "entity_candidate") return false;
+  if (item.status !== "open") return false;
+  if (item.itemType === "relationship_candidate") {
+    return canBatchAcceptRelationshipItem(store, item, filters);
+  }
+  if (item.itemType !== "entity_candidate") return false;
   if (item.details.safeToAutoAccept === true) return true;
   const candidate = queryOne<{ confidence?: number; reviewStatus: string }>(
     store.db,
@@ -137,6 +142,45 @@ export function canBatchAcceptReviewItem(
   );
   if (!candidate || candidate.reviewStatus !== "pending") return false;
   return typeof candidate.confidence === "number" && candidate.confidence >= 0.95;
+}
+
+function canBatchAcceptRelationshipItem(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  filters: ReviewItemFilters,
+): boolean {
+  if (filters.mode !== "relationships" || !filters.relationshipType) return false;
+  if (item.defaultAction !== "accept") return false;
+  const candidate = queryOne<{
+    reviewStatus: string;
+    needsReview: number;
+    fromReviewStatus?: string | null;
+    fromIsPlaceholder?: number | null;
+    toReviewStatus?: string | null;
+    toIsPlaceholder?: number | null;
+  }>(
+    store.db,
+    `select relationship_candidates.review_status as reviewStatus,
+            relationship_candidates.needs_review as needsReview,
+            from_entity.review_status as fromReviewStatus,
+            from_entity.is_placeholder as fromIsPlaceholder,
+            to_entity.review_status as toReviewStatus,
+            to_entity.is_placeholder as toIsPlaceholder
+     from relationship_candidates
+     left join canonical_entities as from_entity
+       on from_entity.entity_id = relationship_candidates.from_entity_ref
+     left join canonical_entities as to_entity
+       on to_entity.entity_id = relationship_candidates.to_entity_ref
+     where relationship_candidates.relationship_candidate_id = ?`,
+    [item.subjectId],
+  );
+  if (!candidate || candidate.reviewStatus !== "pending" || candidate.needsReview !== 0) {
+    return false;
+  }
+  return candidate.fromReviewStatus === "accepted" &&
+    candidate.toReviewStatus === "accepted" &&
+    candidate.fromIsPlaceholder === 0 &&
+    candidate.toIsPlaceholder === 0;
 }
 
 function normalizeReviewItemFilters(
