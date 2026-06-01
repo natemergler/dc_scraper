@@ -1,7 +1,10 @@
 import {
   buildDatasetId,
+  buildLegalRefId,
+  parseLegalReference,
   type ConnectorResult,
   type DatasetInput,
+  type LegalRefInput,
   type SourceDefinition,
   type SourceEndpointDefinition,
   type SourceItemInput,
@@ -29,7 +32,7 @@ export const legalEntrypointsConnector: SourceConnector = {
       kind: "page",
       url: legalEntrypointsSource.baseUrl,
       method: "GET",
-      captureMode: "page",
+      captureMode: "documents",
     };
     const response = await context.fetcher(legalEntrypointsSource.baseUrl);
     const html = await response.text();
@@ -40,6 +43,30 @@ export const legalEntrypointsConnector: SourceConnector = {
       title: source.name,
       body: source,
     }));
+    const legalRefs: LegalRefInput[] = sources.map((source) => {
+      const parsed = parseLegalReference(source.name, source.url);
+      return {
+        legalRefId: buildLegalRefId(legalEntrypointsSource.sourceId, source.slug),
+        sourceItemKey: source.slug,
+        refType: parsed.refType,
+        citationText: source.name,
+        normalizedCitation: parsed.normalizedCitation,
+        url: source.url,
+        needsReview: parsed.needsReview,
+        evidence: [fieldEvidence("link", source.url)],
+      };
+    });
+    const datasets: DatasetInput[] = sources.map((source) => ({
+      datasetId: buildDatasetId(legalEntrypointsSource.sourceId, source.slug),
+      sourceItemKey: source.slug,
+      name: source.name,
+      category: "legal_source",
+      ownerName: "District of Columbia",
+      accessMethod: "official_page_html",
+      artifactDepth: "page",
+      officialUrl: source.url,
+      evidence: [fieldEvidence("link", source.url)],
+    }));
     return {
       source: legalEntrypointsSource,
       endpointResults: [{
@@ -48,17 +75,8 @@ export const legalEntrypointsConnector: SourceConnector = {
         artifacts: [artifact("page", "html", legalEntrypointsSource.baseUrl, html)],
         parsed: {
           items,
-          datasets: sources.map((source) => ({
-            datasetId: buildDatasetId(legalEntrypointsSource.sourceId, source.slug),
-            sourceItemKey: source.slug,
-            name: source.name,
-            category: "legal_source",
-            ownerName: "District of Columbia",
-            accessMethod: "official_page_html",
-            artifactDepth: "page",
-            officialUrl: source.url,
-            evidence: [fieldEvidence("link", source.url)],
-          })),
+          legalRefs,
+          datasets,
         },
       }],
     };
@@ -67,14 +85,27 @@ export const legalEntrypointsConnector: SourceConnector = {
 
 function parseLegalEntrypoints(html: string): Array<{ slug: string; name: string; url: string }> {
   const matches = [...html.matchAll(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/gsi)];
+  const seeded = [
+    { name: "District of Columbia Official Code", url: "https://code.dccouncil.gov/" },
+    { name: "DC Register / DCMR", url: "https://dcregs.dc.gov/" },
+    { name: "Mayor's Orders", url: "https://mayor.dc.gov/page/mayors-orders" },
+  ];
   const results: Array<{ slug: string; name: string; url: string }> = [];
   const seen = new Set<string>();
+  for (const entry of seeded) {
+    results.push({
+      slug: entry.url.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase(),
+      name: entry.name,
+      url: entry.url,
+    });
+    seen.add(entry.url);
+  }
   for (const match of matches) {
     const url = toAbsoluteUrl(legalEntrypointsSource.baseUrl, match[1]);
     const name = normalizeName(stripHtml(match[2]));
     if (!name) continue;
     if (
-      !/Official Code|Mayor'?s Orders|Laws, Regulations and Courts|DCMR|Register/i.test(name) &&
+      !/Official Code|Mayor'?s Orders?|Laws, Regulations and Courts|DCMR|Register/i.test(name) &&
       !/code\.dccouncil\.gov|dcregs\.dc\.gov|mayor\.dc\.gov/.test(url)
     ) {
       continue;

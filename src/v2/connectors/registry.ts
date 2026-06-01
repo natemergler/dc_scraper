@@ -3,7 +3,15 @@ import { openDcConnector } from "./open_dc.ts";
 import { councilCommitteesConnector, councilLimsConnector } from "./council.ts";
 import { quickbaseConnector } from "./quickbase.ts";
 import { legalEntrypointsConnector } from "./legal.ts";
-import { admin311Connector } from "./admin.ts";
+import {
+  admin311Connector,
+  adminBudgetConnector,
+  adminCrimeConnector,
+  adminElectionsConnector,
+  adminPermitsConnector,
+  adminProcurementConnector,
+  adminPropertyConnector,
+} from "./admin.ts";
 import type { ConnectorContext, Fetcher, SourceConnector } from "./shared.ts";
 import { defaultFetcher } from "./shared.ts";
 
@@ -15,6 +23,12 @@ export const connectors: SourceConnector[] = [
   quickbaseConnector,
   legalEntrypointsConnector,
   admin311Connector,
+  adminBudgetConnector,
+  adminPermitsConnector,
+  adminCrimeConnector,
+  adminProcurementConnector,
+  adminPropertyConnector,
+  adminElectionsConnector,
 ];
 
 export function getConnector(sourceId: string): SourceConnector {
