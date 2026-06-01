@@ -985,6 +985,11 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
     "Mayor's Order 2024-001",
   );
   assertEquals(
+    parseLegalReference("Mayor's Order 2001-92 Amended 2002-142", "https://code.dccouncil.us/")
+      .refType,
+    "mayors_order",
+  );
+  assertEquals(
     parseLegalReference("71 D.C. Register 012345").normalizedCitation,
     "71 D.C. Register 012345",
   );
@@ -995,6 +1000,12 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   assertEquals(
     parseLegalReference("Mayor's Orders", "https://dcregs.dc.gov/default.aspx").refType,
     "dc_register",
+  );
+  assertEquals(parseLegalReference("§ 25–202").normalizedCitation, "D.C. Code 25-202");
+  assertEquals(parseLegalReference("4-1303.01a").normalizedCitation, "D.C. Code 4-1303.01a");
+  assertEquals(
+    parseLegalReference("D.C. Official Code § 47-2853.06(b)(1)").normalizedCitation,
+    "D.C. Code 47-2853.06(b)(1)",
   );
 });
 
