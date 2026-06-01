@@ -32,6 +32,18 @@ deno task dc -- release inspect
 `dc review` is the main human path. It shows evidence, a default action, and single-key choices for
 accept, edit, reject, defer, or quit.
 
+Most inspection commands also support `--json` for scripts and review handoffs:
+
+```bash
+deno task dc -- status --json
+deno task dc -- source list --json
+deno task dc -- source inspect dcgis.agencies --json
+deno task dc -- review list --json
+deno task dc -- entity search accountancy --json
+deno task dc -- entity show dc.board_of_accountancy --json
+deno task dc -- release inspect --json
+```
+
 ## Release Shape
 
 `dc release build` writes:
