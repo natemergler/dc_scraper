@@ -181,7 +181,13 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
       ],
     });
     reviewItems.push(
-      buildCandidateReviewItem(candidateId, "Review Open DC public body candidate"),
+      buildCandidateReviewItem(candidateId, "Review Open DC public body candidate", "accept", {
+        name: detail.name,
+        kind: detectEntityKind(undefined, detail.name),
+        confidence: 0.92,
+        officialUrl: detailUrl,
+        duplicateHint: detailUrl,
+      }),
     );
     if (detail.governingAgency) {
       const relationshipCandidateId = buildRelationshipCandidateId(
@@ -203,7 +209,12 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         subjectId: relationshipCandidateId,
         reason: "Review governing agency relationship from Open DC",
         defaultAction: "accept",
-        details: {},
+        details: {
+          fromEntityRef: proposedEntityId,
+          toEntityRef: buildEntityId(detail.governingAgency),
+          relationshipType: "governed_by",
+          rawValue: detail.governingAgency,
+        },
       });
     }
     if (detail.enablingAuthority) {
