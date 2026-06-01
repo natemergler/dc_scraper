@@ -46,7 +46,11 @@ export async function runInteractiveReview(
     console.log(renderReviewItem(workbench, item));
     const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);
     if (promptedAction === undefined || promptedAction === "q") {
-      console.log(`Review stopped. ${items.length} item(s) remain. Resume with dc review.`);
+      console.log(
+        `Review stopped. ${items.length} item(s) remain. Resume with ${
+          renderResumeCommand(filters)
+        }.`,
+      );
       return;
     }
     const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
@@ -58,6 +62,30 @@ export async function runInteractiveReview(
     await workbench.appendResolutionEvent(event, resolutionsDir);
     await Deno.stdout.write(encoder.encode("Saved resolution.\n"));
   }
+}
+
+function renderResumeCommand(filters: ReviewItemFilters): string {
+  const parts = ["dc", "review"];
+  if (filters.mode && ["entities", "relationships", "legal", "sources"].includes(filters.mode)) {
+    parts.push(filters.mode);
+  }
+  if (filters.status && filters.status !== "open") {
+    parts.push("--status", quoteShellArg(filters.status));
+  }
+  if (filters.type) {
+    parts.push("--type", quoteShellArg(filters.type));
+  }
+  if (filters.subjectPrefix) {
+    parts.push("--subject-prefix", quoteShellArg(filters.subjectPrefix));
+  }
+  if (filters.relationshipType) {
+    parts.push("--relationship-type", quoteShellArg(filters.relationshipType));
+  }
+  return parts.join(" ");
+}
+
+function quoteShellArg(value: string): string {
+  return /^[A-Za-z0-9._:-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 export function renderReviewItem(
