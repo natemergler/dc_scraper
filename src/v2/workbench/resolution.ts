@@ -7,10 +7,16 @@ import {
   nowIso,
   type ResolutionEventInput,
   type ReviewStatus,
+  slugify,
 } from "../domain.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
-import { makeId } from "./helpers.ts";
 import type { WorkbenchStore } from "./store.ts";
+
+interface ResolutionRecord {
+  event: ResolutionEventInput;
+  resolutionFile: string;
+  sequenceNumber: number;
+}
 
 export async function appendResolutionEvent(
   store: WorkbenchStore,
@@ -33,7 +39,7 @@ export async function appendResolutionEvent(
     payload: event.payload,
   });
   await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
-  applyResolutionEvent(store, event, relative(Deno.cwd(), filePath), sequenceNumber);
+  applyResolutionEvent(store, event, relative(resolutionsDir, filePath), sequenceNumber);
   return { filePath, sequenceNumber };
 }
 
@@ -43,7 +49,21 @@ export function applyResolutionEvent(
   resolutionFile: string,
   sequenceNumber: number,
 ): void {
-  const eventId = makeId("resolution");
+  withTransaction(store.db, () => {
+    applyResolutionEventInCurrentTransaction(store, {
+      event,
+      resolutionFile,
+      sequenceNumber,
+    });
+  });
+}
+
+function applyResolutionEventInCurrentTransaction(
+  store: WorkbenchStore,
+  record: ResolutionRecord,
+): void {
+  const { event, resolutionFile, sequenceNumber } = record;
+  const eventId = resolutionEventId(resolutionFile, sequenceNumber);
   run(
     store.db,
     "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values(?, ?, ?, ?, ?, ?, ?)",
@@ -102,15 +122,7 @@ export async function replayResolutionDirectory(
     }
   }
   files.sort();
-  withTransaction(store.db, () => {
-    store.db.exec("delete from resolution_events");
-    store.db.exec("delete from canonical_relationships");
-    store.db.exec("delete from canonical_entities");
-    run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
-    run(store.db, "update entity_candidates set review_status = 'pending'");
-    run(store.db, "update relationship_candidates set review_status = 'pending'");
-    run(store.db, "update review_items set status = 'open' where status = 'resolved'");
-  });
+  const records: ResolutionRecord[] = [];
   for (const file of files) {
     const content = await Deno.readTextFile(file);
     const lines = content.split("\n").filter(Boolean);
@@ -120,14 +132,34 @@ export async function replayResolutionDirectory(
         subject_id: string;
         payload: Record<string, unknown>;
       };
-      applyResolutionEvent(
-        store,
-        { eventType: parsed.event_type, subjectId: parsed.subject_id, payload: parsed.payload },
-        relative(Deno.cwd(), file),
-        index + 1,
-      );
+      records.push({
+        event: {
+          eventType: parsed.event_type,
+          subjectId: parsed.subject_id,
+          payload: parsed.payload,
+        },
+        resolutionFile: relative(resolutionsDir, file),
+        sequenceNumber: index + 1,
+      });
     }
   }
+  withTransaction(store.db, () => {
+    store.db.exec("delete from resolution_events");
+    store.db.exec("delete from canonical_relationships");
+    store.db.exec("delete from canonical_entities");
+    run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
+    run(store.db, "update entity_candidates set review_status = 'pending'");
+    run(store.db, "update relationship_candidates set review_status = 'pending'");
+    run(store.db, "update review_items set status = 'open' where status = 'resolved'");
+    for (const record of records) {
+      applyResolutionEventInCurrentTransaction(store, record);
+    }
+  });
+}
+
+function resolutionEventId(resolutionFile: string, sequenceNumber: number): string {
+  const filePart = slugify(resolutionFile) || "inline";
+  return `resolution.${filePart}.${String(sequenceNumber).padStart(6, "0")}`;
 }
 
 function acceptEntityCandidate(
