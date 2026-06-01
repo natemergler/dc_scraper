@@ -274,24 +274,13 @@ export function parseLegalReference(
 ): { refType: string; citationText: string; normalizedCitation?: string; needsReview: boolean } {
   const text = normalizeName(stripHtml(input));
   const dcCodeMatch = text.match(
-    /(?:D\.?\s*C\.?\s*(?:Official\s+)?Code\s*(?:§|section)?|§)\s*([0-9]+-[0-9A-Za-z.\-]+(?:\([^)]+\))?)/i,
+    /(?:D\.?\s*C\.?\s*(?:Official\s+)?Code\s*(?:§|section)?|§)\s*([0-9]+[-–—][0-9A-Za-z.\-–—]+(?:\([^)]+\))*)/i,
   );
   if (dcCodeMatch) {
     return {
       refType: "dc_code",
       citationText: text,
-      normalizedCitation: `D.C. Code ${dcCodeMatch[1]}`,
-      needsReview: false,
-    };
-  }
-  if (
-    /(?:D\.?\s*C\.?|District\s+of\s+Columbia)\s*(?:Official\s+)?Code/i.test(text) ||
-    url?.includes("code.dccouncil")
-  ) {
-    return {
-      refType: "dc_code",
-      citationText: text,
-      normalizedCitation: "D.C. Official Code",
+      normalizedCitation: `D.C. Code ${normalizeCodeSection(dcCodeMatch[1])}`,
       needsReview: false,
     };
   }
@@ -303,6 +292,15 @@ export function parseLegalReference(
       refType: "dcmr",
       citationText: text,
       normalizedCitation: `${dcmrMatch[1]} DCMR ${dcmrMatch[2]}`,
+      needsReview: false,
+    };
+  }
+  const mayorMatch = text.match(/Mayor['’]?s?\s+Order\s+([0-9]{4}-[0-9]{2,3})/i);
+  if (mayorMatch) {
+    return {
+      refType: "mayors_order",
+      citationText: text,
+      normalizedCitation: `Mayor's Order ${mayorMatch[1]}`,
       needsReview: false,
     };
   }
@@ -324,12 +322,24 @@ export function parseLegalReference(
       needsReview: true,
     };
   }
-  const mayorMatch = text.match(/Mayor['’]?s?\s+Order\s+([0-9]{4}-[0-9]{3})/i);
-  if (mayorMatch) {
+  const bareCodeMatch = text.match(/^([0-9]+[-–—][0-9A-Za-z.\-–—]+(?:\([^)]+\))*)\b/i);
+  if (bareCodeMatch) {
     return {
-      refType: "mayors_order",
+      refType: "dc_code",
       citationText: text,
-      normalizedCitation: `Mayor's Order ${mayorMatch[1]}`,
+      normalizedCitation: `D.C. Code ${normalizeCodeSection(bareCodeMatch[1])}`,
+      needsReview: false,
+    };
+  }
+  if (
+    /(?:D\.?\s*C\.?|District\s+of\s+Columbia)\s*(?:Official\s+)?Code/i.test(text) ||
+    url?.includes("code.dccouncil") ||
+    url?.includes("dccode.org")
+  ) {
+    return {
+      refType: "dc_code",
+      citationText: text,
+      normalizedCitation: "D.C. Official Code",
       needsReview: false,
     };
   }
@@ -347,6 +357,10 @@ export function parseLegalReference(
     normalizedCitation: undefined,
     needsReview: true,
   };
+}
+
+function normalizeCodeSection(value: string): string {
+  return value.replaceAll(/[–—]/g, "-");
 }
 
 export function inverseRelationshipType(type: string): string {
