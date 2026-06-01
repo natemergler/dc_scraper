@@ -104,7 +104,7 @@ export const councilCommitteesConnector: SourceConnector = {
             `${detail.committee.slug}-oversight-${index + 1}`,
           ),
           sourceItemKey: `${detail.committee.slug}:oversight`,
-          fromEntityRef: buildEntityId(target),
+          fromEntityRef: buildKnownEntityRef(target),
           toEntityRef: buildEntityId(detail.committee.name),
           relationshipType: "overseen_by",
           rawValue: target,
