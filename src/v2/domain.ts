@@ -170,6 +170,8 @@ export interface ResolutionEventInput {
     | "set_entity_fields"
     | "accept_relationship_candidate"
     | "reject_relationship_candidate"
+    | "accept_legal_ref"
+    | "reject_legal_ref"
     | "defer_review_item"
     | "reopen_review_item";
   subjectId: string;
@@ -272,7 +274,7 @@ export function parseLegalReference(
 ): { refType: string; citationText: string; normalizedCitation?: string; needsReview: boolean } {
   const text = normalizeName(stripHtml(input));
   const dcCodeMatch = text.match(
-    /(?:D\.?\s*C\.?\s*(?:Official\s+)?Code|§)\s*([0-9A-Za-z.\-]+(?:\([^)]+\))?)/i,
+    /(?:D\.?\s*C\.?\s*(?:Official\s+)?Code\s*(?:§|section)?|§)\s*([0-9]+-[0-9A-Za-z.\-]+(?:\([^)]+\))?)/i,
   );
   if (dcCodeMatch) {
     return {
@@ -282,7 +284,20 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  const dcmrMatch = text.match(/(\d+)\s*DCMR\s*([0-9A-Za-z.\-]+)/i);
+  if (
+    /(?:D\.?\s*C\.?|District\s+of\s+Columbia)\s*(?:Official\s+)?Code/i.test(text) ||
+    url?.includes("code.dccouncil")
+  ) {
+    return {
+      refType: "dc_code",
+      citationText: text,
+      normalizedCitation: "D.C. Official Code",
+      needsReview: false,
+    };
+  }
+  const dcmrMatch = text.match(
+    /(\d+)\s*D\.?\s*C\.?\s*M\.?\s*R\.?\s*(?:§|section)?\s*([0-9A-Za-z.\-]+)/i,
+  );
   if (dcmrMatch) {
     return {
       refType: "dcmr",
@@ -291,7 +306,25 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  const mayorMatch = text.match(/Mayor'?s?\s+Order\s+([0-9]{4}-[0-9]{3})/i);
+  const registerDetailMatch = text.match(/(\d+)\s*D\.?\s*C\.?\s+Register\s+([0-9A-Za-z.\-]+)/i);
+  if (registerDetailMatch) {
+    return {
+      refType: "dc_register",
+      citationText: text,
+      normalizedCitation: `${registerDetailMatch[1]} D.C. Register ${registerDetailMatch[2]}`,
+      needsReview: false,
+    };
+  }
+  const registerMatch = text.match(/D\.?\s*C\.?\s+Register|DCMR|Municipal\s+Regulations/i);
+  if (registerMatch || url?.includes("dcregs.dc.gov")) {
+    return {
+      refType: "dc_register",
+      citationText: text,
+      normalizedCitation: undefined,
+      needsReview: true,
+    };
+  }
+  const mayorMatch = text.match(/Mayor['’]?s?\s+Order\s+([0-9]{4}-[0-9]{3})/i);
   if (mayorMatch) {
     return {
       refType: "mayors_order",
@@ -300,13 +333,12 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  const registerMatch = text.match(/D\.?\s*C\.?\s+Register/i);
-  if (registerMatch || url?.includes("dcregs.dc.gov")) {
+  if (/Mayor['’]?s?\s+Orders?/i.test(text) || url?.includes("mayor.dc.gov/page/mayors-orders")) {
     return {
-      refType: "dc_register",
+      refType: "mayors_order",
       citationText: text,
-      normalizedCitation: undefined,
-      needsReview: true,
+      normalizedCitation: "Mayor's Orders",
+      needsReview: false,
     };
   }
   return {

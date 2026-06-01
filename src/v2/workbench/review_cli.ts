@@ -176,6 +176,26 @@ async function actionToEvent(
       return { eventType: "reject_relationship_candidate", subjectId: item.subjectId, payload: {} };
     }
   }
+  if (item.itemType === "legal_ref") {
+    if (action === "a") {
+      return { eventType: "accept_legal_ref", subjectId: item.subjectId, payload: {} };
+    }
+    if (action === "n") {
+      const refType = await promptLine("Ref type: ");
+      const normalizedCitation = await promptLine("Normalized citation: ");
+      const payload: Record<string, unknown> = {};
+      if (refType) payload.refType = refType;
+      if (normalizedCitation) payload.normalizedCitation = normalizedCitation;
+      return {
+        eventType: "accept_legal_ref",
+        subjectId: item.subjectId,
+        payload,
+      };
+    }
+    if (action === "r") {
+      return { eventType: "reject_legal_ref", subjectId: item.subjectId, payload: {} };
+    }
+  }
   if (action === "d") {
     return { eventType: "defer_review_item", subjectId: item.reviewItemId, payload: {} };
   }
@@ -205,6 +225,7 @@ function availableActionLabels(item: ReviewItemRecord): string[] {
     if (key === "r") return "r reject";
     if (key === "m") return "m merge";
     if (key === "e") return "e edit relationship type";
+    if (key === "n") return "n normalize and accept";
     if (key === "d") return "d defer";
     if (key === "q") return "q quit";
     return key;
@@ -214,6 +235,7 @@ function availableActionLabels(item: ReviewItemRecord): string[] {
 function availableActionKeys(item: ReviewItemRecord): string[] {
   if (item.itemType === "entity_candidate") return ["", "a", "r", "m", "d", "q"];
   if (item.itemType === "relationship_candidate") return ["", "a", "e", "r", "d", "q"];
+  if (item.itemType === "legal_ref") return ["", "a", "n", "r", "d", "q"];
   return ["", "d", "q"];
 }
 

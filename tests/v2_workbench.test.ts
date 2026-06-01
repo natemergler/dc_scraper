@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { parseLegalReference } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
@@ -46,9 +47,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 4);
-  assertEquals(second.schemaVersion, 4);
-  assertEquals(second.migrations.length, 4);
+  assertEquals(first.schemaVersion, 5);
+  assertEquals(second.schemaVersion, 5);
+  assertEquals(second.migrations.length, 5);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -169,7 +170,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 4");
+  assertStringIncludes(statusText, "Schema version: 5");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
@@ -196,7 +197,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     review: { open: number; deferred: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 4);
+  assertEquals(jsonStatus.schemaVersion, 5);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.nextCommand, "dc source list");
@@ -971,6 +972,173 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
       candidate.sourceItemKey.includes(":oversight") && candidate.needsReview === true
     ),
   );
+});
+
+Deno.test("legal reference parsing normalizes common DC citation families", () => {
+  assertEquals(
+    parseLegalReference("D.C. Official Code § 1-204.22").normalizedCitation,
+    "D.C. Code 1-204.22",
+  );
+  assertEquals(parseLegalReference("24 DCMR § 100.1").normalizedCitation, "24 DCMR 100.1");
+  assertEquals(
+    parseLegalReference("Mayor’s Order 2024-001").normalizedCitation,
+    "Mayor's Order 2024-001",
+  );
+  assertEquals(
+    parseLegalReference("71 D.C. Register 012345").normalizedCitation,
+    "71 D.C. Register 012345",
+  );
+  assertEquals(
+    parseLegalReference("District of Columbia Official Code").normalizedCitation,
+    "D.C. Official Code",
+  );
+  assertEquals(
+    parseLegalReference("Mayor's Orders", "https://dcregs.dc.gov/default.aspx").refType,
+    "dc_register",
+  );
+});
+
+Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
+    fetcher: async (url: string) => ({
+      status: 200,
+      text: async () => {
+        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
+          return legalEntrypointsFixture;
+        }
+        throw new Error(`Unexpected url ${url}`);
+      },
+      json: async <T>() => {
+        throw new Error(`No json fixture for ${url}`) as T;
+      },
+    }),
+  }));
+  await workbench.importConnectorResult(result, dataDir);
+
+  const items = workbench.listReviewItems("legal");
+  assertEquals(items.length, 3);
+  assert(items.some((item) => item.defaultAction === "accept"));
+  assert(items.some((item) => item.defaultAction === "defer"));
+
+  const codeItem = items.find((item) => item.details.refType === "dc_code");
+  const registerItem = items.find((item) => item.details.refType === "dc_register");
+  const orderItem = items.find((item) => item.details.refType === "mayors_order");
+  assert(codeItem);
+  assert(registerItem);
+  assert(orderItem);
+  await workbench.appendResolutionEvent(
+    { eventType: "accept_legal_ref", subjectId: codeItem.subjectId, payload: {} },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: registerItem.subjectId,
+      payload: { refType: "dcmr", normalizedCitation: "DCMR and D.C. Register entrypoint" },
+    },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    { eventType: "reject_legal_ref", subjectId: orderItem.subjectId, payload: {} },
+    resolutionsDir,
+  );
+
+  const resolvedItems = workbench.listReviewItems({ mode: "legal", status: "resolved" });
+  assertEquals(resolvedItems.length, 3);
+  await buildV2Release(workbench, outDir);
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
+    release_summary: {
+      legal_refs_by_review_status: Array<{ review_status: string; count: number }>;
+      legal_refs_by_type: Array<{ ref_type: string; count: number }>;
+    };
+  };
+  const statuses = new Map(
+    manifest.release_summary.legal_refs_by_review_status.map((row) => [
+      row.review_status,
+      row.count,
+    ]),
+  );
+  const types = new Map(
+    manifest.release_summary.legal_refs_by_type.map((row) => [row.ref_type, row.count]),
+  );
+  workbench.close();
+  assertEquals(statuses.get("accepted"), 2);
+  assertEquals(statuses.get("rejected"), 1);
+  assertEquals(types.get("dcmr"), 1);
+});
+
+Deno.test("dc review legal supports scripted normalize-and-quit flow", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
+    fetcher: async (url: string) => ({
+      status: 200,
+      text: async () => {
+        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
+          return legalEntrypointsFixture;
+        }
+        throw new Error(`Unexpected url ${url}`);
+      },
+      json: async <T>() => {
+        throw new Error(`No json fixture for ${url}`) as T;
+      },
+    }),
+  }));
+  await workbench.importConnectorResult(result, dataDir);
+  workbench.close();
+
+  const child = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "legal",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = child.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("n\ndc_code\nD.C. Official Code\nq\n"));
+  await writer.close();
+  const output = await child.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+  const stderr = new TextDecoder().decode(output.stderr);
+  assertEquals(output.code, 0);
+  assertEquals(stderr, "");
+  assertStringIncludes(stdout, "Review item:");
+  assertStringIncludes(stdout, "n normalize and accept");
+  assertStringIncludes(stdout, "Saved resolution.");
+  assertStringIncludes(stdout, "Review stopped.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const accepted = reopened.legalRefs().filter((ref) => ref.review_status === "accepted");
+  reopened.close();
+  assertEquals(accepted.length, 1);
+  assertEquals(accepted[0].normalized_citation, "D.C. Official Code");
 });
 
 Deno.test("review ordering surfaces source failures, placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
