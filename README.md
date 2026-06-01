@@ -30,7 +30,7 @@ deno task dc -- release inspect
 ```
 
 `dc review` is the main human path. It shows evidence, a default action, and single-key choices for
-accept, edit, reject, defer, or quit.
+accept, edit, reject, defer, or quit. Quit is safe; rerun `dc review` to resume the remaining queue.
 
 Most inspection commands also support `--json` for scripts and review handoffs:
 

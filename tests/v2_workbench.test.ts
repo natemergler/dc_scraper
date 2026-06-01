@@ -1779,8 +1779,16 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertStringIncludes(reviewText, "What needs review");
+  assertStringIncludes(reviewText, "Why this matters");
+  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
+  assertStringIncludes(
+    reviewText,
+    "Available actions: Enter accept, a accept, r reject, m merge, d defer, q quit",
+  );
   assertStringIncludes(reviewText, "evidence:");
   assertStringIncludes(reviewText, "name <- Board of Accountancy");
+  assertStringIncludes(reviewText, "source: open_dc.public_bodies @");
   assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -1937,7 +1945,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "default action: accept");
+  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
   assertStringIncludes(reviewText, "Saved resolution.");
 
   const reopened = new Workbench(dbPath);
@@ -1945,4 +1953,75 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   const entities = reopened.canonicalEntities();
   reopened.close();
   assertEquals(entities.map((entity) => entity.id), ["dc.board_of_accountancy"]);
+});
+
+Deno.test("interactive review quit reports remaining work and resume command", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const reviewProcess = reviewRun.spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(reviewText, "Review stopped. 2 item(s) remain. Resume with dc review.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const items = reopened.listReviewItems({ mode: "entities" });
+  reopened.close();
+  assertEquals(items.length, 2);
+  assert(items.every((item) => item.status === "open"));
 });
