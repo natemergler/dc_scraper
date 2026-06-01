@@ -116,6 +116,16 @@ export const councilCommitteeHealthDetailFixture = `
 <html><body>
   <h1>Committee on Health</h1>
   <p>The committee has broad jurisdiction over health agencies.</p>
+  <h2>Agencies Under This Committee</h2>
+  <ul>
+    <li>Department of Health</li>
+    <li>Department of Behavioral Health</li>
+  </ul>
+  <footer>
+    <ul>
+      <li>twitter</li>
+    </ul>
+  </footer>
 </body></html>
 `;
 
