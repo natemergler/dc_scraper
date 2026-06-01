@@ -127,20 +127,24 @@ export async function runBatchAcceptSafe(
   const accepted: ReviewItemRecord[] = [];
   const skipped: ReviewItemRecord[] = [];
   for (const item of items) {
-    if (!canBatchAcceptReviewItem(workbench, item)) {
+    if (!canBatchAcceptReviewItem(workbench, item, filters)) {
       skipped.push(item);
       continue;
     }
     accepted.push(item);
-    await workbench.appendResolutionEvent(
-      { eventType: "accept_entity_candidate", subjectId: item.subjectId, payload: {} },
-      resolutionsDir,
-    );
+    await workbench.appendResolutionEvent(batchAcceptEvent(item), resolutionsDir);
   }
   console.log(`Accepted ${accepted.length} safe review item(s).`);
   if (skipped.length > 0) {
     console.log(`Skipped ${skipped.length} item(s) that were not safe to auto-accept.`);
   }
+}
+
+function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
+  if (item.itemType === "relationship_candidate") {
+    return { eventType: "accept_relationship_candidate", subjectId: item.subjectId, payload: {} };
+  }
+  return { eventType: "accept_entity_candidate", subjectId: item.subjectId, payload: {} };
 }
 
 export function renderEntityView(view: EntityView): string {
