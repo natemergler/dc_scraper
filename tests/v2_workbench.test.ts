@@ -91,7 +91,11 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     ],
   }).output();
   assertEquals(statusOutput.code, 0);
-  assertStringIncludes(new TextDecoder().decode(statusOutput.stdout), "Schema version: 3");
+  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  assertStringIncludes(statusText, "Schema version: 3");
+  assertStringIncludes(statusText, "Sources: 0/");
+  assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
+  assertStringIncludes(statusText, "Next: dc source list");
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
