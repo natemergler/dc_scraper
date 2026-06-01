@@ -145,6 +145,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     workbench.init();
     const items = workbench.listReviewItems(readReviewFilters(args));
     workbench.close();
+    if (args.includes("--json")) {
+      console.log(JSON.stringify({ count: items.length, items }, null, 2));
+      return true;
+    }
     console.log(`Review items: ${items.length}`);
     for (const item of items) {
       console.log(renderReviewItemSummary(item));
