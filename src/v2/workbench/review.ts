@@ -191,13 +191,19 @@ function canBatchAcceptRelationshipItem(
      where relationship_candidates.relationship_candidate_id = ?`,
     [item.subjectId],
   );
-  if (!candidate || candidate.reviewStatus !== "pending" || candidate.needsReview !== 0) {
+  if (!candidate || candidate.reviewStatus !== "pending") {
     return false;
   }
+  if (candidate.needsReview !== 0 && !isScopedCouncilOversightAccept(filters)) return false;
   return candidate.fromReviewStatus === "accepted" &&
     candidate.toReviewStatus === "accepted" &&
     candidate.fromIsPlaceholder === 0 &&
     candidate.toIsPlaceholder === 0;
+}
+
+function isScopedCouncilOversightAccept(filters: ReviewItemFilters): boolean {
+  return filters.relationshipType === "overseen_by" &&
+    Boolean(filters.subjectPrefix?.startsWith("relationship.council.committees"));
 }
 
 function canBatchAcceptLegalItem(
