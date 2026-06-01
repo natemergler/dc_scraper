@@ -17,6 +17,7 @@ import {
 import {
   artifact,
   buildCandidateReviewItem,
+  buildKnownEntityRef,
   type ConnectorContext,
   type ConnectorResult,
   fieldEvidence,
@@ -319,7 +320,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
 
     const governingAgency = parseGoverningAgencyFromSeat(seat);
     if (governingAgency) {
-      const governingAgencyEntityId = buildEntityId(governingAgency);
+      const governingAgencyEntityId = buildKnownEntityRef(governingAgency);
       const relationshipKey = `${boardEntityId}>${governingAgencyEntityId}:governed_by`;
       if (!relationshipKeys.has(relationshipKey)) {
         relationshipKeys.add(relationshipKey);
@@ -359,7 +360,8 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     }
 
     if (isCommitteeLike(board)) {
-      const relationshipKey = `${boardEntityId}>dc.council:overseen_by`;
+      const councilEntityRef = buildKnownEntityRef("Council");
+      const relationshipKey = `${boardEntityId}>${councilEntityRef}:overseen_by`;
       if (!relationshipKeys.has(relationshipKey)) {
         relationshipKeys.add(relationshipKey);
         const relationshipCandidateId = buildRelationshipCandidateId(
@@ -370,7 +372,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           relationshipCandidateId,
           sourceItemKey: itemKey,
           fromEntityRef: boardEntityId,
-          toEntityRef: "dc.council",
+          toEntityRef: councilEntityRef,
           relationshipType: "overseen_by",
           rawValue: board,
           needsReview: true,
@@ -385,7 +387,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           defaultAction: "defer",
           details: {
             fromEntityRef: boardEntityId,
-            toEntityRef: "dc.council",
+            toEntityRef: councilEntityRef,
             relationshipType: candidate.relationshipType,
             rawValue: board,
           },
