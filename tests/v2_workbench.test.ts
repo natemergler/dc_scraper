@@ -77,7 +77,7 @@ Deno.test("local workbench artifacts are ignored by git", async () => {
 
 Deno.test("top-level CLI aliases make the workbench easy to enter", async () => {
   const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
+  const dbPath = join(dir, "data", "workbench.sqlite");
   const initOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
