@@ -1309,6 +1309,50 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
   );
 });
 
+Deno.test("Council classified remaining oversight endpoints default to defer", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return `<html><body>
+            <h1>Committee on Health</h1>
+            <h2>Agencies Under This Committee</h2>
+            <ul>
+              <li>Department of Health</li>
+              <li>Cedar Hill Hospital</li>
+              <li>All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health</li>
+            </ul>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.committees").run(createConnectorContext({ fetcher }));
+  const items = result.endpointResults[0].parsed?.reviewItems ?? [];
+  const healthItem = items.find((item) =>
+    item.details.rawValue === "Department of Health" &&
+    item.subjectId.includes("committee_on_health_oversight")
+  );
+  const cedarHillItem = items.find((item) => item.details.rawValue === "Cedar Hill Hospital");
+  const groupedItem = items.find((item) =>
+    item.details.rawValue ===
+      "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health"
+  );
+
+  assertEquals(healthItem?.defaultAction, "accept");
+  assertEquals(cedarHillItem?.defaultAction, "defer");
+  assertEquals(groupedItem?.defaultAction, "defer");
+});
+
 Deno.test("legal reference parsing normalizes common DC citation families", () => {
   assertEquals(
     parseLegalReference("D.C. Official Code § 1-204.22").normalizedCitation,

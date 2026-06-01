@@ -37,6 +37,41 @@ const councilLimsSource: SourceDefinition = {
   baseUrl: "https://lims.dccouncil.gov/api/Search/GetWhatsNew",
 };
 
+const defaultDeferOversightTargets = new Set([
+  "Access to Justice Initiative",
+  "Age-Friendly DC Task Force",
+  "Behavioral Health Planning Council",
+  "Cedar Hill Hospital",
+  "Commission and Office on Re-Entry and Returning Citizen Affairs",
+  "Contract Appeals Board",
+  "Corrections Information Council",
+  "Council on Physical Fitness, Health, and Nutrition",
+  "Green Finance Authority",
+  "Health Literacy Council",
+  "Interfaith Council",
+  "Interstate Compact Commissions",
+  "Labor/Management Partnership Council",
+  "Law Revision Commission",
+  "Metropolitan Washington Airports Authority",
+  "Metropolitan Washington Regional Ryan White Planning Council",
+  "Multistate Tax Commission",
+  "OCFO Office of Budget and Planning",
+  "Office and Commission on African Affairs",
+  "Office and Commission on African American Affairs",
+  "Office of and Commission on Human Rights",
+  "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+  "Other Post-Employment Benefits/Retiree Health Contribution",
+  "Pay-As-You-Go Capital",
+  "Research Practice Partnership",
+  "Robert F. Kennedy Memorial Stadium Community Benefits Oversight Committee",
+  "Soil and Water Conservation District",
+  "Statehood Commission and delegation",
+  "Sustainable Energy Utility",
+  "Universal Paid Leave Fund",
+  "Washington Aqueduct",
+  "Washington Metropolitan Area Transit Authority",
+]);
+
 export const councilCommitteesConnector: SourceConnector = {
   sourceId: councilCommitteesSource.sourceId,
   source: councilCommitteesSource,
@@ -135,7 +170,7 @@ export const councilCommitteesConnector: SourceConnector = {
         reason: candidate.relationshipType === "overseen_by"
           ? "Review Council committee oversight relationship"
           : "Review committee to Council relationship",
-        defaultAction: "accept",
+        defaultAction: defaultActionForRelationship(candidate),
         details: {
           fromEntityRef: candidate.fromEntityRef,
           toEntityRef: candidate.toEntityRef,
@@ -165,6 +200,19 @@ export const councilCommitteesConnector: SourceConnector = {
     };
   },
 };
+
+function defaultActionForRelationship(candidate: RelationshipCandidateInput): "accept" | "defer" {
+  if (candidate.relationshipType !== "overseen_by") return "accept";
+  const rawValue = candidate.rawValue ?? "";
+  return defaultDeferOversightTargets.has(rawValue) || isGroupedOversightTarget(rawValue)
+    ? "defer"
+    : "accept";
+}
+
+function isGroupedOversightTarget(rawValue: string): boolean {
+  return rawValue.includes("including") || rawValue.includes("jointly") ||
+    rawValue.startsWith("All of ");
+}
 
 export const councilLimsConnector: SourceConnector = {
   sourceId: councilLimsSource.sourceId,
