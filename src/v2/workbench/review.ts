@@ -18,6 +18,7 @@ export interface ReviewItemFilters {
   type?: ReviewItemRecord["itemType"];
   subjectPrefix?: string;
   relationshipType?: string;
+  rawValue?: string;
   limit?: number;
 }
 
@@ -64,6 +65,10 @@ export function listReviewItems(
     where.push("relationship_candidates.relationship_type = ?");
     params.push(filters.relationshipType);
   }
+  if (filters.rawValue) {
+    where.push("relationship_candidates.raw_value = ?");
+    params.push(filters.rawValue);
+  }
   const whereSql = where.length === 0 ? "1 = 1" : where.join(" and ");
   const sql = `
 select review_items.review_item_id as reviewItemId,
@@ -97,6 +102,7 @@ order by
     else 60
   end,
   coalesce(relationship_candidates.relationship_type, ''),
+  coalesce(relationship_candidates.raw_value, ''),
   coalesce(relationship_candidates.to_entity_ref, ''),
   coalesce(relationship_candidates.from_entity_ref, ''),
   review_items.created_at,
