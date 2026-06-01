@@ -34,6 +34,13 @@ async function main(args: string[]): Promise<void> {
     return;
   }
 
+  if (mightBeV2Command(args)) {
+    const { handleV2Command } = await import("../src/v2/cli.ts");
+    if (await handleV2Command(args)) {
+      return;
+    }
+  }
+
   if (command === "validate") {
     const checks = await validateRepo(repoPath);
     const errors = checks.filter((check) => check.severity === "error");
@@ -226,13 +233,30 @@ async function main(args: string[]): Promise<void> {
   Deno.exit(2);
 }
 
+function mightBeV2Command(args: string[]): boolean {
+  const [command, subcommand] = args;
+  if (command === "workbench" || command === "source" || command === "entity") return true;
+  if (command === "review" && subcommand !== "next") return true;
+  if (command === "release" && subcommand === "build" && args.includes("--db")) return true;
+  return false;
+}
+
 function printHelp(): void {
   console.log(`dc civic content workbench
 
 Usage:
+  dc workbench init [--db <path>]
+  dc workbench status [--db <path>]
+  dc source list [--db <path>]
+  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
+  dc source inspect <source-id> [--db <path>]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
+  dc entity search <query> [--db <path>]
+  dc entity show <entity-id> [--db <path>]
   dc validate
   dc checks generate
   dc release build [--release-id <id>]
+  dc release build --db <path> [--out <dir>]
   dc release inspect [release-id]
   dc records explain <record-id>
   dc review next
