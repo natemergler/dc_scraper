@@ -26,5 +26,10 @@ function routeAliases(args: string[]): string[] {
 }
 
 if (import.meta.main) {
-  await main(Deno.args);
+  try {
+    await main(Deno.args);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    Deno.exit(1);
+  }
 }
