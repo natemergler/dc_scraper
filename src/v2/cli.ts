@@ -49,6 +49,22 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
+  if (args[0] === "source" && isHelp(args[1])) {
+    printSourceHelp();
+    return true;
+  }
+  if (args[0] === "review" && isHelp(args[1])) {
+    printReviewHelp();
+    return true;
+  }
+  if (args[0] === "entity" && isHelp(args[1])) {
+    printEntityHelp();
+    return true;
+  }
+  if (args[0] === "release" && isHelp(args[1])) {
+    printReleaseHelp();
+    return true;
+  }
   if (args[0] === "workbench" && args[1] === "init") {
     const meta = await withWorkbench(dbPath, (_workbench, meta) => meta);
     console.log(`Initialized v2 workbench: ${dbPath}`);
@@ -264,6 +280,10 @@ function readFlag(args: string[], flag: string): string | undefined {
   return args[index + 1];
 }
 
+function isHelp(value: string | undefined): boolean {
+  return value === "help" || value === "--help" || value === "-h";
+}
+
 function readNumberFlag(args: string[], flag: string): number | undefined {
   const value = readFlag(args, flag);
   return value ? Number(value) : undefined;
@@ -414,5 +434,50 @@ Defaults:
   source artifacts: data/v2_artifacts
   resolutions: resolutions/
   release output: releases/latest
+`);
+}
+
+function printReviewHelp(): void {
+  console.log(`dc review
+
+Usage:
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--json]
+  dc review batch accept-safe [--mode <mode>] [--db <path>] [--resolutions-dir <path>]
+
+Interactive actions:
+  Enter runs the default action for the current item.
+  a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
+`);
+}
+
+function printSourceHelp(): void {
+  console.log(`dc source
+
+Usage:
+  dc source list [--db <path>] [--json]
+  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
+  dc source inspect <source-id> [--db <path>] [--json]
+`);
+}
+
+function printEntityHelp(): void {
+  console.log(`dc entity
+
+Usage:
+  dc entity search <query> [--db <path>] [--json]
+  dc entity show <entity-id> [--db <path>] [--json]
+`);
+}
+
+function printReleaseHelp(): void {
+  console.log(`dc release
+
+Usage:
+  dc release build [--db <path>] [--out <dir>]
+  dc release inspect [--out <dir>] [--json]
+
+Release files:
+  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*
 `);
 }
