@@ -151,3 +151,38 @@ export const admin311Fixture = JSON.stringify({
     { name: "SERVICEORDERSTATUS", type: "esriFieldTypeString", alias: "Status" },
   ],
 });
+
+export const adminBudgetPageFixture = `<html><body><h1>Budget</h1><a href="https://opencheckbook.dc.gov/">Open Checkbook</a></body></html>`;
+
+export const adminProcurementPageFixture = `<html><body><h1>Doing Business with DC Government</h1><a href="https://contracts.ocp.dc.gov/">PASS</a></body></html>`;
+
+export const arcgisServiceLayersFixture = {
+  layers: [
+    { id: 5, name: "ABCA Liquor License Locations" },
+    { id: 7, name: "Bias Crime" },
+    { id: 8, name: "Mail Ballot Drop Boxes" },
+    { id: 9, name: "Election Day Vote Center" },
+    { id: 10, name: "Certificate Of Occupancy Points" },
+    { id: 24, name: "Vehicular Crash Data" },
+    { id: 29, name: "Shot Spotter Gun Shots" },
+    { id: 33, name: "Parcel Lots" },
+    { id: 35, name: "Reservations" },
+    { id: 39, name: "Tax Lots" },
+    { id: 45, name: "Home Occupancy Permit" },
+    { id: 46, name: "Certificate of Occupancy" },
+  ],
+};
+
+export const arcgisLayerDetailFixture = (name: string) => ({
+  name,
+  description: `${name} description`,
+  capabilities: "Query",
+  maxRecordCount: 2000,
+  advancedQueryCapabilities: {
+    supportsPagination: true,
+  },
+  fields: [
+    { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
+    { name: "AGENCY", type: "esriFieldTypeString", alias: "Agency" },
+  ],
+});

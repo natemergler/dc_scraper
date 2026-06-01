@@ -6,6 +6,10 @@ import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
+  adminBudgetPageFixture,
+  adminProcurementPageFixture,
+  arcgisLayerDetailFixture,
+  arcgisServiceLayersFixture,
   councilCommitteeHealthDetailFixture,
   councilCommitteeWholeDetailFixture,
   councilCommitteesFixture,
@@ -64,6 +68,76 @@ Deno.test("imports representative connector results and source inspection stays 
       "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Service_WebMercator/MapServer/33?f=json",
       admin311Fixture,
     ],
+    ["https://cfo.dc.gov/budget", adminBudgetPageFixture],
+    ["https://ocp.dc.gov/page/doing-business-dc-government", adminProcurementPageFixture],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer?f=json",
+      JSON.stringify(arcgisServiceLayersFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer/46?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Certificate of Occupancy")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer/45?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Home Occupancy Permit")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer/5?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("ABCA Liquor License Locations")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer?f=json",
+      JSON.stringify(arcgisServiceLayersFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer/7?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Bias Crime")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer/24?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Vehicular Crash Data")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer/29?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Shot Spotter Gun Shots")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer?f=json",
+      JSON.stringify(arcgisServiceLayersFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer/10?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Certificate Of Occupancy Points")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer/39?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Tax Lots")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer/33?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Parcel Lots")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer/35?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Reservations")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json",
+      JSON.stringify(arcgisServiceLayersFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/8?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Mail Ballot Drop Boxes")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/9?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Election Day Vote Center")),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/10?f=json",
+      JSON.stringify(arcgisLayerDetailFixture("Early Vote Center")),
+    ],
   ]);
   const fetcher = async (url: string) => {
     const body = responses.get(url);
@@ -83,6 +157,12 @@ Deno.test("imports representative connector results and source inspection stays 
       "mota.quickbase",
       "legal.entrypoints",
       "admin.service_requests_311",
+      "admin.budget_sources",
+      "admin.permits_licenses",
+      "admin.crime_public_safety",
+      "admin.procurement_sources",
+      "admin.property_land",
+      "admin.elections",
     ]
   ) {
     const connector = getConnector(sourceId);
@@ -91,12 +171,20 @@ Deno.test("imports representative connector results and source inspection stays 
   }
   const dcgis = workbench.sourceSummary("dcgis.agencies");
   const quickbase = workbench.sourceSummary("mota.quickbase");
+  const permitSummary = workbench.sourceSummary("admin.permits_licenses");
+  const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
+  const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
   workbench.close();
   assertEquals(dcgis.fieldCount, 7);
   assertEquals(dcgis.entityCandidateCount, 2);
   assertEquals(dcgis.relationshipCandidateCount, 2);
   assertEquals(quickbase.latestStatus, "failed");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
+  assertEquals(hasRegisterRef, true);
+  assertEquals(permitSummary.fieldCount > 0, true);
+  assertEquals(categories.has("procurement"), true);
+  assertEquals(categories.has("budget"), true);
+  assertEquals(categories.has("crime_incidents"), true);
 });
 
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
