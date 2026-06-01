@@ -34,10 +34,26 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const workbench = new Workbench(dbPath);
   const first = workbench.init();
   const second = workbench.init();
+  const indexes = new Set(
+    workbench.db.prepare("select name from sqlite_master where type = 'index'").all().map(
+      (row) => (row as { name: string }).name,
+    ),
+  );
   workbench.close();
-  assertEquals(first.schemaVersion, 2);
-  assertEquals(second.schemaVersion, 2);
-  assertEquals(second.migrations.length, 2);
+  assertEquals(first.schemaVersion, 3);
+  assertEquals(second.schemaVersion, 3);
+  assertEquals(second.migrations.length, 3);
+  for (
+    const indexName of [
+      "source_runs_source_status_idx",
+      "source_items_source_key_idx",
+      "review_items_queue_idx",
+      "canonical_relationships_to_idx",
+      "resolution_events_file_sequence_idx",
+    ]
+  ) {
+    assert(indexes.has(indexName), `missing index ${indexName}`);
+  }
 });
 
 Deno.test("top-level CLI aliases make the workbench easy to enter", async () => {
@@ -75,7 +91,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     ],
   }).output();
   assertEquals(statusOutput.code, 0);
-  assertStringIncludes(new TextDecoder().decode(statusOutput.stdout), "Schema version: 2");
+  assertStringIncludes(new TextDecoder().decode(statusOutput.stdout), "Schema version: 3");
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
