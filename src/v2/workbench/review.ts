@@ -59,6 +59,7 @@ export function listReviewItems(
       filters.subjectPrefix,
     );
   }
+  const whereSql = where.length === 0 ? "1 = 1" : where.join(" and ");
   const sql = `
 select review_items.review_item_id as reviewItemId,
        review_items.item_type as itemType,
@@ -72,7 +73,7 @@ left join entity_candidates on entity_candidates.candidate_id = review_items.sub
 left join relationship_candidates on relationship_candidates.relationship_candidate_id = review_items.subject_id
 left join canonical_entities as from_entity on from_entity.entity_id = relationship_candidates.from_entity_ref
 left join canonical_entities as to_entity on to_entity.entity_id = relationship_candidates.to_entity_ref
-where ${where.join(" and ")}
+where ${whereSql}
 order by
   case when review_items.status = 'deferred' then 1 else 0 end,
   case
