@@ -143,6 +143,34 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   const sourceListText = new TextDecoder().decode(sourceListOutput.stdout);
   assertStringIncludes(sourceListText, "dcgis.agencies unfetched");
   assertStringIncludes(sourceListText, "mota.quickbase unfetched");
+
+  const sourceListJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(sourceListJsonOutput.code, 0);
+  const sourceListJson = JSON.parse(
+    new TextDecoder().decode(sourceListJsonOutput.stdout),
+  ) as Array<{ sourceId: string; title: string; status: string }>;
+  assert(
+    sourceListJson.some((row) =>
+      row.sourceId === "dcgis.agencies" &&
+      row.title === "District Government Agencies" &&
+      row.status === "unfetched"
+    ),
+  );
 });
 
 Deno.test("CLI command errors print a concise message", async () => {

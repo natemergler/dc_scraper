@@ -107,11 +107,23 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     workbench.init();
     const rowsBySourceId = new Map(workbench.listSources().map((row) => [row.sourceId, row]));
     workbench.close();
-    for (const connector of connectors) {
+    const sourceRows = connectors.map((connector) => {
       const row = rowsBySourceId.get(connector.sourceId);
+      return {
+        sourceId: connector.sourceId,
+        title: connector.source.title,
+        status: row?.latestStatus ?? "unfetched",
+        latestRunFinishedAt: row?.latestRunFinishedAt,
+      };
+    });
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(sourceRows, null, 2));
+      return true;
+    }
+    for (const row of sourceRows) {
       console.log(
-        `${connector.sourceId} ${row?.latestStatus ?? "unfetched"}${
-          row?.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
+        `${row.sourceId} ${row.status}${
+          row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
         }`,
       );
     }
