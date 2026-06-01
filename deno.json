@@ -7,7 +7,7 @@
     "test": "deno test --allow-read --allow-write --allow-env --allow-run --allow-net --allow-ffi",
     "ok": "deno task fmt:check && deno task lint && deno task check && deno task test",
     "build-release": "deno run --allow-read --allow-write --allow-env --allow-ffi scripts/dc.ts release build",
-    "dc": "deno run --allow-read --allow-write --allow-env --allow-run --allow-net --allow-ffi scripts/dc.ts"
+    "dc": "deno run --allow-read --allow-write --allow-env --allow-net --allow-ffi scripts/dc.ts"
   },
   "imports": {
     "@db/sqlite": "jsr:@db/sqlite@0.13.0",
