@@ -893,6 +893,23 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "https://www.open-dc.gov/public-bodies",
   );
   workbench.db.prepare(
+    "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run([
+    "item.private_contact",
+    "open_dc.public_bodies",
+    "open_dc.public_bodies.detail",
+    "run.privacy",
+    "artifact.privacy",
+    "board-accountancy",
+    "public_body_detail",
+    "Board of Accountancy",
+    JSON.stringify({
+      email: "not-for-release@example.com",
+      phone: "202-555-0100",
+      contact_notes: "private contact metadata",
+    }),
+  ]);
+  workbench.db.prepare(
     "insert into datasets(dataset_id, source_item_id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ).run([
     "dataset.council.lims.whats_new",
@@ -909,7 +926,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?)",
   ).run([
     "legal.open_dc.public_bodies.board_accountancy_authority",
-    "item.2",
+    "item.private_contact",
     "dc_code",
     "D.C. Official Code § 47-2853.06(b)(1)",
     "D.C. Code 47-2853.06(b)(1)",
@@ -922,11 +939,15 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
   const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
-  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
+  const manifestText = await Deno.readTextFile(join(outDir, "manifest.json"));
+  const manifest = JSON.parse(manifestText);
   const releaseDb = new Database(join(outDir, "dcgov.sqlite"));
   const releaseObjects = releaseDb.prepare(
     "select name from sqlite_master where type in ('table', 'view') and name not like 'sqlite_%' order by name",
   ).all().map((row) => String((row as { name: string }).name));
+  const releaseDbContactHits = releaseDb.prepare(
+    "select count(*) as count from legal_refs where source_item_id like '%not-for-release%' or citation_text like '%not-for-release%'",
+  ).get() as { count: number };
   releaseDb.close();
   workbench.close();
   assertEquals(
@@ -952,6 +973,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "id,name,kind,branch,cluster,official_url,review_status",
   );
   assert(!entityCsv.includes("source_item_id"));
+  assert(!entityCsv.includes("not-for-release@example.com"));
+  assert(!legalRefsCsv.includes("not-for-release@example.com"));
+  assert(!manifestText.includes("not-for-release@example.com"));
+  assert(!manifestText.includes("202-555-0100"));
+  assertEquals(releaseDbContactHits.count, 0);
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
