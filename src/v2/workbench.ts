@@ -1,4 +1,5 @@
 import { Database } from "@db/sqlite";
+import { dirname } from "@std/path";
 import {
   type ConnectorResult,
   type EntitySearchResult,
@@ -43,6 +44,7 @@ export class Workbench implements WorkbenchStore {
   readonly db: Database;
 
   constructor(readonly dbPath: string) {
+    Deno.mkdirSync(dirname(dbPath), { recursive: true });
     this.db = new Database(dbPath);
   }
 
