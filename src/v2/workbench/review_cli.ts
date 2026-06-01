@@ -84,6 +84,9 @@ function renderResumeCommand(filters: ReviewItemFilters): string {
   if (filters.rawValue) {
     parts.push("--raw-value", quoteShellArg(filters.rawValue));
   }
+  if (filters.rawValueContains) {
+    parts.push("--raw-value-contains", quoteShellArg(filters.rawValueContains));
+  }
   if (filters.refType) {
     parts.push("--ref-type", quoteShellArg(filters.refType));
   }
@@ -170,7 +173,8 @@ function isScopedBatchDefer(filters: ReviewItemFilters): boolean {
   return Boolean(
     filters.mode &&
       filters.subjectPrefix &&
-      (filters.type || filters.relationshipType || filters.rawValue || filters.refType),
+      (filters.type || filters.relationshipType || filters.rawValue || filters.rawValueContains ||
+        filters.refType),
   );
 }
 
