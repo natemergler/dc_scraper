@@ -157,11 +157,30 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         slug: detail.slug,
         url: detailUrl,
         governingAgency: detail.governingAgency,
+        administeringAgency: detail.administeringAgency,
         enablingAuthority: detail.enablingAuthority,
         enablingAuthorityUrl: detail.enablingAuthorityUrl,
         meetingCount: detail.meetingCount,
       },
     });
+    for (const [index, link] of detail.meetingLinks.entries()) {
+      items.push({
+        itemKey: `${itemKey}:meeting:${index + 1}`,
+        itemType: "meeting_link",
+        title: `${detail.name} meeting link`,
+        artifactIndex,
+        body: { label: link.label, href: link.href, parentItemKey: itemKey },
+      });
+    }
+    for (const [index, link] of detail.documentLinks.entries()) {
+      items.push({
+        itemKey: `${itemKey}:document:${index + 1}`,
+        itemType: "document_link",
+        title: `${detail.name} document link`,
+        artifactIndex,
+        body: { label: link.label, href: link.href, parentItemKey: itemKey },
+      });
+    }
     const candidateId = buildCandidateId(openDcSource.sourceId, itemKey);
     const proposedEntityId = buildEntityId(detail.name);
     entityCandidates.push({
@@ -217,10 +236,39 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         },
       });
     }
+    if (detail.administeringAgency) {
+      const relationshipCandidateId = buildRelationshipCandidateId(
+        openDcSource.sourceId,
+        `${itemKey}-administering-agency`,
+      );
+      relationshipCandidates.push({
+        relationshipCandidateId,
+        sourceItemKey: itemKey,
+        fromEntityRef: proposedEntityId,
+        toEntityRef: buildEntityId(detail.administeringAgency),
+        relationshipType: "governed_by",
+        rawValue: detail.administeringAgency,
+        evidence: [fieldEvidence("administeringAgency", detail.administeringAgency, artifactIndex)],
+      });
+      reviewItems.push({
+        reviewItemId: buildReviewItemId(relationshipCandidateId, "administering-agency"),
+        itemType: "relationship_candidate",
+        subjectId: relationshipCandidateId,
+        reason: "Review administering agency relationship from Open DC",
+        defaultAction: "accept",
+        details: {
+          fromEntityRef: proposedEntityId,
+          toEntityRef: buildEntityId(detail.administeringAgency),
+          relationshipType: "governed_by",
+          rawValue: detail.administeringAgency,
+        },
+      });
+    }
     if (detail.enablingAuthority) {
       const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
+      const legalRefId = buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`);
       legalRefs.push({
-        legalRefId: buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`),
+        legalRefId,
         sourceItemKey: itemKey,
         refType: parsed.refType,
         citationText: parsed.citationText,
@@ -229,6 +277,38 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         needsReview: parsed.needsReview,
         evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
         attachEntityRef: proposedEntityId,
+      });
+      const authorityEntityRef = buildEntityId(
+        parsed.normalizedCitation ?? parsed.citationText,
+        "legal",
+      );
+      const relationshipCandidateId = buildRelationshipCandidateId(
+        openDcSource.sourceId,
+        `${itemKey}-authorized-by`,
+      );
+      relationshipCandidates.push({
+        relationshipCandidateId,
+        sourceItemKey: itemKey,
+        fromEntityRef: proposedEntityId,
+        toEntityRef: authorityEntityRef,
+        relationshipType: "authorized_by",
+        rawValue: detail.enablingAuthority,
+        needsReview: true,
+        evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
+      });
+      reviewItems.push({
+        reviewItemId: buildReviewItemId(relationshipCandidateId, "authorized-by"),
+        itemType: "relationship_candidate",
+        subjectId: relationshipCandidateId,
+        reason: "Review legal authority relationship from Open DC enabling authority",
+        defaultAction: "defer",
+        details: {
+          fromEntityRef: proposedEntityId,
+          toEntityRef: authorityEntityRef,
+          relationshipType: "authorized_by",
+          rawValue: detail.enablingAuthority,
+          legalRefId,
+        },
       });
     }
   }
@@ -242,35 +322,54 @@ function parseOpenDcDetail(
   slug: string;
   name: string;
   governingAgency?: string;
+  administeringAgency?: string;
   enablingAuthority?: string;
   enablingAuthorityUrl?: string;
   meetingCount: number;
+  meetingLinks: Array<{ href: string; label: string }>;
+  documentLinks: Array<{ href: string; label: string }>;
 } {
   const slug = detailUrl.split("/").pop() ?? detailUrl;
   const name = captureSingle(html, /<h1 class="page-title">([^<]+)<\/h1>/i) ?? slug;
-  const enablingBlock = captureSingle(
+  const enablingAuthorityUrl = captureSingle(
     html,
-    /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a href="([^"]+)">([\s\S]*?)<\/a>/i,
-    0,
+    /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a href="([^"]+)"/i,
   );
-  const enablingAuthorityUrl = enablingBlock
-    ? captureSingle(enablingBlock, /href="([^"]+)"/i)
-    : undefined;
-  const enablingAuthority = captureSingle(
-    html,
-    /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a [^>]+>([\s\S]*?)<\/a>/i,
-  );
+  const enablingAuthority =
+    captureSingle(
+      html,
+      /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a [^>]+>([\s\S]*?)<\/a>/i,
+    ) ??
+    captureSingle(
+      html,
+      /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even">([\s\S]*?)<\/div>/i,
+    );
   const governingAgency = captureSingle(
     html,
     /Governing Agency \/ Agency Acronym:[\s\S]*?<div class="field-items"><div class="field-item even">([\s\S]*?)<\/div>/i,
   );
+  const administeringAgency = captureSingle(
+    html,
+    /Administering Agency \/ Agency Acronym:[\s\S]*?<div class="field-items"><div class="field-item even">([\s\S]*?)<\/div>/i,
+  );
   const meetingCount = [...html.matchAll(/class="view-meetings-calendar"/g)].length;
+  const meetingLinks = [...html.matchAll(/<a href="([^"]*meetings[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
+    (match) => ({ href: toAbsoluteUrl(detailUrl, match[1]), label: normalizeName(stripHtml(match[2])) }),
+  );
+  const documentLinks = [...html.matchAll(/<a href="([^"]+\.pdf[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
+    (match) => ({ href: toAbsoluteUrl(detailUrl, match[1]), label: normalizeName(stripHtml(match[2])) }),
+  );
   return {
     slug,
     name: normalizeName(stripHtml(name)),
     governingAgency: governingAgency ? normalizeName(stripHtml(governingAgency)) : undefined,
+    administeringAgency: administeringAgency
+      ? normalizeName(stripHtml(administeringAgency))
+      : undefined,
     enablingAuthority: enablingAuthority ? normalizeName(stripHtml(enablingAuthority)) : undefined,
     enablingAuthorityUrl,
     meetingCount,
+    meetingLinks,
+    documentLinks,
   };
 }
