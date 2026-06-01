@@ -1271,6 +1271,23 @@ Deno.test("release builder rejects email-shaped contact info in release rows", a
   workbench.close();
 });
 
+Deno.test("release builder rejects phone-shaped contact info in release rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.phone_leak', 'Phone Leak', 'board', 'tel:202-555-0100', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await assertRejects(
+    () => buildV2Release(workbench, join(dir, "release")),
+    Error,
+    "Release output contains phone-shaped contact info",
+  );
+  workbench.close();
+});
+
 Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {
   const result = await getConnector("admin.service_requests_311").run(
     createConnectorContext({
