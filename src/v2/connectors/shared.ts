@@ -1,5 +1,6 @@
 import {
   type ArtifactCaptureInput,
+  buildEntityId,
   buildReviewItemId,
   type ConnectorResult,
   decodeHtmlEntities,
@@ -84,6 +85,10 @@ export function toAbsoluteUrl(baseUrl: string, maybeRelative: string): string {
   return new URL(maybeRelative, baseUrl).toString();
 }
 
+export function buildKnownEntityRef(name: string): string {
+  return knownEntityRefs.get(entityAliasKey(name)) ?? buildEntityId(name);
+}
+
 export function toPublicHttpUrl(
   baseUrl: string,
   maybeRelative: string | undefined,
@@ -133,3 +138,35 @@ function repeatedlyDecodeURIComponent(value: string): string {
   }
   return decoded;
 }
+
+function entityAliasKey(name: string): string {
+  return normalizeName(name).toLowerCase();
+}
+
+const knownEntityRefs = new Map<string, string>([
+  [
+    "alcoholic beverages and cannabis administration",
+    "dc.alcoholic_beverage_and_cannabis_administration",
+  ],
+  ["council", "dc.council_of_the_district_of_columbia"],
+  ["council of the district of columbia", "dc.council_of_the_district_of_columbia"],
+  ["department of employment services (does)", "dc.department_of_employment_services"],
+  ["department of health", "dc.dc_health"],
+  ["department of health (doh)", "dc.dc_health"],
+  ["deputy mayor for education", "dc.office_of_the_deputy_mayor_for_education"],
+  [
+    "deputy mayor for health and human services",
+    "dc.office_of_the_deputy_mayor_for_health_and_human_services",
+  ],
+  [
+    "deputy mayor for planning and economic development",
+    "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
+  ],
+  [
+    "deputy mayor for public safety and justice",
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
+  ],
+  ["dlcp/opl", "dc.department_of_licensing_and_consumer_protection"],
+  ["does", "dc.department_of_employment_services"],
+  ["doh", "dc.dc_health"],
+]);

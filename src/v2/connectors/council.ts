@@ -12,7 +12,12 @@ import {
   type SourceEndpointDefinition,
   type SourceItemInput,
 } from "../domain.ts";
-import { artifact, buildCandidateReviewItem, fieldEvidence } from "./shared.ts";
+import {
+  artifact,
+  buildCandidateReviewItem,
+  buildKnownEntityRef,
+  fieldEvidence,
+} from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 import { normalizeName, stripHtml } from "../domain.ts";
 
@@ -86,7 +91,7 @@ export const councilCommitteesConnector: SourceConnector = {
       ),
       sourceItemKey: committee.slug,
       fromEntityRef: buildEntityId(committee.name),
-      toEntityRef: "dc.council",
+      toEntityRef: buildKnownEntityRef("Council"),
       relationshipType: "part_of",
       rawValue: "Council committee",
       evidence: [fieldEvidence("committee", committee.name, 0)],
