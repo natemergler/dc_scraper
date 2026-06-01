@@ -261,6 +261,81 @@ Deno.test("imports representative connector results and source inspection stays 
   assertEquals(categories.has("crime_incidents"), true);
 });
 
+Deno.test("failed parsed imports keep artifacts but roll back partial typed rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await assertRejects(
+    () =>
+      workbench.importConnectorResult(
+        {
+          source: {
+            sourceId: "test.bad_parse",
+            title: "Bad Parse Fixture",
+            kind: "fixture",
+            accessMethod: "fixture",
+            baseUrl: "https://example.test",
+          },
+          endpointResults: [{
+            endpoint: {
+              endpointId: "test.bad_parse.main",
+              sourceId: "test.bad_parse",
+              title: "Main",
+              kind: "fixture",
+              url: "https://example.test/source",
+              method: "GET",
+              captureMode: "fixture",
+            },
+            status: "success",
+            artifacts: [{
+              kind: "json",
+              extension: "json",
+              contentText: JSON.stringify({ ok: false }),
+              fetchedUrl: "https://example.test/source",
+            }],
+            parsed: {
+              items: [{
+                itemKey: "known",
+                itemType: "fixture",
+                title: "Known Item",
+                body: { name: "Known Item" },
+              }],
+              entityCandidates: [{
+                candidateId: "candidate.test.bad_parse.missing",
+                sourceItemKey: "missing",
+                proposedEntityId: "dc.missing",
+                name: "Missing",
+                kind: "fixture",
+                evidence: [],
+              }],
+            },
+          }],
+        },
+        dataDir,
+      ),
+    Error,
+    "Missing source item for key missing",
+  );
+
+  const runStatus = workbench.db.prepare(
+    "select status, error_text as errorText from source_runs where source_id = ?",
+  ).get("test.bad_parse") as { status: string; errorText: string };
+  const counts = workbench.db.prepare(
+    `select
+       (select count(*) from source_artifacts) as artifacts,
+       (select count(*) from source_items) as items,
+       (select count(*) from entity_candidates) as entityCandidates`,
+  ).get() as { artifacts: number; items: number; entityCandidates: number };
+  workbench.close();
+
+  assertEquals(runStatus.status, "failed");
+  assertStringIncludes(runStatus.errorText, "Missing source item for key missing");
+  assertEquals(counts, { artifacts: 1, items: 0, entityCandidates: 0 });
+});
+
 Deno.test("quickbase connector parses public CSV appointment rows into entities, relationships, and review items", async () => {
   const result = await getConnector("mota.quickbase").run(
     createConnectorContext({
