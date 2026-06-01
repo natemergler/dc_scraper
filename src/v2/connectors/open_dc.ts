@@ -34,6 +34,12 @@ const openDcSource: SourceDefinition = {
   baseUrl: "https://www.open-dc.gov/public-bodies",
 };
 
+const priorityPublicBodySlugs = new Set([
+  "advisory-committee-street-harassment",
+  "juvenile-abscondence-review-committee",
+  "tax-revision-commission",
+]);
+
 export const openDcConnector: SourceConnector = {
   sourceId: openDcSource.sourceId,
   source: openDcSource,
@@ -58,7 +64,7 @@ export const openDcConnector: SourceConnector = {
     };
     const indexResponse = await context.fetcher(openDcSource.baseUrl);
     const indexHtml = await indexResponse.text();
-    const links = parseOpenDcIndex(indexHtml).slice(0, context.limit ?? 8);
+    const links = selectOpenDcLinks(parseOpenDcIndex(indexHtml), context.limit ?? 8);
     const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
     const detailParsed = deriveOpenDcDetailParsed(detailRecords);
     return {
@@ -90,6 +96,22 @@ export const openDcConnector: SourceConnector = {
     };
   },
 };
+
+function selectOpenDcLinks(
+  links: Array<{ href: string; text: string; slug: string }>,
+  limit: number,
+): Array<{ href: string; text: string; slug: string }> {
+  const selected = new Map<string, { href: string; text: string; slug: string }>();
+  for (const link of links.slice(0, limit)) {
+    selected.set(link.href, link);
+  }
+  for (const link of links) {
+    if (priorityPublicBodySlugs.has(link.slug)) {
+      selected.set(link.href, link);
+    }
+  }
+  return [...selected.values()];
+}
 
 function parseOpenDcIndex(html: string): Array<{ href: string; text: string; slug: string }> {
   const matches = [...html.matchAll(/<a href="(\/public-bodies\/[^"#?]+)"[^>]*>(.*?)<\/a>/gsi)];

@@ -31,6 +31,7 @@ import {
   openDcBoardFixture,
   openDcCommissionFixture,
   openDcIndexFixture,
+  openDcStreetHarassmentFixture,
   openDcTaskForceFixture,
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
@@ -876,6 +877,47 @@ Deno.test("Open DC second detail-page shape yields administered and legal-author
     detail.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "authorized_by" &&
       candidate.rawValue === "Mayor's Order 2019-010"
+    ),
+  );
+});
+
+Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyond the default limit", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
+            <a href="/public-bodies/advisory-committee-street-harassment">Advisory Committee on Street Harassment</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/advisory-committee-street-harassment":
+          return openDcStreetHarassmentFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher, limit: 1 }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assert(
+    detail.entityCandidates?.some((candidate) =>
+      candidate.candidateId ===
+        "candidate.open_dc.public_bodies.advisory_committee_street_harassment"
+    ),
+  );
+  assert(
+    detail.relationshipCandidates?.some((candidate) =>
+      candidate.rawValue === "Office of Human Rights" &&
+      candidate.toEntityRef === "dc.office_of_human_rights"
     ),
   );
 });
