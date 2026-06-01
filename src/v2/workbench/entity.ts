@@ -183,7 +183,12 @@ export function sourceInventory(store: WorkbenchStore): Array<{
   access_method: string;
   latest_status?: string | null;
   latest_run_finished_at?: string | null;
-  latest_artifact_path?: string | null;
+  latest_endpoint_id?: string | null;
+  latest_artifact_kind?: string | null;
+  latest_fetched_url?: string | null;
+  latest_content_hash?: string | null;
+  latest_size_bytes?: number | null;
+  latest_observed_at?: string | null;
 }> {
   return queryAll(
     store.db,
@@ -205,12 +210,47 @@ export function sourceInventory(store: WorkbenchStore): Array<{
          limit 1
        ) as latest_run_finished_at,
        (
-         select path from source_artifacts
+         select source_artifacts.endpoint_id from source_artifacts
          join source_runs on source_runs.run_id = source_artifacts.run_id
          where source_runs.source_id = sources.source_id
          order by source_artifacts.created_at desc
          limit 1
-       ) as latest_artifact_path
+       ) as latest_endpoint_id,
+       (
+         select source_artifacts.kind from source_artifacts
+         join source_runs on source_runs.run_id = source_artifacts.run_id
+         where source_runs.source_id = sources.source_id
+         order by source_artifacts.created_at desc
+         limit 1
+       ) as latest_artifact_kind,
+       (
+         select source_artifacts.fetched_url from source_artifacts
+         join source_runs on source_runs.run_id = source_artifacts.run_id
+         where source_runs.source_id = sources.source_id
+         order by source_artifacts.created_at desc
+         limit 1
+       ) as latest_fetched_url,
+       (
+         select source_artifacts.content_hash from source_artifacts
+         join source_runs on source_runs.run_id = source_artifacts.run_id
+         where source_runs.source_id = sources.source_id
+         order by source_artifacts.created_at desc
+         limit 1
+       ) as latest_content_hash,
+       (
+         select source_artifacts.size_bytes from source_artifacts
+         join source_runs on source_runs.run_id = source_artifacts.run_id
+         where source_runs.source_id = sources.source_id
+         order by source_artifacts.created_at desc
+         limit 1
+       ) as latest_size_bytes,
+       (
+         select source_artifacts.created_at from source_artifacts
+         join source_runs on source_runs.run_id = source_artifacts.run_id
+         where source_runs.source_id = sources.source_id
+         order by source_artifacts.created_at desc
+         limit 1
+       ) as latest_observed_at
      from sources
      order by sources.source_id`,
   );
@@ -238,19 +278,59 @@ export function legalRefs(store: WorkbenchStore): Array<{
   citation_text: string;
   normalized_citation?: string | null;
   url?: string | null;
+  source_id: string;
+  source_item_id: string;
+  source_url?: string | null;
+  needs_review: number;
   review_status: string;
 }> {
   return queryAll(
     store.db,
-    "select legal_ref_id as id, ref_type, citation_text, normalized_citation, url, review_status from legal_refs order by normalized_citation, citation_text",
+    `select
+      legal_refs.legal_ref_id as id,
+      legal_refs.ref_type as ref_type,
+      legal_refs.citation_text as citation_text,
+      legal_refs.normalized_citation as normalized_citation,
+      legal_refs.url as url,
+      source_items.source_id as source_id,
+      legal_refs.source_item_id as source_item_id,
+      sources.base_url as source_url,
+      case when legal_refs.review_status = 'accepted' then 0 else 1 end as needs_review,
+      legal_refs.review_status as review_status
+    from legal_refs
+    join source_items on source_items.source_item_id = legal_refs.source_item_id
+    join sources on sources.source_id = source_items.source_id
+    order by
+      case when legal_refs.ref_type = 'unknown' then 1 else 0 end,
+      legal_refs.ref_type,
+      legal_refs.normalized_citation,
+      legal_refs.citation_text`,
   );
 }
 
-export function artifactHashes(
+export function sourceArtifacts(
   store: WorkbenchStore,
-): Array<{ path: string; contentHash: string }> {
+): Array<{
+  source_id: string;
+  endpoint_id: string;
+  artifact_kind: string;
+  fetched_url: string;
+  content_hash: string;
+  size_bytes: number;
+  observed_at: string;
+}> {
   return queryAll(
     store.db,
-    "select path, content_hash as contentHash from source_artifacts order by path",
+    `select
+      source_runs.source_id as source_id,
+      source_artifacts.endpoint_id as endpoint_id,
+      source_artifacts.kind as artifact_kind,
+      source_artifacts.fetched_url as fetched_url,
+      source_artifacts.content_hash as content_hash,
+      source_artifacts.size_bytes as size_bytes,
+      source_artifacts.created_at as observed_at
+    from source_artifacts
+    join source_runs on source_runs.run_id = source_artifacts.run_id
+    order by source_runs.source_id, source_artifacts.created_at`,
   );
 }

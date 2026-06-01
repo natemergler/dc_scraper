@@ -146,15 +146,27 @@ export const legalEntrypointsFixture = `
 
 export const admin311Fixture = JSON.stringify({
   name: "311 Service Requests in 2026",
+  description: "Data provided by the DC 311 service request center.",
   fields: [
     { name: "SERVICECODE", type: "esriFieldTypeString", alias: "Service Code" },
     { name: "SERVICEORDERSTATUS", type: "esriFieldTypeString", alias: "Status" },
   ],
 });
 
-export const adminBudgetPageFixture = `<html><body><h1>Budget</h1><a href="https://opencheckbook.dc.gov/">Open Checkbook</a></body></html>`;
+export const admin311WrongLayerFixture = JSON.stringify({
+  name: "Child Development Centers",
+  description: "Locations of child development centers.",
+  fields: [
+    { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
+    { name: "NAME", type: "esriFieldTypeString", alias: "Name" },
+  ],
+});
 
-export const adminProcurementPageFixture = `<html><body><h1>Doing Business with DC Government</h1><a href="https://contracts.ocp.dc.gov/">PASS</a></body></html>`;
+export const adminBudgetPageFixture =
+  `<html><body><h1>Budget</h1><a href="https://opencheckbook.dc.gov/">Open Checkbook</a></body></html>`;
+
+export const adminProcurementPageFixture =
+  `<html><body><h1>Doing Business with DC Government</h1><a href="https://contracts.ocp.dc.gov/">PASS</a></body></html>`;
 
 export const arcgisServiceLayersFixture = {
   layers: [

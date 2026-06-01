@@ -16,7 +16,7 @@ const admin311Source: SourceDefinition = {
   kind: "dataset_metadata",
   accessMethod: "official_arcgis_rest",
   baseUrl:
-    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Service_WebMercator/MapServer/33",
+    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21",
 };
 
 export const admin311Connector: SourceConnector = {
@@ -36,6 +36,22 @@ export const admin311Connector: SourceConnector = {
     const response = await context.fetcher(metadataUrl);
     const text = await response.text();
     const payload = JSON.parse(text);
+    const title = String(payload.name ?? "");
+    const description = String(payload.description ?? "");
+    const looksLike311 = /service\s*requests?|311/i.test(`${title} ${description}`);
+    if (!looksLike311) {
+      return {
+        source: admin311Source,
+        endpointResults: [{
+          endpoint,
+          status: "failed",
+          errorText: `Expected 311 service-request layer metadata, got "${
+            title || "unknown"
+          }" from ${metadataUrl}`,
+          artifacts: [artifact("schema", "json", metadataUrl, text)],
+        }],
+      };
+    }
     const fields: SourceFieldInput[] = (payload.fields ?? []).map(
       (field: Record<string, unknown>, index: number) => ({
         fieldName: String(field.name),
@@ -47,13 +63,13 @@ export const admin311Connector: SourceConnector = {
     const item: SourceItemInput = {
       itemKey: "schema",
       itemType: "dataset_schema",
-      title: String(payload.name ?? "311 Service Requests"),
+      title: title || "311 Service Requests",
       body: payload,
     };
     const dataset: DatasetInput = {
       datasetId: buildDatasetId(admin311Source.sourceId, "schema"),
       sourceItemKey: "schema",
-      name: String(payload.name ?? "311 Service Requests"),
+      name: title || "311 Service Requests",
       category: "service_requests",
       ownerName: "District of Columbia",
       accessMethod: admin311Source.accessMethod,
@@ -159,7 +175,10 @@ function buildArcGisCatalogConnector(spec: ArcGisCatalogSpec): SourceConnector {
             fieldEvidence("capabilities", detailPayload.capabilities ?? "", items.length),
           ],
         });
-        for (const [index, field] of ((detailPayload.fields ?? []) as Array<Record<string, unknown>>).entries()) {
+        for (
+          const [index, field] of ((detailPayload.fields ?? []) as Array<Record<string, unknown>>)
+            .entries()
+        ) {
           fields.push({
             fieldName: `${itemKey}.${String(field.name)}`,
             fieldType: String(field.type ?? "unknown"),
@@ -175,14 +194,17 @@ function buildArcGisCatalogConnector(spec: ArcGisCatalogSpec): SourceConnector {
         endpointResults: [{
           endpoint,
           status: "success",
-          artifacts: [artifact("schema", "json", serviceUrl, serviceText), ...selected.map((target, index) =>
-            artifact(
-              "schema",
-              "json",
-              `${spec.serviceUrl}/${target.id}?f=json`,
-              detailArtifacts[index],
-            )
-          )],
+          artifacts: [
+            artifact("schema", "json", serviceUrl, serviceText),
+            ...selected.map((target, index) =>
+              artifact(
+                "schema",
+                "json",
+                `${spec.serviceUrl}/${target.id}?f=json`,
+                detailArtifacts[index],
+              )
+            ),
+          ],
           parsed: {
             fields,
             items,
@@ -241,8 +263,7 @@ const adminPropertySource: SourceDefinition = {
   title: "Property and Land Dataset Metadata",
   kind: "dataset_metadata",
   accessMethod: "official_arcgis_rest",
-  baseUrl:
-    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
+  baseUrl: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
 };
 
 export const adminPropertyConnector = buildArcGisCatalogConnector({
