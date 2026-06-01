@@ -1832,6 +1832,47 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     ),
   );
 
+  const rawValueContainsJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--raw-value-contains",
+      "Health",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const rawValueContainsJson = JSON.parse(
+    new TextDecoder().decode(rawValueContainsJsonOutput.stdout),
+  ) as {
+    count: number;
+    items: Array<{ details: { rawValue: string; relationshipType: string } }>;
+  };
+  assertEquals(rawValueContainsJsonOutput.code, 0);
+  assert(rawValueContainsJson.count > 0);
+  assert(
+    rawValueContainsJson.items.every((item) =>
+      item.details.relationshipType === "overseen_by" &&
+      item.details.rawValue.includes("Health")
+    ),
+  );
+
   const limitedJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -2459,6 +2500,88 @@ Deno.test("batch defer marks a scoped relationship review slice deferred", async
   reopened.close();
   assertEquals(openOther.length, 0);
   assertEquals(deferredOther.length, 1);
+});
+
+Deno.test("batch defer marks a raw-value substring relationship slice deferred", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const deferOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--raw-value-contains",
+      "Health",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(deferOutput.code, 0);
+  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 2 review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const deferredHealth = reopened.listReviewItems({
+    mode: "relationships",
+    status: "deferred",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+    rawValueContains: "Health",
+  });
+  const openOversight = reopened.listReviewItems({
+    mode: "relationships",
+    status: "open",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+  });
+  reopened.close();
+  assertEquals(deferredHealth.length, 2);
+  assertEquals(openOversight.length, 2);
 });
 
 Deno.test("resolution replay accepts entities, merges duplicates, accepts one directed relationship, and surfaces inverse display", async () => {
