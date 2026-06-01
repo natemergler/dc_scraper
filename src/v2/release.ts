@@ -176,6 +176,8 @@ async function buildReleaseSqlite(
   const db = new Database(path);
   try {
     db.exec(`
+      pragma foreign_keys = on;
+
       create table entities (
         id text primary key,
         name text not null,
@@ -191,7 +193,9 @@ async function buildReleaseSqlite(
         from_entity_id text not null,
         relationship_type text not null,
         to_entity_id text not null,
-        review_status text not null
+        review_status text not null,
+        foreign key (from_entity_id) references entities(id),
+        foreign key (to_entity_id) references entities(id)
       );
 
       create view incoming_relationships as

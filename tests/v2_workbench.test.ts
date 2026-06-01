@@ -1468,6 +1468,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const releaseDbContactHits = releaseDb.prepare(
     "select count(*) as count from legal_refs where source_item_id like '%not-for-release%' or citation_text like '%not-for-release%'",
   ).get() as { count: number };
+  const relationshipForeignKeys = releaseDb.prepare(
+    "pragma foreign_key_list(relationships)",
+  ).all();
   releaseDb.close();
   workbench.close();
   assertEquals(
@@ -1517,6 +1520,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "relationships",
     "sources",
   ]);
+  assertEquals(relationshipForeignKeys.length, 2);
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -1579,6 +1583,26 @@ Deno.test("release builder rejects email-shaped contact info in release rows", a
     () => buildV2Release(workbench, join(dir, "release")),
     Error,
     "Release output contains email-shaped contact info",
+  );
+  workbench.close();
+});
+
+Deno.test("release builder rejects relationships with missing endpoint entities", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source', 'Source Entity', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.source:part_of:dc.missing', 'dc.source', 'part_of', 'dc.missing', 'accepted', 'event.1', datetime('now'))",
+  ).run();
+
+  await assertRejects(
+    () => buildV2Release(workbench, join(dir, "release")),
+    Error,
+    "FOREIGN KEY constraint failed",
   );
   workbench.close();
 });
