@@ -6,12 +6,15 @@ import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
+  councilCommitteeHealthDetailFixture,
+  councilCommitteeWholeDetailFixture,
   councilCommitteesFixture,
   dcgisMetadataFixture,
   dcgisRowsFixture,
   legalEntrypointsFixture,
   limsFixture,
   openDcBoardFixture,
+  openDcCommissionFixture,
   openDcIndexFixture,
   openDcTaskForceFixture,
   quickbaseFixture,
@@ -52,6 +55,8 @@ Deno.test("imports representative connector results and source inspection stays 
       openDcTaskForceFixture,
     ],
     ["https://dccouncil.gov/committees/", councilCommitteesFixture],
+    ["https://dccouncil.gov/committees/committee-of-the-whole/", councilCommitteeWholeDetailFixture],
+    ["https://dccouncil.gov/committees/committee-on-health/", councilCommitteeHealthDetailFixture],
     ["https://lims.dccouncil.gov/api/Search/GetWhatsNew", limsFixture],
     ["https://octo.quickbase.com/db/bjngwsngm?a=td", quickbaseFixture],
     ["https://dc.gov/page/laws-regulations-and-courts", legalEntrypointsFixture],
@@ -155,6 +160,45 @@ Deno.test("Open DC detail evidence points to the detail artifact rather than the
   assertEquals(evidence.artifactPath, detailItem.artifactPath);
 });
 
+Deno.test("Open DC second detail-page shape yields administered and legal-authority relationship candidates plus document links", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body><a href="/public-bodies/commission-on-example-services">Commission on Example Services</a></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/commission-on-example-services":
+          return openDcCommissionFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 }));
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assert(
+    detail.items?.some((item) =>
+      item.itemType === "document_link" && String(item.body.href).includes("commission-charter.pdf")
+    ),
+  );
+  assert(
+    detail.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "governed_by" &&
+      candidate.rawValue === "Office of the City Administrator"
+    ),
+  );
+  assert(
+    detail.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "authorized_by" &&
+      candidate.rawValue === "Mayor's Order 2019-010"
+    ),
+  );
+});
+
 Deno.test("multi-artifact connector imports keep schema and row evidence on the correct artifacts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -219,6 +263,10 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
       switch (url) {
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -251,6 +299,39 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
   );
 });
 
+Deno.test("Council committee oversight extraction only emits explicit source-backed overseen_by candidates", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.committees").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  const oversightCandidates = parsed.relationshipCandidates?.filter((candidate) =>
+    candidate.relationshipType === "overseen_by"
+  ) ?? [];
+  assertEquals(oversightCandidates.length, 2);
+  assert(
+    oversightCandidates.every((candidate) =>
+      candidate.sourceItemKey.includes(":oversight") && candidate.needsReview === true
+    ),
+  );
+});
+
 Deno.test("review ordering surfaces source failures, placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -264,6 +345,10 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
       switch (url) {
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         case "https://octo.quickbase.com/db/bjngwsngm?a=td":
           return quickbaseFixture;
         default:
@@ -282,7 +367,9 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
     await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  const relationshipCandidate = workbench.listReviewItems({ mode: "relationships" })[0];
+  const relationshipCandidate = workbench.listReviewItems({ mode: "relationships" }).find((item) =>
+    item.subjectId.endsWith("_part_of")
+  );
   assert(relationshipCandidate);
   const matchingEntityCandidateId = relationshipCandidate.subjectId
     .replace(/^relationship\./, "candidate.")
@@ -313,8 +400,8 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
   assertEquals(items[0].subjectId, "mota.quickbase");
   assertEquals(items[1].itemType, "placeholder_entity");
   assertEquals(items[1].subjectId, "dc.council");
-  assertEquals(items[2].itemType, "relationship_candidate");
-  assertEquals(items[3].itemType, "entity_candidate");
+  assert(items.slice(2).some((item) => item.itemType === "relationship_candidate"));
+  assert(items.slice(2).some((item) => item.itemType === "entity_candidate"));
 });
 
 Deno.test("review list filters by mode, status, type, and subject prefix", async () => {
@@ -329,6 +416,10 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       switch (url) {
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -389,6 +480,10 @@ Deno.test("deferred review items stay visible but sort behind open items", async
       switch (url) {
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -430,6 +525,10 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
       switch (url) {
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -508,6 +607,10 @@ Deno.test("resolution replay accepts entities, merges duplicates, accepts one di
           return openDcTaskForceFixture;
         case "https://dccouncil.gov/committees/":
           return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }

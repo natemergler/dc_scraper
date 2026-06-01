@@ -74,10 +74,48 @@ export const openDcTaskForceFixture = `
 </body></html>
 `;
 
+export const openDcCommissionFixture = `
+<html><body>
+  <h1 class="page-title">Commission on Example Services</h1>
+  <div class="field field-name-field-statute-mayors-order field-type-text field-label-inline clearfix">
+    <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+    <div class="field-items"><div class="field-item even">Mayor's Order 2019-010</div></div>
+  </div>
+  <div class="field field-name-field-administering-agency field-type-taxonomy-term-reference field-label-inline clearfix">
+    <div class="field-label">Administering Agency / Agency Acronym:&nbsp;</div>
+    <div class="field-items"><div class="field-item even">Office of the City Administrator</div></div>
+  </div>
+  <div class="view view-meetings-calendar">
+    <a href="/public-bodies/commission-on-example-services/meetings">Meeting calendar</a>
+  </div>
+  <div class="field field-name-field-associated-documents field-type-link-field">
+    <a href="https://www.open-dc.gov/sites/default/files/dc/sites/example/publication/attachments/commission-charter.pdf">Commission Charter</a>
+  </div>
+</body></html>
+`;
+
 export const councilCommitteesFixture = `
 <html><body>
   <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
   <a href="https://dccouncil.gov/committees/committee-on-health/">Committee on Health</a>
+</body></html>
+`;
+
+export const councilCommitteeWholeDetailFixture = `
+<html><body>
+  <h1>Committee of the Whole</h1>
+  <h2>Oversight</h2>
+  <ul>
+    <li>District of Columbia Public Schools</li>
+    <li>Office of the State Superintendent of Education</li>
+  </ul>
+</body></html>
+`;
+
+export const councilCommitteeHealthDetailFixture = `
+<html><body>
+  <h1>Committee on Health</h1>
+  <p>The committee has broad jurisdiction over health agencies.</p>
 </body></html>
 `;
 

@@ -47,13 +47,26 @@ export const councilCommitteesConnector: SourceConnector = {
     };
     const response = await context.fetcher(councilCommitteesSource.baseUrl);
     const html = await response.text();
-    const committees = parseCouncilCommittees(html);
+    const committees = parseCouncilCommittees(html).slice(0, context.limit ?? 12);
+    const committeeDetails = await fetchCommitteeDetails(context.fetcher, committees);
     const items: SourceItemInput[] = committees.map((committee) => ({
       itemKey: committee.slug,
       itemType: "committee_page",
       title: committee.name,
       body: committee,
     }));
+    for (const detail of committeeDetails) {
+      items.push({
+        itemKey: `${detail.committee.slug}:oversight`,
+        itemType: "committee_oversight_detail",
+        title: `${detail.committee.name} oversight detail`,
+        artifactIndex: detail.artifactIndex,
+        body: {
+          committee: detail.committee.name,
+          oversightTargets: detail.oversightTargets,
+        },
+      });
+    }
     const entityCandidates = committees.map((committee) => ({
       candidateId: buildCandidateId(councilCommitteesSource.sourceId, committee.slug),
       sourceItemKey: committee.slug,
@@ -64,7 +77,7 @@ export const councilCommitteesConnector: SourceConnector = {
       officialUrl: committee.url,
       confidence: 0.95,
       duplicateHint: committee.url,
-      evidence: [fieldEvidence("committee", committee.name)],
+      evidence: [fieldEvidence("committee", committee.name, 0)],
     }));
     const relationshipCandidates: RelationshipCandidateInput[] = committees.map((committee) => ({
       relationshipCandidateId: buildRelationshipCandidateId(
@@ -76,8 +89,25 @@ export const councilCommitteesConnector: SourceConnector = {
       toEntityRef: "dc.council",
       relationshipType: "part_of",
       rawValue: "Council committee",
-      evidence: [fieldEvidence("committee", committee.name)],
+      evidence: [fieldEvidence("committee", committee.name, 0)],
     }));
+    for (const detail of committeeDetails) {
+      for (const [index, target] of detail.oversightTargets.entries()) {
+        relationshipCandidates.push({
+          relationshipCandidateId: buildRelationshipCandidateId(
+            councilCommitteesSource.sourceId,
+            `${detail.committee.slug}-oversight-${index + 1}`,
+          ),
+          sourceItemKey: `${detail.committee.slug}:oversight`,
+          fromEntityRef: buildEntityId(target),
+          toEntityRef: buildEntityId(detail.committee.name),
+          relationshipType: "overseen_by",
+          rawValue: target,
+          needsReview: true,
+          evidence: [fieldEvidence("oversight", target, detail.artifactIndex)],
+        });
+      }
+    }
     const reviewItems: ReviewItemInput[] = [
       ...entityCandidates.map((candidate) =>
         buildCandidateReviewItem(candidate.candidateId, "Review Council committee candidate", "accept", {
@@ -107,7 +137,12 @@ export const councilCommitteesConnector: SourceConnector = {
       endpointResults: [{
         endpoint,
         status: "success",
-        artifacts: [artifact("page", "html", councilCommitteesSource.baseUrl, html)],
+        artifacts: [
+          artifact("page", "html", councilCommitteesSource.baseUrl, html),
+          ...committeeDetails.map((detail) =>
+            artifact("page", "html", detail.committee.url, detail.html)
+          ),
+        ],
         parsed: {
           items,
           entityCandidates,
@@ -186,4 +221,44 @@ function parseCouncilCommittees(html: string): Array<{ slug: string; name: strin
     });
   }
   return results;
+}
+
+interface CommitteeDetailRecord {
+  committee: { slug: string; name: string; url: string };
+  html: string;
+  artifactIndex: number;
+  oversightTargets: string[];
+}
+
+async function fetchCommitteeDetails(
+  fetcher: ConnectorContext["fetcher"],
+  committees: Array<{ slug: string; name: string; url: string }>,
+): Promise<CommitteeDetailRecord[]> {
+  const records: CommitteeDetailRecord[] = [];
+  for (const [index, committee] of committees.entries()) {
+    const response = await fetcher(committee.url);
+    const html = await response.text();
+    records.push({
+      committee,
+      html,
+      artifactIndex: index + 1,
+      oversightTargets: parseOversightTargets(html),
+    });
+  }
+  return records;
+}
+
+function parseOversightTargets(html: string): string[] {
+  const oversightBlock = captureOversightBlock(html);
+  if (!oversightBlock) return [];
+  return [...oversightBlock.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gsi)]
+    .map((match) => normalizeName(stripHtml(match[1])))
+    .filter((value) => value.length > 0);
+}
+
+function captureOversightBlock(html: string): string | undefined {
+  const match = html.match(
+    /<h[1-6][^>]*>\s*Oversight\s*<\/h[1-6]>([\s\S]*?)(?:<h[1-6][^>]*>|<\/body>)/i,
+  );
+  return match?.[1];
 }
