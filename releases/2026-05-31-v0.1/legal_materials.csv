@@ -1,7 +1,0 @@
-id,law_family,name,record_type,source_refs,status,update_tracking_model
-anc_act,statutory,Advisory Neighborhood Commissions Act,legal_material,"[""dc_code""]",active,congressional_review
-council_rules,procedural,Council rules,legal_material,"[""council_lims""]",active,council_publication
-dc_code_legal_corpus,statutory,D.C. Code,legal_material,"[""dc_code""]",active,codified_statutory_law
-dc_register,administrative,District of Columbia Register,legal_material,"[""dcregs""]",active,publication_to_codification
-dcmr_legal_corpus,administrative,District of Columbia Municipal Regulations,legal_material,"[""dcregs""]",active,register_to_dcmr
-home_rule_act,statutory,District of Columbia Home Rule Act,legal_material,"[""dc_code""]",active,congressional_review

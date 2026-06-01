@@ -1,9 +1,0 @@
-{
-  "source_id": "anc_resolutions",
-  "source_url": "https://resolutions.anc.dc.gov/",
-  "captured_at": "2026-05-31T16:46:43.700Z",
-  "kind": "json_api_manifest",
-  "endpoint_ids": [
-    "default_resolution_list"
-  ]
-}
