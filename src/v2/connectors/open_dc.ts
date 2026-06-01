@@ -335,11 +335,10 @@ function parseOpenDcDetail(
     html,
     /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a href="([^"]+)"/i,
   );
-  const enablingAuthority =
-    captureSingle(
-      html,
-      /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a [^>]+>([\s\S]*?)<\/a>/i,
-    ) ??
+  const enablingAuthority = captureSingle(
+    html,
+    /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even"><a [^>]+>([\s\S]*?)<\/a>/i,
+  ) ??
     captureSingle(
       html,
       /Enabling Statute \/ Mayoral Order:[\s\S]*?<div class="field-items"><div class="field-item even">([\s\S]*?)<\/div>/i,
@@ -354,10 +353,16 @@ function parseOpenDcDetail(
   );
   const meetingCount = [...html.matchAll(/class="view-meetings-calendar"/g)].length;
   const meetingLinks = [...html.matchAll(/<a href="([^"]*meetings[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
-    (match) => ({ href: toAbsoluteUrl(detailUrl, match[1]), label: normalizeName(stripHtml(match[2])) }),
+    (match) => ({
+      href: toAbsoluteUrl(detailUrl, match[1]),
+      label: normalizeName(stripHtml(match[2])),
+    }),
   );
   const documentLinks = [...html.matchAll(/<a href="([^"]+\.pdf[^"]*)"[^>]*>(.*?)<\/a>/gsi)].map(
-    (match) => ({ href: toAbsoluteUrl(detailUrl, match[1]), label: normalizeName(stripHtml(match[2])) }),
+    (match) => ({
+      href: toAbsoluteUrl(detailUrl, match[1]),
+      label: normalizeName(stripHtml(match[2])),
+    }),
   );
   return {
     slug,

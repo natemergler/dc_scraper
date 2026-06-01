@@ -1,4 +1,4 @@
-import { Database } from "jsr:@db/sqlite";
+import { Database } from "@db/sqlite";
 import {
   type ConnectorResult,
   type EntitySearchResult,

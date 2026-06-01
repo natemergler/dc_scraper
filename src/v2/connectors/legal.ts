@@ -1,10 +1,10 @@
 import {
   buildDatasetId,
   buildLegalRefId,
-  parseLegalReference,
   type ConnectorResult,
   type DatasetInput,
   type LegalRefInput,
+  parseLegalReference,
   type SourceDefinition,
   type SourceEndpointDefinition,
   type SourceItemInput,

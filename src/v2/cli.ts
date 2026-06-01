@@ -110,7 +110,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   ) {
     const workbench = new Workbench(dbPath);
     workbench.init();
-    await runInteractiveReview(workbench, { ...readReviewFilters(args), mode: args[1] }, resolutionsDir);
+    await runInteractiveReview(
+      workbench,
+      { ...readReviewFilters(args), mode: args[1] },
+      resolutionsDir,
+    );
     workbench.close();
     return true;
   }
@@ -133,7 +137,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     console.log(renderEntityView(view));
     return true;
   }
-  if (args[0] === "release" && args[1] === "build" && readFlag(args, "--db")) {
+  if (args[0] === "release" && args[1] === "build") {
     const workbench = new Workbench(dbPath);
     workbench.init();
     const result = await buildV2Release(workbench, outDir);
@@ -178,4 +182,29 @@ function readFreeTextArgument(args: string[], startIndex: number): string {
     values.push(args[index]);
   }
   return values.join(" ");
+}
+
+export function printHelp(): void {
+  console.log(`dc civic-data workbench
+
+Usage:
+  dc init [--db <path>]
+  dc status [--db <path>]
+  dc doctor [--db <path>]
+  dc source list [--db <path>]
+  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
+  dc source inspect <source-id> [--db <path>]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>]
+  dc review batch accept-safe [--mode <mode>] [--db <path>] [--resolutions-dir <path>]
+  dc entity search <query> [--db <path>]
+  dc entity show <entity-id> [--db <path>]
+  dc release build [--db <path>] [--out <dir>]
+
+Defaults:
+  workbench db: data/workbench.sqlite
+  source artifacts: data/v2_artifacts
+  resolutions: resolutions/
+  release output: releases/latest
+`);
 }

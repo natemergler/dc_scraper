@@ -40,6 +40,44 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   assertEquals(second.migrations.length, 2);
 });
 
+Deno.test("top-level CLI aliases make the workbench easy to enter", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const initOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "init",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(initOutput.code, 0);
+  assertStringIncludes(new TextDecoder().decode(initOutput.stdout), "Initialized v2 workbench");
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  assertStringIncludes(new TextDecoder().decode(statusOutput.stdout), "Schema version: 2");
+});
+
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

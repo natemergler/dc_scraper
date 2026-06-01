@@ -1,4 +1,4 @@
-import type { Database } from "jsr:@db/sqlite";
+import type { Database } from "@db/sqlite";
 
 export interface WorkbenchStore {
   db: Database;

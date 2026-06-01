@@ -194,13 +194,18 @@ function buildDcgisReviewItems(
 ): ReviewItemInput[] {
   return [
     ...entityCandidates.map((candidate) =>
-      buildCandidateReviewItem(candidate.candidateId, "Review agency candidate from DCGIS", "accept", {
-        name: candidate.name,
-        kind: candidate.kind,
-        confidence: candidate.confidence,
-        officialUrl: candidate.officialUrl,
-        duplicateHint: candidate.duplicateHint,
-      })
+      buildCandidateReviewItem(
+        candidate.candidateId,
+        "Review agency candidate from DCGIS",
+        "accept",
+        {
+          name: candidate.name,
+          kind: candidate.kind,
+          confidence: candidate.confidence,
+          officialUrl: candidate.officialUrl,
+          duplicateHint: candidate.duplicateHint,
+        },
+      )
     ),
     ...relationshipCandidates.map((candidate) => ({
       reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "branch"),
