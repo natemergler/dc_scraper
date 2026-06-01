@@ -11,6 +11,7 @@ import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { parseLegalReference } from "../src/v2/domain.ts";
+import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
@@ -938,6 +939,161 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
       item.itemType === "placeholder_entity" && item.subjectId === "dc.council"
     ),
   );
+});
+
+Deno.test("relationship review renders endpoint status and placeholder implications", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const item = workbench.listReviewItems({ mode: "relationships" }).find((reviewItem) =>
+    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+  );
+  assert(item);
+  const before = renderReviewItem(workbench, item);
+  assertStringIncludes(before, "relationship:");
+  assertStringIncludes(before, "- type: part_of");
+  assertStringIncludes(before, "- family: part_of -> dc.council");
+  assertStringIncludes(before, 'dc.committee_of_the_whole "Committee of the Whole"');
+  assertStringIncludes(before, "candidate pending");
+  assertStringIncludes(before, "dc.council (missing; accepting will create a placeholder entity)");
+  assertStringIncludes(before, "e edit type/endpoints and accept");
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: item.subjectId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  const placeholderItem = workbench.listReviewItems({ mode: "relationships", status: "resolved" })
+    .find((reviewItem) => reviewItem.subjectId === item.subjectId);
+  assert(placeholderItem);
+  const after = renderReviewItem(workbench, placeholderItem);
+  workbench.close();
+  assertStringIncludes(after, 'dc.committee_of_the_whole "Committee of the Whole" (accepted)');
+  assertStringIncludes(
+    after,
+    'dc.council "Council" (placeholder; review placeholder before relying on this edge)',
+  );
+});
+
+Deno.test("dc review relationships can edit endpoints before accepting", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--subject-prefix",
+      "relationship.council.committees.committee_of_the_whole_part_of",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(
+    new TextEncoder().encode("e\npart_of\n\ndc.council_of_the_district_of_columbia\n"),
+  );
+  await writer.close();
+  const output = await reviewProcess.output();
+  const text = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 0);
+  assertStringIncludes(text, "Relationship type:");
+  assertStringIncludes(text, "From entity id (blank keeps source):");
+  assertStringIncludes(text, "To entity id (blank keeps source):");
+  assertStringIncludes(text, "Saved resolution.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const relationships = reopened.canonicalRelationships();
+  reopened.close();
+  assertEquals(relationships.map((row) => row.id), [
+    "dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia",
+  ]);
 });
 
 Deno.test("Council committee oversight extraction only emits explicit source-backed overseen_by candidates", async () => {
