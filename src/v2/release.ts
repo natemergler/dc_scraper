@@ -3,16 +3,22 @@ import { join } from "@std/path";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256Hex } from "./domain.ts";
 
+type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
+type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
+type SourceRow = ReturnType<Workbench["sourceInventory"]>[number];
+type DatasetRow = ReturnType<Workbench["datasets"]>[number];
+type LegalRefRow = ReturnType<Workbench["legalRefs"]>[number];
+
 export async function buildV2Release(
   workbench: Workbench,
   outDir: string,
 ): Promise<{ outDir: string; fileNames: string[] }> {
   await ensureDir(outDir);
-  const entities = workbench.canonicalEntities();
-  const relationships = workbench.canonicalRelationships();
-  const sources = workbench.sourceInventory();
-  const datasets = workbench.datasets();
-  const legalRefs = workbench.legalRefs();
+  const entities: EntityRow[] = workbench.canonicalEntities();
+  const relationships: RelationshipRow[] = workbench.canonicalRelationships();
+  const sources: SourceRow[] = workbench.sourceInventory();
+  const datasets: DatasetRow[] = workbench.datasets();
+  const legalRefs: LegalRefRow[] = workbench.legalRefs();
   const files = new Map<string, string>();
   files.set("entities.json", JSON.stringify(entities, null, 2));
   files.set("relationships.json", JSON.stringify(relationships, null, 2));
@@ -112,7 +118,10 @@ Review status fields show whether an item is accepted or still needs follow-up.
 `;
 }
 
-function toCsv(columns: string[], rows: Array<Record<string, unknown>>): string {
+function toCsv<T extends Record<string, string | number | null | undefined>>(
+  columns: string[],
+  rows: T[],
+): string {
   const header = columns.join(",");
   const lines = rows.map((row) => columns.map((column) => escapeCsv(row[column])).join(","));
   return `${[header, ...lines].join("\n")}\n`;
