@@ -26,6 +26,7 @@ deno task dc -- source inspect dcgis.agencies
 deno task dc -- review
 deno task dc -- entity search accountancy
 deno task dc -- release build
+deno task dc -- release inspect
 ```
 
 `dc review` is the main human path. It shows evidence, a default action, and single-key choices for
