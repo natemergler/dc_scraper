@@ -1347,7 +1347,10 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   await writer.write(new TextEncoder().encode("a\na\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
-  assertStringIncludes(new TextDecoder().decode(reviewOutput.stdout), "Saved resolution.");
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertStringIncludes(reviewText, "evidence:");
+  assertStringIncludes(reviewText, "name <- Board of Accountancy");
+  assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
