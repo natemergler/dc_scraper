@@ -211,6 +211,31 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(unfetchedInspectOutput.code, 0);
   assertStringIncludes(unfetchedInspectText, "dcgis.agencies - District Government Agencies");
   assertStringIncludes(unfetchedInspectText, "Latest status: unfetched");
+
+  const unfetchedInspectJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "inspect",
+      "dcgis.agencies",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const unfetchedInspectJson = JSON.parse(
+    new TextDecoder().decode(unfetchedInspectJsonOutput.stdout),
+  ) as { sourceId: string; latestStatus: string; itemCount: number };
+  assertEquals(unfetchedInspectJsonOutput.code, 0);
+  assertEquals(unfetchedInspectJson.sourceId, "dcgis.agencies");
+  assertEquals(unfetchedInspectJson.latestStatus, "unfetched");
+  assertEquals(unfetchedInspectJson.itemCount, 0);
 });
 
 Deno.test("CLI command errors print a concise message", async () => {
