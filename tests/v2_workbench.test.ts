@@ -709,6 +709,9 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
     parsed.reviewItems?.some((item) => item.itemType === "relationship_candidate"),
   );
   assert(
+    parsed.reviewItems?.every((item) => item.itemType !== "source_status"),
+  );
+  assert(
     parsed.datasets?.some((dataset) => dataset.category === "appointments"),
   );
 });
@@ -1604,7 +1607,7 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow", async () 
   assertEquals(accepted[0].normalized_citation, "D.C. Official Code");
 });
 
-Deno.test("review ordering surfaces source failures, placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
+Deno.test("review ordering surfaces placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1670,12 +1673,11 @@ Deno.test("review ordering surfaces source failures, placeholders, blocked relat
   );
   const items = workbench.listReviewItems();
   workbench.close();
-  assertEquals(items[0].itemType, "source_status");
-  assertEquals(items[0].subjectId, "mota.quickbase");
-  assertEquals(items[1].itemType, "placeholder_entity");
-  assertEquals(items[1].subjectId, "dc.council_of_the_district_of_columbia");
-  assert(items.slice(2).some((item) => item.itemType === "relationship_candidate"));
-  assert(items.slice(2).some((item) => item.itemType === "entity_candidate"));
+  assertEquals(items[0].itemType, "placeholder_entity");
+  assertEquals(items[0].subjectId, "dc.council_of_the_district_of_columbia");
+  assert(items.every((item) => item.itemType !== "source_status"));
+  assert(items.slice(1).some((item) => item.itemType === "relationship_candidate"));
+  assert(items.slice(1).some((item) => item.itemType === "entity_candidate"));
 });
 
 Deno.test("review list filters by mode, status, type, and subject prefix", async () => {
