@@ -1142,6 +1142,33 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(json.count, json.items.length);
   assert(json.items.every((item) => item.itemType === "entity_candidate"));
   assert(json.items.every((item) => item.subjectId.startsWith("candidate.council.committees")));
+
+  const allStatusJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--status",
+      "all",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const allStatusJson = JSON.parse(
+    new TextDecoder().decode(allStatusJsonOutput.stdout),
+  ) as { count: number; items: Array<{ itemType: string }> };
+  assertEquals(allStatusJsonOutput.code, 0);
+  assertEquals(allStatusJson.count, allStatusJson.items.length);
+  assert(allStatusJson.count >= json.count);
 });
 
 Deno.test("deferred review items stay visible but sort behind open items", async () => {
