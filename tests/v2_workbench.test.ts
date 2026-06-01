@@ -1341,6 +1341,22 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Office of the People’s Counsel"),
     "dc.office_of_the_people_s_counsel_for_the_district_of_columbia",
   );
+  assertEquals(
+    buildKnownEntityRef("Bicycle Advisory Council"),
+    "dc.bicycle_advisory_council_bac",
+  );
+  assertEquals(
+    buildKnownEntityRef("Board of Barber and Cosmetology"),
+    "dc.board_of_barber_and_cosmetology_bobc",
+  );
+  assertEquals(
+    buildKnownEntityRef("Commission on Aging"),
+    "dc.commission_on_aging_coa",
+  );
+  assertEquals(
+    buildKnownEntityRef("Health Information Exchange Policy Board"),
+    "dc.health_information_exchange_policy_board_hie",
+  );
 });
 
 Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
@@ -2419,6 +2435,35 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
     "Accepted 2 safe review item(s).",
   );
 
+  const broadRelationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.dcgis.agencies",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(broadRelationshipBatchOutput.code, 0);
+  const broadRelationshipBatchText = new TextDecoder().decode(
+    broadRelationshipBatchOutput.stdout,
+  );
+  assertStringIncludes(broadRelationshipBatchText, "Accepted 1 safe review item(s).");
+  assertStringIncludes(
+    broadRelationshipBatchText,
+    "Skipped 1 item(s) that were not safe to auto-accept.",
+  );
+
   const reopened = new Workbench(dbPath);
   reopened.init();
   const relationshipCount = reopened.db.prepare(
@@ -2430,10 +2475,10 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
     subjectPrefix: "relationship.dcgis.agencies",
   }).map((item) => item.details.rawValue);
   reopened.close();
-  assertEquals(relationshipCount.count, 2);
-  assert(remainingBranches.includes("Judicial"));
+  assertEquals(relationshipCount.count, 3);
   assert(remainingBranches.includes("Other"));
   assert(!remainingBranches.includes("Executive"));
+  assert(!remainingBranches.includes("Judicial"));
 });
 
 Deno.test("batch defer marks a scoped relationship review slice deferred", async () => {

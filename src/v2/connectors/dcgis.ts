@@ -180,6 +180,7 @@ function buildDcgisRelationshipCandidates(items: SourceItemInput[]): Relationshi
       toEntityRef: buildEntityId(`${branch} Branch`),
       relationshipType: "part_of",
       rawValue: branch,
+      needsReview: branch === "Other",
       evidence: [fieldEvidence("BRANCH", branch, 1)],
     });
   }
