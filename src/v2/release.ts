@@ -343,7 +343,7 @@ function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
     "none";
   return `# DCGov v2 Release
 
-This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite copy of the workbench.
+This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
 
 Files:
 - \`dcgov.sqlite\`: release SQLite package
