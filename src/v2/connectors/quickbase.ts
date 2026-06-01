@@ -408,21 +408,6 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     evidence: [fieldEvidence("rows", String(rows.length))],
   };
 
-  reviewItems.push({
-    reviewItemId: buildReviewItemId("mota.quickbase", "source-appointments"),
-    itemType: "source_status",
-    subjectId: quickbaseSource.sourceId,
-    reason: "Quickbase appointments CSV captured successfully",
-    defaultAction: "defer",
-    details: {
-      testedUrls: [quickbaseSource.baseUrl, buildAppointmentsCsvUrl(quickbaseSource.baseUrl)],
-      rows: rows.length,
-      boardCount: entityCandidates.length,
-      relationshipCandidateCount: relationshipCandidates.length,
-      accessMethod: quickbaseSource.accessMethod,
-    },
-  });
-
   return {
     fields,
     items,
