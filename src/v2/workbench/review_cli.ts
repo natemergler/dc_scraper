@@ -1,6 +1,15 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
+import { queryAll } from "./db.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
+import type { WorkbenchStore } from "./store.ts";
+
+interface ReviewEvidenceRow {
+  fieldPath: string;
+  observedValue: string;
+  sourceId: string;
+  artifactPath: string;
+}
 
 export async function runInteractiveReview(
   workbench: Pick<Workbench, "db" | "listReviewItems" | "appendResolutionEvent">,
@@ -14,7 +23,7 @@ export async function runInteractiveReview(
       console.log("No review items remain.");
       return;
     }
-    console.log(renderReviewItem(item));
+    console.log(renderReviewItem(workbench, item));
     const action = await promptLine("Action [a/r/m/d/q/e]: ");
     if (!action || action === "q") {
       console.log("Review stopped without corrupting state.");
@@ -30,7 +39,10 @@ export async function runInteractiveReview(
   }
 }
 
-export function renderReviewItem(item: ReviewItemRecord): string {
+export function renderReviewItem(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): string {
   return [
     `Review item: ${item.reviewItemId}`,
     `type: ${item.itemType}`,
@@ -39,6 +51,7 @@ export function renderReviewItem(item: ReviewItemRecord): string {
     `reason: ${item.reason}`,
     `default action: ${item.defaultAction}`,
     ...renderDetailsBlock(item.details),
+    ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].join("\n");
 }
 
@@ -171,6 +184,62 @@ function renderDetailsBlock(details: Record<string, unknown>): string[] {
     "details:",
     ...entries.map(([key, value]) => `- ${key}: ${formatDetailValue(value)}`),
   ];
+}
+
+function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
+  if (evidence.length === 0) return ["evidence: none"];
+  return [
+    "evidence:",
+    ...evidence.slice(0, 8).map((row) =>
+      `- ${row.fieldPath} <- ${row.observedValue} [${row.sourceId} @ ${row.artifactPath}]`
+    ),
+  ];
+}
+
+function reviewEvidence(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): ReviewEvidenceRow[] {
+  if (item.itemType === "entity_candidate") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from entity_candidate_evidence
+       where candidate_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  if (item.itemType === "relationship_candidate") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from relationship_candidate_evidence
+       where relationship_candidate_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  if (item.itemType === "legal_ref") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from legal_ref_evidence
+       where legal_ref_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  return [];
 }
 
 function compactDetails(details: Record<string, unknown>): string {
