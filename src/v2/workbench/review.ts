@@ -91,6 +91,9 @@ order by
     when review_items.item_type = 'relationship_candidate' then 50
     else 60
   end,
+  coalesce(relationship_candidates.relationship_type, ''),
+  coalesce(relationship_candidates.to_entity_ref, ''),
+  coalesce(relationship_candidates.from_entity_ref, ''),
   review_items.created_at,
   review_items.review_item_id
   ${filters.limit === undefined ? "" : "limit ?"}

@@ -1,6 +1,6 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
-import { queryAll } from "./db.ts";
+import { queryAll, queryOne } from "./db.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -9,6 +9,22 @@ interface ReviewEvidenceRow {
   observedValue: string;
   sourceId: string;
   artifactPath: string;
+}
+
+interface RelationshipReviewRow {
+  relationshipType: string;
+  fromEntityRef: string;
+  toEntityRef: string;
+  rawValue?: string | null;
+  sourceId: string;
+  itemTitle: string;
+}
+
+interface EndpointStatus {
+  entityId: string;
+  status: string;
+  name?: string;
+  note?: string;
 }
 
 export async function runInteractiveReview(
@@ -58,6 +74,7 @@ export function renderReviewItem(
     item.reason,
     `Default action: ${renderDefaultAction(item)}`,
     `Available actions: ${availableActionLabels(item).join(", ")}`,
+    ...renderRelationshipBlock(store, item),
     ...renderDetailsBlock(item.details),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].join("\n");
@@ -169,10 +186,16 @@ async function actionToEvent(
     }
     if (action === "e") {
       const relationshipType = await promptLine("Relationship type: ");
+      const fromEntityId = await promptLine("From entity id (blank keeps source): ");
+      const toEntityId = await promptLine("To entity id (blank keeps source): ");
+      const payload: Record<string, unknown> = {};
+      if (relationshipType) payload.relationshipType = relationshipType;
+      if (fromEntityId) payload.fromEntityId = fromEntityId;
+      if (toEntityId) payload.toEntityId = toEntityId;
       return {
         eventType: "accept_relationship_candidate",
         subjectId: item.subjectId,
-        payload: { relationshipType },
+        payload,
       };
     }
     if (action === "r") {
@@ -227,7 +250,7 @@ function availableActionLabels(item: ReviewItemRecord): string[] {
     if (key === "a") return "a accept";
     if (key === "r") return "r reject";
     if (key === "m") return "m merge";
-    if (key === "e") return "e edit relationship type";
+    if (key === "e") return "e edit type/endpoints and accept";
     if (key === "n") return "n normalize and accept";
     if (key === "d") return "d defer";
     if (key === "q") return "q quit";
@@ -249,6 +272,96 @@ function renderDetailsBlock(details: Record<string, unknown>): string[] {
     "details:",
     ...entries.map(([key, value]) => `- ${key}: ${formatDetailValue(value)}`),
   ];
+}
+
+function renderRelationshipBlock(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): string[] {
+  if (item.itemType !== "relationship_candidate") return [];
+  const relationship = relationshipReviewRow(store, item.subjectId);
+  if (!relationship) return [];
+  const from = endpointStatus(store, relationship.fromEntityRef);
+  const to = endpointStatus(store, relationship.toEntityRef);
+  return [
+    "relationship:",
+    `- type: ${relationship.relationshipType}`,
+    `- family: ${relationship.relationshipType} -> ${relationship.toEntityRef}`,
+    `- from: ${renderEndpointStatus(from)}`,
+    `- to: ${renderEndpointStatus(to)}`,
+    `- source: ${relationship.sourceId} / ${relationship.itemTitle}`,
+    relationship.rawValue ? `- raw: ${relationship.rawValue}` : undefined,
+  ].filter((line): line is string => Boolean(line));
+}
+
+function relationshipReviewRow(
+  store: Pick<WorkbenchStore, "db">,
+  relationshipCandidateId: string,
+): RelationshipReviewRow | undefined {
+  return queryOne<RelationshipReviewRow>(
+    store.db,
+    `select relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.to_entity_ref as toEntityRef,
+            relationship_candidates.raw_value as rawValue,
+            source_items.source_id as sourceId,
+            source_items.title as itemTitle
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.relationship_candidate_id = ?`,
+    [relationshipCandidateId],
+  );
+}
+
+function endpointStatus(store: Pick<WorkbenchStore, "db">, entityId: string): EndpointStatus {
+  const canonical = queryOne<{ name: string; reviewStatus: string; isPlaceholder: number }>(
+    store.db,
+    "select name, review_status as reviewStatus, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
+    [entityId],
+  );
+  if (canonical) {
+    return {
+      entityId,
+      name: canonical.name,
+      status: canonical.isPlaceholder ? "placeholder" : canonical.reviewStatus,
+      note: canonical.isPlaceholder ? "review placeholder before relying on this edge" : undefined,
+    };
+  }
+  const candidate = queryOne<{ candidateId: string; name: string; reviewStatus: string }>(
+    store.db,
+    `select candidate_id as candidateId,
+            name,
+            review_status as reviewStatus
+     from entity_candidates
+     where proposed_entity_id = ?
+     order by
+       case review_status when 'accepted' then 0 when 'pending' then 1 else 2 end,
+       coalesce(confidence, 0) desc,
+       candidate_id
+     limit 1`,
+    [entityId],
+  );
+  if (candidate) {
+    return {
+      entityId,
+      name: candidate.name,
+      status: `candidate ${candidate.reviewStatus}`,
+      note: candidate.reviewStatus === "pending"
+        ? `accept entity candidate ${candidate.candidateId} first when possible`
+        : undefined,
+    };
+  }
+  return {
+    entityId,
+    status: "missing",
+    note: "accepting will create a placeholder entity",
+  };
+}
+
+function renderEndpointStatus(endpoint: EndpointStatus): string {
+  const name = endpoint.name ? ` ${JSON.stringify(endpoint.name)}` : "";
+  const note = endpoint.note ? `; ${endpoint.note}` : "";
+  return `${endpoint.entityId}${name} (${endpoint.status}${note})`;
 }
 
 function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
