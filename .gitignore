@@ -1,4 +1,18 @@
 notes/
+.agent/
+
+# Local v2 workbench state and generated artifacts.
+data/
+resolutions/
+snapshots/
+candidates/
+candidates_patched/
+checks/
+releases/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
