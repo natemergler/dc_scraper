@@ -1,14 +1,6 @@
-import {
-  type ConnectorResult,
-  type DatasetInput,
-  type EntityCandidateInput,
-  type LegalRefInput,
-  type RelationshipCandidateInput,
-  type ReviewItemInput,
-  type SourceItemInput,
-} from "../domain.ts";
+import { type ConnectorResult } from "../domain.ts";
 import { nowIso } from "../domain.ts";
-import { run } from "./db.ts";
+import { run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -81,14 +73,16 @@ export async function importConnectorResult(
         artifactRecords.push({ artifactId, artifactPath: relativePath });
       }
       if (endpointResult.parsed) {
-        importParsedOutput(
-          store,
-          endpointResult.endpoint.sourceId,
-          endpointResult.endpoint.endpointId,
-          runId,
-          artifactRecords,
-          endpointResult.parsed,
-        );
+        withTransaction(store.db, () => {
+          importParsedOutput(
+            store,
+            endpointResult.endpoint.sourceId,
+            endpointResult.endpoint.endpointId,
+            runId,
+            artifactRecords,
+            endpointResult.parsed,
+          );
+        });
       }
       run(
         store.db,

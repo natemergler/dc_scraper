@@ -242,6 +242,35 @@ create table if not exists relationship_legal_refs (
 alter table canonical_entities add column is_placeholder integer not null default 0;
 alter table canonical_entities add column placeholder_reason text;
 `,
+}, {
+  version: 3,
+  name: "v2_lifecycle_indexes",
+  sql: `
+create index if not exists source_endpoints_source_idx on source_endpoints(source_id);
+create index if not exists source_runs_source_status_idx on source_runs(source_id, status, finished_at, started_at);
+create index if not exists source_artifacts_run_idx on source_artifacts(run_id, endpoint_id, created_at);
+create index if not exists source_fields_endpoint_idx on source_fields(endpoint_id, ordinal);
+create index if not exists source_items_source_key_idx on source_items(source_id, item_key);
+create index if not exists source_items_run_idx on source_items(run_id);
+
+create index if not exists entity_candidates_review_idx on entity_candidates(review_status, normalized_name);
+create index if not exists entity_candidates_source_item_idx on entity_candidates(source_item_id);
+create index if not exists entity_candidate_evidence_candidate_idx on entity_candidate_evidence(candidate_id);
+
+create index if not exists relationship_candidates_review_idx on relationship_candidates(review_status, relationship_type);
+create index if not exists relationship_candidates_source_item_idx on relationship_candidates(source_item_id);
+create index if not exists relationship_candidate_evidence_candidate_idx on relationship_candidate_evidence(relationship_candidate_id);
+
+create index if not exists legal_refs_source_item_idx on legal_refs(source_item_id);
+create index if not exists legal_ref_evidence_ref_idx on legal_ref_evidence(legal_ref_id);
+create index if not exists datasets_source_item_idx on datasets(source_item_id);
+create index if not exists dataset_evidence_dataset_idx on dataset_evidence(dataset_id);
+
+create index if not exists review_items_queue_idx on review_items(status, item_type, subject_id);
+create unique index if not exists resolution_events_file_sequence_idx on resolution_events(resolution_file, sequence_number);
+create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
+create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {

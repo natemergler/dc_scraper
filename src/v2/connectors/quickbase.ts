@@ -4,8 +4,8 @@ import {
   buildEntityId,
   buildRelationshipCandidateId,
   buildReviewItemId,
-  detectEntityKind,
   type DatasetInput,
+  detectEntityKind,
   type EntityCandidateInput,
   type RelationshipCandidateInput,
   type ReviewItemInput,
@@ -17,10 +17,10 @@ import {
 import {
   artifact,
   buildCandidateReviewItem,
-  fieldEvidence,
-  maybeString,
   type ConnectorContext,
   type ConnectorResult,
+  fieldEvidence,
+  maybeString,
   type SourceConnector,
 } from "./shared.ts";
 
@@ -29,8 +29,7 @@ const quickbaseSource: SourceDefinition = {
   title: "MOTA Quickbase Public Surface",
   kind: "quickbase_csv_export",
   accessMethod: "official_quickbase_csv_export",
-  baseUrl:
-    "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0",
+  baseUrl: "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0",
   notes:
     "Anonymous access includes a CSV export path (`dlta=xs`) for the appointments report plus app metadata on the base report page.",
 };
@@ -95,7 +94,8 @@ export const quickbaseConnector: SourceConnector = {
                   reviewItemId: buildReviewItemId("mota.quickbase", "status"),
                   itemType: "source_status",
                   subjectId: quickbaseSource.sourceId,
-                  reason: "Quickbase appointments CSV endpoint failed to fetch without authentication.",
+                  reason:
+                    "Quickbase appointments CSV endpoint failed to fetch without authentication.",
                   defaultAction: "defer",
                   details: {
                     testedUrls: [quickbaseSource.baseUrl, appointmentsEndpoint.url],
@@ -187,7 +187,10 @@ function buildAppointmentsCsvUrl(baseUrl: string): string {
 function parseQuickbaseCsv(csvText: string, limit?: number): QuickbaseParseResult {
   const rows = parseCsv(csvText);
   if (rows.length < 2) {
-    return { ok: false, reason: "CSV payload does not include a header and at least one appointment row." };
+    return {
+      ok: false,
+      reason: "CSV payload does not include a header and at least one appointment row.",
+    };
   }
 
   const headers = rows[0].map((header) => normalizeHeader(header));
@@ -293,7 +296,10 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
         officialUrl: quickbaseSource.baseUrl,
         confidence: 0.95,
         duplicateHint: board,
-        evidence: [fieldEvidence(quickbaseColumns.board, board), fieldEvidence("row", String(index + 1))],
+        evidence: [
+          fieldEvidence(quickbaseColumns.board, board),
+          fieldEvidence("row", String(index + 1)),
+        ],
       });
       reviewItems.push(
         buildCandidateReviewItem(

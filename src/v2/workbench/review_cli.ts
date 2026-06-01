@@ -1,10 +1,15 @@
-import type {
-  EntityView,
-  ResolutionEventInput,
-  ReviewItemRecord,
-} from "../domain.ts";
+import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
+import { queryAll } from "./db.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
+import type { WorkbenchStore } from "./store.ts";
+
+interface ReviewEvidenceRow {
+  fieldPath: string;
+  observedValue: string;
+  sourceId: string;
+  artifactPath: string;
+}
 
 export async function runInteractiveReview(
   workbench: Pick<Workbench, "db" | "listReviewItems" | "appendResolutionEvent">,
@@ -18,12 +23,13 @@ export async function runInteractiveReview(
       console.log("No review items remain.");
       return;
     }
-    console.log(renderReviewItem(item));
-    const action = await promptLine("Action [a/r/m/d/q/e]: ");
-    if (!action || action === "q") {
+    console.log(renderReviewItem(workbench, item));
+    const promptedAction = await promptLine("Action [enter/a/r/m/d/q/e]: ");
+    if (promptedAction === undefined || promptedAction === "q") {
       console.log("Review stopped without corrupting state.");
       return;
     }
+    const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
     const event = await actionToEvent(item, action);
     if (!event) {
       console.log("That action is not available for this item.");
@@ -34,7 +40,10 @@ export async function runInteractiveReview(
   }
 }
 
-export function renderReviewItem(item: ReviewItemRecord): string {
+export function renderReviewItem(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): string {
   return [
     `Review item: ${item.reviewItemId}`,
     `type: ${item.itemType}`,
@@ -43,6 +52,7 @@ export function renderReviewItem(item: ReviewItemRecord): string {
     `reason: ${item.reason}`,
     `default action: ${item.defaultAction}`,
     ...renderDetailsBlock(item.details),
+    ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].join("\n");
 }
 
@@ -168,6 +178,13 @@ async function actionToEvent(
   return undefined;
 }
 
+function defaultActionKey(defaultAction: string): string {
+  if (defaultAction === "accept") return "a";
+  if (defaultAction === "reject") return "r";
+  if (defaultAction === "defer") return "d";
+  return defaultAction;
+}
+
 function renderDetailsBlock(details: Record<string, unknown>): string[] {
   const entries = Object.entries(details).sort(([left], [right]) => left.localeCompare(right));
   if (entries.length === 0) return ["details: none"];
@@ -175,6 +192,62 @@ function renderDetailsBlock(details: Record<string, unknown>): string[] {
     "details:",
     ...entries.map(([key, value]) => `- ${key}: ${formatDetailValue(value)}`),
   ];
+}
+
+function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
+  if (evidence.length === 0) return ["evidence: none"];
+  return [
+    "evidence:",
+    ...evidence.slice(0, 8).map((row) =>
+      `- ${row.fieldPath} <- ${row.observedValue} [${row.sourceId} @ ${row.artifactPath}]`
+    ),
+  ];
+}
+
+function reviewEvidence(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): ReviewEvidenceRow[] {
+  if (item.itemType === "entity_candidate") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from entity_candidate_evidence
+       where candidate_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  if (item.itemType === "relationship_candidate") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from relationship_candidate_evidence
+       where relationship_candidate_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  if (item.itemType === "legal_ref") {
+    return queryAll<ReviewEvidenceRow>(
+      store.db,
+      `select field_path as fieldPath,
+              observed_value as observedValue,
+              source_id as sourceId,
+              artifact_path as artifactPath
+       from legal_ref_evidence
+       where legal_ref_id = ?
+       order by field_path`,
+      [item.subjectId],
+    );
+  }
+  return [];
 }
 
 function compactDetails(details: Record<string, unknown>): string {
@@ -194,12 +267,15 @@ function formatDetailValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-async function promptLine(promptText: string): Promise<string> {
+async function promptLine(promptText: string): Promise<string | undefined> {
   await Deno.stdout.write(new TextEncoder().encode(promptText));
   while (!stdinBuffer.includes("\n")) {
     const buffer = new Uint8Array(1024);
     const read = await Deno.stdin.read(buffer);
-    if (read === null) break;
+    if (read === null) {
+      if (stdinBuffer.length === 0) return undefined;
+      break;
+    }
     stdinBuffer += new TextDecoder().decode(buffer.subarray(0, read));
   }
   const newlineIndex = stdinBuffer.indexOf("\n");
