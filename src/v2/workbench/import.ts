@@ -1,5 +1,4 @@
-import { type ConnectorResult } from "../domain.ts";
-import { nowIso } from "../domain.ts";
+import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
 import { run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
@@ -283,6 +282,22 @@ function importParsedOutput(
         ],
       );
     }
+    const reviewItemId = buildReviewItemId(legalRef.legalRefId, "legal-ref");
+    run(
+      store.db,
+      "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, 'legal_ref', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
+      [
+        reviewItemId,
+        legalRef.legalRefId,
+        legalReviewReason(legalRef),
+        legalDefaultAction(legalRef),
+        reviewItemId,
+        JSON.stringify(legalReviewDetails(legalRef)),
+        reviewItemId,
+        nowIso(),
+        nowIso(),
+      ],
+    );
   }
   for (const dataset of parsed.datasets ?? []) {
     const sourceItem = requireItem(itemIndex, dataset.sourceItemKey);
@@ -339,6 +354,28 @@ function importParsedOutput(
       ],
     );
   }
+}
+
+function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
+  if (legalRef.refType === "unknown") return "defer";
+  if (legalRef.needsReview === true && !legalRef.normalizedCitation) return "defer";
+  return "accept";
+}
+
+function legalReviewReason(legalRef: LegalRefInput): string {
+  if (legalRef.refType === "unknown") return "Classify or defer unknown legal reference";
+  if (legalRef.needsReview === true) return "Review legal reference normalization";
+  return "Accept or correct normalized legal reference";
+}
+
+function legalReviewDetails(legalRef: LegalRefInput): Record<string, unknown> {
+  return {
+    citationText: legalRef.citationText,
+    refType: legalRef.refType,
+    normalizedCitation: legalRef.normalizedCitation ?? null,
+    url: legalRef.url ?? null,
+    needsReview: legalRef.needsReview === true,
+  };
 }
 
 function artifactAt(artifactRecords: ArtifactRecord[], artifactIndex?: number): ArtifactRecord {

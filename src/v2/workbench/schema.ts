@@ -574,6 +574,40 @@ create unique index if not exists resolution_events_file_sequence_idx on resolut
 create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
 create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
 `,
+}, {
+  version: 5,
+  name: "v2_legal_ref_resolution_events",
+  sql: `
+alter table resolution_events rename to resolution_events_old;
+create table resolution_events (
+  event_id text primary key,
+  event_type text not null check (event_type in ('accept_entity_candidate', 'reject_entity_candidate', 'merge_entity_candidates', 'set_entity_fields', 'accept_relationship_candidate', 'reject_relationship_candidate', 'accept_legal_ref', 'reject_legal_ref', 'defer_review_item', 'reopen_review_item')),
+  subject_id text not null,
+  payload_json text not null check (json_valid(payload_json)),
+  resolution_file text not null,
+  sequence_number integer not null check (sequence_number > 0),
+  created_at text not null
+);
+insert into resolution_events select event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at from resolution_events_old;
+drop table resolution_events_old;
+
+alter table canonical_relationships rename to canonical_relationships_old;
+create table canonical_relationships (
+  relationship_id text primary key,
+  from_entity_id text not null references canonical_entities(entity_id),
+  relationship_type text not null check (relationship_type in ('part_of', 'governed_by', 'overseen_by', 'appointed_by', 'authorized_by', 'published_by')),
+  to_entity_id text not null references canonical_entities(entity_id),
+  review_status text not null check (review_status in ('accepted', 'rejected')),
+  source_event_id text not null references resolution_events(event_id),
+  created_at text not null
+);
+insert into canonical_relationships select relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at from canonical_relationships_old;
+drop table canonical_relationships_old;
+
+create unique index if not exists resolution_events_file_sequence_idx on resolution_events(resolution_file, sequence_number);
+create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
+create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
