@@ -1473,3 +1473,72 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   assertStringIncludes(showText, "@");
   assertStringIncludes(showText, "legal_refs:");
 });
+
+Deno.test("interactive review Enter accepts the default action", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 })),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const reviewProcess = reviewRun.spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(reviewText, "default action: accept");
+  assertStringIncludes(reviewText, "Saved resolution.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const entities = reopened.canonicalEntities();
+  reopened.close();
+  assertEquals(entities.map((entity) => entity.id), ["dc.board_of_accountancy"]);
+});
