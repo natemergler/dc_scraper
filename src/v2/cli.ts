@@ -1,6 +1,6 @@
 import { join } from "@std/path";
 import { buildV2Release } from "./release.ts";
-import { createConnectorContext, getConnector } from "./connectors.ts";
+import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
 import {
   renderEntityView,
   renderReviewItemSummary,
@@ -67,12 +67,13 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "source" && args[1] === "list") {
     const workbench = new Workbench(dbPath);
     workbench.init();
-    const rows = workbench.listSources();
+    const rowsBySourceId = new Map(workbench.listSources().map((row) => [row.sourceId, row]));
     workbench.close();
-    for (const row of rows) {
+    for (const connector of connectors) {
+      const row = rowsBySourceId.get(connector.sourceId);
       console.log(
-        `${row.sourceId} ${row.latestStatus ?? "unfetched"}${
-          row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
+        `${connector.sourceId} ${row?.latestStatus ?? "unfetched"}${
+          row?.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
         }`,
       );
     }
