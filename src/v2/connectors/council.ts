@@ -132,7 +132,9 @@ export const councilCommitteesConnector: SourceConnector = {
         reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "committee"),
         itemType: "relationship_candidate" as const,
         subjectId: candidate.relationshipCandidateId,
-        reason: "Review committee to Council relationship",
+        reason: candidate.relationshipType === "overseen_by"
+          ? "Review Council committee oversight relationship"
+          : "Review committee to Council relationship",
         defaultAction: "accept",
         details: {
           fromEntityRef: candidate.fromEntityRef,
@@ -268,7 +270,7 @@ function parseOversightTargets(html: string): string[] {
 
 function captureOversightBlock(html: string): string | undefined {
   const match = html.match(
-    /<h[1-6][^>]*>\s*Oversight\s*<\/h[1-6]>([\s\S]*?)(?:<h[1-6][^>]*>|<\/body>)/i,
+    /<h[1-6][^>]*>\s*(?:Oversight|Agencies Under This Committee)\s*<\/h[1-6]>[\s\S]*?(<ul[^>]*>[\s\S]*?<\/ul>)/i,
   );
   return match?.[1];
 }
