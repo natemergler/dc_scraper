@@ -16,8 +16,10 @@ import {
 } from "./shared.ts";
 import type { ConnectorContext, ConnectorResult, SourceConnector } from "./shared.ts";
 import type {
+  EntityCandidateInput,
   LegalRefInput,
   RelationshipCandidateInput,
+  ReviewItemInput,
   SourceDefinition,
   SourceEndpointDefinition,
   SourceFieldInput,
@@ -55,97 +57,13 @@ export const dcgisAgenciesConnector: SourceConnector = {
     const rowsText = await rowsResponse.text();
     const metadata = JSON.parse(metadataText);
     const rowsPayload = JSON.parse(rowsText);
-    const rows = Array.isArray(rowsPayload.features)
-      ? rowsPayload.features.map((feature: Record<string, unknown>) => feature.attributes ?? {})
-      : (rowsPayload.rows ?? []);
-    const fields: SourceFieldInput[] = (metadata.fields ?? []).map(
-      (field: Record<string, unknown>, index: number) => ({
-        fieldName: String(field.name),
-        fieldType: String(field.type ?? "unknown"),
-        fieldLabel: String(field.alias ?? field.name),
-        ordinal: index,
-      }),
-    );
-    const items: SourceItemInput[] = rows.map((row: Record<string, unknown>) => ({
-      itemKey: String(row.AGENCY_ID ?? row.OBJECTID),
-      itemType: "agency_row",
-      title: String(row.AGENCY_NAME ?? row.SHORT_NAME ?? row.OBJECTID),
-      body: row,
-    }));
-    const entityCandidates = items.map((item) => {
-      const row = item.body as Record<string, unknown>;
-      const name = String(row.AGENCY_NAME ?? row.SHORT_NAME ?? item.title);
-      return {
-        candidateId: buildCandidateId(dcgisAgenciesSource.sourceId, item.itemKey),
-        sourceItemKey: item.itemKey,
-        proposedEntityId: buildEntityId(name),
-        name,
-        kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
-        rawKind: String(row.TYPE ?? "agency"),
-        branch: maybeString(row.BRANCH),
-        cluster: maybeString(row.MAYORAL_CLUSTER),
-        officialUrl: maybeString(row.WEB_URL),
-        confidence: 0.95,
-        duplicateHint: maybeString(row.WEB_URL),
-        evidence: [
-          fieldEvidence("AGENCY_NAME", row.AGENCY_NAME),
-          fieldEvidence("TYPE", row.TYPE),
-          fieldEvidence("WEB_URL", row.WEB_URL),
-        ],
-      };
-    });
-    const relationshipCandidates: RelationshipCandidateInput[] = [];
-    for (const item of items) {
-      const row = item.body as Record<string, unknown>;
-      const name = String(row.AGENCY_NAME ?? item.title);
-      const fromEntityRef = buildEntityId(name);
-      const branch = maybeString(row.BRANCH);
-      if (branch) {
-        relationshipCandidates.push({
-          relationshipCandidateId: buildRelationshipCandidateId(
-            dcgisAgenciesSource.sourceId,
-            `${item.itemKey}-branch`,
-          ),
-          sourceItemKey: item.itemKey,
-          fromEntityRef,
-          toEntityRef: buildEntityId(`${branch} Branch`),
-          relationshipType: "part_of",
-          rawValue: branch,
-          evidence: [fieldEvidence("BRANCH", branch)],
-        });
-      }
-    }
-    const legalRefs: LegalRefInput[] = [];
-    for (const item of items) {
-      const row = item.body as Record<string, unknown>;
-      const legislation = maybeString(row.LEGISLATION);
-      if (!legislation) continue;
-      const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
-      legalRefs.push({
-        legalRefId: buildLegalRefId(dcgisAgenciesSource.sourceId, `${item.itemKey}-legislation`),
-        sourceItemKey: item.itemKey,
-        refType: parsed.refType,
-        citationText: parsed.citationText,
-        normalizedCitation: parsed.normalizedCitation,
-        url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
-        needsReview: parsed.needsReview,
-        evidence: [fieldEvidence("LEGISLATION", legislation)],
-        attachEntityRef: buildEntityId(String(row.AGENCY_NAME ?? item.title)),
-      });
-    }
-    const reviewItems = [
-      ...entityCandidates.map((candidate) =>
-        buildCandidateReviewItem(candidate.candidateId, "Review agency candidate from DCGIS")
-      ),
-      ...relationshipCandidates.map((candidate) => ({
-        reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "branch"),
-        itemType: "relationship_candidate" as const,
-        subjectId: candidate.relationshipCandidateId,
-        reason: "Review agency relationship inferred from branch metadata",
-        defaultAction: "accept",
-        details: {},
-      })),
-    ];
+    const rows = parseDcgisRows(rowsPayload);
+    const fields = buildDcgisFields(metadata);
+    const items = buildDcgisItems(rows);
+    const entityCandidates = buildDcgisEntityCandidates(items);
+    const relationshipCandidates = buildDcgisRelationshipCandidates(items);
+    const legalRefs = buildDcgisLegalRefs(items);
+    const reviewItems = buildDcgisReviewItems(entityCandidates, relationshipCandidates);
     return {
       source: dcgisAgenciesSource,
       endpointResults: [{
@@ -167,3 +85,124 @@ export const dcgisAgenciesConnector: SourceConnector = {
     };
   },
 };
+
+function parseDcgisRows(rowsPayload: Record<string, unknown>): Record<string, unknown>[] {
+  const features = rowsPayload.features as Array<Record<string, unknown>> | undefined;
+  const rows = rowsPayload.rows as Array<Record<string, unknown>> | undefined;
+  return Array.isArray(features)
+    ? features.map((feature) => {
+      const attributes = feature.attributes as Record<string, unknown> | undefined;
+      return attributes ?? {};
+    })
+    : (rows ?? []);
+}
+
+function buildDcgisFields(metadata: Record<string, unknown>): SourceFieldInput[] {
+  const fields = metadata.fields as Array<Record<string, unknown>> | undefined;
+  return (fields ?? []).map((field: Record<string, unknown>, index: number) => ({
+    fieldName: String(field.name),
+    fieldType: String(field.type ?? "unknown"),
+    fieldLabel: String(field.alias ?? field.name),
+    ordinal: index,
+    artifactIndex: 0,
+  }));
+}
+
+function buildDcgisItems(rows: Record<string, unknown>[]): SourceItemInput[] {
+  return rows.map((row) => ({
+    itemKey: String(row.AGENCY_ID ?? row.OBJECTID),
+    itemType: "agency_row",
+    title: String(row.AGENCY_NAME ?? row.SHORT_NAME ?? row.OBJECTID),
+    body: row,
+    artifactIndex: 1,
+  }));
+}
+
+function buildDcgisEntityCandidates(items: SourceItemInput[]): EntityCandidateInput[] {
+  return items.map((item) => {
+    const row = item.body as Record<string, unknown>;
+    const name = String(row.AGENCY_NAME ?? row.SHORT_NAME ?? item.title);
+    return {
+      candidateId: buildCandidateId(dcgisAgenciesSource.sourceId, item.itemKey),
+      sourceItemKey: item.itemKey,
+      proposedEntityId: buildEntityId(name),
+      name,
+      kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
+      rawKind: String(row.TYPE ?? "agency"),
+      branch: maybeString(row.BRANCH),
+      cluster: maybeString(row.MAYORAL_CLUSTER),
+      officialUrl: maybeString(row.WEB_URL),
+      confidence: 0.95,
+      duplicateHint: maybeString(row.WEB_URL),
+      evidence: [
+        fieldEvidence("AGENCY_NAME", row.AGENCY_NAME, 1),
+        fieldEvidence("TYPE", row.TYPE, 1),
+        fieldEvidence("WEB_URL", row.WEB_URL, 1),
+      ],
+    };
+  });
+}
+
+function buildDcgisRelationshipCandidates(items: SourceItemInput[]): RelationshipCandidateInput[] {
+  const relationshipCandidates: RelationshipCandidateInput[] = [];
+  for (const item of items) {
+    const row = item.body as Record<string, unknown>;
+    const name = String(row.AGENCY_NAME ?? item.title);
+    const branch = maybeString(row.BRANCH);
+    if (!branch) continue;
+    relationshipCandidates.push({
+      relationshipCandidateId: buildRelationshipCandidateId(
+        dcgisAgenciesSource.sourceId,
+        `${item.itemKey}-branch`,
+      ),
+      sourceItemKey: item.itemKey,
+      fromEntityRef: buildEntityId(name),
+      toEntityRef: buildEntityId(`${branch} Branch`),
+      relationshipType: "part_of",
+      rawValue: branch,
+      evidence: [fieldEvidence("BRANCH", branch, 1)],
+    });
+  }
+  return relationshipCandidates;
+}
+
+function buildDcgisLegalRefs(items: SourceItemInput[]): LegalRefInput[] {
+  const legalRefs: LegalRefInput[] = [];
+  for (const item of items) {
+    const row = item.body as Record<string, unknown>;
+    const legislation = maybeString(row.LEGISLATION);
+    if (!legislation) continue;
+    const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
+    legalRefs.push({
+      legalRefId: buildLegalRefId(dcgisAgenciesSource.sourceId, `${item.itemKey}-legislation`),
+      sourceItemKey: item.itemKey,
+      refType: parsed.refType,
+      citationText: parsed.citationText,
+      normalizedCitation: parsed.normalizedCitation,
+      url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
+      needsReview: parsed.needsReview,
+      evidence: [fieldEvidence("LEGISLATION", legislation, 1)],
+      attachEntityRef: buildEntityId(String(row.AGENCY_NAME ?? item.title)),
+    });
+  }
+  return legalRefs;
+}
+
+function buildDcgisReviewItems(
+  entityCandidates: EntityCandidateInput[],
+  relationshipCandidates: RelationshipCandidateInput[],
+): ReviewItemInput[] {
+  return [
+    ...entityCandidates.map((candidate) =>
+      buildCandidateReviewItem(candidate.candidateId, "Review agency candidate from DCGIS")
+    ),
+    ...relationshipCandidates.map((candidate) => ({
+      reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "branch"),
+      itemType: "relationship_candidate" as const,
+      subjectId: candidate.relationshipCandidateId,
+      reason: "Review agency relationship inferred from branch metadata",
+      defaultAction: "accept",
+      details: {},
+    })),
+  ];
+}

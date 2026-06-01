@@ -44,8 +44,12 @@ export function artifact(
   return { kind, extension, fetchedUrl, contentText };
 }
 
-export function fieldEvidence(path: string, value: unknown) {
-  return { fieldPath: path, observedValue: String(value ?? "") };
+export function fieldEvidence(path: string, value: unknown, artifactIndex?: number) {
+  return {
+    fieldPath: path,
+    observedValue: String(value ?? ""),
+    ...(artifactIndex === undefined ? {} : { artifactIndex }),
+  };
 }
 
 export function buildCandidateReviewItem(

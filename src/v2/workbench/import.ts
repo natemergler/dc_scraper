@@ -8,10 +8,20 @@ import {
   type SourceItemInput,
 } from "../domain.ts";
 import { nowIso } from "../domain.ts";
-import { queryOne, run } from "./db.ts";
+import { run } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import type { WorkbenchStore } from "./store.ts";
+
+interface ArtifactRecord {
+  artifactId: string;
+  artifactPath: string;
+}
+
+interface ParsedSourceItemRecord {
+  sourceItemId: string;
+  artifactIndex: number;
+}
 
 export async function importConnectorResult(
   store: WorkbenchStore,
@@ -42,11 +52,10 @@ export async function importConnectorResult(
         endpointResult.status,
       ],
     );
-    let firstArtifactId = "";
+    const artifactRecords: ArtifactRecord[] = [];
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
-        if (!firstArtifactId) firstArtifactId = artifactId;
         const relativePath = await writeArtifact(
           dataDir,
           endpointResult.endpoint.sourceId,
@@ -69,6 +78,7 @@ export async function importConnectorResult(
             nowIso(),
           ],
         );
+        artifactRecords.push({ artifactId, artifactPath: relativePath });
       }
       if (endpointResult.parsed) {
         importParsedOutput(
@@ -76,7 +86,7 @@ export async function importConnectorResult(
           endpointResult.endpoint.sourceId,
           endpointResult.endpoint.endpointId,
           runId,
-          firstArtifactId,
+          artifactRecords,
           endpointResult.parsed,
         );
       }
@@ -101,18 +111,19 @@ function importParsedOutput(
   sourceId: string,
   endpointId: string,
   runId: string,
-  artifactId: string,
+  artifactRecords: ArtifactRecord[],
   parsed: ConnectorResult["endpointResults"][number]["parsed"],
 ): void {
   if (!parsed) return;
   for (const field of parsed.fields ?? []) {
+    const artifactRecord = artifactAt(artifactRecords, field.artifactIndex);
     run(
       store.db,
       "insert or replace into source_fields(field_id, endpoint_id, artifact_id, field_name, field_type, field_label, ordinal) values(?, ?, ?, ?, ?, ?, ?)",
       [
         `${endpointId}:${field.fieldName}`,
         endpointId,
-        artifactId,
+        artifactRecord.artifactId,
         field.fieldName,
         field.fieldType,
         field.fieldLabel ?? null,
@@ -120,16 +131,15 @@ function importParsedOutput(
       ],
     );
   }
-  const itemIndex = new Map<string, { sourceItemId: string; artifactPath: string }>();
-  const artifactPath = queryOne<{ path: string }>(
-    store.db,
-    "select path from source_artifacts where artifact_id = ?",
-    [artifactId],
-  );
-  if (!artifactPath) throw new Error(`Missing artifact index for ${artifactId}`);
+  const itemIndex = new Map<string, ParsedSourceItemRecord & { artifactPath: string }>();
   for (const item of parsed.items ?? []) {
+    const artifactRecord = artifactAt(artifactRecords, item.artifactIndex);
     const sourceItemId = `${runId}:${item.itemKey}`;
-    itemIndex.set(item.itemKey, { sourceItemId, artifactPath: artifactPath.path });
+    itemIndex.set(item.itemKey, {
+      sourceItemId,
+      artifactIndex: item.artifactIndex ?? 0,
+      artifactPath: artifactRecord.artifactPath,
+    });
     run(
       store.db,
       "insert or replace into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -138,7 +148,7 @@ function importParsedOutput(
         sourceId,
         endpointId,
         runId,
-        artifactId,
+        artifactRecord.artifactId,
         item.itemKey,
         item.itemType,
         item.title,
@@ -168,6 +178,10 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of candidate.evidence.entries()) {
+      const artifactRecord = artifactAt(
+        artifactRecords,
+        evidence.artifactIndex ?? sourceItem.artifactIndex,
+      );
       run(
         store.db,
         "insert or replace into entity_candidate_evidence(evidence_id, candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
@@ -178,7 +192,7 @@ function importParsedOutput(
           sourceItem.sourceItemId,
           evidence.fieldPath,
           evidence.observedValue,
-          sourceItem.artifactPath,
+          artifactRecord.artifactPath,
         ],
       );
     }
@@ -200,6 +214,10 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of candidate.evidence.entries()) {
+      const artifactRecord = artifactAt(
+        artifactRecords,
+        evidence.artifactIndex ?? sourceItem.artifactIndex,
+      );
       run(
         store.db,
         "insert or replace into relationship_candidate_evidence(evidence_id, relationship_candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
@@ -210,7 +228,7 @@ function importParsedOutput(
           sourceItem.sourceItemId,
           evidence.fieldPath,
           evidence.observedValue,
-          sourceItem.artifactPath,
+          artifactRecord.artifactPath,
         ],
       );
     }
@@ -231,6 +249,10 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of legalRef.evidence.entries()) {
+      const artifactRecord = artifactAt(
+        artifactRecords,
+        evidence.artifactIndex ?? sourceItem.artifactIndex,
+      );
       run(
         store.db,
         "insert or replace into legal_ref_evidence(evidence_id, legal_ref_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
@@ -241,7 +263,7 @@ function importParsedOutput(
           sourceItem.sourceItemId,
           evidence.fieldPath,
           evidence.observedValue,
-          sourceItem.artifactPath,
+          artifactRecord.artifactPath,
         ],
       );
     }
@@ -286,6 +308,10 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of dataset.evidence.entries()) {
+      const artifactRecord = artifactAt(
+        artifactRecords,
+        evidence.artifactIndex ?? sourceItem.artifactIndex,
+      );
       run(
         store.db,
         "insert or replace into dataset_evidence(evidence_id, dataset_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
@@ -296,7 +322,7 @@ function importParsedOutput(
           sourceItem.sourceItemId,
           evidence.fieldPath,
           evidence.observedValue,
-          sourceItem.artifactPath,
+          artifactRecord.artifactPath,
         ],
       );
     }
@@ -319,4 +345,11 @@ function importParsedOutput(
       ],
     );
   }
+}
+
+function artifactAt(artifactRecords: ArtifactRecord[], artifactIndex?: number): ArtifactRecord {
+  const index = artifactIndex ?? 0;
+  const record = artifactRecords[index];
+  if (!record) throw new Error(`Missing artifact index ${index}`);
+  return record;
 }

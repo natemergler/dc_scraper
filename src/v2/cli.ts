@@ -95,7 +95,8 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const rows = workbench.searchEntities(readFreeTextArgument(args, 2));
     workbench.close();
     for (const row of rows) {
-      console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}`);
+      const placeholderTag = row.isPlaceholder ? " placeholder" : "";
+      console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}${placeholderTag}`);
     }
     return true;
   }

@@ -12,7 +12,8 @@ export type ReviewItemType =
   | "relationship_candidate"
   | "legal_ref"
   | "dataset"
-  | "source_status";
+  | "source_status"
+  | "placeholder_entity";
 
 export type ReviewStatus = "open" | "resolved" | "deferred";
 export type CandidateStatus = "pending" | "accepted" | "rejected";
@@ -54,6 +55,7 @@ export interface SourceFieldInput {
   fieldType: string;
   fieldLabel?: string;
   ordinal: number;
+  artifactIndex?: number;
 }
 
 export interface SourceItemInput {
@@ -61,11 +63,13 @@ export interface SourceItemInput {
   itemType: string;
   title: string;
   body: Record<string, unknown>;
+  artifactIndex?: number;
 }
 
 export interface EvidenceInput {
   fieldPath: string;
   observedValue: string;
+  artifactIndex?: number;
 }
 
 export interface EntityCandidateInput {
@@ -187,6 +191,7 @@ export interface EntitySearchResult {
   name: string;
   kind: string;
   reviewStatus: string;
+  isPlaceholder?: number;
 }
 
 export interface EntityView {
@@ -197,7 +202,15 @@ export interface EntityView {
   cluster?: string;
   officialUrl?: string;
   reviewStatus: string;
-  evidence: Array<{ fieldPath: string; observedValue: string; sourceId: string }>;
+  isPlaceholder?: number;
+  placeholderReason?: string;
+  evidence: Array<{
+    fieldPath: string;
+    observedValue: string;
+    sourceId: string;
+    sourceItemId: string;
+    artifactPath: string;
+  }>;
   outgoing: Array<{ relationshipType: string; targetEntityId: string; targetName: string }>;
   incoming: Array<{ relationshipType: string; sourceEntityId: string; sourceName: string }>;
   reviewItems: ReviewItemRecord[];

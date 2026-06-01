@@ -16,7 +16,7 @@ export function listReviewItems(store: WorkbenchStore, mode?: string): ReviewIte
   let sql =
     "select review_item_id as reviewItemId, item_type as itemType, subject_id as subjectId, reason, default_action as defaultAction, status, details_json as detailsJson from review_items where status != 'resolved'";
   if (mode === "entities") {
-    sql += " and item_type = 'entity_candidate'";
+    sql += " and item_type in ('entity_candidate', 'placeholder_entity')";
   } else if (mode === "relationships") {
     sql += " and item_type = 'relationship_candidate'";
   } else if (mode === "legal") {

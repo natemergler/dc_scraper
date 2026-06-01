@@ -235,6 +235,13 @@ create table if not exists relationship_legal_refs (
   legal_ref_id text not null
 );
 `,
+}, {
+  version: 2,
+  name: "v2_placeholder_entities_and_artifact_precision",
+  sql: `
+alter table canonical_entities add column is_placeholder integer not null default 0;
+alter table canonical_entities add column placeholder_reason text;
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {

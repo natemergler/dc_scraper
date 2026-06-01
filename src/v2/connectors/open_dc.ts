@@ -4,6 +4,7 @@ import {
   buildLegalRefId,
   buildRelationshipCandidateId,
   buildReviewItemId,
+  type EntityCandidateInput,
   type LegalRefInput,
   parseLegalReference,
   type RelationshipCandidateInput,
@@ -56,92 +57,8 @@ export const openDcConnector: SourceConnector = {
     const indexResponse = await context.fetcher(openDcSource.baseUrl);
     const indexHtml = await indexResponse.text();
     const links = parseOpenDcIndex(indexHtml).slice(0, context.limit ?? 8);
-    const detailArtifacts = [];
-    const items: SourceItemInput[] = [];
-    const entityCandidates = [];
-    const relationshipCandidates: RelationshipCandidateInput[] = [];
-    const legalRefs: LegalRefInput[] = [];
-    const reviewItems: ReviewItemInput[] = [];
-    for (const link of links) {
-      const detailUrl = toAbsoluteUrl(openDcSource.baseUrl, link.href);
-      const detailResponse = await context.fetcher(detailUrl);
-      const detailHtml = await detailResponse.text();
-      detailArtifacts.push(artifact("page", "html", detailUrl, detailHtml));
-      const detail = parseOpenDcDetail(detailHtml, detailUrl);
-      const itemKey = detail.slug;
-      items.push({
-        itemKey,
-        itemType: "public_body_detail",
-        title: detail.name,
-        body: {
-          name: detail.name,
-          slug: detail.slug,
-          url: detailUrl,
-          governingAgency: detail.governingAgency,
-          enablingAuthority: detail.enablingAuthority,
-          enablingAuthorityUrl: detail.enablingAuthorityUrl,
-          meetingCount: detail.meetingCount,
-        },
-      });
-      const candidateId = buildCandidateId(openDcSource.sourceId, itemKey);
-      const proposedEntityId = buildEntityId(detail.name);
-      entityCandidates.push({
-        candidateId,
-        sourceItemKey: itemKey,
-        proposedEntityId,
-        name: detail.name,
-        kind: detectEntityKind(undefined, detail.name),
-        rawKind: "public_body",
-        officialUrl: detailUrl,
-        confidence: 0.92,
-        duplicateHint: detailUrl,
-        evidence: [
-          fieldEvidence("name", detail.name),
-          fieldEvidence("url", detailUrl),
-          fieldEvidence("governingAgency", detail.governingAgency ?? ""),
-        ],
-      });
-      reviewItems.push(
-        buildCandidateReviewItem(candidateId, "Review Open DC public body candidate"),
-      );
-      if (detail.governingAgency) {
-        const relationshipCandidateId = buildRelationshipCandidateId(
-          openDcSource.sourceId,
-          `${itemKey}-governing-agency`,
-        );
-        relationshipCandidates.push({
-          relationshipCandidateId,
-          sourceItemKey: itemKey,
-          fromEntityRef: proposedEntityId,
-          toEntityRef: buildEntityId(detail.governingAgency),
-          relationshipType: "governed_by",
-          rawValue: detail.governingAgency,
-          evidence: [fieldEvidence("governingAgency", detail.governingAgency)],
-        });
-        reviewItems.push({
-          reviewItemId: buildReviewItemId(relationshipCandidateId, "governing-agency"),
-          itemType: "relationship_candidate",
-          subjectId: relationshipCandidateId,
-          reason: "Review governing agency relationship from Open DC",
-          defaultAction: "accept",
-          details: {},
-        });
-      }
-      if (detail.enablingAuthority) {
-        const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
-        legalRefs.push({
-          legalRefId: buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`),
-          sourceItemKey: itemKey,
-          refType: parsed.refType,
-          citationText: parsed.citationText,
-          normalizedCitation: parsed.normalizedCitation,
-          url: detail.enablingAuthorityUrl,
-          needsReview: parsed.needsReview,
-          evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority)],
-          attachEntityRef: proposedEntityId,
-        });
-      }
-    }
+    const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
+    const detailParsed = deriveOpenDcDetailParsed(detailRecords);
     return {
       source: openDcSource,
       endpointResults: [
@@ -155,20 +72,17 @@ export const openDcConnector: SourceConnector = {
               itemType: "public_body_index",
               title: link.text,
               body: { href: toAbsoluteUrl(openDcSource.baseUrl, link.href) },
+              artifactIndex: 0,
             })),
           },
         },
         {
           endpoint: detailEndpoint,
           status: "success",
-          artifacts: detailArtifacts,
-          parsed: {
-            items,
-            entityCandidates,
-            relationshipCandidates,
-            legalRefs,
-            reviewItems,
-          },
+          artifacts: detailRecords.map((record) =>
+            artifact("page", "html", record.detailUrl, record.detailHtml)
+          ),
+          parsed: detailParsed,
         },
       ],
     };
@@ -190,6 +104,124 @@ function parseOpenDcIndex(html: string): Array<{ href: string; text: string; slu
     results.push({ href, text, slug: href.split("/").pop() ?? href });
   }
   return results;
+}
+
+interface OpenDcDetailRecord {
+  artifactIndex: number;
+  detailUrl: string;
+  detailHtml: string;
+  detail: ReturnType<typeof parseOpenDcDetail>;
+}
+
+async function fetchOpenDcDetailRecords(
+  fetcher: ConnectorContext["fetcher"],
+  links: Array<{ href: string; text: string; slug: string }>,
+): Promise<OpenDcDetailRecord[]> {
+  const records: OpenDcDetailRecord[] = [];
+  for (const [artifactIndex, link] of links.entries()) {
+    const detailUrl = toAbsoluteUrl(openDcSource.baseUrl, link.href);
+    const detailResponse = await fetcher(detailUrl);
+    const detailHtml = await detailResponse.text();
+    records.push({
+      artifactIndex,
+      detailUrl,
+      detailHtml,
+      detail: parseOpenDcDetail(detailHtml, detailUrl),
+    });
+  }
+  return records;
+}
+
+function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
+  items: SourceItemInput[];
+  entityCandidates: EntityCandidateInput[];
+  relationshipCandidates: RelationshipCandidateInput[];
+  legalRefs: LegalRefInput[];
+  reviewItems: ReviewItemInput[];
+} {
+  const items: SourceItemInput[] = [];
+  const entityCandidates: EntityCandidateInput[] = [];
+  const relationshipCandidates: RelationshipCandidateInput[] = [];
+  const legalRefs: LegalRefInput[] = [];
+  const reviewItems: ReviewItemInput[] = [];
+  for (const record of records) {
+    const { detail, detailUrl, artifactIndex } = record;
+    const itemKey = detail.slug;
+    items.push({
+      itemKey,
+      itemType: "public_body_detail",
+      title: detail.name,
+      artifactIndex,
+      body: {
+        name: detail.name,
+        slug: detail.slug,
+        url: detailUrl,
+        governingAgency: detail.governingAgency,
+        enablingAuthority: detail.enablingAuthority,
+        enablingAuthorityUrl: detail.enablingAuthorityUrl,
+        meetingCount: detail.meetingCount,
+      },
+    });
+    const candidateId = buildCandidateId(openDcSource.sourceId, itemKey);
+    const proposedEntityId = buildEntityId(detail.name);
+    entityCandidates.push({
+      candidateId,
+      sourceItemKey: itemKey,
+      proposedEntityId,
+      name: detail.name,
+      kind: detectEntityKind(undefined, detail.name),
+      rawKind: "public_body",
+      officialUrl: detailUrl,
+      confidence: 0.92,
+      duplicateHint: detailUrl,
+      evidence: [
+        fieldEvidence("name", detail.name, artifactIndex),
+        fieldEvidence("url", detailUrl, artifactIndex),
+        fieldEvidence("governingAgency", detail.governingAgency ?? "", artifactIndex),
+      ],
+    });
+    reviewItems.push(
+      buildCandidateReviewItem(candidateId, "Review Open DC public body candidate"),
+    );
+    if (detail.governingAgency) {
+      const relationshipCandidateId = buildRelationshipCandidateId(
+        openDcSource.sourceId,
+        `${itemKey}-governing-agency`,
+      );
+      relationshipCandidates.push({
+        relationshipCandidateId,
+        sourceItemKey: itemKey,
+        fromEntityRef: proposedEntityId,
+        toEntityRef: buildEntityId(detail.governingAgency),
+        relationshipType: "governed_by",
+        rawValue: detail.governingAgency,
+        evidence: [fieldEvidence("governingAgency", detail.governingAgency, artifactIndex)],
+      });
+      reviewItems.push({
+        reviewItemId: buildReviewItemId(relationshipCandidateId, "governing-agency"),
+        itemType: "relationship_candidate",
+        subjectId: relationshipCandidateId,
+        reason: "Review governing agency relationship from Open DC",
+        defaultAction: "accept",
+        details: {},
+      });
+    }
+    if (detail.enablingAuthority) {
+      const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
+      legalRefs.push({
+        legalRefId: buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`),
+        sourceItemKey: itemKey,
+        refType: parsed.refType,
+        citationText: parsed.citationText,
+        normalizedCitation: parsed.normalizedCitation,
+        url: detail.enablingAuthorityUrl,
+        needsReview: parsed.needsReview,
+        evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
+        attachEntityRef: proposedEntityId,
+      });
+    }
+  }
+  return { items, entityCandidates, relationshipCandidates, legalRefs, reviewItems };
 }
 
 function parseOpenDcDetail(

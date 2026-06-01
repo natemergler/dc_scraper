@@ -46,9 +46,14 @@ export function renderEntityView(view: EntityView): string {
   if (view.branch) lines.push(`branch: ${view.branch}`);
   if (view.cluster) lines.push(`cluster: ${view.cluster}`);
   if (view.officialUrl) lines.push(`official_url: ${view.officialUrl}`);
+  if (view.isPlaceholder) {
+    lines.push(`placeholder: yes${view.placeholderReason ? ` (${view.placeholderReason})` : ""}`);
+  }
   lines.push("evidence:");
   for (const evidence of view.evidence.slice(0, 10)) {
-    lines.push(`- ${evidence.fieldPath} <- ${evidence.observedValue} [${evidence.sourceId}]`);
+    lines.push(
+      `- ${evidence.fieldPath} <- ${evidence.observedValue} [${evidence.sourceId} @ ${evidence.artifactPath}]`,
+    );
   }
   lines.push("outgoing:");
   for (const relationship of view.outgoing) {
