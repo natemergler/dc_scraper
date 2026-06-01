@@ -139,6 +139,9 @@ export function canBatchAcceptReviewItem(
   if (item.itemType === "relationship_candidate") {
     return canBatchAcceptRelationshipItem(store, item, filters);
   }
+  if (item.itemType === "legal_ref") {
+    return canBatchAcceptLegalItem(store, item, filters);
+  }
   if (item.itemType !== "entity_candidate") return false;
   if (item.details.safeToAutoAccept === true) return true;
   const candidate = queryOne<{ confidence?: number; reviewStatus: string }>(
@@ -187,6 +190,30 @@ function canBatchAcceptRelationshipItem(
     candidate.toReviewStatus === "accepted" &&
     candidate.fromIsPlaceholder === 0 &&
     candidate.toIsPlaceholder === 0;
+}
+
+function canBatchAcceptLegalItem(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  filters: ReviewItemFilters,
+): boolean {
+  if (filters.mode !== "legal" || !filters.subjectPrefix) return false;
+  if (item.defaultAction !== "accept") return false;
+  const legalRef = queryOne<{
+    refType: string;
+    normalizedCitation?: string | null;
+    reviewStatus: string;
+  }>(
+    store.db,
+    `select ref_type as refType,
+            normalized_citation as normalizedCitation,
+            review_status as reviewStatus
+     from legal_refs
+     where legal_ref_id = ?`,
+    [item.subjectId],
+  );
+  if (!legalRef || legalRef.reviewStatus !== "pending") return false;
+  return legalRef.refType !== "unknown" && Boolean(legalRef.normalizedCitation);
 }
 
 function normalizeReviewItemFilters(

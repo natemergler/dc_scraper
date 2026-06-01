@@ -147,6 +147,9 @@ function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
   if (item.itemType === "relationship_candidate") {
     return { eventType: "accept_relationship_candidate", subjectId: item.subjectId, payload: {} };
   }
+  if (item.itemType === "legal_ref") {
+    return { eventType: "accept_legal_ref", subjectId: item.subjectId, payload: {} };
+  }
   return { eventType: "accept_entity_candidate", subjectId: item.subjectId, payload: {} };
 }
 
