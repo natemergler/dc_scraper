@@ -169,4 +169,5 @@ const knownEntityRefs = new Map<string, string>([
   ["dlcp/opl", "dc.department_of_licensing_and_consumer_protection"],
   ["does", "dc.department_of_employment_services"],
   ["doh", "dc.dc_health"],
+  ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
 ]);
