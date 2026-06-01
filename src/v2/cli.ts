@@ -50,18 +50,16 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
   if (args[0] === "workbench" && args[1] === "init") {
-    const workbench = new Workbench(dbPath);
-    const meta = workbench.init();
-    workbench.close();
+    const meta = await withWorkbench(dbPath, (_workbench, meta) => meta);
     console.log(`Initialized v2 workbench: ${dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
     return true;
   }
   if (args[0] === "workbench" && args[1] === "status") {
-    const workbench = new Workbench(dbPath);
-    const meta = workbench.init();
-    const status = buildWorkbenchStatus(workbench);
-    workbench.close();
+    const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
+      meta,
+      status: buildWorkbenchStatus(workbench),
+    }));
     if (args.includes("--json")) {
       console.log(JSON.stringify({ ...meta, ...status }, null, 2));
       return true;
@@ -76,11 +74,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   }
   if (args[0] === "source" && args[1] === "fetch" && args[2]) {
     const connector = getConnector(args[2]);
-    const workbench = new Workbench(dbPath);
-    workbench.init();
     const result = await connector.run(createConnectorContext({ limit }));
-    await workbench.importConnectorResult(result, dataDir);
-    workbench.close();
+    await withWorkbench(dbPath, async (workbench) => {
+      await workbench.importConnectorResult(result, dataDir);
+    });
     const statuses = result.endpointResults.map((item) =>
       `${item.endpoint.endpointId}:${item.status}`
     ).join(", ");
@@ -89,10 +86,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "source" && args[1] === "inspect" && args[2]) {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const summary = sourceSummaryOrConfigured(workbench, args[2]);
-    workbench.close();
+    const summary = await withWorkbench(
+      dbPath,
+      (workbench) => sourceSummaryOrConfigured(workbench, args[2]),
+    );
     if (args.includes("--json")) {
       console.log(JSON.stringify(summary, null, 2));
       return true;
@@ -107,10 +104,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "source" && args[1] === "list") {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const rowsBySourceId = new Map(workbench.listSources().map((row) => [row.sourceId, row]));
-    workbench.close();
+    const rowsBySourceId = await withWorkbench(
+      dbPath,
+      (workbench) => new Map(workbench.listSources().map((row) => [row.sourceId, row])),
+    );
     const sourceRows = connectors.map((connector) => {
       const row = rowsBySourceId.get(connector.sourceId);
       return {
@@ -134,17 +131,16 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    await runInteractiveReview(workbench, readReviewFilters(args), resolutionsDir);
-    workbench.close();
+    await withWorkbench(dbPath, async (workbench) => {
+      await runInteractiveReview(workbench, readReviewFilters(args), resolutionsDir);
+    });
     return true;
   }
   if (args[0] === "review" && args[1] === "list") {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const items = workbench.listReviewItems(readReviewFilters(args));
-    workbench.close();
+    const items = await withWorkbench(
+      dbPath,
+      (workbench) => workbench.listReviewItems(readReviewFilters(args)),
+    );
     if (args.includes("--json")) {
       console.log(JSON.stringify({ count: items.length, items }, null, 2));
       return true;
@@ -157,31 +153,29 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "review" && args[1] === "batch" && args[2] === "accept-safe") {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    await runBatchAcceptSafe(workbench, readReviewFilters(args), resolutionsDir);
-    workbench.close();
+    await withWorkbench(dbPath, async (workbench) => {
+      await runBatchAcceptSafe(workbench, readReviewFilters(args), resolutionsDir);
+    });
     return true;
   }
   if (
     args[0] === "review" && args[1] &&
     ["entities", "relationships", "legal", "sources"].includes(args[1])
   ) {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    await runInteractiveReview(
-      workbench,
-      { ...readReviewFilters(args), mode: args[1] },
-      resolutionsDir,
-    );
-    workbench.close();
+    await withWorkbench(dbPath, async (workbench) => {
+      await runInteractiveReview(
+        workbench,
+        { ...readReviewFilters(args), mode: args[1] },
+        resolutionsDir,
+      );
+    });
     return true;
   }
   if (args[0] === "entity" && args[1] === "search" && args[2]) {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const rows = workbench.searchEntities(readFreeTextArgument(args, 2));
-    workbench.close();
+    const rows = await withWorkbench(
+      dbPath,
+      (workbench) => workbench.searchEntities(readFreeTextArgument(args, 2)),
+    );
     if (args.includes("--json")) {
       console.log(JSON.stringify(rows, null, 2));
       return true;
@@ -193,10 +187,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "entity" && args[1] === "show" && args[2]) {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const view = workbench.entityView(args[2]);
-    workbench.close();
+    const view = await withWorkbench(dbPath, (workbench) => workbench.entityView(args[2]));
     if (args.includes("--json")) {
       console.log(JSON.stringify(view, null, 2));
       return true;
@@ -205,10 +196,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "release" && args[1] === "build") {
-    const workbench = new Workbench(dbPath);
-    workbench.init();
-    const result = await buildV2Release(workbench, outDir);
-    workbench.close();
+    const result = await withWorkbench(
+      dbPath,
+      async (workbench) => await buildV2Release(workbench, outDir),
+    );
     console.log(`Built v2 release ${result.outDir}`);
     return true;
   }
@@ -224,6 +215,19 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+async function withWorkbench<T>(
+  dbPath: string,
+  action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+): Promise<T> {
+  const workbench = new Workbench(dbPath);
+  try {
+    const meta = workbench.init();
+    return await action(workbench, meta);
+  } finally {
+    workbench.close();
+  }
 }
 
 function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
