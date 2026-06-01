@@ -200,6 +200,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const manifest = JSON.parse(
       await Deno.readTextFile(join(outDir, "manifest.json")),
     ) as ReleaseManifest;
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(buildReleaseInspection(outDir, manifest), null, 2));
+      return true;
+    }
     console.log(renderReleaseInspection(outDir, manifest));
     return true;
   }
@@ -327,11 +331,12 @@ function nextCommand(options: {
 }
 
 function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): string {
-  const summary = manifest.release_summary ?? {};
+  const inspection = buildReleaseInspection(outDir, manifest);
+  const summary = inspection.releaseSummary;
   return [
-    `Release: ${outDir}`,
-    `Generated: ${manifest.generated_at ?? "unknown"}`,
-    `Files: ${(manifest.files?.length ?? 0) + 1}`,
+    `Release: ${inspection.outDir}`,
+    `Generated: ${inspection.generatedAt}`,
+    `Files: ${inspection.fileCount}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
@@ -339,6 +344,20 @@ function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): str
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
     `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
   ].join("\n");
+}
+
+function buildReleaseInspection(outDir: string, manifest: ReleaseManifest): {
+  outDir: string;
+  generatedAt: string;
+  fileCount: number;
+  releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
+} {
+  return {
+    outDir,
+    generatedAt: manifest.generated_at ?? "unknown",
+    fileCount: (manifest.files?.length ?? 0) + 1,
+    releaseSummary: manifest.release_summary ?? {},
+  };
 }
 
 function renderReviewStatusCounts(rows: Array<{ review_status: string; count: number }>): string {

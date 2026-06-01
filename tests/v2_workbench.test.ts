@@ -1434,6 +1434,30 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(inspectText, "Files: 13");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
+  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+      "--json",
+    ],
+  }).output();
+  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+    outDir: string;
+    fileCount: number;
+    releaseSummary: { source_count: number };
+  };
+  assertEquals(inspectJsonOutput.code, 0);
+  assertEquals(inspectJson.outDir, outDir);
+  assertEquals(inspectJson.fileCount, 13);
+  assertEquals(inspectJson.releaseSummary.source_count, 1);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
