@@ -1,6 +1,7 @@
 import { ensureDir } from "@std/fs";
 import { join, relative } from "@std/path";
 import {
+  buildReviewItemId,
   type CandidateStatus,
   compactDatePart,
   nowIso,
@@ -105,6 +106,7 @@ export async function replayResolutionDirectory(
     store.db.exec("delete from resolution_events");
     store.db.exec("delete from canonical_relationships");
     store.db.exec("delete from canonical_entities");
+    run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
     run(store.db, "update entity_candidates set review_status = 'pending'");
     run(store.db, "update relationship_candidates set review_status = 'pending'");
     run(store.db, "update review_items set status = 'open' where status = 'resolved'");
@@ -151,15 +153,19 @@ function acceptEntityCandidate(
     throw new Error(`Conflict: candidate ${candidateId} was already rejected`);
   }
   const entityId = String(payload.entityId ?? candidate.proposedEntityId);
-  const existing = queryOne<{ mergedCandidateIds: string }>(
+  const existing = queryOne<{
+    mergedCandidateIds: string;
+    isPlaceholder: number;
+    placeholderReason?: string;
+  }>(
     store.db,
-    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = ?",
+    "select merged_candidate_ids as mergedCandidateIds, is_placeholder as isPlaceholder, placeholder_reason as placeholderReason from canonical_entities where entity_id = ?",
     [entityId],
   );
   if (!existing) {
     run(
       store.db,
-      "insert into canonical_entities(entity_id, name, kind, branch, cluster, official_url, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, ?, ?, ?, 'accepted', ?, ?, ?)",
+      "insert into canonical_entities(entity_id, name, kind, branch, cluster, official_url, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values(?, ?, ?, ?, ?, ?, 'accepted', ?, 0, null, ?, ?)",
       [
         entityId,
         candidate.name,
@@ -175,11 +181,29 @@ function acceptEntityCandidate(
   } else {
     const merged = JSON.parse(existing.mergedCandidateIds) as string[];
     if (!merged.includes(candidateId)) merged.push(candidateId);
-    run(
-      store.db,
-      "update canonical_entities set merged_candidate_ids = ?, updated_at = ? where entity_id = ?",
-      [JSON.stringify(merged), nowIso(), entityId],
-    );
+    if (existing.isPlaceholder) {
+      run(
+        store.db,
+        "update canonical_entities set name = ?, kind = ?, branch = ?, cluster = ?, official_url = ?, review_status = 'accepted', merged_candidate_ids = ?, is_placeholder = 0, placeholder_reason = null, updated_at = ? where entity_id = ?",
+        [
+          candidate.name,
+          candidate.kind,
+          candidate.branch ?? null,
+          candidate.cluster ?? null,
+          candidate.officialUrl ?? null,
+          JSON.stringify(merged),
+          nowIso(),
+          entityId,
+        ],
+      );
+      resolveReviewBySubject(store, entityId);
+    } else {
+      run(
+        store.db,
+        "update canonical_entities set merged_candidate_ids = ?, updated_at = ? where entity_id = ?",
+        [JSON.stringify(merged), nowIso(), entityId],
+      );
+    }
   }
   setEntityCandidateStatus(store, candidateId, "accepted");
   resolveReviewBySubject(store, candidateId);
@@ -293,8 +317,26 @@ function ensureEntityExists(store: WorkbenchStore, entityId: string): string {
   );
   run(
     store.db,
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'placeholder', 'needs_review', '[]', ?, ?)",
-    [entityId, name, nowIso(), nowIso()],
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values(?, ?, 'placeholder', 'placeholder', '[]', 1, ?, ?, ?)",
+    [
+      entityId,
+      name,
+      `Created while accepting a relationship candidate for ${entityId}`,
+      nowIso(),
+      nowIso(),
+    ],
+  );
+  run(
+    store.db,
+    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, 'placeholder_entity', ?, ?, 'defer', 'open', ?, ?, ?)",
+    [
+      buildReviewItemId(entityId, "placeholder"),
+      entityId,
+      "Placeholder entity created while accepting relationship candidate",
+      JSON.stringify({ entityId }),
+      nowIso(),
+      nowIso(),
+    ],
   );
   return entityId;
 }

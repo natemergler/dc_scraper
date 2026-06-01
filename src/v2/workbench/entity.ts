@@ -22,6 +22,8 @@ interface EntityEvidenceRow {
   fieldPath: string;
   observedValue: string;
   sourceId: string;
+  sourceItemId: string;
+  artifactPath: string;
 }
 
 interface EntityRelationshipRow {
@@ -55,7 +57,7 @@ interface EntityLegalRefRow {
 export function searchEntities(store: WorkbenchStore, query: string): EntitySearchResult[] {
   return queryAll<EntitySearchResult>(
     store.db,
-    `select entity_id as entityId, name, kind, review_status as reviewStatus
+    `select entity_id as entityId, name, kind, review_status as reviewStatus, is_placeholder as isPlaceholder
      from canonical_entities
      where entity_id like ? collate nocase or name like ? collate nocase
      order by name`,
@@ -68,13 +70,17 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
     Omit<EntityView, "evidence" | "outgoing" | "incoming" | "reviewItems" | "legalRefs">
   >(
     store.db,
-    "select entity_id as entityId, name, kind, branch, cluster, official_url as officialUrl, review_status as reviewStatus from canonical_entities where entity_id = ?",
+    "select entity_id as entityId, name, kind, branch, cluster, official_url as officialUrl, review_status as reviewStatus, is_placeholder as isPlaceholder, placeholder_reason as placeholderReason from canonical_entities where entity_id = ?",
     [entityId],
   );
   if (!entity) throw new Error(`Entity not found: ${entityId}`);
   const evidence = queryAll<EntityEvidenceRow>(
     store.db,
-    `select field_path as fieldPath, observed_value as observedValue, source_id as sourceId
+    `select field_path as fieldPath,
+            observed_value as observedValue,
+            source_id as sourceId,
+            source_item_id as sourceItemId,
+            artifact_path as artifactPath
      from entity_candidate_evidence
      where candidate_id in (
        select value from json_each((select merged_candidate_ids from canonical_entities where entity_id = ?))
