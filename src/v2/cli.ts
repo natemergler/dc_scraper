@@ -91,10 +91,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "source" && args[1] === "inspect" && args[2]) {
     const workbench = new Workbench(dbPath);
     workbench.init();
-    const summary = workbench.sourceSummary(args[2]);
+    const summary = sourceSummaryOrConfigured(workbench, args[2]);
     workbench.close();
     console.log(`${summary.sourceId} - ${summary.title}`);
-    console.log(`Latest status: ${summary.latestStatus ?? "none"}`);
+    console.log(`Latest status: ${summary.latestStatus ?? "unfetched"}`);
     console.log(`Latest run: ${summary.latestRunFinishedAt ?? "n/a"}`);
     console.log(`Latest artifact: ${summary.latestArtifactPath ?? "n/a"}`);
     console.log(
@@ -204,6 +204,34 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
+  sourceId: string;
+  title: string;
+  latestStatus?: string;
+  latestRunFinishedAt?: string;
+  latestArtifactPath?: string;
+  itemCount: number;
+  fieldCount: number;
+  entityCandidateCount: number;
+  relationshipCandidateCount: number;
+} {
+  try {
+    return workbench.sourceSummary(sourceId);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith("Unknown source:")) throw error;
+    const connector = getConnector(sourceId);
+    return {
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      latestStatus: "unfetched",
+      itemCount: 0,
+      fieldCount: 0,
+      entityCandidateCount: 0,
+      relationshipCandidateCount: 0,
+    };
+  }
 }
 
 function readFlag(args: string[], flag: string): string | undefined {
