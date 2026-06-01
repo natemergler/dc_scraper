@@ -131,9 +131,18 @@ export const limsFixture = JSON.stringify([
 
 export const quickbaseFixture = `
 <html><body>
-  <title>EOM - MOTA Dashboard</title>
-  <div>Sign in</div>
+  <title>MOTA Boards and Commissions</title>
+  <div>Board Appointments</div>
 </body></html>
+`;
+
+export const quickbaseAppointmentsCsvFixture = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"District of Columbia Rental Housing Commission","Chairperson (Office of Housing and Community Development designee)","Filled","Jane Doe","Active"
+"Adult Career Pathways Task Force","Member (Mayor's Office on Asia and Pacific Island Affairs designee)","Vacant","","Active"
+"Council of the District of Columbia","Chairperson","Filled","John Smith","Active"
+"Task Force on Inclusive Economic Development","Vice Chair (Office of the Chief Financial Officer designee)","Filled","Alex Doe","Active"
+"Downtown Revitalization Committee","Chairperson (Office of Planning designee)","Filled","Jordan Lin","Active"
 `;
 
 export const legalEntrypointsFixture = `
