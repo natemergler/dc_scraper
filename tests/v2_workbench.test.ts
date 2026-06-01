@@ -1163,6 +1163,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "pending",
   ]);
   const outDir = join(dir, "release");
+  const staleFile = join(outDir, "stale-gap-report.csv");
+  await ensureDir(outDir);
+  await Deno.writeTextFile(staleFile, "stale");
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
   const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
@@ -1207,6 +1210,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assert(!manifestText.includes("not-for-release@example.com"));
   assert(!manifestText.includes("202-555-0100"));
   assertEquals(releaseDbContactHits.count, 0);
+  await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
