@@ -7,7 +7,9 @@ resolutions/
 snapshots/
 candidates/
 candidates_patched/
+records/
 checks/
+patches/
 releases/
 *.sqlite
 *.sqlite-*

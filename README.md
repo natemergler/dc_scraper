@@ -66,6 +66,12 @@ Public civic names, offices, roles, statuses, source URLs, and legal citations a
 Personal contact details are out of scope: emails, phone numbers, home addresses, contact fields,
 private notes, and contact metadata should stay out of release exports.
 
-Historical generated source captures existed in prior commits. If this branch is promoted, reachable
-Git history and remote refs still need a coordinated purge before treating the repository as clean
-of old raw artifacts.
+## History Hygiene
+
+The current tracked tree and active branch history were best-effort cleaned of the old generated
+artifact directories. Fresh normal clones should not expose historical `snapshots/`, `candidates/`,
+`records/`, `releases/`, `checks/`, or `patches/` paths from branch history.
+
+GitHub-managed pull-request refs may still retain old generated objects. Treat the purge as complete
+for writable branch refs and the current tree, not as a guarantee that every GitHub-hosted object
+was expired.

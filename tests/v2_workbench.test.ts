@@ -62,7 +62,10 @@ Deno.test("local workbench artifacts are ignored by git", async () => {
     "resolutions/2026-06-01/001-auto-review.jsonl",
     "snapshots/source.json",
     "candidates/generated.json",
+    "candidates_patched/generated.json",
+    "records/generated.yml",
     "checks/latest.md",
+    "patches/generated.jsonl",
     "releases/latest/manifest.json",
   ];
   const output = await new Deno.Command("git", {
@@ -1451,7 +1454,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "pending",
   ]);
   const outDir = join(dir, "release");
-  const staleFile = join(outDir, "stale-gap-report.csv");
+  const staleFile = join(outDir, "stale-extra-report.csv");
   await ensureDir(outDir);
   await Deno.writeTextFile(staleFile, "stale");
   const result = await buildV2Release(workbench, outDir);

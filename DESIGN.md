@@ -29,7 +29,10 @@ resolutions/
 releases/
 snapshots/
 candidates/
+candidates_patched/
+records/
 checks/
+patches/
 ```
 
 Normal verification:

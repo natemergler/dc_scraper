@@ -1,14 +1,16 @@
 # Data Hygiene
 
-Current target branch:
+Current status:
 
 - Generated workbench data is ignored: `data/`, `resolutions/`, `snapshots/`, `candidates/`,
-  `checks/`, and `releases/`.
-- Tracked generated data was removed in this sweep.
+  `candidates_patched/`, `records/`, `checks/`, `patches/`, and `releases/`.
+- The current tracked tree no longer contains the old generated data surfaces.
+- Active writable branch history was best-effort rewritten for the current repository branches.
+- Fresh normal clones should not expose the old generated paths from branch history.
 - `src/v2/connectors/quickbase.ts` is still tracked intentionally; it is source code for a public
   civic-data connector, not a captured Quickbase artifact.
 
-Reachable history still contains old generated artifacts:
+Old generated artifact paths that should not be reintroduced:
 
 - `snapshots/**`
 - `candidates/**`
@@ -17,17 +19,20 @@ Reachable history still contains old generated artifacts:
 - `checks/**`
 - `patches/**`
 
-The old snapshots include source schemas and source rows with contact-field names such as email,
-phone, fax, vendor address, and street address fields. This branch removes them from the target
-tree, but normal delete commits do not remove them from Git history or GitHub object storage.
+The old snapshots included source schemas and source rows with contact-field names such as email,
+phone, fax, vendor address, and street address fields. Those belong in local workbench artifacts or
+evidence storage, not in the tracked repository or compact release exports.
 
-Required purge before treating remote history as clean:
+Accepted caveat:
 
-1. Coordinate a maintenance window and tell collaborators to stop pushing.
-2. Make a mirror backup of the current remote.
-3. Rewrite all refs with `git filter-repo`, removing old generated artifact paths: `snapshots`,
-   `candidates`, `records`, `releases`, `checks`, and `patches`.
-4. Verify with `git log --all --name-only` and targeted `git grep` over `git rev-list --all`.
-5. Force-push rewritten branches and tags.
-6. Ask GitHub to expire cached/unreachable objects if required.
-7. Require fresh clones; old clones can reintroduce purged objects if they push.
+GitHub-managed pull-request refs may still retain old generated objects. Do not claim a perfect
+GitHub object purge, and do not attempt dangerous read-only PR-ref rewrites. Honest wording is:
+current tracked tree clean, active branch history cleaned, GitHub-managed PR refs may retain old
+objects.
+
+Operator notes:
+
+- Prefer fresh clones after the rewrite.
+- Do not push from pre-rewrite local branches unless they are first rebased or recreated from the
+  rewritten remote branch.
+- Keep local workbench data under ignored paths.
