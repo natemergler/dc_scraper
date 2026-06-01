@@ -17,8 +17,11 @@ export async function runInteractiveReview(
   resolutionsDir: string,
 ): Promise<void> {
   const encoder = new TextEncoder();
+  const activeFilters: ReviewItemFilters = filters.status === undefined
+    ? { ...filters, status: "open" }
+    : filters;
   while (true) {
-    const items = workbench.listReviewItems(filters);
+    const items = workbench.listReviewItems(activeFilters);
     const item = items.at(0);
     if (!item) {
       console.log("No review items remain.");

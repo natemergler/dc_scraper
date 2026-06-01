@@ -2311,3 +2311,73 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assertEquals(items.length, 2);
   assert(items.every((item) => item.status === "open"));
 });
+
+Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
+    fetcher: async (url: string) => ({
+      status: 200,
+      text: async () => {
+        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
+          return legalEntrypointsFixture;
+        }
+        throw new Error(`Unexpected url ${url}`);
+      },
+      json: async <T>() => {
+        throw new Error(`No json fixture for ${url}`) as T;
+      },
+    }),
+  }));
+  await workbench.importConnectorResult(result, dataDir);
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "legal",
+      "--subject-prefix",
+      "legal.legal.entrypoints.https_dcregs_dc_gov",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const text = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 0);
+  assertStringIncludes(text, "Default action: defer (Enter or d)");
+  assertStringIncludes(text, "Saved resolution.");
+  assertStringIncludes(text, "No review items remain.");
+  assertEquals(text.match(/Review item:/g)?.length, 1);
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const deferred = reopened.listReviewItems({
+    mode: "legal",
+    status: "deferred",
+    subjectPrefix: "legal.legal.entrypoints.https_dcregs_dc_gov",
+  });
+  reopened.close();
+  assertEquals(deferred.length, 1);
+});
