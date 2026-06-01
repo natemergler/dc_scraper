@@ -65,7 +65,7 @@ export const openDcTaskForceFixture = `
   <h1 class="page-title">Adult Career Pathways Task Force</h1>
   <div class="field field-name-field-statute-mayors-order field-type-link-field field-label-inline clearfix">
     <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
-    <div class="field-items"><div class="field-item even"><a href="https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&amp;OrderNumber=2023-058">Mayor's Order 2023-058</a></div></div>
+    <div class="field-items"><div class="field-item even"><a href="/file%253A///C%253A/Users/source-user/Documents/Downloads/53207.pdf">Mayor's Order 2023-058</a></div></div>
   </div>
   <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
     <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>

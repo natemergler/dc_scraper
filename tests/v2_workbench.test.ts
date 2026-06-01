@@ -800,9 +800,15 @@ Deno.test("Open DC detail evidence points to the detail artifact rather than the
      order by evidence_id
      limit 1`,
   ).get("candidate.open_dc.public_bodies.board_accountancy") as { artifactPath: string };
+  const taskForceLegalRef = workbench.db.prepare(
+    "select url from legal_refs where legal_ref_id = ?",
+  ).get("legal.open_dc.public_bodies.adult_career_pathways_task_force_authority") as {
+    url: string | null;
+  };
   workbench.close();
   assert(detailItem.artifactPath !== indexItem.artifactPath);
   assertEquals(evidence.artifactPath, detailItem.artifactPath);
+  assertEquals(taskForceLegalRef.url, null);
 });
 
 Deno.test("Open DC second detail-page shape yields administered and legal-authority relationship candidates plus document links", async () => {
@@ -2145,6 +2151,23 @@ Deno.test("release builder rejects phone-shaped contact info in release rows", a
     () => buildV2Release(workbench, join(dir, "release")),
     Error,
     "Release output contains phone-shaped contact info",
+  );
+  workbench.close();
+});
+
+Deno.test("release builder rejects local path-shaped info in release rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.path_leak', 'Path Leak', 'board', '/file%253A///C%253A/Users/source-user/Documents/Downloads/53207.pdf', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await assertRejects(
+    () => buildV2Release(workbench, join(dir, "release")),
+    Error,
+    "Release output contains local path-shaped info",
   );
   workbench.close();
 });
