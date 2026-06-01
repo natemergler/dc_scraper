@@ -28,12 +28,14 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "workbench" && args[1] === "status") {
     const workbench = new Workbench(dbPath);
     const meta = workbench.init();
+    const status = renderWorkbenchStatus(workbench);
     workbench.close();
     console.log(`DB: ${meta.dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
     for (const migration of meta.migrations) {
       console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
     }
+    console.log(status);
     return true;
   }
   if (args[0] === "source" && args[1] === "fetch" && args[2]) {
@@ -183,6 +185,43 @@ function readFreeTextArgument(args: string[], startIndex: number): string {
     values.push(args[index]);
   }
   return values.join(" ");
+}
+
+function renderWorkbenchStatus(workbench: Workbench): string {
+  const sourceRows = workbench.listSources();
+  const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
+  const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
+  const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
+  const openReview = workbench.listReviewItems({ status: "open" }).length;
+  const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
+  const entities = workbench.canonicalEntities().length;
+  const relationships = workbench.canonicalRelationships().length;
+  return [
+    "",
+    `Sources: ${fetchedSources}/${connectors.length} fetched${
+      failedSources > 0 ? `, ${failedSources} failed` : ""
+    }`,
+    `Review: ${openReview} open, ${deferredReview} deferred`,
+    `Canonical: ${entities} entities, ${relationships} relationships`,
+    `Next: ${
+      nextCommand({
+        fetchedSources,
+        failedSourceId: failedSource?.sourceId,
+        openReview,
+      })
+    }`,
+  ].join("\n");
+}
+
+function nextCommand(options: {
+  fetchedSources: number;
+  failedSourceId?: string;
+  openReview: number;
+}): string {
+  if (options.failedSourceId) return `dc source inspect ${options.failedSourceId}`;
+  if (options.openReview > 0) return "dc review";
+  if (options.fetchedSources < connectors.length) return "dc source list";
+  return "dc release build";
 }
 
 export function printHelp(): void {
