@@ -1100,6 +1100,68 @@ Deno.test("resolution replay rolls back the rebuild when a conflict is found", a
   );
 });
 
+Deno.test("failed resolution append does not write a replay event", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 })),
+    dataDir,
+  );
+  const first = await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.open_dc.public_bodies.board_accountancy",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await assertRejects(
+    () =>
+      workbench.appendResolutionEvent(
+        {
+          eventType: "set_entity_fields",
+          subjectId: "dc.board_of_accountancy",
+          payload: {
+            entityId: "dc.board_of_accountancy",
+            fields: { name: "Conflicting Accountancy Board" },
+          },
+        },
+        resolutionsDir,
+      ),
+    Error,
+    "Conflict: dc.board_of_accountancy.name already set",
+  );
+
+  const lines = (await Deno.readTextFile(first.filePath)).trim().split("\n");
+  const eventCount = workbench.db.prepare(
+    "select count(*) as count from resolution_events",
+  ).get() as { count: number };
+  workbench.close();
+  assertEquals(lines.length, 1);
+  assertEquals(eventCount.count, 1);
+});
+
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
