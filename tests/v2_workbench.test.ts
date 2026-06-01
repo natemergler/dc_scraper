@@ -118,6 +118,31 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertStringIncludes(sourceListText, "mota.quickbase unfetched");
 });
 
+Deno.test("CLI command errors print a concise message", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "fetch",
+      "not.a.source",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  const stderr = new TextDecoder().decode(output.stderr);
+  assertEquals(output.code, 1);
+  assertStringIncludes(stderr, "Unknown v2 source: not.a.source");
+  assert(!stderr.includes(" at "));
+});
+
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
