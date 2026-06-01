@@ -1254,6 +1254,12 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
     false,
   );
   assert(
+    oversightCandidates.some((candidate) =>
+      candidate.rawValue === "Department of Health" &&
+      candidate.fromEntityRef === "dc.dc_health"
+    ),
+  );
+  assert(
     parsed.reviewItems?.some((item) =>
       item.subjectId === "relationship.council.committees.committee_on_health_oversight_1" &&
       item.reason === "Review Council committee oversight relationship"
@@ -2143,7 +2149,7 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   }
   for (
     const [entityId, name] of [
-      ["dc.department_of_health", "Department of Health"],
+      ["dc.dc_health", "Department of Health"],
       ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
     ]
   ) {
@@ -2196,8 +2202,8 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   });
   reopened.close();
   assertEquals(acceptedOversight.map((row) => row.relationshipId), [
+    "dc.dc_health:overseen_by:dc.committee_on_health",
     "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
-    "dc.department_of_health:overseen_by:dc.committee_on_health",
   ]);
   assertEquals(remainingOversight.length, 2);
 });
