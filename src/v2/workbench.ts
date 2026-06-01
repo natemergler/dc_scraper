@@ -46,6 +46,7 @@ export class Workbench implements WorkbenchStore {
   constructor(readonly dbPath: string) {
     Deno.mkdirSync(dirname(dbPath), { recursive: true });
     this.db = new Database(dbPath);
+    this.db.exec("pragma foreign_keys = on");
   }
 
   close(): void {
