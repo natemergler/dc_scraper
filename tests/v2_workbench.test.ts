@@ -1225,6 +1225,23 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }
 });
 
+Deno.test("release builder rejects email-shaped contact info in release rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.contact_leak', 'Contact Leak', 'board', 'mailto:not-for-release@example.com', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await assertRejects(
+    () => buildV2Release(workbench, join(dir, "release")),
+    Error,
+    "Release output contains email-shaped contact info",
+  );
+  workbench.close();
+});
+
 Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {
   const result = await getConnector("admin.service_requests_311").run(
     createConnectorContext({
