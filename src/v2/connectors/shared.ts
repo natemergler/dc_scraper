@@ -153,6 +153,7 @@ const knownEntityRefs = new Map<string, string>([
   ["department of employment services (does)", "dc.department_of_employment_services"],
   ["department of health", "dc.dc_health"],
   ["department of health (doh)", "dc.dc_health"],
+  ["city administrator", "dc.office_of_the_city_administrator"],
   ["deputy mayor for education", "dc.office_of_the_deputy_mayor_for_education"],
   [
     "deputy mayor for health and human services",
@@ -166,8 +167,25 @@ const knownEntityRefs = new Map<string, string>([
     "deputy mayor for public safety and justice",
     "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
   ],
+  ["district of columbia auditor", "dc.office_of_the_dc_auditor"],
+  ["district of columbia board of elections", "dc.board_of_elections"],
+  ["district of columbia housing authority", "dc.dc_housing_authority"],
+  ["district of columbia public library system", "dc.dc_public_library"],
+  ["district of columbia water and sewer authority", "dc.dc_water"],
   ["dlcp/opl", "dc.department_of_licensing_and_consumer_protection"],
   ["does", "dc.department_of_employment_services"],
   ["doh", "dc.dc_health"],
+  [
+    "fire and emergency medical services department",
+    "dc.fire_and_emergency_medical_services",
+  ],
   ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  [
+    "office of the attorney general for the district of columbia",
+    "dc.office_of_the_attorney_general",
+  ],
+  [
+    "office of the people’s counsel",
+    "dc.office_of_the_people_s_counsel_for_the_district_of_columbia",
+  ],
 ]);
