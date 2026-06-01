@@ -285,8 +285,13 @@ function acceptRelationshipCandidate(
   const fromEntityId = ensureEntityExists(
     store,
     String(payload.fromEntityId ?? candidate.fromEntityRef),
+    relationshipCandidateId,
   );
-  const toEntityId = ensureEntityExists(store, String(payload.toEntityId ?? candidate.toEntityRef));
+  const toEntityId = ensureEntityExists(
+    store,
+    String(payload.toEntityId ?? candidate.toEntityRef),
+    relationshipCandidateId,
+  );
   const relationshipId = `${fromEntityId}:${relationshipType}:${toEntityId}`;
   const existing = queryOne<{ relationshipId: string }>(
     store.db,
@@ -304,7 +309,11 @@ function acceptRelationshipCandidate(
   resolveReviewBySubject(store, relationshipCandidateId);
 }
 
-function ensureEntityExists(store: WorkbenchStore, entityId: string): string {
+function ensureEntityExists(
+  store: WorkbenchStore,
+  entityId: string,
+  relationshipCandidateId?: string,
+): string {
   const existing = queryOne<{ entityId: string }>(
     store.db,
     "select entity_id as entityId from canonical_entities where entity_id = ?",
@@ -321,7 +330,9 @@ function ensureEntityExists(store: WorkbenchStore, entityId: string): string {
     [
       entityId,
       name,
-      `Created while accepting a relationship candidate for ${entityId}`,
+      relationshipCandidateId
+        ? `Created while accepting relationship candidate ${relationshipCandidateId}`
+        : `Created while accepting a relationship candidate for ${entityId}`,
       nowIso(),
       nowIso(),
     ],
@@ -333,7 +344,10 @@ function ensureEntityExists(store: WorkbenchStore, entityId: string): string {
       buildReviewItemId(entityId, "placeholder"),
       entityId,
       "Placeholder entity created while accepting relationship candidate",
-      JSON.stringify({ entityId }),
+      JSON.stringify({
+        entityId,
+        relationshipCandidateId,
+      }),
       nowIso(),
       nowIso(),
     ],

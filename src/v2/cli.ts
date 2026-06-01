@@ -1,8 +1,14 @@
 import { join } from "@std/path";
 import { buildV2Release } from "./release.ts";
 import { createConnectorContext, getConnector } from "./connectors.ts";
-import { renderEntityView, runInteractiveReview } from "./workbench/review_cli.ts";
+import {
+  renderEntityView,
+  renderReviewItemSummary,
+  runBatchAcceptSafe,
+  runInteractiveReview,
+} from "./workbench/review_cli.ts";
 import { Workbench } from "./workbench.ts";
+import type { ReviewItemFilters } from "./workbench/review.ts";
 
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
@@ -75,7 +81,26 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
     const workbench = new Workbench(dbPath);
     workbench.init();
-    await runInteractiveReview(workbench, undefined, resolutionsDir);
+    await runInteractiveReview(workbench, readReviewFilters(args), resolutionsDir);
+    workbench.close();
+    return true;
+  }
+  if (args[0] === "review" && args[1] === "list") {
+    const workbench = new Workbench(dbPath);
+    workbench.init();
+    const items = workbench.listReviewItems(readReviewFilters(args));
+    workbench.close();
+    console.log(`Review items: ${items.length}`);
+    for (const item of items) {
+      console.log(renderReviewItemSummary(item));
+      console.log("");
+    }
+    return true;
+  }
+  if (args[0] === "review" && args[1] === "batch" && args[2] === "accept-safe") {
+    const workbench = new Workbench(dbPath);
+    workbench.init();
+    await runBatchAcceptSafe(workbench, readReviewFilters(args), resolutionsDir);
     workbench.close();
     return true;
   }
@@ -85,7 +110,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   ) {
     const workbench = new Workbench(dbPath);
     workbench.init();
-    await runInteractiveReview(workbench, args[1], resolutionsDir);
+    await runInteractiveReview(workbench, { ...readReviewFilters(args), mode: args[1] }, resolutionsDir);
     workbench.close();
     return true;
   }
@@ -128,6 +153,22 @@ function readFlag(args: string[], flag: string): string | undefined {
 function readNumberFlag(args: string[], flag: string): number | undefined {
   const value = readFlag(args, flag);
   return value ? Number(value) : undefined;
+}
+
+function readReviewFilters(args: string[]): ReviewItemFilters {
+  const modeFlag = readFlag(args, "--mode");
+  const statusFlag = readFlag(args, "--status");
+  const typeFlag = readFlag(args, "--type");
+  const subjectPrefix = readFlag(args, "--subject-prefix");
+  const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
+    ? args[1]
+    : undefined;
+  return {
+    mode: modeFlag ?? positionalMode,
+    status: statusFlag as ReviewItemFilters["status"] | undefined,
+    type: typeFlag as ReviewItemFilters["type"] | undefined,
+    subjectPrefix: subjectPrefix ?? undefined,
+  };
 }
 
 function readFreeTextArgument(args: string[], startIndex: number): string {

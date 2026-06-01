@@ -80,7 +80,13 @@ export const councilCommitteesConnector: SourceConnector = {
     }));
     const reviewItems: ReviewItemInput[] = [
       ...entityCandidates.map((candidate) =>
-        buildCandidateReviewItem(candidate.candidateId, "Review Council committee candidate")
+        buildCandidateReviewItem(candidate.candidateId, "Review Council committee candidate", "accept", {
+          name: candidate.name,
+          kind: candidate.kind,
+          confidence: candidate.confidence,
+          officialUrl: candidate.officialUrl,
+          duplicateHint: candidate.duplicateHint,
+        })
       ),
       ...relationshipCandidates.map((candidate) => ({
         reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "committee"),
@@ -88,7 +94,12 @@ export const councilCommitteesConnector: SourceConnector = {
         subjectId: candidate.relationshipCandidateId,
         reason: "Review committee to Council relationship",
         defaultAction: "accept",
-        details: {},
+        details: {
+          fromEntityRef: candidate.fromEntityRef,
+          toEntityRef: candidate.toEntityRef,
+          relationshipType: candidate.relationshipType,
+          rawValue: candidate.rawValue,
+        },
       })),
     ];
     return {

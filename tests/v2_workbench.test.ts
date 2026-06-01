@@ -251,6 +251,244 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
   );
 });
 
+Deno.test("review ordering surfaces source failures, placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://octo.quickbase.com/db/bjngwsngm?a=td":
+          return quickbaseFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const relationshipCandidate = workbench.listReviewItems({ mode: "relationships" })[0];
+  assert(relationshipCandidate);
+  const matchingEntityCandidateId = relationshipCandidate.subjectId
+    .replace(/^relationship\./, "candidate.")
+    .replace(/_part_of$/, "");
+  const matchingEntityCandidate = workbench.listReviewItems({ type: "entity_candidate" }).find(
+    (item) => item.subjectId === matchingEntityCandidateId,
+  );
+  assert(matchingEntityCandidate);
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: matchingEntityCandidate.subjectId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: relationshipCandidate.subjectId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  const items = workbench.listReviewItems();
+  workbench.close();
+  assertEquals(items[0].itemType, "source_status");
+  assertEquals(items[0].subjectId, "mota.quickbase");
+  assertEquals(items[1].itemType, "placeholder_entity");
+  assertEquals(items[1].subjectId, "dc.council");
+  assertEquals(items[2].itemType, "relationship_candidate");
+  assertEquals(items[3].itemType, "entity_candidate");
+});
+
+Deno.test("review list filters by mode, status, type, and subject prefix", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "entities",
+      "--status",
+      "open",
+      "--type",
+      "entity_candidate",
+      "--subject-prefix",
+      "candidate.council.committees",
+      "--db",
+      dbPath,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(output.code, 0);
+  const text = new TextDecoder().decode(output.stdout);
+  assertStringIncludes(text, "Review items:");
+  assertStringIncludes(text, "entity_candidate");
+  assert(!text.includes("source_status"));
+});
+
+Deno.test("deferred review items stay visible but sort behind open items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const deferredItem = workbench.listReviewItems({ type: "entity_candidate" })[0];
+  assert(deferredItem);
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: deferredItem.reviewItemId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  const items = workbench.listReviewItems({ type: "entity_candidate" });
+  workbench.close();
+  assertEquals(items.at(-1)?.status, "deferred");
+  assert(items.slice(0, -1).every((item) => item.status === "open"));
+});
+
+Deno.test("batch accept-safe writes JSONL resolution events and leaves risky review items alone", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted ");
+  let resolutionFile = "";
+  for await (const entry of Deno.readDir(resolutionsDir)) {
+    if (!entry.isDirectory) continue;
+    for await (const child of Deno.readDir(join(resolutionsDir, entry.name))) {
+      if (child.isFile && child.name.endsWith(".jsonl")) {
+        resolutionFile = join(resolutionsDir, entry.name, child.name);
+      }
+    }
+  }
+  assert(resolutionFile);
+  const lines = (await Deno.readTextFile(resolutionFile)).trim().split("\n").filter(Boolean);
+  assert(lines.length > 0);
+  assert(lines.every((line) => JSON.parse(line).event_type === "accept_entity_candidate"));
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  assert(reopened.listReviewItems({ mode: "relationships" }).length > 0);
+  reopened.close();
+});
+
 Deno.test("resolution replay accepts entities, merges duplicates, accepts one directed relationship, and surfaces inverse display", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -446,6 +684,8 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
       "--allow-ffi",
       "scripts/dc.ts",
       "review",
+      "--mode",
+      "entities",
       "--db",
       dbPath,
       "--resolutions-dir",

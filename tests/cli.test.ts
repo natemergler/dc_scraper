@@ -9,6 +9,8 @@ Deno.test("prints CLI help for the public workbench commands", async () => {
   assertStringIncludes(output.stdout, "dc sources audit");
   assertStringIncludes(output.stdout, "dc sources health");
   assertStringIncludes(output.stdout, "dc review next");
+  assertStringIncludes(output.stdout, "dc review list [--mode <mode>]");
+  assertStringIncludes(output.stdout, "dc review batch accept-safe");
   assertStringIncludes(output.stdout, "dc gaps list");
   assertStringIncludes(output.stdout, "dc gaps show <gap-id>");
 });

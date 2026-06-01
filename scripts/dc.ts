@@ -251,6 +251,8 @@ Usage:
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>]
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>]
+  dc review batch accept-safe [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>]
   dc entity search <query> [--db <path>]
   dc entity show <entity-id> [--db <path>]
   dc validate

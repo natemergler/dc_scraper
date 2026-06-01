@@ -24,6 +24,7 @@ import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
 import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
 import {
   listReviewItems as readReviewQueue,
+  type ReviewItemFilters,
   nextReviewItem as peekNextReviewItem,
 } from "./workbench/review.ts";
 import {
@@ -84,12 +85,12 @@ export class Workbench implements WorkbenchStore {
     return listSourceRows(this);
   }
 
-  listReviewItems(mode?: string): ReviewItemRecord[] {
-    return readReviewQueue(this, mode);
+  listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[] {
+    return readReviewQueue(this, filters);
   }
 
-  nextReviewItem(mode?: string): ReviewItemRecord | undefined {
-    return peekNextReviewItem(this, mode);
+  nextReviewItem(filters?: string | ReviewItemFilters): ReviewItemRecord | undefined {
+    return peekNextReviewItem(this, filters);
   }
 
   async appendResolutionEvent(

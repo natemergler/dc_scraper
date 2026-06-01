@@ -56,6 +56,7 @@ export function buildCandidateReviewItem(
   subjectId: string,
   reason: string,
   defaultAction = "accept",
+  details: Record<string, unknown> = {},
 ): {
   reviewItemId: string;
   itemType: "entity_candidate" | "relationship_candidate";
@@ -70,7 +71,7 @@ export function buildCandidateReviewItem(
     subjectId,
     reason,
     defaultAction,
-    details: {},
+    details,
   };
 }
 
