@@ -425,7 +425,7 @@ Usage:
   dc source inspect <source-id> [--db <path>] [--json]
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
   dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--db <path>] [--resolutions-dir <path>]
+  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc entity search <query> [--db <path>] [--json]
   dc entity show <entity-id> [--db <path>] [--json]
   dc release build [--db <path>] [--out <dir>]
@@ -445,7 +445,7 @@ function printReviewHelp(): void {
 Usage:
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
   dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--db <path>] [--resolutions-dir <path>]
+  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
   Enter runs the default action for the current item.
