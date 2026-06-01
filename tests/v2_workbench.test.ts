@@ -556,6 +556,49 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
   );
 });
 
+Deno.test("quickbase connector keeps contact columns out of public fact candidates", async () => {
+  const csvWithContactColumns = quickbaseAppointmentsCsvFixture.replace(
+    '"board status"',
+    '"board status","Email","Phone","Private Notes"',
+  ).replaceAll(
+    '"Active"',
+    '"Active","not-for-release@example.com","202-555-0100","private contact metadata"',
+  );
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return csvWithContactColumns;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  const publicFacts = JSON.stringify({
+    entityCandidates: parsed.entityCandidates,
+    relationshipCandidates: parsed.relationshipCandidates,
+    datasets: parsed.datasets,
+    reviewItems: parsed.reviewItems,
+  });
+  assert(!publicFacts.includes("not-for-release@example.com"));
+  assert(!publicFacts.includes("202-555-0100"));
+  assert(!publicFacts.includes("private contact metadata"));
+});
+
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
