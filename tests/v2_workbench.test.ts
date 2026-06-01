@@ -97,6 +97,33 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
 
+  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(jsonStatusOutput.code, 0);
+  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+    schemaVersion: number;
+    sources: { fetched: number; total: number };
+    review: { open: number; deferred: number };
+    nextCommand: string;
+  };
+  assertEquals(jsonStatus.schemaVersion, 3);
+  assertEquals(jsonStatus.sources.fetched, 0);
+  assertEquals(jsonStatus.review.open, 0);
+  assertEquals(jsonStatus.nextCommand, "dc source list");
+
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [

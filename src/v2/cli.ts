@@ -24,6 +24,24 @@ interface ReleaseManifest {
   };
 }
 
+interface WorkbenchStatusSnapshot {
+  sources: {
+    fetched: number;
+    failed: number;
+    total: number;
+    firstFailedSourceId?: string;
+  };
+  review: {
+    open: number;
+    deferred: number;
+  };
+  canonical: {
+    entities: number;
+    relationships: number;
+  };
+  nextCommand: string;
+}
+
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
   const dbPath = readFlag(args, "--db") ?? join(Deno.cwd(), "data", "workbench.sqlite");
@@ -42,14 +60,18 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "workbench" && args[1] === "status") {
     const workbench = new Workbench(dbPath);
     const meta = workbench.init();
-    const status = renderWorkbenchStatus(workbench);
+    const status = buildWorkbenchStatus(workbench);
     workbench.close();
+    if (args.includes("--json")) {
+      console.log(JSON.stringify({ ...meta, ...status }, null, 2));
+      return true;
+    }
     console.log(`DB: ${meta.dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
     for (const migration of meta.migrations) {
       console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
     }
-    console.log(status);
+    console.log(renderWorkbenchStatus(status));
     return true;
   }
   if (args[0] === "source" && args[1] === "fetch" && args[2]) {
@@ -208,7 +230,7 @@ function readFreeTextArgument(args: string[], startIndex: number): string {
   return values.join(" ");
 }
 
-function renderWorkbenchStatus(workbench: Workbench): string {
+function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
   const sourceRows = workbench.listSources();
   const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
   const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
@@ -217,20 +239,39 @@ function renderWorkbenchStatus(workbench: Workbench): string {
   const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
+  const next = nextCommand({
+    fetchedSources,
+    failedSourceId: failedSource?.sourceId,
+    openReview,
+  });
+  return {
+    sources: {
+      fetched: fetchedSources,
+      failed: failedSources,
+      total: connectors.length,
+      firstFailedSourceId: failedSource?.sourceId,
+    },
+    review: {
+      open: openReview,
+      deferred: deferredReview,
+    },
+    canonical: {
+      entities,
+      relationships,
+    },
+    nextCommand: next,
+  };
+}
+
+function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
   return [
     "",
-    `Sources: ${fetchedSources}/${connectors.length} fetched${
-      failedSources > 0 ? `, ${failedSources} failed` : ""
+    `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
+      status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
-    `Review: ${openReview} open, ${deferredReview} deferred`,
-    `Canonical: ${entities} entities, ${relationships} relationships`,
-    `Next: ${
-      nextCommand({
-        fetchedSources,
-        failedSourceId: failedSource?.sourceId,
-        openReview,
-      })
-    }`,
+    `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
+    `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
+    `Next: ${status.nextCommand}`,
   ].join("\n");
 }
 
