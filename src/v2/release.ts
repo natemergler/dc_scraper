@@ -15,7 +15,7 @@ export async function buildV2Release(
   workbench: Workbench,
   outDir: string,
 ): Promise<{ outDir: string; fileNames: string[] }> {
-  await ensureDir(outDir);
+  await resetReleaseDirectory(outDir);
   const entities: EntityRow[] = workbench.canonicalEntities();
   const relationships: RelationshipRow[] = workbench.canonicalRelationships();
   const sources: SourceRow[] = workbench.sourceInventory();
@@ -136,6 +136,13 @@ export async function buildV2Release(
     outDir,
     fileNames: [...Array.from(manifest.files, (file) => file.name), "manifest.json"],
   };
+}
+
+async function resetReleaseDirectory(outDir: string): Promise<void> {
+  await Deno.remove(outDir, { recursive: true }).catch((error) => {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  });
+  await ensureDir(outDir);
 }
 
 function assertReleaseFilesDoNotContainContactInfo(files: Map<string, string>): void {
