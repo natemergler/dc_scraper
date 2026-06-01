@@ -6,6 +6,7 @@ import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
   runBatchDefer,
+  runBatchDeferDefault,
   runInteractiveReview,
 } from "./workbench/review_cli.ts";
 import { Workbench } from "./workbench.ts";
@@ -178,6 +179,12 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "review" && args[1] === "batch" && args[2] === "defer") {
     await withWorkbench(dbPath, async (workbench) => {
       await runBatchDefer(workbench, readReviewFilters(args), resolutionsDir);
+    });
+    return true;
+  }
+  if (args[0] === "review" && args[1] === "batch" && args[2] === "defer-default") {
+    await withWorkbench(dbPath, async (workbench) => {
+      await runBatchDeferDefault(workbench, readReviewFilters(args), resolutionsDir);
     });
     return true;
   }
@@ -442,6 +449,7 @@ Usage:
   dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc entity search <query> [--db <path>] [--json]
   dc entity show <entity-id> [--db <path>] [--json]
   dc release build [--db <path>] [--out <dir>]
@@ -463,6 +471,7 @@ Usage:
   dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
   Enter runs the default action for the current item.
