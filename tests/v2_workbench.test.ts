@@ -1311,6 +1311,36 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Department of Health (DOH)"),
     "dc.dc_health",
   );
+  assertEquals(buildKnownEntityRef("City Administrator"), "dc.office_of_the_city_administrator");
+  assertEquals(buildKnownEntityRef("District of Columbia Auditor"), "dc.office_of_the_dc_auditor");
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Board of Elections"),
+    "dc.board_of_elections",
+  );
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Housing Authority"),
+    "dc.dc_housing_authority",
+  );
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Public Library System"),
+    "dc.dc_public_library",
+  );
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Water and Sewer Authority"),
+    "dc.dc_water",
+  );
+  assertEquals(
+    buildKnownEntityRef("Fire and Emergency Medical Services Department"),
+    "dc.fire_and_emergency_medical_services",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of the Attorney General for the District of Columbia"),
+    "dc.office_of_the_attorney_general",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of the People’s Counsel"),
+    "dc.office_of_the_people_s_counsel_for_the_district_of_columbia",
+  );
 });
 
 Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
