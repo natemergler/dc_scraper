@@ -550,10 +550,15 @@ Deno.test("imports representative connector results and source inspection stays 
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
+  const branchCandidate = workbench.listReviewItems({ type: "entity_candidate" }).find((item) =>
+    item.subjectId === "candidate.dcgis.agencies.branch_executive"
+  );
   workbench.close();
   assertEquals(dcgis.fieldCount, 7);
-  assertEquals(dcgis.entityCandidateCount, 2);
+  assertEquals(dcgis.entityCandidateCount, 3);
   assertEquals(dcgis.relationshipCandidateCount, 2);
+  assert(branchCandidate);
+  assertEquals(branchCandidate.details.kind, "branch");
   assertEquals(quickbase.latestStatus, "success");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
   assertEquals(quickbase.itemCount > 0, true);
