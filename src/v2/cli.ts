@@ -295,6 +295,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
   const typeFlag = readFlag(args, "--type");
   const subjectPrefix = readFlag(args, "--subject-prefix");
   const relationshipType = readFlag(args, "--relationship-type");
+  const rawValue = readFlag(args, "--raw-value");
   const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
     ? args[1]
     : undefined;
@@ -304,6 +305,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
     type: typeFlag as ReviewItemFilters["type"] | undefined,
     subjectPrefix: subjectPrefix ?? undefined,
     relationshipType: relationshipType ?? undefined,
+    rawValue: rawValue ?? undefined,
   };
 }
 
@@ -423,9 +425,9 @@ Usage:
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--db <path>] [--resolutions-dir <path>]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--json]
+  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--db <path>] [--resolutions-dir <path>]
   dc entity search <query> [--db <path>] [--json]
   dc entity show <entity-id> [--db <path>] [--json]
   dc release build [--db <path>] [--out <dir>]
@@ -443,9 +445,9 @@ function printReviewHelp(): void {
   console.log(`dc review
 
 Usage:
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--db <path>] [--resolutions-dir <path>]
+  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>]
+  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--json]
+  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
   Enter runs the default action for the current item.
