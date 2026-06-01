@@ -1,0 +1,357 @@
+export type ArtifactKind =
+  | "page"
+  | "schema"
+  | "sample"
+  | "rows"
+  | "documents"
+  | "text"
+  | "json";
+
+export type ReviewItemType =
+  | "entity_candidate"
+  | "relationship_candidate"
+  | "legal_ref"
+  | "dataset"
+  | "source_status";
+
+export type ReviewStatus = "open" | "resolved" | "deferred";
+export type CandidateStatus = "pending" | "accepted" | "rejected";
+export type RelationshipType =
+  | "part_of"
+  | "governed_by"
+  | "overseen_by"
+  | "appointed_by"
+  | "authorized_by"
+  | "published_by";
+
+export interface WorkbenchMeta {
+  dbPath: string;
+  schemaVersion: number;
+  migrations: Array<{ version: number; name: string; appliedAt: string }>;
+}
+
+export interface SourceDefinition {
+  sourceId: string;
+  title: string;
+  kind: string;
+  accessMethod: string;
+  baseUrl: string;
+  notes?: string;
+}
+
+export interface SourceEndpointDefinition {
+  endpointId: string;
+  sourceId: string;
+  title: string;
+  kind: string;
+  url: string;
+  method: string;
+  captureMode: string;
+}
+
+export interface SourceFieldInput {
+  fieldName: string;
+  fieldType: string;
+  fieldLabel?: string;
+  ordinal: number;
+}
+
+export interface SourceItemInput {
+  itemKey: string;
+  itemType: string;
+  title: string;
+  body: Record<string, unknown>;
+}
+
+export interface EvidenceInput {
+  fieldPath: string;
+  observedValue: string;
+}
+
+export interface EntityCandidateInput {
+  candidateId: string;
+  sourceItemKey: string;
+  proposedEntityId: string;
+  name: string;
+  kind: string;
+  rawKind?: string;
+  branch?: string;
+  cluster?: string;
+  officialUrl?: string;
+  confidence?: number;
+  duplicateHint?: string;
+  evidence: EvidenceInput[];
+}
+
+export interface RelationshipCandidateInput {
+  relationshipCandidateId: string;
+  sourceItemKey: string;
+  fromEntityRef: string;
+  toEntityRef: string;
+  relationshipType: RelationshipType;
+  rawValue?: string;
+  needsReview?: boolean;
+  evidence: EvidenceInput[];
+}
+
+export interface LegalRefInput {
+  legalRefId: string;
+  sourceItemKey: string;
+  refType: string;
+  citationText: string;
+  normalizedCitation?: string;
+  url?: string;
+  needsReview?: boolean;
+  evidence: EvidenceInput[];
+  attachEntityRef?: string;
+  attachRelationshipRef?: string;
+}
+
+export interface DatasetInput {
+  datasetId: string;
+  sourceItemKey: string;
+  name: string;
+  category: string;
+  ownerName?: string;
+  accessMethod: string;
+  artifactDepth: string;
+  officialUrl?: string;
+  evidence: EvidenceInput[];
+}
+
+export interface ReviewItemInput {
+  reviewItemId: string;
+  itemType: ReviewItemType;
+  subjectId: string;
+  reason: string;
+  defaultAction: string;
+  details: Record<string, unknown>;
+}
+
+export interface ParsedEndpointOutput {
+  fields?: SourceFieldInput[];
+  items?: SourceItemInput[];
+  entityCandidates?: EntityCandidateInput[];
+  relationshipCandidates?: RelationshipCandidateInput[];
+  legalRefs?: LegalRefInput[];
+  datasets?: DatasetInput[];
+  reviewItems?: ReviewItemInput[];
+}
+
+export interface ArtifactCaptureInput {
+  kind: ArtifactKind;
+  extension: string;
+  contentText: string;
+  fetchedUrl: string;
+}
+
+export interface ConnectorEndpointResult {
+  endpoint: SourceEndpointDefinition;
+  status: "success" | "failed";
+  errorText?: string;
+  artifacts: ArtifactCaptureInput[];
+  parsed?: ParsedEndpointOutput;
+}
+
+export interface ConnectorResult {
+  source: SourceDefinition;
+  endpointResults: ConnectorEndpointResult[];
+}
+
+export interface ResolutionEventInput {
+  eventType:
+    | "accept_entity_candidate"
+    | "reject_entity_candidate"
+    | "merge_entity_candidates"
+    | "set_entity_fields"
+    | "accept_relationship_candidate"
+    | "reject_relationship_candidate"
+    | "defer_review_item"
+    | "reopen_review_item";
+  subjectId: string;
+  payload: Record<string, unknown>;
+}
+
+export interface ReviewItemRecord {
+  reviewItemId: string;
+  itemType: ReviewItemType;
+  subjectId: string;
+  reason: string;
+  defaultAction: string;
+  status: ReviewStatus;
+  details: Record<string, unknown>;
+}
+
+export interface EntitySearchResult {
+  entityId: string;
+  name: string;
+  kind: string;
+  reviewStatus: string;
+}
+
+export interface EntityView {
+  entityId: string;
+  name: string;
+  kind: string;
+  branch?: string;
+  cluster?: string;
+  officialUrl?: string;
+  reviewStatus: string;
+  evidence: Array<{ fieldPath: string; observedValue: string; sourceId: string }>;
+  outgoing: Array<{ relationshipType: string; targetEntityId: string; targetName: string }>;
+  incoming: Array<{ relationshipType: string; sourceEntityId: string; sourceName: string }>;
+  reviewItems: ReviewItemRecord[];
+  legalRefs: Array<{ citationText: string; normalizedCitation?: string; refType: string }>;
+}
+
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replaceAll(/&/g, " and ")
+    .replaceAll(/[^a-z0-9]+/g, "_")
+    .replaceAll(/^_+|_+$/g, "")
+    .replaceAll(/_+/g, "_");
+}
+
+export function normalizeName(value: string): string {
+  return value.replaceAll(/\s+/g, " ").trim();
+}
+
+export function buildEntityId(name: string, prefix = "dc"): string {
+  return `${prefix}.${slugify(name)}`;
+}
+
+export function buildCandidateId(sourceId: string, rawKey: string): string {
+  return `candidate.${sourceId}.${slugify(rawKey)}`;
+}
+
+export function buildRelationshipCandidateId(sourceId: string, rawKey: string): string {
+  return `relationship.${sourceId}.${slugify(rawKey)}`;
+}
+
+export function buildLegalRefId(sourceId: string, rawKey: string): string {
+  return `legal.${sourceId}.${slugify(rawKey)}`;
+}
+
+export function buildDatasetId(sourceId: string, rawKey: string): string {
+  return `dataset.${sourceId}.${slugify(rawKey)}`;
+}
+
+export function buildReviewItemId(subjectId: string, suffix: string): string {
+  return `review.${slugify(subjectId)}.${slugify(suffix)}`;
+}
+
+export function detectEntityKind(rawKind?: string, name?: string): string {
+  const value = `${rawKind ?? ""} ${name ?? ""}`.toLowerCase();
+  if (value.includes("committee")) return "committee";
+  if (value.includes("board")) return "board";
+  if (value.includes("commission")) return "commission";
+  if (value.includes("task force")) return "task_force";
+  if (value.includes("council")) return "council";
+  if (value.includes("office")) return "office";
+  if (value.includes("agency")) return "agency";
+  return rawKind ? slugify(rawKind) : "public_body";
+}
+
+export function parseLegalReference(
+  input: string,
+  url?: string,
+): { refType: string; citationText: string; normalizedCitation?: string; needsReview: boolean } {
+  const text = normalizeName(stripHtml(input));
+  const dcCodeMatch = text.match(
+    /(?:D\.?\s*C\.?\s*(?:Official\s+)?Code|§)\s*([0-9A-Za-z.\-]+(?:\([^)]+\))?)/i,
+  );
+  if (dcCodeMatch) {
+    return {
+      refType: "dc_code",
+      citationText: text,
+      normalizedCitation: `D.C. Code ${dcCodeMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const dcmrMatch = text.match(/(\d+)\s*DCMR\s*([0-9A-Za-z.\-]+)/i);
+  if (dcmrMatch) {
+    return {
+      refType: "dcmr",
+      citationText: text,
+      normalizedCitation: `${dcmrMatch[1]} DCMR ${dcmrMatch[2]}`,
+      needsReview: false,
+    };
+  }
+  const mayorMatch = text.match(/Mayor'?s?\s+Order\s+([0-9]{4}-[0-9]{3})/i);
+  if (mayorMatch) {
+    return {
+      refType: "mayors_order",
+      citationText: text,
+      normalizedCitation: `Mayor's Order ${mayorMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const registerMatch = text.match(/D\.?\s*C\.?\s+Register/i);
+  if (registerMatch || url?.includes("dcregs.dc.gov")) {
+    return {
+      refType: "dc_register",
+      citationText: text,
+      normalizedCitation: undefined,
+      needsReview: true,
+    };
+  }
+  return {
+    refType: "unknown",
+    citationText: text,
+    normalizedCitation: undefined,
+    needsReview: true,
+  };
+}
+
+export function inverseRelationshipType(type: string): string {
+  switch (type) {
+    case "part_of":
+      return "has_part";
+    case "governed_by":
+      return "governs";
+    case "overseen_by":
+      return "oversees";
+    case "appointed_by":
+      return "appoints";
+    case "authorized_by":
+      return "authorizes";
+    case "published_by":
+      return "publishes";
+    default:
+      return `incoming:${type}`;
+  }
+}
+
+export function nowIso(): string {
+  return new Date().toISOString();
+}
+
+export async function sha256Hex(content: string): Promise<string> {
+  const bytes = new TextEncoder().encode(content);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function stripHtml(value: string): string {
+  return decodeHtmlEntities(value.replaceAll(/<[^>]+>/g, " "));
+}
+
+export function decodeHtmlEntities(value: string): string {
+  return value
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#039;", "'")
+    .replaceAll("&rsquo;", "'")
+    .replaceAll("&ndash;", "-")
+    .replaceAll("&mdash;", "-")
+    .replaceAll("&sect;", "§")
+    .replaceAll(/&#([0-9]+);/g, (_, digits) => String.fromCharCode(Number(digits)));
+}
+
+export function compactDatePart(value = new Date()): string {
+  return value.toISOString().slice(0, 10);
+}
