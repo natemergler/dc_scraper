@@ -2405,6 +2405,143 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   assertEquals(remainingOversight.length, 2);
 });
 
+Deno.test("batch defer-default defers only scoped default-defer relationship items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const healthDetailWithDeferredRows = `<html><body>
+    <h1>Committee on Health</h1>
+    <h2>Agencies Under This Committee</h2>
+    <ul>
+      <li>Department of Health</li>
+      <li>Cedar Hill Hospital</li>
+      <li>All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health</li>
+    </ul>
+  </body></html>`;
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return healthDetailWithDeferredRows;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer-default",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Deferred 2 default-defer review item(s).");
+  assertStringIncludes(batchText, "Skipped 3 item(s) whose default action was not defer.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const openOversight = reopened.listReviewItems({
+    mode: "relationships",
+    status: "open",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+  });
+  const deferredOversight = reopened.listReviewItems({
+    mode: "relationships",
+    status: "deferred",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+  });
+  reopened.close();
+  assert(
+    openOversight.some((item) =>
+      item.details.rawValue === "Department of Health" && item.defaultAction === "accept"
+    ),
+  );
+  assertEquals(
+    deferredOversight.map((item) => item.details.rawValue).sort(),
+    [
+      "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+      "Cedar Hill Hospital",
+    ],
+  );
+});
+
+Deno.test("batch defer-default requires a scoped review slice", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer-default",
+      "--mode",
+      "relationships",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 1);
+  assertStringIncludes(
+    new TextDecoder().decode(batchOutput.stderr),
+    "Batch defer-default requires --mode, --subject-prefix, and at least one narrowing filter.",
+  );
+});
+
 Deno.test("relationship raw-value filter narrows branch review slices and safe batch acceptance", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
