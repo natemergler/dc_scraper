@@ -5,6 +5,7 @@ import {
   type CandidateStatus,
   compactDatePart,
   nowIso,
+  parseLegalReference,
   type ResolutionEventInput,
   type ReviewStatus,
   slugify,
@@ -98,6 +99,13 @@ function applyResolutionEventInCurrentTransaction(
       setRelationshipCandidateStatus(store, event.subjectId, "rejected");
       resolveReviewBySubject(store, event.subjectId);
       break;
+    case "accept_legal_ref":
+      acceptLegalRef(store, event.subjectId, event.payload);
+      break;
+    case "reject_legal_ref":
+      setLegalRefStatus(store, event.subjectId, "rejected");
+      resolveReviewBySubject(store, event.subjectId);
+      break;
     case "defer_review_item":
       setReviewStatus(store, event.subjectId, "deferred");
       break;
@@ -152,6 +160,7 @@ export async function replayResolutionDirectory(
     run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
     run(store.db, "update entity_candidates set review_status = 'pending'");
     run(store.db, "update relationship_candidates set review_status = 'pending'");
+    run(store.db, "update legal_refs set review_status = 'pending'");
     run(store.db, "update review_items set status = 'open' where status = 'resolved'");
     for (const record of records) {
       applyResolutionEventInCurrentTransaction(store, record);
@@ -422,6 +431,63 @@ function setRelationshipCandidateStatus(
     "update relationship_candidates set review_status = ? where relationship_candidate_id = ?",
     [status, candidateId],
   );
+}
+
+function acceptLegalRef(
+  store: WorkbenchStore,
+  legalRefId: string,
+  payload: Record<string, unknown>,
+): void {
+  const legalRef = queryOne<{
+    legalRefId: string;
+    refType: string;
+    citationText: string;
+    normalizedCitation?: string;
+    url?: string;
+    reviewStatus: CandidateStatus;
+  }>(
+    store.db,
+    "select legal_ref_id as legalRefId, ref_type as refType, citation_text as citationText, normalized_citation as normalizedCitation, url, review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+    [legalRefId],
+  );
+  if (!legalRef) throw new Error(`Legal ref not found: ${legalRefId}`);
+  if (legalRef.reviewStatus === "rejected") {
+    throw new Error(`Conflict: legal ref ${legalRefId} was already rejected`);
+  }
+  const parsed = parseLegalReference(legalRef.citationText, legalRef.url);
+  const inferredRefType = legalRef.refType === "unknown" ? parsed.refType : legalRef.refType;
+  const refType = String(payload.refType ?? inferredRefType);
+  const normalizedCitation = payload.normalizedCitation === null ? null : String(
+    payload.normalizedCitation ?? legalRef.normalizedCitation ?? parsed.normalizedCitation ?? "",
+  );
+  run(
+    store.db,
+    "update legal_refs set ref_type = ?, normalized_citation = ?, url = coalesce(?, url), review_status = 'accepted' where legal_ref_id = ?",
+    [
+      refType,
+      normalizedCitation === "" ? null : normalizedCitation,
+      typeof payload.url === "string" ? payload.url : null,
+      legalRefId,
+    ],
+  );
+  resolveReviewBySubject(store, legalRefId);
+}
+
+function setLegalRefStatus(
+  store: WorkbenchStore,
+  legalRefId: string,
+  status: CandidateStatus,
+): void {
+  const legalRef = queryOne<{ legalRefId: string }>(
+    store.db,
+    "select legal_ref_id as legalRefId from legal_refs where legal_ref_id = ?",
+    [legalRefId],
+  );
+  if (!legalRef) throw new Error(`Legal ref not found: ${legalRefId}`);
+  run(store.db, "update legal_refs set review_status = ? where legal_ref_id = ?", [
+    status,
+    legalRefId,
+  ]);
 }
 
 function resolveReviewBySubject(store: WorkbenchStore, subjectId: string): void {
