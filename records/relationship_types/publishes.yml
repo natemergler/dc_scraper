@@ -1,7 +1,0 @@
-id: publishes
-record_type: relationship_type
-name: publishes
-definition: Actor publishes legal or administrative material.
-status: active
-source_refs:
-  - dc_code

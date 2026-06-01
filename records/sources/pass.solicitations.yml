@@ -1,6 +1,0 @@
-id: pass.solicitations
-record_type: source
-name: PASS Solicitations
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/19"
-source_type: arcgis_metadata_table
-status: active

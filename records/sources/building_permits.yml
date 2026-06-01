@@ -1,6 +1,0 @@
-id: building_permits
-record_type: source
-name: Building permits
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/18"
-source_type: arcgis_metadata_layer
-status: active

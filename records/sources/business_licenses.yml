@@ -1,6 +1,0 @@
-id: business_licenses
-record_type: source
-name: Business licenses
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/0"
-source_type: arcgis_metadata_table
-status: active

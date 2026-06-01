@@ -1,8 +1,4 @@
-import type {
-  EntityView,
-  ResolutionEventInput,
-  ReviewItemRecord,
-} from "../domain.ts";
+import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 

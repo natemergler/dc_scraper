@@ -1,8 +1,0 @@
-id: dc_code_legal_corpus
-record_type: legal_material
-name: D.C. Code
-law_family: statutory
-update_tracking_model: codified_statutory_law
-status: active
-source_refs:
-  - dc_code

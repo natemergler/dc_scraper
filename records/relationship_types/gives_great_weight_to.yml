@@ -1,7 +1,0 @@
-id: gives_great_weight_to
-record_type: relationship_type
-name: gives great weight to
-definition: Actor gives great weight to ANC recommendations.
-status: active
-source_refs:
-  - dc_code

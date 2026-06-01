@@ -1,8 +1,0 @@
-id: home_rule_act
-record_type: legal_material
-name: District of Columbia Home Rule Act
-law_family: statutory
-update_tracking_model: congressional_review
-status: active
-source_refs:
-  - dc_code

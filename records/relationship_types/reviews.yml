@@ -1,7 +1,0 @@
-id: reviews
-record_type: relationship_type
-name: reviews
-definition: Actor reviews a District law or action.
-status: active
-source_refs:
-  - dc_code

@@ -1,7 +1,0 @@
-id: dcgis.government_operations
-record_type: source
-name: DCGIS Government Operations ArcGIS service
-official_url: >-
-  https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer
-source_type: arcgis_service
-status: active

@@ -1,6 +1,0 @@
-id: pass.payments
-record_type: source
-name: PASS Payments
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/17"
-source_type: arcgis_metadata_table
-status: active

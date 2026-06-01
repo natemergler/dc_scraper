@@ -110,13 +110,18 @@ export const councilCommitteesConnector: SourceConnector = {
     }
     const reviewItems: ReviewItemInput[] = [
       ...entityCandidates.map((candidate) =>
-        buildCandidateReviewItem(candidate.candidateId, "Review Council committee candidate", "accept", {
-          name: candidate.name,
-          kind: candidate.kind,
-          confidence: candidate.confidence,
-          officialUrl: candidate.officialUrl,
-          duplicateHint: candidate.duplicateHint,
-        })
+        buildCandidateReviewItem(
+          candidate.candidateId,
+          "Review Council committee candidate",
+          "accept",
+          {
+            name: candidate.name,
+            kind: candidate.kind,
+            confidence: candidate.confidence,
+            officialUrl: candidate.officialUrl,
+            duplicateHint: candidate.duplicateHint,
+          },
+        )
       ),
       ...relationshipCandidates.map((candidate) => ({
         reviewItemId: buildReviewItemId(candidate.relationshipCandidateId, "committee"),

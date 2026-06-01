@@ -1,9 +1,0 @@
-id: us.congress
-record_type: civic_unit
-name: United States Congress
-unit_kind: external_actor
-operating_layers:
-  - federal_interface
-status: active
-source_refs:
-  - dc_code

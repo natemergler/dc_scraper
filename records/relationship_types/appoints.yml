@@ -1,7 +1,0 @@
-id: appoints
-record_type: relationship_type
-name: appoints
-definition: "Actor appoints a civic unit, office, board member, or officer."
-status: active
-source_refs:
-  - dc_code

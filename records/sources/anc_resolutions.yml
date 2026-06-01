@@ -1,6 +1,0 @@
-id: anc_resolutions
-record_type: source
-name: ANC resolutions portal
-official_url: "https://resolutions.anc.dc.gov/"
-source_type: json_api_manifest
-status: active

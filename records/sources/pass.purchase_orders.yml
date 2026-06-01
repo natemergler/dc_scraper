@@ -1,6 +1,0 @@
-id: pass.purchase_orders
-record_type: source
-name: PASS Purchase Orders
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/16"
-source_type: arcgis_metadata_table
-status: active

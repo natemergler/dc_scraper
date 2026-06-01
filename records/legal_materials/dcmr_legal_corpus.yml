@@ -1,8 +1,0 @@
-id: dcmr_legal_corpus
-record_type: legal_material
-name: District of Columbia Municipal Regulations
-law_family: administrative
-update_tracking_model: register_to_dcmr
-status: active
-source_refs:
-  - dcregs

@@ -1,6 +1,0 @@
-id: service_requests_311
-record_type: source
-name: 311 service requests
-official_url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21"
-source_type: arcgis_metadata_layer
-status: active

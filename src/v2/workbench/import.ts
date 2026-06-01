@@ -1,12 +1,4 @@
-import {
-  type ConnectorResult,
-  type DatasetInput,
-  type EntityCandidateInput,
-  type LegalRefInput,
-  type RelationshipCandidateInput,
-  type ReviewItemInput,
-  type SourceItemInput,
-} from "../domain.ts";
+import { type ConnectorResult } from "../domain.ts";
 import { nowIso } from "../domain.ts";
 import { run } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";

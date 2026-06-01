@@ -1,66 +1,58 @@
-# DC Civic Content Repository
+# DC civic-data workbench
 
-File-backed D.C. civic content workbench for sources, legal materials, civic units, relationships,
-pipelines, gaps, checks, and generated release packages.
+This is a local Deno workbench for source-backed D.C. civic structure data. It fetches public
+sources into local artifacts, indexes normalized evidence in SQLite, helps a reviewer accept or
+defer candidate facts, records replayable JSONL decisions, and builds a compact release package.
 
-The repo is the database. Curated YAML records under `records/` are the release source of truth.
-Generated candidates under `candidates/` are review inputs and never silently overwrite curated
-records.
+Local workbench state lives under `data/`, `resolutions/`, and `releases/`. Those paths are ignored.
+Do not commit raw source captures, generated candidates, or workbench databases.
 
-Current Tier 1 coverage snapshots DCGIS agency tables, DC legal/regulatory publication manifests,
-Council LIMS and HMS JSON API manifests, Council hearings and oversight/budget schedule pages, D.C.
-Courts, OCFO publication pages, BOE publication pages, and ANC reference pages and ANC resolution
-metadata. The Enterprise Dataset Inventory is covered as source-discovery metadata. PASS
-procurement, payment, forecast, contract, solicitation, and solicitation-attachment tables are
-covered with metadata-only ArcGIS snapshots, as are 311, crime, permit, and business-license feeds.
-SCOUT and PropertyQuest have page manifests plus explicit gaps for deferred API/deep-ingest work.
-
-## Quick Start
+## Setup
 
 ```bash
-deno task test
-deno task validate
-deno task generate-checks
-deno task build-release
-deno task dc -- review next
+deno task ok
+deno task dc -- init
+deno task dc -- status
 ```
 
-The latest generated package is under `releases/latest/`.
+The default database is `data/workbench.sqlite`.
 
-For a handoff or contract-deliverable review, run `deno task dc -- release inspect` first. Then
-inspect `releases/latest/manifest.json`, `releases/latest/caveats.md`, `checks/latest.md`, and
-`deno task dc -- sources audit`. Page manifests prove current official entry-page evidence; they do
-not imply deep API, document, or row extraction unless a specific pipeline says so.
-
-## Main Commands
+## Common Flow
 
 ```bash
-deno task dc -- seed baseline
-deno task dc -- fetch source dcgis.agencies
-deno task dc -- fetch source dcgis.boards_commissions_councils
-deno task dc -- fetch source council_lims
-deno task dc -- fetch source council_hms
-deno task dc -- fetch source council_oversight_budget_schedules
-deno task dc -- fetch source dc_courts
-deno task dc -- fetch source scout
-deno task dc -- fetch source propertyquest
-deno task dc -- fetch tier1
-deno task dc -- sources coverage
-deno task dc -- sources audit
-deno task dc -- sources baseline
-deno task dc -- sources health
-deno task dc -- candidates generate
-deno task dc -- candidates show candidate.dcgis.agencies.1001
-deno task dc -- candidates diff candidate.dcgis.agencies.1001
-deno task dc -- patch draft dc.alcoholic.beverage.and.cannabis.administration
-deno task dc -- patch activate patch.dc_alcoholic_beverage_and_cannabis_administration
-deno task dc -- patch apply
-deno task dc -- promote --all-new --source dcgis
-deno task dc -- records explain dc.mayor
-deno task dc -- gaps list
-deno task dc -- gaps show current_officeholders_deferred
-deno task dc -- release inspect
+deno task dc -- source list
+deno task dc -- source fetch dcgis.agencies --limit 25
+deno task dc -- source inspect dcgis.agencies
+deno task dc -- review
+deno task dc -- entity search accountancy
+deno task dc -- release build
 ```
 
-JSON release files are the faithful structured output. CSV files are flattened convenience views and
-are lossy for nested fields.
+`dc review` is the main human path. It shows evidence, a default action, and single-key choices for
+accept, edit, reject, defer, or quit.
+
+## Release Shape
+
+`dc release build` writes:
+
+- `README.md`
+- `manifest.json`
+- `dcgov.sqlite`
+- `entities.csv/json`
+- `relationships.csv/json`
+- `sources.csv/json`
+- `datasets.csv/json`
+- `legal_refs.csv/json`
+
+The release SQLite database is built from whitelisted release tables and views. It is not a copy of
+the full workbench database.
+
+## Privacy Boundary
+
+Public civic names, offices, roles, statuses, source URLs, and legal citations are in scope.
+Personal contact details are out of scope: emails, phone numbers, home addresses, contact fields,
+private notes, and contact metadata should stay out of release exports.
+
+Historical generated source captures existed in prior commits. If this branch is promoted, reachable
+Git history and remote refs still need a coordinated purge before treating the repository as clean
+of old raw artifacts.
