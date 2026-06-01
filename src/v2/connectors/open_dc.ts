@@ -208,6 +208,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         confidence: 0.92,
         officialUrl: detailUrl,
         duplicateHint: detailUrl,
+        safeToAutoAccept: true,
       }),
     );
     if (detail.governingAgency) {

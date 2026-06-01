@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
 import { parseLegalReference } from "../src/v2/domain.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -876,6 +877,84 @@ Deno.test("Open DC second detail-page shape yields administered and legal-author
   );
 });
 
+Deno.test("Open DC public bodies can be safely accepted before relationship review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.open_dc.public_bodies",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const relationshipItem = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "governed_by",
+    subjectPrefix: "relationship.open_dc.public_bodies",
+  }).find((item) =>
+    item.subjectId === "relationship.open_dc.public_bodies.board_accountancy_governing_agency"
+  );
+  assert(relationshipItem);
+  const reviewText = renderReviewItem(reopened, relationshipItem);
+  reopened.close();
+  assertStringIncludes(reviewText, 'dc.board_of_accountancy "Board of Accountancy" (accepted)');
+  assertStringIncludes(
+    reviewText,
+    "dc.department_of_licensing_and_consumer_protection (missing; accepting will create a placeholder entity)",
+  );
+});
+
 Deno.test("multi-artifact connector imports keep schema and row evidence on the correct artifacts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1201,6 +1280,17 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   assertEquals(
     parseLegalReference("D.C. Official Code § 47-2853.06(b)(1)").normalizedCitation,
     "D.C. Code 47-2853.06(b)(1)",
+  );
+});
+
+Deno.test("known relationship endpoint aliases resolve to accepted-style entity ids", () => {
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office of Veterans Affairs (MOVA)"),
+    "dc.mayor_s_office_of_veterans_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Department of Health (DOH)"),
+    "dc.dc_health",
   );
 });
 
