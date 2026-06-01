@@ -2101,6 +2101,107 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   );
 });
 
+Deno.test("batch accept-safe accepts scoped Council oversight only for accepted endpoints", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  for (
+    const subjectId of [
+      "candidate.council.committees.committee_of_the_whole",
+      "candidate.council.committees.committee_on_health",
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  for (
+    const [entityId, name] of [
+      ["dc.department_of_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Skipped 2 item(s) that were not safe to auto-accept.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedOversight = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const remainingOversight = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+  });
+  reopened.close();
+  assertEquals(acceptedOversight.map((row) => row.relationshipId), [
+    "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
+    "dc.department_of_health:overseen_by:dc.committee_on_health",
+  ]);
+  assertEquals(remainingOversight.length, 2);
+});
+
 Deno.test("relationship raw-value filter narrows branch review slices and safe batch acceptance", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
