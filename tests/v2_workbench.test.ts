@@ -2493,13 +2493,16 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   const relationshipCount = reopened.db.prepare(
     "select count(*) as count from canonical_relationships",
   ).get() as { count: number };
-  const remainingBranches = reopened.listReviewItems({
+  const remainingItems = reopened.listReviewItems({
     mode: "relationships",
     relationshipType: "part_of",
     subjectPrefix: "relationship.dcgis.agencies",
-  }).map((item) => item.details.rawValue);
+  });
+  const remainingBranches = remainingItems.map((item) => item.details.rawValue);
+  const otherBranchItem = remainingItems.find((item) => item.details.rawValue === "Other");
   reopened.close();
   assertEquals(relationshipCount.count, 3);
+  assertEquals(otherBranchItem?.defaultAction, "defer");
   assert(remainingBranches.includes("Other"));
   assert(!remainingBranches.includes("Executive"));
   assert(!remainingBranches.includes("Judicial"));

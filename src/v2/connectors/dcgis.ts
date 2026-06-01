@@ -233,7 +233,7 @@ function buildDcgisReviewItems(
       itemType: "relationship_candidate" as const,
       subjectId: candidate.relationshipCandidateId,
       reason: "Review agency relationship inferred from branch metadata",
-      defaultAction: "accept",
+      defaultAction: candidate.rawValue === "Other" ? "defer" : "accept",
       details: {
         fromEntityRef: candidate.fromEntityRef,
         toEntityRef: candidate.toEntityRef,
