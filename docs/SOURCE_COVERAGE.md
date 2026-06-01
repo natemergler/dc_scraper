@@ -11,13 +11,14 @@ Tiers:
 - Tier 3: future or out of scope for now.
 
 Current stress-test baseline: fresh workbench on June 1, 2026 fetched all 13 configured sources,
-accepted 331 safe entity candidates, accepted guarded Tier 0 relationship slices, and built a clean
-release. The compact release had 330 accepted entities, 108 accepted relationships, 30 datasets, and
-105 pending legal refs; the remaining review queue was still large.
+accepted 331 safe entity candidates, accepted guarded Tier 0 relationship and legal-ref slices, and
+built a clean release. The compact release had 330 accepted entities, 108 accepted relationships, 30
+datasets, 76 accepted legal refs, and 29 pending legal refs; the remaining review queue was still
+large.
 
 | Source family                | Tier | Access path                                                | Capture depth                 | Contributes                                                                              | Current review/release status                                                                                                                                                                                                                  | Known gaps                                                                                                                          | Blocks credible release? | Next action                                                                            |
 | ---------------------------- | ---- | ---------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------- |
-| `dcgis.agencies`             | 0    | Official ArcGIS REST, Government Operations agencies table | schema + rows                 | entities, branch relationships, legal refs                                               | Fetches cleanly; Executive, Judicial, and Legislative branch rows can be safely accepted after entity review; legal refs improved but mostly pending                                                                                           | Some legal refs remain unknown; `Other` branch rows mix agencies, funds, and special-purpose accounts that still need judgment      | Yes                      | Review or split the `Other` branch bucket; review high-confidence legal refs           |
+| `dcgis.agencies`             | 0    | Official ArcGIS REST, Government Operations agencies table | schema + rows                 | entities, branch relationships, legal refs                                               | Fetches cleanly; Executive, Judicial, and Legislative branch rows can be safely accepted after entity review; 76 normalized legal refs can be safely accepted                                                                                  | 12 DCGIS legal refs remain unknown; `Other` branch rows mix agencies, funds, and special-purpose accounts that still need judgment  | Yes                      | Review or split the `Other` branch bucket; normalize unknown reorganization/act refs   |
 | `open_dc.public_bodies`      | 0    | Official Open DC public-body pages                         | index page + detail documents | entities, governing/authority relationships, legal refs                                  | Fetches cleanly; detail-page entities are safe to auto-accept; local file-path authority URLs are dropped before release; common agency acronyms map to accepted endpoints; 7 governing-agency rows can be safely accepted after entity review | Legal-authority relationships still need deliberate review; the detail-page source is broad but currently capped by connector limit | Yes                      | Defer legal-authority placeholders until legal-ref entities have their own review path |
 | `council.committees`         | 0    | Official Council committee pages                           | page + detail pages           | committee entities, part_of and oversight relationships                                  | Fetches cleanly; committee relationships are reviewable and source-backed; Council endpoint maps to accepted DCGIS Council entity; 11 committee `part_of` rows can be safely accepted after entity review                                      | Oversight slice is limited to explicit page text                                                                                    | Yes                      | Review the explicit committee oversight slice                                          |
 | `legal.entrypoints`          | 0    | Official DC.gov legal entrypoints page                     | page/documents                | legal refs, legal-source datasets                                                        | Fetches cleanly; common entrypoints normalize; ambiguous rows defer                                                                                                                                                                            | It is an index, not legal completeness; some links are generic or ambiguous                                                         | Yes                      | Keep for legal source inventory; do not overclaim legal coverage                       |
@@ -37,12 +38,13 @@ release. The compact release had 330 accepted entities, 108 accepted relationshi
    completeness.
 2. Review remaining placeholders created by accepted Open DC/MOTA relationships, especially
    role/person/organization endpoints that should not be treated as agencies.
-3. Review the highest-confidence legal refs attached to Tier 0 entities, leaving ambiguous legal
-   refs pending or deferred with visible status.
+3. Normalize or defer the remaining ambiguous legal refs, especially DCGIS reorganization-plan,
+   act-name, and law-number citations.
 4. Decide whether Tier 0 needs a Board of Ethics / Open Government source lane before first usable
    release, or whether `dcgis.agencies`, Open DC, Council, and legal entrypoints are enough for the
    first release claim.
 
-Next lane recommendation: inspect the DCGIS `Other` branch bucket and decide whether it should stay
-as one honest residual category, split into clearer endpoint families, or be deferred while the next
-legal-ref review lane handles high-confidence authority rows.
+Next lane recommendation: inspect the DCGIS `Other` branch bucket and the remaining unknown legal
+refs together. Many are special-purpose accounts or reorganization-plan citations, so the next lane
+should either split them into clearer endpoint/ref families or explicitly defer them with visible
+review status.

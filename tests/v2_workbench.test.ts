@@ -1370,6 +1370,72 @@ Deno.test("legal refs import into a reviewable queue and legal resolutions updat
   assertEquals(types.get("dcmr"), 1);
 });
 
+Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambiguous rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
+    fetcher: async (url: string) => ({
+      status: 200,
+      text: async () => {
+        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
+          return legalEntrypointsFixture;
+        }
+        throw new Error(`Unexpected url ${url}`);
+      },
+      json: async <T>() => {
+        throw new Error(`No json fixture for ${url}`) as T;
+      },
+    }),
+  }));
+  await workbench.importConnectorResult(result, dataDir);
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "legal",
+      "--subject-prefix",
+      "legal.legal.entrypoints",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Skipped 1 item(s) that were not safe to auto-accept.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const statuses = reopened.db.prepare(
+    "select review_status as reviewStatus, count(*) as count from legal_refs group by review_status",
+  ).all() as Array<{ reviewStatus: string; count: number }>;
+  const statusCounts = new Map(statuses.map((row) => [row.reviewStatus, row.count]));
+  const pendingItem = reopened.listReviewItems({ mode: "legal" })[0];
+  reopened.close();
+  assertEquals(statusCounts.get("accepted"), 2);
+  assertEquals(statusCounts.get("pending"), 1);
+  assertEquals(pendingItem.details.refType, "dc_register");
+});
+
 Deno.test("dc review legal supports scripted normalize-and-quit flow", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
