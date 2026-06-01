@@ -56,6 +56,25 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   }
 });
 
+Deno.test("local workbench artifacts are ignored by git", async () => {
+  const paths = [
+    "data/workbench.sqlite",
+    "resolutions/2026-06-01/001-auto-review.jsonl",
+    "snapshots/source.json",
+    "candidates/generated.json",
+    "checks/latest.md",
+    "releases/latest/manifest.json",
+  ];
+  const output = await new Deno.Command("git", {
+    cwd: Deno.cwd(),
+    args: ["check-ignore", ...paths],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(output.code, 0);
+  assertEquals(new TextDecoder().decode(output.stdout).trim().split("\n"), paths);
+});
+
 Deno.test("top-level CLI aliases make the workbench easy to enter", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
