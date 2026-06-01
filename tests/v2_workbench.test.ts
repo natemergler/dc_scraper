@@ -1357,6 +1357,30 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Health Information Exchange Policy Board"),
     "dc.health_information_exchange_policy_board_hie",
   );
+  assertEquals(
+    buildKnownEntityRef("Board of Review of Anti-Deficiency Violations"),
+    "dc.board_of_review_for_anti_deficiency_violations_brav",
+  );
+  assertEquals(
+    buildKnownEntityRef("Citizen Review Panel on Child Abuse and Neglect"),
+    "dc.citizen_review_panel_for_child_abuse_and_neglect_crp",
+  );
+  assertEquals(
+    buildKnownEntityRef("Commission on Women"),
+    "dc.commission_for_women_cfw",
+  );
+  assertEquals(
+    buildKnownEntityRef("Destination DC"),
+    "dc.washington_d_c_convention_and_tourism_corporation_destination_dc",
+  );
+  assertEquals(
+    buildKnownEntityRef("Inspector General"),
+    "dc.office_of_the_inspector_general",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office on Returning Citizen Affairs"),
+    "dc.mayor_s_office_on_returning_citizen_affairs",
+  );
 });
 
 Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
