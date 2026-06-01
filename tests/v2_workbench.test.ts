@@ -1217,6 +1217,35 @@ Deno.test("failed resolution append does not write a replay event", async () => 
   assertEquals(eventCount.count, 1);
 });
 
+Deno.test("resolution append rejects unknown subjects without writing JSONL", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await assertRejects(
+    () =>
+      workbench.appendResolutionEvent(
+        {
+          eventType: "reject_entity_candidate",
+          subjectId: "candidate.missing",
+          payload: {},
+        },
+        resolutionsDir,
+      ),
+    Error,
+    "Candidate not found: candidate.missing",
+  );
+
+  const eventCount = workbench.db.prepare(
+    "select count(*) as count from resolution_events",
+  ).get() as { count: number };
+  workbench.close();
+  assertEquals(eventCount.count, 0);
+  await assertRejects(() => Deno.stat(resolutionsDir), Deno.errors.NotFound);
+});
+
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

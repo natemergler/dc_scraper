@@ -24,7 +24,6 @@ export async function appendResolutionEvent(
   resolutionsDir: string,
 ): Promise<{ filePath: string; sequenceNumber: number }> {
   const dayDir = join(resolutionsDir, compactDatePart());
-  await ensureDir(dayDir);
   const filePath = join(dayDir, "001-auto-review.jsonl");
   let sequenceNumber = 1;
   try {
@@ -39,6 +38,7 @@ export async function appendResolutionEvent(
     payload: event.payload,
   });
   applyResolutionEvent(store, event, relative(resolutionsDir, filePath), sequenceNumber);
+  await ensureDir(dayDir);
   await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   return { filePath, sequenceNumber };
 }
@@ -392,6 +392,12 @@ function setEntityCandidateStatus(
   candidateId: string,
   status: CandidateStatus,
 ): void {
+  const candidate = queryOne<{ candidateId: string }>(
+    store.db,
+    "select candidate_id as candidateId from entity_candidates where candidate_id = ?",
+    [candidateId],
+  );
+  if (!candidate) throw new Error(`Candidate not found: ${candidateId}`);
   run(store.db, "update entity_candidates set review_status = ? where candidate_id = ?", [
     status,
     candidateId,
@@ -403,6 +409,12 @@ function setRelationshipCandidateStatus(
   candidateId: string,
   status: CandidateStatus,
 ): void {
+  const candidate = queryOne<{ candidateId: string }>(
+    store.db,
+    "select relationship_candidate_id as candidateId from relationship_candidates where relationship_candidate_id = ?",
+    [candidateId],
+  );
+  if (!candidate) throw new Error(`Relationship candidate not found: ${candidateId}`);
   run(
     store.db,
     "update relationship_candidates set review_status = ? where relationship_candidate_id = ?",
@@ -423,6 +435,12 @@ function setReviewStatus(
   reviewItemId: string,
   status: ReviewStatus,
 ): void {
+  const reviewItem = queryOne<{ reviewItemId: string }>(
+    store.db,
+    "select review_item_id as reviewItemId from review_items where review_item_id = ?",
+    [reviewItemId],
+  );
+  if (!reviewItem) throw new Error(`Review item not found: ${reviewItemId}`);
   run(store.db, "update review_items set status = ?, updated_at = ? where review_item_id = ?", [
     status,
     nowIso(),
