@@ -24,17 +24,17 @@ import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
 import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
 import {
   listReviewItems as readReviewQueue,
-  type ReviewItemFilters,
   nextReviewItem as peekNextReviewItem,
+  type ReviewItemFilters,
 } from "./workbench/review.ts";
 import {
-  artifactHashes as readArtifactHashes,
   canonicalEntities as readCanonicalEntities,
   canonicalRelationships as readCanonicalRelationships,
   datasets as readDatasets,
   entityView as readEntityView,
   legalRefs as readLegalRefs,
   searchEntities as findEntities,
+  sourceArtifacts as readSourceArtifacts,
   sourceInventory as readSourceInventory,
 } from "./workbench/entity.ts";
 import type { WorkbenchStore } from "./workbench/store.ts";
@@ -140,7 +140,7 @@ export class Workbench implements WorkbenchStore {
     return readLegalRefs(this);
   }
 
-  artifactHashes(): ReturnType<typeof readArtifactHashes> {
-    return readArtifactHashes(this);
+  sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {
+    return readSourceArtifacts(this);
   }
 }

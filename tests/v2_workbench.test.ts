@@ -6,13 +6,14 @@ import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
+  admin311WrongLayerFixture,
   adminBudgetPageFixture,
   adminProcurementPageFixture,
   arcgisLayerDetailFixture,
   arcgisServiceLayersFixture,
   councilCommitteeHealthDetailFixture,
-  councilCommitteeWholeDetailFixture,
   councilCommitteesFixture,
+  councilCommitteeWholeDetailFixture,
   dcgisMetadataFixture,
   dcgisRowsFixture,
   legalEntrypointsFixture,
@@ -59,13 +60,16 @@ Deno.test("imports representative connector results and source inspection stays 
       openDcTaskForceFixture,
     ],
     ["https://dccouncil.gov/committees/", councilCommitteesFixture],
-    ["https://dccouncil.gov/committees/committee-of-the-whole/", councilCommitteeWholeDetailFixture],
+    [
+      "https://dccouncil.gov/committees/committee-of-the-whole/",
+      councilCommitteeWholeDetailFixture,
+    ],
     ["https://dccouncil.gov/committees/committee-on-health/", councilCommitteeHealthDetailFixture],
     ["https://lims.dccouncil.gov/api/Search/GetWhatsNew", limsFixture],
     ["https://octo.quickbase.com/db/bjngwsngm?a=td", quickbaseFixture],
     ["https://dc.gov/page/laws-regulations-and-courts", legalEntrypointsFixture],
     [
-      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Service_WebMercator/MapServer/33?f=json",
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21?f=json",
       admin311Fixture,
     ],
     ["https://cfo.dc.gov/budget", adminBudgetPageFixture],
@@ -265,7 +269,9 @@ Deno.test("Open DC second detail-page shape yields administered and legal-author
       throw new Error(`No json fixture for ${url}`) as T;
     },
   });
-  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 }));
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher, limit: 1 }),
+  );
   const detail = result.endpointResults[1].parsed;
   assert(detail);
   assert(
@@ -409,9 +415,10 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
   const result = await getConnector("council.committees").run(createConnectorContext({ fetcher }));
   const parsed = result.endpointResults[0].parsed;
   assert(parsed);
-  const oversightCandidates = parsed.relationshipCandidates?.filter((candidate) =>
-    candidate.relationshipType === "overseen_by"
-  ) ?? [];
+  const oversightCandidates =
+    parsed.relationshipCandidates?.filter((candidate) =>
+      candidate.relationshipType === "overseen_by"
+    ) ?? [];
   assertEquals(oversightCandidates.length, 2);
   assert(
     oversightCandidates.every((candidate) =>
@@ -805,7 +812,10 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const outDir = join(dir, "release");
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
+  const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
+  const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
   workbench.close();
   assertEquals(
     result.fileNames.sort(),
@@ -831,6 +841,37 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assert(!entityCsv.includes("source_item_id"));
   assertStringIncludes(readme, "DCGov v2 Release");
+  assertStringIncludes(readme, "Relationship coverage note:");
+  assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
+  assert(!sourcesCsv.includes("/tmp/"));
+  assertStringIncludes(
+    legalRefsCsv,
+    "id,ref_type,citation_text,normalized_citation,url,source_id,source_item_id,source_url,needs_review,review_status",
+  );
+  assertEquals(Array.isArray(manifest.release_summary.entities_by_review_status), true);
+  assertEquals(Array.isArray(manifest.source_artifacts), true);
+  if (manifest.source_artifacts.length > 0) {
+    assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
+    assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
+  }
+});
+
+Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {
+  const result = await getConnector("admin.service_requests_311").run(
+    createConnectorContext({
+      fetcher: async () => ({
+        status: 200,
+        text: async () => admin311WrongLayerFixture,
+        json: async <T>() => JSON.parse(admin311WrongLayerFixture) as T,
+      }),
+    }),
+  );
+  assertEquals(result.endpointResults[0].status, "failed");
+  assertStringIncludes(
+    result.endpointResults[0].errorText ?? "",
+    "Expected 311 service-request layer",
+  );
+  assertEquals(result.endpointResults[0].parsed, undefined);
 });
 
 Deno.test("scripted review CLI accepts a candidate and entity show renders evidence and backlinks", async () => {
