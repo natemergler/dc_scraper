@@ -56,6 +56,7 @@ deno task dc -- release inspect --json
 - `sources.csv/json`
 - `datasets.csv/json`
 - `legal_refs.csv/json`
+- `entity_legal_refs.csv/json`
 
 The release SQLite database is built from whitelisted release tables and views. It is not a copy of
 the full workbench database.

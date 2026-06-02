@@ -121,6 +121,24 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     );
     return true;
   }
+  if (args[0] === "source" && args[1] === "compare" && args[2] === "public-bodies") {
+    const comparison = await withWorkbench(dbPath, (workbench) => workbench.comparePublicBodies());
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(comparison, null, 2));
+      return true;
+    }
+    console.log("Public-body overlap comparison");
+    for (const source of comparison.sourceSummaries) {
+      console.log(
+        `${source.sourceId} ${source.normalizedNameCount} names (${source.sharedNameCount} shared, ${source.exclusiveNameCount} exclusive) entity_candidates=${source.entityCandidateCount} relationship_candidates=${source.relationshipCandidateCount}`,
+      );
+    }
+    console.log(`Shared exact names: ${comparison.sharedNameCount}`);
+    for (const row of comparison.rows.filter((row) => row.sourceIds.length > 1)) {
+      console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
+    }
+    return true;
+  }
   if (args[0] === "source" && args[1] === "list") {
     const rowsBySourceId = await withWorkbench(
       dbPath,
@@ -445,6 +463,7 @@ Usage:
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
+  dc source compare public-bodies [--db <path>] [--json]
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
   dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
@@ -486,6 +505,7 @@ Usage:
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
+  dc source compare public-bodies [--db <path>] [--json]
 `);
 }
 
