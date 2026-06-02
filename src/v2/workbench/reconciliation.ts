@@ -20,6 +20,9 @@ interface CanonicalEndpointRow {
 }
 
 interface CandidateEndpointStatusRow {
+  sourceId: string;
+  itemKey: string;
+  runStartedAt: string;
   reviewStatus: string;
   stalePriorDecision?: number | null;
 }
@@ -217,6 +220,30 @@ export function reconciliationSummary(store: WorkbenchStore): ReconciliationSumm
 }
 
 function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus {
+  const statuses = queryAll<CandidateEndpointStatusRow>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            source_runs.started_at as runStartedAt,
+            entity_candidates.review_status as reviewStatus,
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     join source_runs on source_runs.run_id = source_items.run_id
+     left join review_items
+       on review_items.subject_id = entity_candidates.candidate_id
+      and review_items.item_type = 'entity_candidate'
+     where entity_candidates.proposed_entity_id = ?
+     order by source_runs.started_at desc,
+              entity_candidates.candidate_id desc`,
+    [entityId],
+  );
+  const currentStatuses = latestSourceItemStatuses(statuses);
+  if (
+    currentStatuses.some((row) => row.reviewStatus === "pending" && row.stalePriorDecision === 1)
+  ) {
+    return { entityId, state: "stale_candidate" };
+  }
   const canonical = queryOne<CanonicalEndpointRow>(
     store.db,
     "select name, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
@@ -229,29 +256,33 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
       name: canonical.name,
     };
   }
-  const statuses = queryAll<CandidateEndpointStatusRow>(
-    store.db,
-    `select entity_candidates.review_status as reviewStatus,
-            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
-     from entity_candidates
-     left join review_items
-       on review_items.subject_id = entity_candidates.candidate_id
-      and review_items.item_type = 'entity_candidate'
-     where entity_candidates.proposed_entity_id = ?`,
-    [entityId],
-  );
-  if (
-    statuses.some((row) => row.reviewStatus === "pending" && row.stalePriorDecision === 1)
-  ) {
-    return { entityId, state: "stale_candidate" };
-  }
-  if (statuses.some((row) => row.reviewStatus === "pending")) {
+  if (currentStatuses.some((row) => row.reviewStatus === "pending")) {
     return { entityId, state: "pending_candidate" };
   }
-  if (statuses.length > 0 && statuses.every((row) => row.reviewStatus === "rejected")) {
+  if (
+    currentStatuses.length > 0 &&
+    currentStatuses.every((row) => row.reviewStatus === "rejected")
+  ) {
     return { entityId, state: "rejected_candidate" };
   }
   return { entityId, state: "missing" };
+}
+
+function latestSourceItemStatuses(
+  statuses: CandidateEndpointStatusRow[],
+): CandidateEndpointStatusRow[] {
+  const latestBySourceItem = new Map<string, string>();
+  for (const status of statuses) {
+    const sourceItemKey = `${status.sourceId}\u0000${status.itemKey}`;
+    const priorStartedAt = latestBySourceItem.get(sourceItemKey);
+    if (!priorStartedAt || status.runStartedAt > priorStartedAt) {
+      latestBySourceItem.set(sourceItemKey, status.runStartedAt);
+    }
+  }
+  return statuses.filter((status) => {
+    const sourceItemKey = `${status.sourceId}\u0000${status.itemKey}`;
+    return latestBySourceItem.get(sourceItemKey) === status.runStartedAt;
+  });
 }
 
 function upsertBlockedRelationship(
