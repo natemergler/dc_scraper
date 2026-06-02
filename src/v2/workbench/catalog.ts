@@ -22,6 +22,35 @@ export interface SourceListRow {
   latestRunFinishedAt?: string;
 }
 
+export interface PublicBodyComparisonSourceSummary {
+  sourceId: string;
+  title: string;
+  latestStatus?: string;
+  latestRunFinishedAt?: string;
+  latestArtifactPath?: string;
+  itemCount: number;
+  fieldCount: number;
+  entityCandidateCount: number;
+  relationshipCandidateCount: number;
+  normalizedNameCount: number;
+  sharedNameCount: number;
+  exclusiveNameCount: number;
+}
+
+export interface PublicBodyComparisonRow {
+  normalizedName: string;
+  displayName: string;
+  sourceIds: string[];
+  sourceTitles: string[];
+}
+
+export interface PublicBodyComparisonReport {
+  sourceSummaries: PublicBodyComparisonSourceSummary[];
+  rows: PublicBodyComparisonRow[];
+  sharedNameCount: number;
+  exclusiveNameCount: number;
+}
+
 export function upsertSource(
   store: WorkbenchStore,
   sourceId: string,
@@ -118,6 +147,81 @@ export function listSources(store: WorkbenchStore): SourceListRow[] {
          limit 1
        ) as latestRunFinishedAt
      from sources
-     order by sources.source_id`,
+    order by sources.source_id`,
   );
+}
+
+export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparisonReport {
+  const sourceIds = [
+    "dcgis.boards_commissions_councils",
+    "open_dc.public_bodies",
+    "mota.quickbase",
+  ] as const;
+  const sourceRows = sourceIds.map((sourceId) => sourceSummary(store, sourceId));
+  const rows = queryAll<{
+    normalizedName: string;
+    displayName: string;
+    sourceId: string;
+    sourceTitle: string;
+  }>(
+    store.db,
+    `select
+       entity_candidates.normalized_name as normalizedName,
+       entity_candidates.name as displayName,
+       sources.source_id as sourceId,
+       sources.title as sourceTitle
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     join sources on sources.source_id = source_items.source_id
+     where sources.source_id in (?, ?, ?)
+     order by entity_candidates.normalized_name, sources.source_id, entity_candidates.name`,
+    [...sourceIds],
+  );
+  const grouped = new Map<string, {
+    normalizedName: string;
+    displayName: string;
+    sources: Map<string, string>;
+  }>();
+  for (const row of rows) {
+    const group = grouped.get(row.normalizedName) ?? {
+      normalizedName: row.normalizedName,
+      displayName: row.displayName,
+      sources: new Map<string, string>(),
+    };
+    if (!grouped.has(row.normalizedName)) grouped.set(row.normalizedName, group);
+    group.sources.set(row.sourceId, row.sourceTitle);
+    if (!group.displayName) group.displayName = row.displayName;
+  }
+  const groupedRows = [...grouped.values()].map((group) => ({
+    normalizedName: group.normalizedName,
+    displayName: group.displayName,
+    sourceIds: [...group.sources.keys()].sort(),
+    sourceTitles: [...group.sources.values()].sort(),
+  })).sort((a, b) => a.normalizedName.localeCompare(b.normalizedName));
+  const normalizedNameCountBySource = new Map<string, number>();
+  const sharedNameCountBySource = new Map<string, number>();
+  for (const row of groupedRows) {
+    for (const sourceId of row.sourceIds) {
+      normalizedNameCountBySource.set(
+        sourceId,
+        (normalizedNameCountBySource.get(sourceId) ?? 0) + 1,
+      );
+      if (row.sourceIds.length > 1) {
+        sharedNameCountBySource.set(sourceId, (sharedNameCountBySource.get(sourceId) ?? 0) + 1);
+      }
+    }
+  }
+  const sourceSummaries = sourceRows.map((source) => ({
+    ...source,
+    normalizedNameCount: normalizedNameCountBySource.get(source.sourceId) ?? 0,
+    sharedNameCount: sharedNameCountBySource.get(source.sourceId) ?? 0,
+    exclusiveNameCount: (normalizedNameCountBySource.get(source.sourceId) ?? 0) -
+      (sharedNameCountBySource.get(source.sourceId) ?? 0),
+  }));
+  return {
+    sourceSummaries,
+    rows: groupedRows,
+    sharedNameCount: groupedRows.filter((row) => row.sourceIds.length > 1).length,
+    exclusiveNameCount: groupedRows.filter((row) => row.sourceIds.length === 1).length,
+  };
 }

@@ -38,6 +38,70 @@ export const dcgisRowsFixture = {
   ],
 };
 
+export const dcgisBoardsCommissionsCouncilsMetadataFixture = {
+  name: "District Boards Commissions and Councils",
+  fields: [
+    { name: "ENTITY_ID", type: "esriFieldTypeDouble", alias: "Entity ID" },
+    { name: "NAME", type: "esriFieldTypeString", alias: "Name" },
+    { name: "SHORT_NAME", type: "esriFieldTypeString", alias: "Short Name" },
+    { name: "ACRONYM", type: "esriFieldTypeString", alias: "Acronym" },
+    { name: "GOVERNING_AGENCY", type: "esriFieldTypeString", alias: "Governing Agency" },
+    { name: "ADDRESS", type: "esriFieldTypeString", alias: "Address" },
+    { name: "TYPE", type: "esriFieldTypeString", alias: "Type" },
+    { name: "WEB_URL", type: "esriFieldTypeString", alias: "Website" },
+    { name: "AUTHORIZING_ORDER_LAW", type: "esriFieldTypeString", alias: "Authorizing Order Law" },
+    { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
+    { name: "CLUSTER_DC", type: "esriFieldTypeString", alias: "DC Cluster" },
+  ],
+};
+
+export const dcgisBoardsCommissionsCouncilsRowsFixture = {
+  features: [
+    {
+      attributes: {
+        ENTITY_ID: 29,
+        NAME: "Board of Accountancy",
+        SHORT_NAME: "Board of Accountancy",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "DC Department of Licensing and Consumer Protection",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://www.dcopla.com/accountancy/",
+        AUTHORIZING_ORDER_LAW: "D.C. Code § 47-2853.06",
+        CLUSTER_DC: null,
+      },
+    },
+    {
+      attributes: {
+        ENTITY_ID: 119,
+        NAME: "Rental Housing Commission",
+        SHORT_NAME: "Rental Housing Commission",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Department of Housing and Community Development",
+        ADDRESS: null,
+        TYPE: "Commission",
+        WEB_URL: "https://dhcd.dc.gov/service/rental-housing-commission",
+        AUTHORIZING_ORDER_LAW: "D.C. Code § 42-3502.02",
+        CLUSTER_DC: null,
+      },
+    },
+    {
+      attributes: {
+        ENTITY_ID: 25,
+        NAME: "Advisory Neighborhood Commissions",
+        SHORT_NAME: "Advisory Neighborhood Commissions",
+        ACRONYM: "ANC",
+        GOVERNING_AGENCY: null,
+        ADDRESS: null,
+        TYPE: "Commission",
+        WEB_URL: "https://anc.dc.gov/",
+        AUTHORIZING_ORDER_LAW: "B21-0697",
+        CLUSTER_DC: null,
+      },
+    },
+  ],
+};
+
 export const openDcIndexFixture = `
 <html><body>
   <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
@@ -115,6 +179,35 @@ export const councilCommitteesFixture = `
 </body></html>
 `;
 
+export const councilMembersFixture = `
+<html><body>
+  <main>
+    <h3>Chairman</h3>
+    <div><a href="https://dccouncil.gov/council/phil-mendelson/">Chairman Phil Mendelson</a></div>
+    <h3>Chairperson Pro Tempore</h3>
+    <div><a href="https://dccouncil.gov/council/anita-bonds/">At-Large Councilmember Anita Bonds</a></div>
+    <h3>At-Large</h3>
+    <ul>
+      <li><a href="https://dccouncil.gov/council/anita-bonds/">At-Large Councilmember Anita Bonds</a></li>
+      <li><a href="https://dccouncil.gov/council/robert-white/">At-Large Councilmember Robert C. White, Jr.</a></li>
+      <li><a href="https://dccouncil.gov/council/christina-henderson/">At-Large Councilmember Christina Henderson</a></li>
+      <li><a href="https://dccouncil.gov/council/doni-crawford/">At-Large Councilmember Doni Crawford</a></li>
+    </ul>
+    <h3>Ward Members</h3>
+    <ul>
+      <li><a href="https://dccouncil.gov/council/brianne-nadeau/">Ward 1 Councilmember Brianne K. Nadeau</a></li>
+      <li><a href="https://dccouncil.gov/council/brooke-pinto/">Ward 2 Councilmember Brooke Pinto</a></li>
+      <li><a href="https://dccouncil.gov/council/matthew-frumin/">Ward 3 Councilmember Matthew Frumin</a></li>
+      <li><a href="https://dccouncil.gov/council/janeese-lewis-george/">Ward 4 Councilmember Janeese Lewis George</a></li>
+      <li><a href="https://dccouncil.gov/council/zachary-parker/">Ward 5 Councilmember Zachary Parker</a></li>
+      <li><a href="https://dccouncil.gov/council/charles-allen/">Ward 6 Councilmember Charles Allen</a></li>
+      <li><a href="https://dccouncil.gov/council/wendell-felder/">Ward 7 Councilmember Wendell Felder</a></li>
+      <li><a href="https://dccouncil.gov/council/trayon-white/">Ward 8 Councilmember Trayon White, Jr.</a></li>
+    </ul>
+  </main>
+</body></html>
+`;
+
 export const councilCommitteeWholeDetailFixture = `
 <html><body>
   <h1>Committee of the Whole</h1>
@@ -130,6 +223,18 @@ export const councilCommitteeHealthDetailFixture = `
 <html><body>
   <h1>Committee on Health</h1>
   <p>The committee has broad jurisdiction over health agencies.</p>
+  <main>
+    <h3>Councilmembers</h3>
+    <h4>Chairperson</h4>
+    <p><a href="https://dccouncil.gov/council/christina-henderson/">At-Large Councilmember Christina Henderson</a></p>
+    <h3>Councilmembers</h3>
+    <ul class="unstyled-list block-list row small-up-1 medium-up-2 large-up-3">
+      <li><a href="https://dccouncil.gov/council/charles-allen/">Ward 6 Councilmember Charles Allen</a></li>
+      <li><a href="https://dccouncil.gov/council/wendell-felder/">Ward 7 Councilmember Wendell Felder</a></li>
+      <li><a href="https://dccouncil.gov/council/brianne-nadeau/">Ward 1 Councilmember Brianne K. Nadeau</a></li>
+      <li><a href="https://dccouncil.gov/council/zachary-parker/">Ward 5 Councilmember Zachary Parker</a></li>
+    </ul>
+  </main>
   <h2>Agencies Under This Committee</h2>
   <ul>
     <li>Department of Health</li>
@@ -140,6 +245,49 @@ export const councilCommitteeHealthDetailFixture = `
       <li>twitter</li>
     </ul>
   </footer>
+</body></html>
+`;
+
+export const ancListingFixture = `
+<html><body>
+  <p>D.C. Code 1-309.13(j)(1)</p>
+  <select name="field_anc_tag_target_id[]">
+    <option value="">Select ANC</option>
+    <option value="36">ANC 3/4G</option>
+    <option value="49">ANC 6C</option>
+    <option value="53">ANC 6/8F</option>
+  </select>
+</body></html>
+`;
+
+export const ancProfile6cFixture = `
+<html><body>
+  <h1>ANC 6C</h1>
+  <table class="uk-table uk-table-striped">
+    <thead>
+      <tr><th>SMD</th><th>Name</th><th>Address</th><th>Phone</th><th>Email</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>6C01</td><td>Jeremiah Foxwell</td><td>private address</td><td>202-555-0101</td><td>foxwell@example.com</td></tr>
+      <tr><td>6C02</td><td>Karen Wirt Chairperson</td><td>private address</td><td>202-555-0102</td><td>wirt@example.com</td></tr>
+      <tr><td>6C03</td><td>Jay Adelstein Treasurer</td><td>private address</td><td>202-555-0103</td><td>adelstein@example.com</td></tr>
+    </tbody>
+  </table>
+</body></html>
+`;
+
+export const ancProfile34gFixture = `
+<html><body>
+  <h1>ANC 3/4G</h1>
+  <table class="uk-table uk-table-striped">
+    <thead>
+      <tr><th>SMD</th><th>Name</th><th>Address</th><th>Phone</th><th>Email</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>3/4G01</td><td>Ada Sample Vice Chairperson</td><td>private address</td><td>202-555-0111</td><td>ada@example.com</td></tr>
+      <tr><td>3/4G02</td><td>Ben Example Secretary</td><td>private address</td><td>202-555-0112</td><td>ben@example.com</td></tr>
+    </tbody>
+  </table>
 </body></html>
 `;
 
