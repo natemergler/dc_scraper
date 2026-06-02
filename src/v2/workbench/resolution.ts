@@ -51,7 +51,9 @@ async function enrichResolutionEvent(
   store: WorkbenchStore,
   event: ResolutionEventInput,
 ): Promise<ResolutionEventInput> {
-  if (event.eventType !== "accept_entity_candidate" && event.eventType !== "reject_entity_candidate") {
+  if (
+    event.eventType !== "accept_entity_candidate" && event.eventType !== "reject_entity_candidate"
+  ) {
     return event;
   }
   const candidate = queryOne<{
