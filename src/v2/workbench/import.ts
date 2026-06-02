@@ -209,24 +209,45 @@ async function reuseOrMarkStaleEntityDecisions(
        limit 1`,
       [hint.factSignature],
     );
-    if (!priorDecision?.evidenceHash) {
+    const priorMergeDecision = priorDecision?.evidenceHash ? undefined : queryOne<{
+      eventType: string;
+      evidenceHash?: string | null;
+      resolvedEntityId?: string | null;
+    }>(
+      store.db,
+      `select resolution_events.event_type as eventType,
+                json_extract(json_each.value, '$.evidence_hash') as evidenceHash,
+                json_extract(json_each.value, '$.resolved_entity_id') as resolvedEntityId
+         from resolution_events,
+              json_each(resolution_events.payload_json, '$.candidate_replays')
+         where resolution_events.event_type = 'merge_entity_candidates'
+           and json_extract(json_each.value, '$.fact_signature') = ?
+         order by resolution_events.created_at desc, resolution_events.event_id desc
+         limit 1`,
+      [hint.factSignature],
+    );
+    const decision = priorDecision?.evidenceHash ? priorDecision : priorMergeDecision;
+    if (!decision?.evidenceHash) {
       reuseOrMarkStaleDeferredEntityReview(store, hint);
       continue;
     }
 
-    if (priorDecision.evidenceHash === hint.evidenceHash) {
+    if (decision.evidenceHash === hint.evidenceHash) {
       const candidate = queryOne<{ reviewStatus: string }>(
         store.db,
         "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
         [hint.candidateId],
       );
       if (!candidate) continue;
-      if (priorDecision.eventType === "accept_entity_candidate") {
+      if (
+        decision.eventType === "accept_entity_candidate" ||
+        decision.eventType === "merge_entity_candidates"
+      ) {
         if (candidate.reviewStatus !== "accepted") {
           mergeAcceptedEntityCandidate(
             store,
             hint.candidateId,
-            priorDecision.resolvedEntityId ?? hint.proposedEntityId,
+            decision.resolvedEntityId ?? hint.proposedEntityId,
           );
         }
       } else if (candidate.reviewStatus !== "rejected") {
@@ -245,30 +266,48 @@ async function reuseOrMarkStaleEntityDecisions(
       continue;
     }
 
-    const reviewItem = queryOne<{ reason: string; detailsJson: string }>(
+    const reviewItem = queryOne<{
+      reason: string;
+      defaultAction: string;
+      detailsJson: string;
+    }>(
       store.db,
-      "select reason, details_json as detailsJson from review_items where subject_id = ? and item_type = 'entity_candidate'",
+      `select reason,
+              default_action as defaultAction,
+              details_json as detailsJson
+       from review_items
+       where subject_id = ? and item_type = 'entity_candidate'`,
       [hint.candidateId],
     );
     if (!reviewItem) continue;
     const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
-    const priorDecisionState = priorDecision.eventType === "accept_entity_candidate"
+    const priorDecisionState = decision.eventType === "accept_entity_candidate"
       ? "accepted"
+      : decision.eventType === "merge_entity_candidates"
+      ? "merged"
       : "rejected";
     details.priorDecisionState = priorDecisionState;
     details.stalePriorDecision = true;
     details.factSignature = hint.factSignature;
     details.evidenceHash = hint.evidenceHash;
+    if (priorDecisionState === "merged" && decision.resolvedEntityId) {
+      details.priorResolvedEntityId = decision.resolvedEntityId;
+    }
     const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
     const staleReason = reviewItem.reason.includes(staleSuffix)
       ? reviewItem.reason
       : `${reviewItem.reason} (${staleSuffix})`;
+    const staleDefaultAction = priorDecisionState === "accepted"
+      ? "accept"
+      : priorDecisionState === "rejected"
+      ? "reject"
+      : reviewItem.defaultAction;
     run(
       store.db,
       "update review_items set reason = ?, default_action = ?, details_json = ?, status = 'open', updated_at = ? where subject_id = ? and item_type = 'entity_candidate'",
       [
         staleReason,
-        priorDecisionState === "accepted" ? "accept" : "reject",
+        staleDefaultAction,
         JSON.stringify(details),
         nowIso(),
         hint.candidateId,
