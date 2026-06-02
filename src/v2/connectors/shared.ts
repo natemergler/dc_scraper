@@ -202,6 +202,10 @@ const knownEntityRefs = new Map<string, string>([
   ["department of health", "dc.dc_health"],
   ["department of health (doh)", "dc.dc_health"],
   ["city administrator", "dc.office_of_the_city_administrator"],
+  [
+    "dc department of licensing and consumer protection",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
   ["deputy mayor for education", "dc.office_of_the_deputy_mayor_for_education"],
   [
     "deputy mayor for health and human services",
@@ -212,7 +216,15 @@ const knownEntityRefs = new Map<string, string>([
     "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
   ],
   [
+    "deputy mayor for planning and economic development (dmped)",
+    "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
+  ],
+  [
     "deputy mayor for public safety and justice",
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
+  ],
+  [
+    "deputy mayor for public safety and justice/operations (dmpsj/o)",
     "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
   ],
   ["district of columbia auditor", "dc.office_of_the_dc_auditor"],
@@ -258,6 +270,11 @@ const knownEntityRefs = new Map<string, string>([
     "office of lesbian, gay, bisexual, transgender, and questioning affairs",
     "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
   ],
+  [
+    "mayor's office on asian and pacific islander affairs",
+    "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
+  ],
+  ["office of religious affairs", "dc.mayor_s_office_of_religious_affairs"],
   ["office on returning citizen affairs", "dc.mayor_s_office_on_returning_citizen_affairs"],
   [
     "office on women’s policy and initiatives",

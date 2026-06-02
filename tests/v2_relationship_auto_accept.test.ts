@@ -8,10 +8,13 @@ import {
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
   councilMembersFixture,
+  dcgisBoardsCommissionsCouncilsMetadataFixture,
+  dcgisBoardsCommissionsCouncilsRowsFixture,
 } from "./helpers/v2_fixtures.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
+  syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("dcgis part_of relationships auto-accept when both endpoints are accepted", async () => {
@@ -156,6 +159,139 @@ Deno.test("accepting a prerequisite entity can auto-accept a newly safe Open DC 
   workbench.close();
 
   assertEquals(relationship?.relationshipId, "dc.board_accountancy:governed_by:dc.target_agency");
+  assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("accepting a legal ref can auto-accept a newly safe Open DC authority relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "open_dc.public_bodies",
+      relationshipCandidateId: "relationship.test.auto_accept.open_dc.authorized_by",
+      sourceItemKey: "open-dc-authority-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "legal.d_c_code_3_1202_03",
+      relationshipType: "authorized_by",
+      rawValue: "D.C. Code § 3-1202.03",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.auto_accept.open_dc.authority",
+      "D.C. Code § 3-1202.03",
+      "https://code.dccouncil.us/us/dc/council/code/sections/3-1202.03",
+    ),
+    dataDir,
+  );
+
+  const candidateBefore = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.auto_accept.open_dc.authorized_by'",
+  ).get() as { reviewStatus: string } | undefined;
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: "legal.test.auto_accept.open_dc.authority",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const candidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.auto_accept.open_dc.authorized_by'",
+  ).get() as { reviewStatus: string } | undefined;
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.auto_accept.open_dc.authorized_by'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.auto_accept.open_dc.authorized_by",
+  });
+  workbench.close();
+
+  assertEquals(candidateBefore?.reviewStatus, "pending");
+  assertEquals(candidate?.reviewStatus, "accepted");
+  assertEquals(blockedAfter.count, 0);
+  assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [
+      [
+        "dc.department_of_housing_and_community_development",
+        "Department of Housing and Community Development",
+      ],
+      [
+        "dc.department_of_licensing_and_consumer_protection",
+        "Department of Licensing and Consumer Protection",
+      ],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+
+  const relationships = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       'dc.board_of_accountancy:governed_by:dc.department_of_licensing_and_consumer_protection',
+       'dc.rental_housing_commission:governed_by:dc.department_of_housing_and_community_development'
+     )
+     order by relationship_id`,
+  ).all() as Array<{ relationshipId: string }>;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils",
+  });
+  workbench.close();
+
+  assertEquals(relationships.length, 2);
   assertEquals(reviewItems.length, 0);
 });
 

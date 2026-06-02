@@ -8,7 +8,7 @@ import {
   slugify,
 } from "../domain.ts";
 import { queryOne, run } from "./db.ts";
-import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { endpointStatus, reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -1039,18 +1039,10 @@ function reuseAcceptedRelationshipDecision(
   const fromEntityId = priorDecision.resolvedFromEntityId;
   const toEntityId = priorDecision.resolvedToEntityId;
   if (!relationshipType || !fromEntityId || !toEntityId) return { reused: false };
-  if (
-    !queryOne(store.db, "select entity_id from canonical_entities where entity_id = ?", [
-      fromEntityId,
-    ])
-  ) {
+  if (endpointStatus(store, fromEntityId).state !== "accepted") {
     return { reused: false, missingEndpointId: fromEntityId };
   }
-  if (
-    !queryOne(store.db, "select entity_id from canonical_entities where entity_id = ?", [
-      toEntityId,
-    ])
-  ) {
+  if (endpointStatus(store, toEntityId).state !== "accepted") {
     return { reused: false, missingEndpointId: toEntityId };
   }
   const relationshipId = `${fromEntityId}:${relationshipType}:${toEntityId}`;
@@ -1059,7 +1051,7 @@ function reuseAcceptedRelationshipDecision(
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
     [relationshipId],
   );
-  if (!existing) {
+  if (!existing && !isLegalAuthorityRelationship(relationshipType, toEntityId)) {
     run(
       store.db,
       `insert into canonical_relationships(
@@ -1074,4 +1066,11 @@ function reuseAcceptedRelationshipDecision(
     [relationshipCandidateId],
   );
   return { reused: true };
+}
+
+function isLegalAuthorityRelationship(
+  relationshipType: string,
+  toEntityId: string,
+): boolean {
+  return relationshipType === "authorized_by" && toEntityId.startsWith("legal.");
 }

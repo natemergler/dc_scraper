@@ -1034,20 +1034,39 @@ Deno.test("Open DC public bodies can be safely accepted before relationship revi
 
   const reopened = new Workbench(dbPath);
   reopened.init();
-  const relationshipItem = reopened.listReviewItems({
+  const relationshipItems = reopened.listReviewItems({
     mode: "relationships",
-    relationshipType: "governed_by",
     subjectPrefix: "relationship.open_dc.public_bodies",
-  }).find((item) =>
-    item.subjectId === "relationship.open_dc.public_bodies.board_accountancy_governing_agency"
-  );
+  });
+  const acceptedRelationships = reopened.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       'dc.board_of_accountancy:governed_by:dc.department_of_licensing_and_consumer_protection',
+       'dc.adult_career_pathways_task_force:governed_by:dc.department_of_employment_services'
+     )
+     order by relationship_id`,
+  ).all() as Array<{ relationshipId: string }>;
+  const acceptedAuthorityCandidates = reopened.db.prepare(
+    `select review_status as reviewStatus
+     from relationship_candidates
+     where relationship_candidate_id in (
+       'relationship.open_dc.public_bodies.board_accountancy_authorized_by',
+       'relationship.open_dc.public_bodies.adult_career_pathways_task_force_authorized_by'
+     )
+     order by relationship_candidate_id`,
+  ).all() as Array<{ reviewStatus: string }>;
   const blockedRelationship = reopened.db.prepare(
     `select reason, details_json as detailsJson
      from reconciliation_items
      where subject_id = 'relationship.open_dc.public_bodies.board_accountancy_governing_agency'`,
   ).get() as { reason: string; detailsJson: string } | undefined;
   reopened.close();
-  assertEquals(relationshipItem, undefined);
+
+  assertEquals(relationshipItems.length, 0);
+  assertEquals(acceptedRelationships.length, 0);
+  assertEquals(acceptedAuthorityCandidates.length, 2);
+  assert(acceptedAuthorityCandidates.every((candidate) => candidate.reviewStatus === "accepted"));
   assert(blockedRelationship);
   assertEquals(blockedRelationship.reason, "unresolved_endpoints");
   assertStringIncludes(
@@ -1766,6 +1785,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.mayor_s_office_of_veterans_affairs",
   );
   assertEquals(
+    buildKnownEntityRef("DC Department of Licensing and Consumer Protection"),
+    "dc.department_of_licensing_and_consumer_protection",
+  );
+  assertEquals(
     buildKnownEntityRef("Department of Health (DOH)"),
     "dc.dc_health",
   );
@@ -1832,12 +1855,28 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.washington_d_c_convention_and_tourism_corporation_destination_dc",
   );
   assertEquals(
+    buildKnownEntityRef("Deputy Mayor for Planning and Economic Development (DMPED)"),
+    "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
+  );
+  assertEquals(
+    buildKnownEntityRef("Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)"),
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
+  );
+  assertEquals(
     buildKnownEntityRef("Inspector General"),
     "dc.office_of_the_inspector_general",
   );
   assertEquals(
+    buildKnownEntityRef("Mayor's Office on Asian and Pacific Islander Affairs"),
+    "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
+  );
+  assertEquals(
     buildKnownEntityRef("Office on Returning Citizen Affairs"),
     "dc.mayor_s_office_on_returning_citizen_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of Religious Affairs"),
+    "dc.mayor_s_office_of_religious_affairs",
   );
 });
 
@@ -3494,6 +3533,9 @@ Deno.test("failed resolution append does not write a replay event", async () => 
     },
     resolutionsDir,
   );
+  const eventCountBeforeFailure = workbench.db.prepare(
+    "select count(*) as count from resolution_events",
+  ).get() as { count: number };
 
   await assertRejects(
     () =>
@@ -3518,7 +3560,7 @@ Deno.test("failed resolution append does not write a replay event", async () => 
   ).get() as { count: number };
   workbench.close();
   assertEquals(lines.length, 1);
-  assertEquals(eventCount.count, 1);
+  assertEquals(eventCount.count, eventCountBeforeFailure.count);
 });
 
 Deno.test("resolution append rejects unknown subjects without writing JSONL", async () => {

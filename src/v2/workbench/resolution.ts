@@ -15,7 +15,7 @@ import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
-import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { endpointStatus, reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ResolutionRecord {
@@ -667,6 +667,7 @@ function shouldAutoAcceptRelationshipsAfterEvent(
   eventType: ResolutionEventInput["eventType"],
 ): boolean {
   return eventType === "accept_entity_candidate" ||
+    eventType === "accept_legal_ref" ||
     eventType === "merge_entity_candidates" ||
     eventType === "set_entity_fields";
 }
@@ -844,7 +845,7 @@ function acceptRelationshipCandidate(
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
     [relationshipId],
   );
-  if (!existing) {
+  if (!existing && !isLegalAuthorityRelationship(relationshipType, toEntityId)) {
     run(
       store.db,
       "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values(?, ?, ?, ?, 'accepted', ?, ?)",
@@ -860,6 +861,13 @@ function requireAcceptedEntity(
   entityId: string,
   relationshipCandidateId: string,
 ): string {
+  const status = endpointStatus(store, entityId);
+  if (status.state !== "accepted") {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is not resolved`,
+    );
+  }
+  if (entityId.startsWith("legal.")) return entityId;
   const existing = queryOne<{ entityId: string; isPlaceholder: number }>(
     store.db,
     "select entity_id as entityId, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
@@ -876,6 +884,10 @@ function requireAcceptedEntity(
     );
   }
   return entityId;
+}
+
+function isLegalAuthorityRelationship(relationshipType: string, toEntityId: string): boolean {
+  return relationshipType === "authorized_by" && toEntityId.startsWith("legal.");
 }
 
 function setEntityCandidateStatus(

@@ -145,7 +145,10 @@ function reviewDefaultAction(
     case "mota.quickbase":
       return candidate.relationshipType === "overseen_by" ? "defer" : "accept";
     case "open_dc.public_bodies":
-      return candidate.relationshipType === "authorized_by" ? "defer" : "accept";
+      if (candidate.relationshipType === "authorized_by") {
+        return candidate.needsReview === 1 ? "defer" : "accept";
+      }
+      return "accept";
     default:
       return candidate.needsReview === 1 ? "accept" : "defer";
   }
