@@ -1362,6 +1362,71 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("missing resolved relationship endpoint returns unchanged relationship refetch to review instead of silently resolving it", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_conflict_v1";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(firstCandidateId, "Target Agency"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: firstCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  workbench.db.prepare(
+    "delete from canonical_relationships where relationship_id = 'dc.source_board:governed_by:dc.target_agency'",
+  ).run();
+  workbench.db.prepare("delete from canonical_entities where entity_id = 'dc.target_agency'").run();
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_conflict_v2";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(secondCandidateId, "Target Agency"),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const conflictItem = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "pending");
+  assert(conflictItem);
+  assertEquals(conflictItem.details.priorDecisionState, "accepted");
+  assertEquals(conflictItem.details.priorResolvedFromEntityId, "dc.source_board");
+  assertEquals(conflictItem.details.priorResolvedToEntityId, "dc.target_agency");
+  assertEquals(conflictItem.details.replayConflict, true);
+  assertStringIncludes(
+    conflictItem.reason,
+    "prior accepted decision could not be replayed because resolved endpoint dc.target_agency is missing",
+  );
+});
+
 Deno.test("changed relationship evidence after a prior reject becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
