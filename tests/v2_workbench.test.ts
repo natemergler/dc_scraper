@@ -1106,6 +1106,50 @@ Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyo
   );
 });
 
+Deno.test("Open DC governing agency labels can resolve qualified deputy mayor aliases", async () => {
+  const indexFixture = `
+  <html><body>
+    <a href="/public-bodies/juvenile-abscondence-review-committee">Juvenile Abscondence Review Committee</a>
+  </body></html>
+  `;
+  const detailFixture = `
+  <html><body>
+    <h1 class="page-title">Juvenile Abscondence Review Committee</h1>
+    <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+      <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+      <div class="field-items"><div class="field-item even">Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)</div></div>
+    </div>
+  </body></html>
+  `;
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return indexFixture;
+        case "https://www.open-dc.gov/public-bodies/juvenile-abscondence-review-committee":
+          return detailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher, limit: 1 }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assert(
+    detail.relationshipCandidates?.some((candidate) =>
+      candidate.rawValue === "Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)" &&
+      candidate.toEntityRef === "dc.office_of_the_deputy_mayor_for_public_safety_and_justice"
+    ),
+  );
+});
+
 Deno.test("DC Courts connector captures the root courts structure and direct Superior Court divisions only", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
@@ -2162,7 +2206,15 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Department of Health (DOH)"),
     "dc.dc_health",
   );
+  assertEquals(
+    buildKnownEntityRef("Department of Housing and Community Development (DHCD)"),
+    "dc.department_of_housing_and_community_development",
+  );
   assertEquals(buildKnownEntityRef("City Administrator"), "dc.office_of_the_city_administrator");
+  assertEquals(
+    buildKnownEntityRef("Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)"),
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
+  );
   assertEquals(buildKnownEntityRef("District of Columbia Auditor"), "dc.office_of_the_dc_auditor");
   assertEquals(
     buildKnownEntityRef("District of Columbia Board of Elections"),
