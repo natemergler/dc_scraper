@@ -210,7 +210,7 @@ function canBatchAcceptRelationshipItem(
 
 function isScopedReviewNeededRelationshipAccept(filters: ReviewItemFilters): boolean {
   return isScopedCouncilOversightAccept(filters) || isScopedQuickbaseSeatAccept(filters) ||
-    isScopedDcCourtsStructureAccept(filters);
+    isScopedDcCourtsStructureAccept(filters) || isScopedBegaStructureAccept(filters);
 }
 
 function isScopedCouncilOversightAccept(filters: ReviewItemFilters): boolean {
@@ -231,6 +231,11 @@ function isScopedQuickbaseSeatAccept(filters: ReviewItemFilters): boolean {
 
 function isScopedDcCourtsStructureAccept(filters: ReviewItemFilters): boolean {
   return Boolean(filters.subjectPrefix?.startsWith("relationship.dccourts.structure")) &&
+    filters.relationshipType === "part_of";
+}
+
+function isScopedBegaStructureAccept(filters: ReviewItemFilters): boolean {
+  return Boolean(filters.subjectPrefix?.startsWith("relationship.bega.structure")) &&
     filters.relationshipType === "part_of";
 }
 

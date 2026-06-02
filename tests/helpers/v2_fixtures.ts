@@ -292,6 +292,39 @@ export const dcSuperiorCourtFixture = `
 </body></html>
 `;
 
+export const begaAboutFixture = `
+<html><body>
+  <h6 class="site-slogan">Board of Ethics and Government Accountability</h6>
+  <h1 class="title" id="page-title">About BEGA</h1>
+  <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+    <div class="field-items">
+      <div class="field-item even" property="content:encoded">
+        <p>The Board of Ethics and Government Accountability (BEGA) is an independent agency that administers and enforces the District of Columbia government's Code of Conduct and the laws that promote an open and transparent District government. BEGA includes two independent offices, the <a href="/page/office-government-ethics">Office of Government Ethics</a> (OGE) and the <a href="https://www.open-dc.gov/office-open-government">Office of Open Government</a> (OOG) and a five Member Board.</p>
+      </div>
+    </div>
+  </div>
+</body></html>
+`;
+
+export const begaOgeFixture = `
+<html><body>
+  <h1 class="title" id="page-title">Office of Government Ethics</h1>
+  <div class="rteleft">
+    The <strong>Office of Government Ethics (OGE)</strong> is an office within the Board of Ethics and Government Accountability (BEGA) that investigates allegations of ethical misconduct concerning District government employees and officials.
+  </div>
+</body></html>
+`;
+
+export const begaOogFixture = `
+<html><body>
+  <title>Office of Open Government | Open DC</title>
+  <h1>You need to change a setting in your web browser</h1>
+  <h1 class="page-title">Office of Open Government</h1>
+  <p class="rtejustify"><a href="https://code.dccouncil.gov/us/dc/council/code/sections/1-1162.05b">The Office of Open Government (OOG)</a> is an office within the Board of Ethics and Government Accountability charged with advancing open governance in the District of Columbia.</p>
+  <p>The Office of Open Government is comprised of staff. We are an office within the Board of Ethics and Government Accountability (BEGA) and we are supported by BEGA's Administrative Division.</p>
+</body></html>
+`;
+
 export const councilCommitteesFixture = `
 <html><body>
   <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
