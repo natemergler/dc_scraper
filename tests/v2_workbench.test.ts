@@ -40,7 +40,10 @@ import {
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
-import { syntheticCustomEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
+import {
+  syntheticCustomEntitySourceResult,
+  syntheticCustomRelationshipSourceResult,
+} from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const dir = await Deno.makeTempDir();
@@ -1557,57 +1560,29 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
-    dataDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_on_health",
-      payload: {},
-    },
-    resolutionsDir,
-  );
   for (
-    const [entityId, name] of [
-      ["dc.dc_health", "Department of Health"],
-      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    const [entityId, name, kind] of [
+      ["dc.source_board", "Source Board", "board"],
+      ["dc.council_of_the_district_of_columbia", "Council of the District of Columbia", "council"],
     ]
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name);
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
   }
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.relationships",
+      relationshipCandidateId: "relationship.test.review_cli.editable",
+      sourceItemKey: "review-cli-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "governed_by",
+      rawValue: "Council of the District of Columbia",
+      needsReview: true,
+    }),
+    dataDir,
+  );
   workbench.close();
 
   const reviewProcess = new Deno.Command(Deno.execPath(), {
@@ -1624,7 +1599,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
       "review",
       "relationships",
       "--subject-prefix",
-      "relationship.council.committees.committee_of_the_whole_part_of",
+      "relationship.test.review_cli.editable",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -1652,7 +1627,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
   const relationships = reopened.canonicalRelationships();
   reopened.close();
   assertEquals(relationships.map((row) => row.id), [
-    "dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia",
+    "dc.source_board:part_of:dc.council_of_the_district_of_columbia",
   ]);
 });
 
@@ -2168,6 +2143,16 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -2286,7 +2271,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
       "relationship.council.committees",
       "--db",
@@ -2306,7 +2291,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     relationshipTypeJson.items.every((item) =>
       item.itemType === "relationship_candidate" &&
       item.subjectId.startsWith("relationship.council.committees") &&
-      item.details.relationshipType === "part_of"
+      item.details.relationshipType === "overseen_by"
     ),
   );
 
@@ -2326,11 +2311,11 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--raw-value-contains",
-      "Whole",
+      "Health",
       "--db",
       dbPath,
       "--json",
@@ -2345,8 +2330,8 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(rawValueContainsJsonOutput.code, 0);
   assert(
     rawValueContainsJson.items.every((item) =>
-      item.details.relationshipType === "part_of" &&
-      item.details.rawValue.includes("Whole")
+      item.details.relationshipType === "overseen_by" &&
+      item.details.rawValue.includes("Health")
     ),
   );
 
@@ -2366,9 +2351,9 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--limit",
       "1",
       "--db",
@@ -2598,13 +2583,20 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
       throw new Error(`No json fixture for ${url}`) as T;
     },
   });
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
   await workbench.importConnectorResult(
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
   workbench.close();
 
   const batchOutput = await new Deno.Command(Deno.execPath(), {
@@ -2624,9 +2616,9 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -2639,18 +2631,20 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
 
   const reopened = new Workbench(dbPath);
   reopened.init();
-  const relationship = reopened.db.prepare(
-    "select relationship_type as relationshipType, to_entity_id as toEntityId from canonical_relationships where from_entity_id = ?",
-  ).get("dc.committee_of_the_whole") as { relationshipType: string; toEntityId: string };
-  const unresolvedPartOf = reopened.listReviewItems({
+  const acceptedOversight = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const unresolvedOversight = reopened.listReviewItems({
     mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.council.committees",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.committee_on_health_oversight",
   });
   reopened.close();
-  assertEquals(relationship.relationshipType, "part_of");
-  assertEquals(relationship.toEntityId, "dc.council_of_the_district_of_columbia");
-  assertEquals(unresolvedPartOf.length, 0);
+  assertEquals(acceptedOversight.map((row) => row.relationshipId), [
+    "dc.dc_health:overseen_by:dc.committee_on_health",
+    "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
+  ]);
+  assertEquals(unresolvedOversight.length, 0);
 });
 
 Deno.test("batch accept-safe accepts scoped Council oversight only for accepted endpoints", async () => {

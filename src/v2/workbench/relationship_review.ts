@@ -136,6 +136,9 @@ function reviewDefaultAction(
     case "council.committees":
       if (candidate.relationshipType !== "overseen_by") return "accept";
       return shouldDeferCouncilOversight(candidate.rawValue) ? "defer" : "accept";
+    case "council.members":
+    case "oanc.anc_profiles":
+      return "accept";
     case "dcgis.agencies":
     case "dcgis.boards_commissions_councils":
       return candidate.rawValue === "Other" ? "defer" : "accept";

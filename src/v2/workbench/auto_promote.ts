@@ -16,6 +16,11 @@ const AUTO_PROMOTE_KIND_BLOCKLIST = new Set([
   "public_official",
 ]);
 
+const AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST = new Set([
+  "council.members",
+  "oanc.anc_profiles",
+]);
+
 const AUTO_PROMOTE_MIN_CONFIDENCE = 0.9;
 
 interface AutoPromoteCandidateRow {
@@ -94,7 +99,14 @@ function groupIsSafeToAutoPromote(
   group: AutoPromoteCandidateRow[],
 ): boolean {
   if (group.length === 0) return false;
-  if (group.some((candidate) => AUTO_PROMOTE_KIND_BLOCKLIST.has(candidate.kind))) return false;
+  if (
+    group.some((candidate) =>
+      AUTO_PROMOTE_KIND_BLOCKLIST.has(candidate.kind) &&
+      !AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST.has(candidate.sourceId)
+    )
+  ) {
+    return false;
+  }
   if (
     group.some((candidate) =>
       typeof candidate.confidence !== "number" || candidate.confidence < AUTO_PROMOTE_MIN_CONFIDENCE

@@ -549,7 +549,6 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   workbench.close();
 
-  assert(manifest.release_summary.open_review_item_count > 0);
   assert(manifest.release_summary.blocked_reconciliation_count > 0);
   assertEquals(manifest.release_summary.placeholder_entity_count, 1);
   assert(

@@ -1,6 +1,14 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
+import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { buildEntityId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import {
+  councilCommitteeHealthDetailFixture,
+  councilCommitteesFixture,
+  councilCommitteeWholeDetailFixture,
+  councilMembersFixture,
+} from "./helpers/v2_fixtures.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -149,4 +157,311 @@ Deno.test("accepting a prerequisite entity can auto-accept a newly safe Open DC 
 
   assertEquals(relationship?.relationshipId, "dc.board_accountancy:governed_by:dc.target_agency");
   assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("OANC commissioner entities auto-promote and explicit ANC structure relationships auto-accept", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "oanc.anc_profiles",
+      candidateId: "candidate.test.auto_accept.oanc.anc",
+      sourceItemKey: "anc-1a",
+      proposedEntityId: "dc.anc_1a",
+      name: "ANC 1A",
+      kind: "commission",
+      observedName: "ANC 1A",
+      confidence: 0.98,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "oanc.anc_profiles",
+      candidateId: "candidate.test.auto_accept.oanc.smd",
+      sourceItemKey: "anc-1a",
+      proposedEntityId: "dc.smd_1a01",
+      name: "SMD 1A01",
+      kind: "smd",
+      observedName: "SMD 1A01",
+      confidence: 0.98,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "oanc.anc_profiles",
+      candidateId: "candidate.test.auto_accept.oanc.commissioner",
+      sourceItemKey: "anc-1a",
+      proposedEntityId: "dc.jane_commissioner",
+      name: "Jane Commissioner",
+      kind: "public_official",
+      observedName: "Jane Commissioner",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "oanc.anc_profiles",
+      relationshipCandidateId: "relationship.test.auto_accept.oanc.represents",
+      sourceItemKey: "anc-1a",
+      fromEntityRef: "dc.jane_commissioner",
+      toEntityRef: "dc.smd_1a01",
+      relationshipType: "represents",
+      rawValue: "1A01",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "oanc.anc_profiles",
+      relationshipCandidateId: "relationship.test.auto_accept.oanc.member_of",
+      sourceItemKey: "anc-1a",
+      fromEntityRef: "dc.jane_commissioner",
+      toEntityRef: "dc.anc_1a",
+      relationshipType: "member_of",
+      rawValue: "Jane Commissioner",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "oanc.anc_profiles",
+      relationshipCandidateId: "relationship.test.auto_accept.oanc.part_of",
+      sourceItemKey: "anc-1a",
+      fromEntityRef: "dc.smd_1a01",
+      toEntityRef: "dc.anc_1a",
+      relationshipType: "part_of",
+      rawValue: "1A01",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const commissioner = workbench.db.prepare(
+    "select review_status as reviewStatus from canonical_entities where entity_id = 'dc.jane_commissioner'",
+  ).get() as { reviewStatus: string } | undefined;
+  const relationships = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       'dc.jane_commissioner:represents:dc.smd_1a01',
+       'dc.jane_commissioner:member_of:dc.anc_1a',
+       'dc.smd_1a01:part_of:dc.anc_1a'
+     )
+     order by relationship_id`,
+  ).all() as Array<{ relationshipId: string }>;
+  const entityItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.test.auto_accept.oanc",
+  });
+  const relationshipItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.auto_accept.oanc",
+  });
+  workbench.close();
+
+  assertEquals(commissioner?.reviewStatus, "accepted");
+  assertEquals(relationships.length, 3);
+  assertEquals(entityItems.length, 0);
+  assertEquals(relationshipItems.length, 0);
+});
+
+Deno.test("Council member entities auto-promote and explicit seat relationships auto-accept", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.members",
+      candidateId: "candidate.test.auto_accept.council.person",
+      sourceItemKey: "council-members-page",
+      proposedEntityId: "dc.alex_councilmember",
+      name: "Alex Councilmember",
+      kind: "public_official",
+      observedName: "Alex Councilmember",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.members",
+      candidateId: "candidate.test.auto_accept.council.role",
+      sourceItemKey: "council-members-page",
+      proposedEntityId: "dc.ward_1_council_seat",
+      name: "Ward 1 Council Seat",
+      kind: "council_role",
+      observedName: "Ward 1 Council Seat",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.members",
+      candidateId: "candidate.test.auto_accept.council.ward",
+      sourceItemKey: "council-members-page",
+      proposedEntityId: "dc.ward_1",
+      name: "Ward 1",
+      kind: "ward",
+      observedName: "Ward 1",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.members",
+      relationshipCandidateId: "relationship.test.auto_accept.council.holds",
+      sourceItemKey: "council-members-page",
+      fromEntityRef: "dc.alex_councilmember",
+      toEntityRef: "dc.ward_1_council_seat",
+      relationshipType: "holds",
+      rawValue: "Ward 1 Council Seat",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.members",
+      relationshipCandidateId: "relationship.test.auto_accept.council.part_of",
+      sourceItemKey: "council-members-page",
+      fromEntityRef: "dc.ward_1_council_seat",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "part_of",
+      rawValue: "Council of the District of Columbia",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.members",
+      relationshipCandidateId: "relationship.test.auto_accept.council.represents",
+      sourceItemKey: "council-members-page",
+      fromEntityRef: "dc.ward_1_council_seat",
+      toEntityRef: "dc.ward_1",
+      relationshipType: "represents",
+      rawValue: "ward-1",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const person = workbench.db.prepare(
+    "select review_status as reviewStatus from canonical_entities where entity_id = 'dc.alex_councilmember'",
+  ).get() as { reviewStatus: string } | undefined;
+  const relationships = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       'dc.alex_councilmember:holds:dc.ward_1_council_seat',
+       'dc.ward_1_council_seat:part_of:dc.council_of_the_district_of_columbia',
+       'dc.ward_1_council_seat:represents:dc.ward_1'
+     )
+     order by relationship_id`,
+  ).all() as Array<{ relationshipId: string }>;
+  const entityItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.test.auto_accept.council",
+  });
+  const relationshipItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.auto_accept.council",
+  });
+  workbench.close();
+
+  assertEquals(person?.reviewStatus, "accepted");
+  assertEquals(relationships.length, 3);
+  assertEquals(entityItems.length, 0);
+  assertEquals(relationshipItems.length, 0);
+});
+
+Deno.test("Council committee chair, member, and part_of relationships auto-accept once member entities exist", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return councilMembersFixture;
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.members").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const acceptedRelationships = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       ?,
+       ?,
+       ?
+     )
+     order by relationship_id`,
+  ).all(
+    `${buildEntityId("At-Large Councilmember Christina Henderson")}:chairs:${
+      buildEntityId("Committee on Health")
+    }`,
+    `${buildEntityId("Ward 6 Councilmember Charles Allen")}:member_of:${
+      buildEntityId("Committee on Health")
+    }`,
+    `${buildEntityId("Committee on Health")}:part_of:${
+      buildEntityId("Council of the District of Columbia")
+    }`,
+  ) as Array<{ relationshipId: string }>;
+  const pendingCommitteeStructure = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where source_items.source_id = 'council.committees'
+       and relationship_candidates.review_status = 'pending'
+       and relationship_candidates.relationship_type in ('chairs', 'member_of', 'part_of')`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(acceptedRelationships.length, 3);
+  assertEquals(pendingCommitteeStructure.count, 0);
 });
