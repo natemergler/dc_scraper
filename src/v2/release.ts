@@ -430,6 +430,8 @@ Files:
 
 Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.
 
+Public-body seat relationship types used by the workbench: has_seat, appointed_by, and designated_by.
+
 ## Release summary
 
 - entities by review_status: ${entityStatus}

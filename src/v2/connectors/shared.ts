@@ -148,6 +148,10 @@ const knownEntityRefs = new Map<string, string>([
     "alcoholic beverages and cannabis administration",
     "dc.alcoholic_beverage_and_cannabis_administration",
   ],
+  [
+    "alcoholic beverages and cannabis administration (abca)",
+    "dc.alcoholic_beverage_and_cannabis_administration",
+  ],
   ["bicycle advisory council", "dc.bicycle_advisory_council_bac"],
   [
     "board for the condemnation of insanitary buildings",
@@ -245,6 +249,7 @@ const knownEntityRefs = new Map<string, string>([
   ["inspector general", "dc.office_of_the_inspector_general"],
   ["judicial nomination commission", "dc.judicial_nomination_commission_jnc"],
   ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor", "dc.mayor"],
   ["national capital planning commission", "dc.national_capital_planning_commission_ncpc"],
   [
     "office of the attorney general for the district of columbia",

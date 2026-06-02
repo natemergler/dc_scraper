@@ -658,6 +658,56 @@ create index if not exists relationship_candidate_evidence_candidate_idx on rela
 create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
 create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
 `,
+}, {
+  version: 7,
+  name: "v2_public_body_seat_relationships",
+  sql: `
+alter table relationship_candidates rename to relationship_candidates_old;
+create table relationship_candidates (
+  relationship_candidate_id text primary key,
+  source_item_id text not null references source_items(source_item_id),
+  from_entity_ref text not null,
+  to_entity_ref text not null,
+  relationship_type text not null check (relationship_type in ('part_of', 'has_seat', 'governed_by', 'overseen_by', 'appointed_by', 'designated_by', 'authorized_by', 'published_by', 'holds', 'represents', 'member_of', 'chairs')),
+  raw_value text,
+  needs_review integer not null default 0 check (needs_review in (0, 1)),
+  review_status text not null default 'pending' check (review_status in ('pending', 'accepted', 'rejected'))
+);
+insert into relationship_candidates select relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status from relationship_candidates_old;
+drop table relationship_candidates_old;
+
+alter table relationship_candidate_evidence rename to relationship_candidate_evidence_old;
+create table relationship_candidate_evidence (
+  evidence_id text primary key,
+  relationship_candidate_id text not null references relationship_candidates(relationship_candidate_id),
+  source_id text not null references sources(source_id),
+  source_item_id text not null references source_items(source_item_id),
+  field_path text not null,
+  observed_value text not null,
+  artifact_path text not null
+);
+insert into relationship_candidate_evidence select evidence_id, relationship_candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path from relationship_candidate_evidence_old;
+drop table relationship_candidate_evidence_old;
+
+alter table canonical_relationships rename to canonical_relationships_old;
+create table canonical_relationships (
+  relationship_id text primary key,
+  from_entity_id text not null references canonical_entities(entity_id),
+  relationship_type text not null check (relationship_type in ('part_of', 'has_seat', 'governed_by', 'overseen_by', 'appointed_by', 'designated_by', 'authorized_by', 'published_by', 'holds', 'represents', 'member_of', 'chairs')),
+  to_entity_id text not null references canonical_entities(entity_id),
+  review_status text not null check (review_status in ('accepted', 'rejected')),
+  source_event_id text not null references resolution_events(event_id),
+  created_at text not null
+);
+insert into canonical_relationships select relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at from canonical_relationships_old;
+drop table canonical_relationships_old;
+
+create index if not exists relationship_candidates_review_idx on relationship_candidates(review_status, relationship_type);
+create index if not exists relationship_candidates_source_item_idx on relationship_candidates(source_item_id);
+create index if not exists relationship_candidate_evidence_candidate_idx on relationship_candidate_evidence(relationship_candidate_id);
+create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
+create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {

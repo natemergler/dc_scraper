@@ -11,7 +11,7 @@ import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
-import { buildEntityId, parseLegalReference } from "../src/v2/domain.ts";
+import { buildEntityId, inverseRelationshipType, parseLegalReference } from "../src/v2/domain.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
@@ -56,9 +56,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 6);
-  assertEquals(second.schemaVersion, 6);
-  assertEquals(second.migrations.length, 6);
+  assertEquals(first.schemaVersion, 7);
+  assertEquals(second.schemaVersion, 7);
+  assertEquals(second.migrations.length, 7);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -179,7 +179,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 6");
+  assertStringIncludes(statusText, "Schema version: 7");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
@@ -206,7 +206,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     review: { open: number; deferred: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 6);
+  assertEquals(jsonStatus.schemaVersion, 7);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.nextCommand, "dc source list");
@@ -654,7 +654,7 @@ Deno.test("failed parsed imports keep artifacts but roll back partial typed rows
   assertEquals(counts, { artifacts: 1, items: 0, entityCandidates: 0 });
 });
 
-Deno.test("quickbase connector parses public CSV appointment rows into entities, relationships, and review items", async () => {
+Deno.test("quickbase connector parses public CSV appointment rows into seats, authorities, and review items", async () => {
   const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
 "Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
 `;
@@ -695,8 +695,19 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
     ),
   );
   assert(
+    parsed.relationshipCandidates?.some((candidate) => candidate.relationshipType === "has_seat"),
+  );
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.kind === "seat" && candidate.name ===
+        "District of Columbia Rental Housing Commission Chairperson"
+    ),
+  );
+  assert(
     parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "governed_by"
+      candidate.relationshipType === "has_seat" &&
+      candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission" &&
+      candidate.toEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson"
     ),
   );
   assert(
@@ -707,9 +718,22 @@ Deno.test("quickbase connector parses public CSV appointment rows into entities,
   );
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "governed_by" &&
+      candidate.relationshipType === "designated_by" &&
       candidate.rawValue === "Alcoholic Beverages and Cannabis Administration (ABCA) Designee" &&
       candidate.toEntityRef === "dc.alcoholic_beverage_and_cannabis_administration"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "appointed_by" &&
+      candidate.rawValue === "Mayoral Appointee" &&
+      candidate.toEntityRef === "dc.mayor"
+    ),
+  );
+  assert(
+    parsed.reviewItems?.some((item) =>
+      item.reason ===
+        "Review appointing or designating authority inferred from Quickbase appointment row"
     ),
   );
   assert(
@@ -1748,6 +1772,11 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
 
 Deno.test("known relationship endpoint aliases resolve to accepted-style entity ids", () => {
   assertEquals(
+    buildKnownEntityRef("Alcoholic Beverages and Cannabis Administration (ABCA)"),
+    "dc.alcoholic_beverage_and_cannabis_administration",
+  );
+  assertEquals(buildKnownEntityRef("Mayor"), "dc.mayor");
+  assertEquals(
     buildKnownEntityRef("Mayor's Office of Veterans Affairs (MOVA)"),
     "dc.mayor_s_office_of_veterans_affairs",
   );
@@ -1825,6 +1854,11 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Office on Returning Citizen Affairs"),
     "dc.mayor_s_office_on_returning_citizen_affairs",
   );
+});
+
+Deno.test("public-body seat relationship inverses stay user-facing", () => {
+  assertEquals(inverseRelationshipType("has_seat"), "seat_on");
+  assertEquals(inverseRelationshipType("designated_by"), "designates");
 });
 
 Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
@@ -2763,6 +2797,138 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   assertEquals(remainingOversight.length, 2);
 });
 
+Deno.test("batch accept-safe accepts scoped Quickbase seat structure and authority only for accepted endpoints", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
+"Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`;
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(
+      createConnectorContext({
+        fetcher: async (url: string) => {
+          const body = (() => {
+            switch (url) {
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+                return quickbaseFixture;
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+                return appointmentsCsvWithAlias;
+              default:
+                throw new Error(`Unexpected url ${url}`);
+            }
+          })();
+          return {
+            status: 200,
+            text: async () => body,
+            json: async <T>() => JSON.parse(body) as T,
+          };
+        },
+      }),
+    ),
+    dataDir,
+  );
+  for (
+    const subjectId of [
+      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc",
+      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc_seat_alcoholic_beverages_and_cannabis_administration_designee",
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  for (
+    const [entityId, name, kind] of [
+      [
+        "dc.alcoholic_beverage_and_cannabis_administration",
+        "Alcoholic Beverages and Cannabis Administration",
+        "agency",
+      ],
+      ["dc.mayor", "Mayor", "office"],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+  workbench.close();
+
+  const commonArgs = [
+    "run",
+    "--allow-read",
+    "--allow-write",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+    "--allow-ffi",
+    "scripts/dc.ts",
+    "review",
+    "batch",
+    "accept-safe",
+    "--mode",
+    "relationships",
+    "--subject-prefix",
+    "relationship.mota.quickbase",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ];
+
+  const hasSeatOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "has_seat"],
+  }).output();
+  assertEquals(hasSeatOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(hasSeatOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const designatedByOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "designated_by"],
+  }).output();
+  assertEquals(designatedByOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(designatedByOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const appointedByOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "appointed_by"],
+  }).output();
+  assertEquals(appointedByOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(appointedByOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const remainingSeatRelationships = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "has_seat",
+    subjectPrefix: "relationship.mota.quickbase",
+  });
+  reopened.close();
+  assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
+    "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
+  ]);
+  assert(remainingSeatRelationships.length > 0);
+});
+
 Deno.test("batch defer-default defers only scoped default-defer relationship items", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -3686,6 +3852,10 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(
     readme,
     "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
+  );
+  assertStringIncludes(
+    readme,
+    "Public-body seat relationship types used by the workbench: has_seat, appointed_by, and designated_by.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
