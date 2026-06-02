@@ -11,7 +11,7 @@ import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
-import { parseLegalReference } from "../src/v2/domain.ts";
+import { buildEntityId, parseLegalReference } from "../src/v2/domain.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
@@ -19,11 +19,17 @@ import {
   admin311WrongLayerFixture,
   adminBudgetPageFixture,
   adminProcurementPageFixture,
+  ancListingFixture,
+  ancProfile34gFixture,
+  ancProfile6cFixture,
   arcgisLayerDetailFixture,
   arcgisServiceLayersFixture,
   councilCommitteeHealthDetailFixture,
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
+  councilMembersFixture,
+  dcgisBoardsCommissionsCouncilsMetadataFixture,
+  dcgisBoardsCommissionsCouncilsRowsFixture,
   dcgisMetadataFixture,
   dcgisRowsFixture,
   legalEntrypointsFixture,
@@ -50,9 +56,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 5);
-  assertEquals(second.schemaVersion, 5);
-  assertEquals(second.migrations.length, 5);
+  assertEquals(first.schemaVersion, 6);
+  assertEquals(second.schemaVersion, 6);
+  assertEquals(second.migrations.length, 6);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -173,7 +179,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 5");
+  assertStringIncludes(statusText, "Schema version: 6");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
@@ -200,7 +206,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     review: { open: number; deferred: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 5);
+  assertEquals(jsonStatus.schemaVersion, 6);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.nextCommand, "dc source list");
@@ -1049,6 +1055,358 @@ Deno.test("multi-artifact connector imports keep schema and row evidence on the 
   workbench.close();
   assert(schemaArtifact.artifactPath !== rowArtifact.artifactPath);
   assertEquals(evidence.artifactPath, rowArtifact.artifactPath);
+});
+
+Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps conservatively", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 3);
+  assertEquals(parsed.entityCandidates?.length, 3);
+  assertEquals(parsed.relationshipCandidates?.length, 2);
+  assertEquals(parsed.legalRefs?.length, 3);
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Board of Accountancy" && candidate.duplicateHint ===
+        "https://www.dcopla.com/accountancy/"
+    ),
+  );
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Rental Housing Commission" && candidate.kind === "commission"
+    ),
+  );
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Advisory Neighborhood Commissions" && candidate.kind === "commission"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "governed_by" &&
+      candidate.rawValue === "Department of Housing and Community Development"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "governed_by" &&
+      candidate.rawValue === "DC Department of Licensing and Consumer Protection"
+    ),
+  );
+  assert(
+    parsed.reviewItems?.some((item) =>
+      item.subjectId === "candidate.dcgis.boards_commissions_councils.29"
+    ),
+  );
+});
+
+Deno.test("Council members connector captures seats and ward representations", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return councilMembersFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.members").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 1);
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Council Chairman"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "District of Columbia"));
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "holds" && candidate.rawValue === "Council Chairman"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("Ward 6")
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("District of Columbia")
+    ),
+  );
+});
+
+Deno.test("Council ward parsing skips order inference when a ward label is absent", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return `
+<html><body>
+  <main>
+    <h3>Ward Members</h3>
+    <ul>
+      <li><a href="https://dccouncil.gov/council/charles-allen/">Councilmember Charles Allen</a></li>
+    </ul>
+  </main>
+</body></html>
+`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.members").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assert(
+    parsed.entityCandidates?.some((candidate) => candidate.name === "Councilmember Charles Allen"),
+  );
+  assert(
+    !parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 1 Council Seat"),
+  );
+  assert(
+    !parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("Ward 1")
+    ),
+  );
+});
+
+Deno.test("Council committee member parsing captures chair and member relationships", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.committees").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  const chairs =
+    parsed.relationshipCandidates?.filter((candidate) => candidate.relationshipType === "chairs") ??
+      [];
+  const members =
+    parsed.relationshipCandidates?.filter((candidate) =>
+      candidate.relationshipType === "member_of"
+    ) ?? [];
+  assertEquals(chairs.length, 1);
+  assert(
+    chairs.some((candidate) =>
+      candidate.fromEntityRef === buildEntityId("At-Large Councilmember Christina Henderson") &&
+      candidate.toEntityRef === buildEntityId("Committee on Health")
+    ),
+  );
+  assert(
+    members.some((candidate) =>
+      candidate.fromEntityRef === buildEntityId("Ward 6 Councilmember Charles Allen") &&
+      candidate.toEntityRef === buildEntityId("Committee on Health")
+    ),
+  );
+  assert(
+    members.some((candidate) =>
+      candidate.fromEntityRef === buildEntityId("At-Large Councilmember Christina Henderson")
+    ),
+  );
+});
+
+Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners without contact data", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://oanc.dc.gov/anc-profile-listing":
+          return ancListingFixture;
+        case "https://oanc.dc.gov/anc-profile/anc-34g":
+          return ancProfile34gFixture;
+        case "https://oanc.dc.gov/anc-profile/anc-6c":
+          return ancProfile6cFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("oanc.anc_profiles").run(
+    createConnectorContext({ fetcher, limit: 2 }),
+  );
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 3);
+  assertEquals(parsed.legalRefs?.length, 2);
+  const anc34gItem = parsed.items?.find((item) => item.itemKey === "anc-34g");
+  const anc6cItem = parsed.items?.find((item) => item.itemKey === "anc-6c");
+  const anc34gBody = anc34gItem?.body as {
+    wardNumbers?: number[];
+    commissioners?: Array<{ name: string; role?: string }>;
+  };
+  const anc6cBody = anc6cItem?.body as {
+    wardNumbers?: number[];
+    commissioners?: Array<{ name: string; role?: string }>;
+  };
+  assertEquals(anc34gBody.wardNumbers, [3, 4]);
+  assertEquals(anc6cBody.wardNumbers, [6]);
+  assertEquals(anc34gBody.commissioners?.[0].role, "Vice Chairperson");
+  assertEquals(anc6cBody.commissioners?.[1].role, "Chairperson");
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Advisory Neighborhood Commissions"
+    ),
+  );
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "ANC 3/4G"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 3"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 4"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "SMD 6C01"));
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "part_of" && candidate.toEntityRef === buildEntityId("Ward 3")
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "part_of" && candidate.toEntityRef === buildEntityId("Ward 4")
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("SMD 6C01")
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "member_of" &&
+      candidate.toEntityRef === buildEntityId("ANC 6C")
+    ),
+  );
+});
+
+Deno.test("public body comparison report surfaces exact overlaps across the three source lanes", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return quickbaseAppointmentsCsvFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const report = workbench.comparePublicBodies();
+  assert(report.sharedNameCount >= 2);
+  assert(
+    report.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
+    ),
+  );
+  assert(
+    report.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Adult Career Pathways Task Force")
+    ),
+  );
+  assert(
+    report.sourceSummaries.some((source) =>
+      source.sourceId === "dcgis.boards_commissions_councils" && source.sharedNameCount >= 1
+    ),
+  );
+  workbench.close();
+  const compareOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+      "public-bodies",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(compareOutput.code, 0);
+  const compareJson = JSON.parse(new TextDecoder().decode(compareOutput.stdout)) as {
+    sharedNameCount: number;
+  };
+  assert(compareJson.sharedNameCount >= 2);
 });
 
 Deno.test("relationship acceptance creates a reviewable placeholder entity", async () => {
@@ -3254,12 +3612,20 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)",
     "pending",
   ]);
+  workbench.db.prepare(
+    "insert into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values(?, ?, ?)",
+  ).run([
+    "entity_legal_ref.board_accountancy.authority",
+    "dc.board_accountancy",
+    "legal.open_dc.public_bodies.board_accountancy_authority",
+  ]);
   const outDir = join(dir, "release");
   const staleFile = join(outDir, "stale-extra-report.csv");
   await ensureDir(outDir);
   await Deno.writeTextFile(staleFile, "stale");
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
+  const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
   const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
   const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -3286,6 +3652,8 @@ Deno.test("release builder creates focused v2 package with stable files and no r
       "datasets.json",
       "entities.csv",
       "entities.json",
+      "entity_legal_refs.csv",
+      "entity_legal_refs.json",
       "legal_refs.csv",
       "legal_refs.json",
       "manifest.json",
@@ -3301,6 +3669,12 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assert(!entityCsv.includes("source_item_id"));
   assert(!entityCsv.includes("not-for-release@example.com"));
+  assertStringIncludes(
+    entityLegalRefsCsv,
+    "entity_id,entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
+  );
+  assertStringIncludes(entityLegalRefsCsv, "dc.board_accountancy");
+  assertEquals(entityLegalRefsCsv.split("\n").length > 1, true);
   assert(!legalRefsCsv.includes("not-for-release@example.com"));
   assert(!manifestText.includes("not-for-release@example.com"));
   assert(!manifestText.includes("202-555-0100"));
@@ -3308,6 +3682,12 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
+  assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
+  assertStringIncludes(
+    readme,
+    "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
+  );
+  assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(
@@ -3319,6 +3699,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertEquals(releaseObjects, [
     "datasets",
     "entities",
+    "entity_legal_refs",
     "incoming_relationships",
     "legal_refs",
     "relationships",
@@ -3341,7 +3722,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Files: 13");
+  assertStringIncludes(inspectText, "Files: 15");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -3366,7 +3747,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   };
   assertEquals(inspectJsonOutput.code, 0);
   assertEquals(inspectJson.outDir, outDir);
-  assertEquals(inspectJson.fileCount, 13);
+  assertEquals(inspectJson.fileCount, 15);
   assertEquals(inspectJson.releaseSummary.source_count, 1);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);

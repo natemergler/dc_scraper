@@ -19,7 +19,7 @@ import {
   fieldEvidence,
 } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
-import { normalizeName, stripHtml } from "../domain.ts";
+import { normalizeName, slugify, stripHtml } from "../domain.ts";
 
 const councilCommitteesSource: SourceDefinition = {
   sourceId: "council.committees",
@@ -106,6 +106,17 @@ export const councilCommitteesConnector: SourceConnector = {
           oversightTargets: detail.oversightTargets,
         },
       });
+      items.push({
+        itemKey: `${detail.committee.slug}:members`,
+        itemType: "committee_members_detail",
+        title: `${detail.committee.name} councilmembers detail`,
+        artifactIndex: detail.artifactIndex,
+        body: {
+          committee: detail.committee.name,
+          chairperson: detail.chairperson,
+          members: detail.members,
+        },
+      });
     }
     const entityCandidates = committees.map((committee) => ({
       candidateId: buildCandidateId(councilCommitteesSource.sourceId, committee.slug),
@@ -148,6 +159,18 @@ export const councilCommitteesConnector: SourceConnector = {
         });
       }
     }
+    for (const detail of committeeDetails) {
+      if (detail.chairperson) {
+        relationshipCandidates.push(
+          ...buildCommitteeMemberRelationships(detail.committee, detail.chairperson, true),
+        );
+      }
+      for (const member of detail.members) {
+        relationshipCandidates.push(
+          ...buildCommitteeMemberRelationships(detail.committee, member, false),
+        );
+      }
+    }
     const reviewItems: ReviewItemInput[] = [
       ...entityCandidates.map((candidate) =>
         buildCandidateReviewItem(
@@ -169,6 +192,10 @@ export const councilCommitteesConnector: SourceConnector = {
         subjectId: candidate.relationshipCandidateId,
         reason: candidate.relationshipType === "overseen_by"
           ? "Review Council committee oversight relationship"
+          : candidate.relationshipType === "chairs"
+          ? "Review committee chair relationship"
+          : candidate.relationshipType === "member_of"
+          ? "Review committee member relationship"
           : "Review committee to Council relationship",
         defaultAction: defaultActionForRelationship(candidate),
         details: {
@@ -212,6 +239,43 @@ function defaultActionForRelationship(candidate: RelationshipCandidateInput): "a
 function isGroupedOversightTarget(rawValue: string): boolean {
   return rawValue.includes("including") || rawValue.includes("jointly") ||
     rawValue.startsWith("All of ");
+}
+
+function buildCommitteeMemberRelationships(
+  committee: { slug: string; name: string; url: string },
+  member: { name: string; url: string },
+  chair: boolean,
+): RelationshipCandidateInput[] {
+  const committeeId = buildEntityId(committee.name);
+  const memberId = buildEntityId(member.name);
+  const relationships: RelationshipCandidateInput[] = [];
+  if (chair) {
+    relationships.push({
+      relationshipCandidateId: buildRelationshipCandidateId(
+        councilCommitteesSource.sourceId,
+        `${committee.slug}-${slugify(member.url)}-chairs`,
+      ),
+      sourceItemKey: `${committee.slug}:members`,
+      fromEntityRef: memberId,
+      toEntityRef: committeeId,
+      relationshipType: "chairs",
+      rawValue: member.name,
+      evidence: [fieldEvidence("chairperson", member.name, 1)],
+    });
+  }
+  relationships.push({
+    relationshipCandidateId: buildRelationshipCandidateId(
+      councilCommitteesSource.sourceId,
+      `${committee.slug}-${slugify(member.url)}-member_of`,
+    ),
+    sourceItemKey: `${committee.slug}:members`,
+    fromEntityRef: memberId,
+    toEntityRef: committeeId,
+    relationshipType: "member_of",
+    rawValue: member.name,
+    evidence: [fieldEvidence("member", member.name, 1)],
+  });
+  return relationships;
 }
 
 export const councilLimsConnector: SourceConnector = {
@@ -288,6 +352,8 @@ interface CommitteeDetailRecord {
   html: string;
   artifactIndex: number;
   oversightTargets: string[];
+  chairperson?: { name: string; url: string };
+  members: Array<{ name: string; url: string }>;
 }
 
 async function fetchCommitteeDetails(
@@ -303,6 +369,7 @@ async function fetchCommitteeDetails(
       html,
       artifactIndex: index + 1,
       oversightTargets: parseOversightTargets(html),
+      ...parseCommitteeMembers(html),
     });
   }
   return records;
@@ -321,4 +388,36 @@ function captureOversightBlock(html: string): string | undefined {
     /<h[1-6][^>]*>\s*(?:Oversight|Agencies Under This Committee)\s*<\/h[1-6]>[\s\S]*?(<ul[^>]*>[\s\S]*?<\/ul>)/i,
   );
   return match?.[1];
+}
+
+function parseCommitteeMembers(html: string): {
+  chairperson?: { name: string; url: string };
+  members: Array<{ name: string; url: string }>;
+} {
+  const councilmembersBlock = html.match(
+    /<h[1-6][^>]*>\s*Councilmembers\s*<\/h[1-6]>\s*([\s\S]*?)(?=<h[1-3][^>]*>|<footer|<\/main>)/i,
+  )?.[1] ?? "";
+  const chairpersonMatch = councilmembersBlock.match(
+    /<h4[^>]*>\s*Chairperson\s*<\/h4>[\s\S]*?<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i,
+  );
+  const membersSection = councilmembersBlock.match(
+    /<h4[^>]*>\s*Councilmembers\s*<\/h4>\s*([\s\S]*)/i,
+  )?.[1] ?? "";
+  const chairperson = chairpersonMatch
+    ? {
+      url: chairpersonMatch[1],
+      name: normalizeName(stripHtml(chairpersonMatch[2])),
+    }
+    : undefined;
+  const members = [
+    ...membersSection.matchAll(
+      /<a href="(https:\/\/dccouncil\.gov\/council\/[^\"]+)"[^>]*>([\s\S]*?)<\/a>/gsi,
+    ),
+  ]
+    .map((match) => ({
+      url: match[1],
+      name: normalizeName(stripHtml(match[2])),
+    }))
+    .filter((member) => member.name.length > 0);
+  return { chairperson, members };
 }

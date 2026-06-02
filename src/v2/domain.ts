@@ -23,7 +23,11 @@ export type RelationshipType =
   | "overseen_by"
   | "appointed_by"
   | "authorized_by"
-  | "published_by";
+  | "published_by"
+  | "holds"
+  | "represents"
+  | "member_of"
+  | "chairs";
 
 export interface WorkbenchMeta {
   dbPath: string;
@@ -377,6 +381,14 @@ export function inverseRelationshipType(type: string): string {
       return "authorizes";
     case "published_by":
       return "publishes";
+    case "holds":
+      return "held_by";
+    case "represents":
+      return "represented_by";
+    case "member_of":
+      return "has_member";
+    case "chairs":
+      return "chaired_by";
     default:
       return `incoming:${type}`;
   }
