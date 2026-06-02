@@ -54,6 +54,9 @@ async function enrichResolutionEvent(
   if (event.eventType === "defer_review_item" || event.eventType === "reopen_review_item") {
     return await enrichReviewStatusResolutionEvent(store, event);
   }
+  if (event.eventType === "merge_entity_candidates") {
+    return await enrichMergeEntityResolutionEvent(store, event);
+  }
   if (
     event.eventType !== "accept_entity_candidate" &&
     event.eventType !== "reject_entity_candidate" &&
@@ -87,6 +90,39 @@ async function enrichResolutionEvent(
             metadata.proposedEntityId,
         }
         : {}),
+    },
+  };
+}
+
+async function enrichMergeEntityResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const candidateIds = Array.isArray(event.payload.candidateIds)
+    ? event.payload.candidateIds.filter((candidateId): candidateId is string =>
+      typeof candidateId === "string"
+    )
+    : [];
+  const resolvedEntityId = typeof event.payload.entityId === "string"
+    ? event.payload.entityId
+    : null;
+  const candidateReplays = [];
+  for (const candidateId of candidateIds) {
+    const metadata = await entityResolutionMetadata(store, candidateId);
+    if (!metadata) continue;
+    candidateReplays.push({
+      candidate_id: candidateId,
+      fact_signature: metadata.factSignature,
+      evidence_hash: metadata.evidenceHash,
+      resolved_entity_id: resolvedEntityId ?? metadata.proposedEntityId,
+    });
+  }
+  if (candidateReplays.length === 0) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      candidate_replays: event.payload.candidate_replays ?? candidateReplays,
     },
   };
 }

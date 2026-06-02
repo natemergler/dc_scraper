@@ -722,6 +722,154 @@ Deno.test("changed entity evidence after a prior defer becomes stale open review
   assertEquals(deferredItems.length, 0);
 });
 
+Deno.test("merged entity decisions are reused across refetch when candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.existing_board', 'Existing Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_merge_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: firstCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: firstCandidateId,
+      payload: {
+        entityId: "dc.existing_board",
+        candidateIds: [firstCandidateId],
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_merge_v2";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: secondCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+    }),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where event_type = 'merge_entity_candidates' and subject_id = ?",
+  ).get(firstCandidateId) as { payloadJson: string };
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const canonical = workbench.db.prepare(
+    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.existing_board'",
+  ).get() as { mergedCandidateIds: string };
+  const openItems = workbench.listReviewItems({ mode: "entities", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    candidate_replays?: Array<{ fact_signature?: string; evidence_hash?: string }>;
+  };
+  assertStringIncludes(
+    payload.candidate_replays?.[0]?.fact_signature ?? "",
+    "entity_candidate:test.signature.entities",
+  );
+  assertStringIncludes(payload.candidate_replays?.[0]?.evidence_hash ?? "", "sha256:");
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(openItems.length, 0);
+  assertEquals(
+    JSON.parse(canonical.mergedCandidateIds) as string[],
+    [
+      firstCandidateId,
+      secondCandidateId,
+    ],
+  );
+});
+
+Deno.test("changed entity evidence after a prior merge becomes stale review work instead of silent reuse", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.existing_board', 'Existing Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_merge_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: firstCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: firstCandidateId,
+      payload: {
+        entityId: "dc.existing_board",
+        candidateIds: [firstCandidateId],
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_merge_v2";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: secondCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body (Updated Source Text)",
+    }),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const staleItem = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "pending");
+  assert(staleItem);
+  assertEquals(staleItem.details.priorDecisionState, "merged");
+  assertEquals(staleItem.details.priorResolvedEntityId, "dc.existing_board");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior merged decision");
+});
+
 Deno.test("accepted legal ref decisions are reused across refetch when legal ref ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
