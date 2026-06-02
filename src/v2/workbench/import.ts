@@ -244,11 +244,25 @@ async function reuseOrMarkStaleEntityDecisions(
         decision.eventType === "merge_entity_candidates"
       ) {
         if (candidate.reviewStatus !== "accepted") {
-          mergeAcceptedEntityCandidate(
+          const reused = mergeAcceptedEntityCandidate(
             store,
             hint.candidateId,
             decision.resolvedEntityId ?? hint.proposedEntityId,
           );
+          if (!reused) {
+            markEntityReplayConflict(
+              store,
+              hint,
+              decision.eventType === "merge_entity_candidates" ? "merged" : "accepted",
+              decision.resolvedEntityId ?? hint.proposedEntityId,
+              `prior ${
+                decision.eventType === "merge_entity_candidates" ? "merged" : "accepted"
+              } decision could not be replayed because resolved entity ${
+                decision.resolvedEntityId ?? hint.proposedEntityId
+              } is missing`,
+            );
+            continue;
+          }
         }
       } else if (candidate.reviewStatus !== "rejected") {
         run(
@@ -317,6 +331,51 @@ async function reuseOrMarkStaleEntityDecisions(
   if (changed) {
     reconcileRelationshipCandidates(store);
   }
+}
+
+function markEntityReplayConflict(
+  store: WorkbenchStore,
+  hint: EntityDecisionHint,
+  priorDecisionState: "accepted" | "merged",
+  resolvedEntityId: string,
+  conflictReason: string,
+): void {
+  const reviewItem = queryOne<{
+    reason: string;
+    defaultAction: string;
+    detailsJson: string;
+  }>(
+    store.db,
+    `select reason,
+            default_action as defaultAction,
+            details_json as detailsJson
+     from review_items
+     where subject_id = ? and item_type = 'entity_candidate'`,
+    [hint.candidateId],
+  );
+  if (!reviewItem) return;
+  const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
+  details.priorDecisionState = priorDecisionState;
+  details.priorResolvedEntityId = resolvedEntityId;
+  details.factSignature = hint.factSignature;
+  details.evidenceHash = hint.evidenceHash;
+  details.replayConflict = true;
+  const reason = reviewItem.reason.includes(conflictReason)
+    ? reviewItem.reason
+    : `${reviewItem.reason} (${conflictReason})`;
+  run(
+    store.db,
+    `update review_items
+     set reason = ?, default_action = ?, details_json = ?, status = 'open', updated_at = ?
+     where subject_id = ? and item_type = 'entity_candidate'`,
+    [
+      reason,
+      reviewItem.defaultAction,
+      JSON.stringify(details),
+      nowIso(),
+      hint.candidateId,
+    ],
+  );
 }
 
 async function reuseOrMarkStaleLegalRefDecisions(
@@ -758,13 +817,13 @@ function mergeAcceptedEntityCandidate(
   store: WorkbenchStore,
   candidateId: string,
   entityId: string,
-): void {
+): boolean {
   const entity = queryOne<{ mergedCandidateIds: string }>(
     store.db,
     "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = ?",
     [entityId],
   );
-  if (!entity) return;
+  if (!entity) return false;
   const merged = JSON.parse(entity.mergedCandidateIds) as string[];
   if (!merged.includes(candidateId)) {
     merged.push(candidateId);
@@ -777,6 +836,7 @@ function mergeAcceptedEntityCandidate(
   run(store.db, "update entity_candidates set review_status = 'accepted' where candidate_id = ?", [
     candidateId,
   ]);
+  return true;
 }
 
 function entityFactSignature(

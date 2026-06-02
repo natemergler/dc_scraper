@@ -870,6 +870,78 @@ Deno.test("changed entity evidence after a prior merge becomes stale review work
   assertStringIncludes(staleItem.reason, "changed since a prior merged decision");
 });
 
+Deno.test("missing resolved merge target returns unchanged entity refetch to review instead of silently resolving it", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.existing_board', 'Existing Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_merge_conflict_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: firstCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: firstCandidateId,
+      payload: {
+        entityId: "dc.existing_board",
+        candidateIds: [firstCandidateId],
+      },
+    },
+    resolutionsDir,
+  );
+  workbench.db.prepare("delete from canonical_entities where entity_id = 'dc.existing_board'")
+    .run();
+
+  const secondCandidateId = "candidate.test.signature.entities.example_merge_conflict_v2";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: secondCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+    }),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const conflictItem = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "pending");
+  assert(conflictItem);
+  assertEquals(conflictItem.details.priorDecisionState, "merged");
+  assertEquals(conflictItem.details.priorResolvedEntityId, "dc.existing_board");
+  assertEquals(conflictItem.details.replayConflict, true);
+  assertStringIncludes(
+    conflictItem.reason,
+    "prior merged decision could not be replayed because resolved entity dc.existing_board is missing",
+  );
+});
+
 Deno.test("accepted legal ref decisions are reused across refetch when legal ref ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
