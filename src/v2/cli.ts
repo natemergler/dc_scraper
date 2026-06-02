@@ -22,6 +22,8 @@ interface ReleaseManifest {
     legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
     open_review_item_count?: number;
     deferred_review_item_count?: number;
+    stale_review_item_count?: number;
+    stale_review_by_prior_decision_state?: Array<{ prior_decision_state: string; count: number }>;
     blocked_reconciliation_count?: number;
     blocked_reconciliation_by_source?: Array<{ source_id: string; count: number }>;
     placeholder_entity_count?: number;
@@ -42,6 +44,17 @@ interface WorkbenchStatusSnapshot {
   review: {
     open: number;
     deferred: number;
+  };
+  staleReview: {
+    count: number;
+    byPriorDecisionState: Array<{ priorDecisionState: string; count: number }>;
+    firstStale?: {
+      reviewItemId: string;
+      itemType: string;
+      subjectId: string;
+      reason: string;
+      priorDecisionState?: string;
+    };
   };
   placeholders: {
     count: number;
@@ -396,6 +409,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const openReview = workbench.listReviewItems({ status: "open" }).length;
   const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
+  const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
   const reconciliation = workbench.reconciliationSummary();
   const entities = workbench.canonicalEntities().length;
@@ -416,6 +430,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
       open: openReview,
       deferred: deferredReview,
     },
+    staleReview,
     placeholders,
     reconciliation: {
       blocked: reconciliation.blockedCount,
@@ -463,6 +478,11 @@ function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
     `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
+    `Stale review: ${status.staleReview.count}${
+      status.staleReview.firstStale?.priorDecisionState
+        ? ` from prior ${status.staleReview.firstStale.priorDecisionState} decision`
+        : ""
+    }`,
     `Placeholders: ${status.placeholders.count}${
       status.placeholders.firstPlaceholder
         ? ` first ${status.placeholders.firstPlaceholder.name}${
@@ -502,11 +522,14 @@ function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): str
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
     `Review status: open=${summary.open_review_item_count ?? 0}, deferred=${
       summary.deferred_review_item_count ?? 0
-    }, blocked=${summary.blocked_reconciliation_count ?? 0}, placeholders=${
-      summary.placeholder_entity_count ?? 0
-    }`,
+    }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
+      summary.blocked_reconciliation_count ?? 0
+    }, placeholders=${summary.placeholder_entity_count ?? 0}`,
     `Blocked by source: ${
       renderNamedCounts(summary.blocked_reconciliation_by_source ?? [], "source_id")
+    }`,
+    `Stale by prior decision: ${
+      renderNamedCounts(summary.stale_review_by_prior_decision_state ?? [], "prior_decision_state")
     }`,
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,

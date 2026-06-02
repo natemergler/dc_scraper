@@ -534,6 +534,109 @@ Deno.test("changed entity evidence after a prior accept becomes stale review wor
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("accepted legal ref decisions are reused across refetch when legal ref ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.code_v1",
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: "legal.test.signature.legal_refs.code_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.code_v2",
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = 'legal.test.signature.legal_refs.code_v1'",
+  ).get() as { payloadJson: string };
+  const secondLegalRef = workbench.db.prepare(
+    "select review_status as reviewStatus from legal_refs where legal_ref_id = 'legal.test.signature.legal_refs.code_v2'",
+  ).get() as { reviewStatus: string };
+  const openItems = workbench.listReviewItems({ mode: "legal", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(payload.fact_signature ?? "", "legal_ref:test.signature.legal_refs");
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(secondLegalRef.reviewStatus, "accepted");
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed legal ref evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.code_v1",
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: "legal.test.signature.legal_refs.code_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.code_v2",
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22?changed=1",
+    ),
+    dataDir,
+  );
+
+  const secondLegalRef = workbench.db.prepare(
+    "select review_status as reviewStatus from legal_refs where legal_ref_id = 'legal.test.signature.legal_refs.code_v2'",
+  ).get() as { reviewStatus: string };
+  const staleItem = workbench.listReviewItems({
+    mode: "legal",
+    status: "open",
+  }).find((item) => item.subjectId === "legal.test.signature.legal_refs.code_v2");
+  workbench.close();
+
+  assertEquals(secondLegalRef.reviewStatus, "pending");
+  assert(staleItem);
+  assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
 Deno.test("status json reports blocked reconciliation counts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -815,6 +918,60 @@ function syntheticEntitySourceResult(candidateId: string, observedName: string):
             name: "Example Body",
             kind: "board",
           },
+        }],
+      },
+    }],
+  };
+}
+
+function syntheticLegalRefSourceResult(
+  legalRefId: string,
+  citationText: string,
+  url: string,
+): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.signature.legal_refs",
+      title: "Test Signature Legal Refs",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/signature-legal-refs",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.signature.legal_refs.main",
+        sourceId: "test.signature.legal_refs",
+        title: "Signature legal ref rows",
+        kind: "fixture",
+        url: "https://example.com/signature-legal-refs",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/signature-legal-refs",
+        contentText: JSON.stringify({ legalRefId, citationText, url }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "example-legal-row",
+          itemType: "fixture_row",
+          title: "Example legal row",
+          body: { citationText, url },
+        }],
+        legalRefs: [{
+          legalRefId,
+          sourceItemKey: "example-legal-row",
+          refType: "dc_code",
+          citationText,
+          normalizedCitation: "D.C. Code 1-204.22",
+          url,
+          evidence: [{
+            fieldPath: "citation",
+            observedValue: citationText,
+          }],
         }],
       },
     }],

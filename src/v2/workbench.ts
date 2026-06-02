@@ -32,6 +32,7 @@ import {
   listReviewItems as readReviewQueue,
   nextReviewItem as peekNextReviewItem,
   type ReviewItemFilters,
+  staleReviewSummary as readStaleReviewSummary,
 } from "./workbench/review.ts";
 import {
   canonicalEntities as readCanonicalEntities,
@@ -107,6 +108,10 @@ export class Workbench implements WorkbenchStore {
 
   nextReviewItem(filters?: string | ReviewItemFilters): ReviewItemRecord | undefined {
     return peekNextReviewItem(this, filters);
+  }
+
+  staleReviewSummary(): ReturnType<typeof readStaleReviewSummary> {
+    return readStaleReviewSummary(this);
   }
 
   async appendResolutionEvent(

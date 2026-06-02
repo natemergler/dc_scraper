@@ -31,6 +31,12 @@ interface EntityDecisionHint {
   evidenceHash: string;
 }
 
+interface LegalRefDecisionHint {
+  legalRefId: string;
+  factSignature: string;
+  evidenceHash: string;
+}
+
 export async function importConnectorResult(
   store: WorkbenchStore,
   result: ConnectorResult,
@@ -65,6 +71,13 @@ export async function importConnectorResult(
       ? await Promise.all(
         endpointResult.parsed.entityCandidates.map((candidate) =>
           buildEntityDecisionHint(endpointResult.endpoint.sourceId, candidate)
+        ),
+      )
+      : [];
+    const legalRefDecisionHints = endpointResult.parsed?.legalRefs
+      ? await Promise.all(
+        endpointResult.parsed.legalRefs.map((legalRef) =>
+          buildLegalRefDecisionHint(endpointResult.endpoint.sourceId, legalRef)
         ),
       )
       : [];
@@ -107,6 +120,7 @@ export async function importConnectorResult(
           );
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
+        await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
       }
       run(
         store.db,
@@ -133,6 +147,17 @@ async function buildEntityDecisionHint(
     proposedEntityId: candidate.proposedEntityId,
     factSignature: entityFactSignature(sourceId, candidate),
     evidenceHash: await entityEvidenceHash(candidate),
+  };
+}
+
+async function buildLegalRefDecisionHint(
+  sourceId: string,
+  legalRef: LegalRefInput,
+): Promise<LegalRefDecisionHint> {
+  return {
+    legalRefId: legalRef.legalRefId,
+    factSignature: legalRefFactSignature(sourceId, legalRef),
+    evidenceHash: await legalRefEvidenceHash(legalRef),
   };
 }
 
@@ -226,6 +251,91 @@ async function reuseOrMarkStaleEntityDecisions(
   }
 }
 
+async function reuseOrMarkStaleLegalRefDecisions(
+  store: WorkbenchStore,
+  hints: LegalRefDecisionHint[],
+): Promise<void> {
+  for (const hint of hints) {
+    const priorDecision = queryOne<{
+      eventType: string;
+      evidenceHash?: string | null;
+      resolvedRefType?: string | null;
+      resolvedNormalizedCitation?: string | null;
+      resolvedUrl?: string | null;
+    }>(
+      store.db,
+      `select event_type as eventType,
+              json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+              json_extract(payload_json, '$.resolved_ref_type') as resolvedRefType,
+              json_extract(payload_json, '$.resolved_normalized_citation') as resolvedNormalizedCitation,
+              json_extract(payload_json, '$.resolved_url') as resolvedUrl
+       from resolution_events
+       where event_type in ('accept_legal_ref', 'reject_legal_ref')
+         and json_extract(payload_json, '$.fact_signature') = ?
+       order by created_at desc, event_id desc
+       limit 1`,
+      [hint.factSignature],
+    );
+    if (!priorDecision?.evidenceHash) continue;
+
+    if (priorDecision.evidenceHash === hint.evidenceHash) {
+      const legalRef = queryOne<{ reviewStatus: string }>(
+        store.db,
+        "select review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+        [hint.legalRefId],
+      );
+      if (!legalRef) continue;
+      if (priorDecision.eventType === "accept_legal_ref") {
+        if (legalRef.reviewStatus !== "accepted") {
+          reuseAcceptedLegalRefDecision(store, hint.legalRefId, priorDecision);
+        }
+      } else if (legalRef.reviewStatus !== "rejected") {
+        run(
+          store.db,
+          "update legal_refs set review_status = 'rejected' where legal_ref_id = ?",
+          [hint.legalRefId],
+        );
+      }
+      run(
+        store.db,
+        "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'legal_ref'",
+        [nowIso(), hint.legalRefId],
+      );
+      continue;
+    }
+
+    const reviewItem = queryOne<{ reason: string; detailsJson: string }>(
+      store.db,
+      "select reason, details_json as detailsJson from review_items where subject_id = ? and item_type = 'legal_ref'",
+      [hint.legalRefId],
+    );
+    if (!reviewItem) continue;
+    const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
+    const priorDecisionState = priorDecision.eventType === "accept_legal_ref"
+      ? "accepted"
+      : "rejected";
+    details.priorDecisionState = priorDecisionState;
+    details.stalePriorDecision = true;
+    details.factSignature = hint.factSignature;
+    details.evidenceHash = hint.evidenceHash;
+    const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
+    const staleReason = reviewItem.reason.includes(staleSuffix)
+      ? reviewItem.reason
+      : `${reviewItem.reason} (${staleSuffix})`;
+    run(
+      store.db,
+      "update review_items set reason = ?, default_action = ?, details_json = ?, status = 'open', updated_at = ? where subject_id = ? and item_type = 'legal_ref'",
+      [
+        staleReason,
+        priorDecisionState === "accepted" ? "accept" : "reject",
+        JSON.stringify(details),
+        nowIso(),
+        hint.legalRefId,
+      ],
+    );
+  }
+}
+
 function mergeAcceptedEntityCandidate(
   store: WorkbenchStore,
   candidateId: string,
@@ -278,6 +388,64 @@ async function entityEvidenceHash(
       left.observedValue.localeCompare(right.observedValue)
     );
   return `sha256:${await sha256Hex(JSON.stringify(canonicalEvidence))}`;
+}
+
+function legalRefFactSignature(
+  sourceId: string,
+  legalRef: Pick<LegalRefInput, "sourceItemKey" | "refType" | "citationText">,
+): string {
+  return [
+    "legal_ref",
+    sourceId,
+    legalRef.sourceItemKey,
+    legalRef.refType,
+    slugify(normalizeName(legalRef.citationText)),
+  ].join(":");
+}
+
+async function legalRefEvidenceHash(
+  legalRef: Pick<
+    LegalRefInput,
+    "evidence" | "refType" | "citationText" | "normalizedCitation" | "url"
+  >,
+): Promise<string> {
+  const canonicalEvidence = {
+    refType: legalRef.refType,
+    citationText: legalRef.citationText,
+    normalizedCitation: legalRef.normalizedCitation ?? null,
+    url: legalRef.url ?? null,
+    evidence: legalRef.evidence
+      .map((row) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      }))
+      .sort((left, right) =>
+        left.fieldPath.localeCompare(right.fieldPath) ||
+        left.observedValue.localeCompare(right.observedValue)
+      ),
+  };
+  return `sha256:${await sha256Hex(JSON.stringify(canonicalEvidence))}`;
+}
+
+function reuseAcceptedLegalRefDecision(
+  store: WorkbenchStore,
+  legalRefId: string,
+  priorDecision: {
+    resolvedRefType?: string | null;
+    resolvedNormalizedCitation?: string | null;
+    resolvedUrl?: string | null;
+  },
+): void {
+  run(
+    store.db,
+    "update legal_refs set ref_type = coalesce(?, ref_type), normalized_citation = ?, url = coalesce(?, url), review_status = 'accepted' where legal_ref_id = ?",
+    [
+      priorDecision.resolvedRefType ?? null,
+      priorDecision.resolvedNormalizedCitation ?? null,
+      priorDecision.resolvedUrl ?? null,
+      legalRefId,
+    ],
+  );
 }
 
 function importParsedOutput(

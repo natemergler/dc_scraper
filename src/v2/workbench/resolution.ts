@@ -52,9 +52,15 @@ async function enrichResolutionEvent(
   event: ResolutionEventInput,
 ): Promise<ResolutionEventInput> {
   if (
-    event.eventType !== "accept_entity_candidate" && event.eventType !== "reject_entity_candidate"
+    event.eventType !== "accept_entity_candidate" &&
+    event.eventType !== "reject_entity_candidate" &&
+    event.eventType !== "accept_legal_ref" &&
+    event.eventType !== "reject_legal_ref"
   ) {
     return event;
+  }
+  if (event.eventType === "accept_legal_ref" || event.eventType === "reject_legal_ref") {
+    return await enrichLegalRefResolutionEvent(store, event);
   }
   const candidate = queryOne<{
     sourceId: string;
@@ -109,6 +115,87 @@ async function enrichResolutionEvent(
         ? {
           resolved_entity_id: event.payload.resolved_entity_id ?? event.payload.entityId ??
             candidate.proposedEntityId,
+        }
+        : {}),
+    },
+  };
+}
+
+async function enrichLegalRefResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const legalRef = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    refType: string;
+    citationText: string;
+    normalizedCitation?: string | null;
+    url?: string | null;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            legal_refs.ref_type as refType,
+            legal_refs.citation_text as citationText,
+            legal_refs.normalized_citation as normalizedCitation,
+            legal_refs.url as url
+     from legal_refs
+     join source_items on source_items.source_item_id = legal_refs.source_item_id
+     where legal_refs.legal_ref_id = ?`,
+    [event.subjectId],
+  );
+  if (!legalRef) return event;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from legal_ref_evidence
+     where legal_ref_id = ?
+     order by field_path, observed_value`,
+  ).all(event.subjectId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const parsed = parseLegalReference(legalRef.citationText, legalRef.url ?? undefined);
+  const inferredRefType = legalRef.refType === "unknown" ? parsed.refType : legalRef.refType;
+  const resolvedRefType = String(event.payload.refType ?? inferredRefType);
+  const resolvedNormalizedCitation = event.payload.normalizedCitation === null ? null : String(
+    event.payload.normalizedCitation ??
+      legalRef.normalizedCitation ??
+      parsed.normalizedCitation ??
+      "",
+  ) || null;
+  const factSignature = [
+    "legal_ref",
+    legalRef.sourceId,
+    legalRef.itemKey,
+    legalRef.refType,
+    slugify(normalizeName(legalRef.citationText)),
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify({
+      refType: legalRef.refType,
+      citationText: legalRef.citationText,
+      normalizedCitation: legalRef.normalizedCitation ?? null,
+      url: legalRef.url ?? null,
+      evidence: evidenceRows.map((row) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      })),
+    }),
+  )}`;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? factSignature,
+      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
+      ...(event.eventType === "accept_legal_ref"
+        ? {
+          resolved_ref_type: event.payload.resolved_ref_type ?? resolvedRefType,
+          resolved_normalized_citation: event.payload.resolved_normalized_citation ??
+            resolvedNormalizedCitation,
+          resolved_url: event.payload.resolved_url ?? legalRef.url ?? null,
         }
         : {}),
     },

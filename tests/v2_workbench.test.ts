@@ -11,7 +11,12 @@ import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
-import { buildEntityId, parseLegalReference } from "../src/v2/domain.ts";
+import {
+  buildEntityId,
+  buildReviewItemId,
+  type ConnectorResult,
+  parseLegalReference,
+} from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
@@ -1575,6 +1580,98 @@ Deno.test("status surfaces placeholder risk with readable reason", async () => {
     jsonStatus.placeholders.byReason.some((row) =>
       row.reason === "fixture placeholder" && row.count === 1
     ),
+  );
+});
+
+Deno.test("status surfaces stale review debt from prior decisions", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.signature.entities.example_v1", "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.signature.entities.example_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(
+      "candidate.test.signature.entities.example_v2",
+      "Example Body (Updated Source Text)",
+    ),
+    dataDir,
+  );
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  assertStringIncludes(statusText, "Stale review: 1");
+  assertStringIncludes(statusText, "accepted");
+
+  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(jsonStatusOutput.code, 0);
+  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+    staleReview: {
+      count: number;
+      byPriorDecisionState: Array<{ priorDecisionState: string; count: number }>;
+      firstStale?: {
+        subjectId: string;
+        priorDecisionState?: string;
+        reason: string;
+      };
+    };
+  };
+  assertEquals(jsonStatus.staleReview.count, 1);
+  assert(
+    jsonStatus.staleReview.byPriorDecisionState.some((row) =>
+      row.priorDecisionState === "accepted" && row.count === 1
+    ),
+  );
+  assertEquals(
+    jsonStatus.staleReview.firstStale?.subjectId,
+    "candidate.test.signature.entities.example_v2",
+  );
+  assertEquals(jsonStatus.staleReview.firstStale?.priorDecisionState, "accepted");
+  assertStringIncludes(
+    jsonStatus.staleReview.firstStale?.reason ?? "",
+    "changed since a prior accepted decision",
   );
 });
 
@@ -3963,6 +4060,103 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   );
 });
 
+Deno.test("release summary surfaces stale review debt neutrally", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.signature.entities.example_v1", "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.signature.entities.example_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(
+      "candidate.test.signature.entities.example_v2",
+      "Example Body (Updated Source Text)",
+    ),
+    dataDir,
+  );
+
+  await buildV2Release(workbench, outDir);
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
+    release_summary: {
+      stale_review_item_count: number;
+      stale_review_by_prior_decision_state: Array<{ prior_decision_state: string; count: number }>;
+      review_status_note: string;
+    };
+  };
+  const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  workbench.close();
+
+  assertEquals(manifest.release_summary.stale_review_item_count, 1);
+  assert(
+    manifest.release_summary.stale_review_by_prior_decision_state.some((row) =>
+      row.prior_decision_state === "accepted" && row.count === 1
+    ),
+  );
+  assertStringIncludes(manifest.release_summary.review_status_note, "stale review=1");
+  assertStringIncludes(readme, "stale review: 1");
+
+  const inspectOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+    ],
+  }).output();
+  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  assertEquals(inspectOutput.code, 0);
+  assertStringIncludes(inspectText, "stale=1");
+
+  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+      "--json",
+    ],
+  }).output();
+  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+    releaseSummary: {
+      stale_review_item_count: number;
+      stale_review_by_prior_decision_state: Array<{ prior_decision_state: string; count: number }>;
+    };
+  };
+  assertEquals(inspectJsonOutput.code, 0);
+  assertEquals(inspectJson.releaseSummary.stale_review_item_count, 1);
+  assert(
+    inspectJson.releaseSummary.stale_review_by_prior_decision_state.some((row) =>
+      row.prior_decision_state === "accepted" && row.count === 1
+    ),
+  );
+});
+
 Deno.test("release builder rejects email-shaped contact info in release rows", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -4499,3 +4693,63 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   reopened.close();
   assertEquals(deferred.length, 1);
 });
+
+function syntheticEntitySourceResult(candidateId: string, observedName: string): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.signature.entities",
+      title: "Test Signature Entities",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/signature-entities",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.signature.entities.main",
+        sourceId: "test.signature.entities",
+        title: "Signature entity rows",
+        kind: "fixture",
+        url: "https://example.com/signature-entities",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/signature-entities",
+        contentText: JSON.stringify({ candidateId, observedName }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "example-row",
+          itemType: "fixture_row",
+          title: "Example row",
+          body: { observedName },
+        }],
+        entityCandidates: [{
+          candidateId,
+          sourceItemKey: "example-row",
+          proposedEntityId: buildEntityId("Example Body"),
+          name: "Example Body",
+          kind: "board",
+          evidence: [{
+            fieldPath: "name",
+            observedValue: observedName,
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: buildReviewItemId(candidateId, "entity-review"),
+          itemType: "entity_candidate",
+          subjectId: candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "accept",
+          details: {
+            name: "Example Body",
+            kind: "board",
+          },
+        }],
+      },
+    }],
+  };
+}
