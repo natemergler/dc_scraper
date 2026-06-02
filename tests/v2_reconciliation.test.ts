@@ -1,7 +1,11 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
-import { buildReviewItemId, type ConnectorResult } from "../src/v2/domain.ts";
+import {
+  buildReviewItemId,
+  type ConnectorResult,
+  type RelationshipType,
+} from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   councilCommitteeHealthDetailFixture,
@@ -146,6 +150,89 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
     after.some((item) =>
       item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
     ),
+  );
+  assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("merging a prerequisite entity candidate reprocesses blocked relationships into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reprocess.merge.relationships",
+      relationshipCandidateId: "relationship.test.reprocess.merge",
+      sourceItemKey: "merge-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.merged_target",
+      relationshipType: "governed_by",
+      rawValue: "Merged Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reprocess.merge.entities",
+      candidateId: "candidate.test.reprocess.merge",
+      sourceItemKey: "merge-entity-row",
+      proposedEntityId: "dc.unmerged_target",
+      name: "Merged Target",
+      kind: "agency",
+      observedName: "Merged Target",
+    }),
+    dataDir,
+  );
+
+  const before = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reprocess",
+  });
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reprocess.merge'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: "candidate.test.reprocess.merge",
+      payload: {
+        entityId: "dc.merged_target",
+        candidateIds: ["candidate.test.reprocess.merge"],
+      },
+    },
+    resolutionsDir,
+  );
+
+  const after = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reprocess",
+  });
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reprocess.merge'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const mergedTarget = workbench.db.prepare(
+    "select review_status as reviewStatus from canonical_entities where entity_id = 'dc.merged_target'",
+  ).get() as { reviewStatus: string };
+  workbench.close();
+
+  assertEquals(before.length, 0);
+  assertEquals(blockedBefore.count, 1);
+  assertEquals(mergedTarget.reviewStatus, "accepted");
+  assert(
+    after.some((item) => item.subjectId === "relationship.test.reprocess.merge"),
   );
   assertEquals(blockedAfter.count, 0);
 });
@@ -900,6 +987,134 @@ Deno.test("changed relationship evidence after a prior reject becomes stale revi
   assertStringIncludes(staleItem.reason, "changed since a prior rejected decision");
 });
 
+Deno.test("deferred relationship review decisions are reused across refetch when candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(firstCandidateId, "Target Agency"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstCandidateId, "governed_by"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(secondCandidateId, "Target Agency"),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = ?",
+  ).get(buildReviewItemId(firstCandidateId, "governed_by")) as { payloadJson: string };
+  const deferredItems = workbench.listReviewItems({
+    mode: "relationships",
+    status: "deferred",
+  });
+  const openItems = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+  });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(
+    payload.fact_signature ?? "",
+    "relationship_candidate:test.signature.relationships",
+  );
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(
+    deferredItems.some((item) => item.subjectId === secondCandidateId),
+    true,
+  );
+  assertEquals(deferredItems.length, 1);
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed relationship evidence after a prior defer becomes stale open review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(firstCandidateId, "Target Agency"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstCandidateId, "governed_by"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(secondCandidateId, "Target Agency (Updated Source Text)"),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  const deferredItems = workbench.listReviewItems({
+    mode: "relationships",
+    status: "deferred",
+  });
+  workbench.close();
+
+  assert(staleItem);
+  assertEquals(staleItem.status, "open");
+  assertEquals(staleItem.details.priorDecisionState, "deferred");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior deferred decision");
+  assertEquals(deferredItems.length, 0);
+});
+
 Deno.test("status json reports blocked reconciliation counts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1187,6 +1402,77 @@ function syntheticEntitySourceResult(candidateId: string, observedName: string):
   };
 }
 
+function syntheticCustomEntitySourceResult(input: {
+  sourceId: string;
+  candidateId: string;
+  sourceItemKey: string;
+  proposedEntityId: string;
+  name: string;
+  kind: string;
+  observedName: string;
+}): ConnectorResult {
+  return {
+    source: {
+      sourceId: input.sourceId,
+      title: "Test Custom Entities",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: `https://example.com/${input.sourceId}`,
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: `${input.sourceId}.main`,
+        sourceId: input.sourceId,
+        title: "Custom entity rows",
+        kind: "fixture",
+        url: `https://example.com/${input.sourceId}`,
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: `https://example.com/${input.sourceId}`,
+        contentText: JSON.stringify({
+          candidateId: input.candidateId,
+          observedName: input.observedName,
+        }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: input.sourceItemKey,
+          itemType: "fixture_row",
+          title: "Custom entity row",
+          body: { observedName: input.observedName },
+        }],
+        entityCandidates: [{
+          candidateId: input.candidateId,
+          sourceItemKey: input.sourceItemKey,
+          proposedEntityId: input.proposedEntityId,
+          name: input.name,
+          kind: input.kind,
+          evidence: [{
+            fieldPath: "name",
+            observedValue: input.observedName,
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: buildReviewItemId(input.candidateId, "entity-review"),
+          itemType: "entity_candidate",
+          subjectId: input.candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "accept",
+          details: {
+            name: input.name,
+            kind: input.kind,
+          },
+        }],
+      },
+    }],
+  };
+}
+
 function syntheticLegalRefSourceResult(
   legalRefId: string,
   citationText: string,
@@ -1245,21 +1531,41 @@ function syntheticRelationshipSourceResult(
   relationshipCandidateId: string,
   rawValue: string,
 ): ConnectorResult {
+  return syntheticCustomRelationshipSourceResult({
+    sourceId: "test.signature.relationships",
+    relationshipCandidateId,
+    sourceItemKey: "example-relationship-row",
+    fromEntityRef: "dc.source_board",
+    toEntityRef: "dc.target_agency",
+    relationshipType: "governed_by",
+    rawValue,
+  });
+}
+
+function syntheticCustomRelationshipSourceResult(input: {
+  sourceId: string;
+  relationshipCandidateId: string;
+  sourceItemKey: string;
+  fromEntityRef: string;
+  toEntityRef: string;
+  relationshipType: RelationshipType;
+  rawValue: string;
+}): ConnectorResult {
   return {
     source: {
-      sourceId: "test.signature.relationships",
+      sourceId: input.sourceId,
       title: "Test Signature Relationships",
       kind: "fixture",
       accessMethod: "fixture",
-      baseUrl: "https://example.com/signature-relationships",
+      baseUrl: `https://example.com/${input.sourceId}`,
     },
     endpointResults: [{
       endpoint: {
-        endpointId: "test.signature.relationships.main",
-        sourceId: "test.signature.relationships",
+        endpointId: `${input.sourceId}.main`,
+        sourceId: input.sourceId,
         title: "Signature relationship rows",
         kind: "fixture",
-        url: "https://example.com/signature-relationships",
+        url: `https://example.com/${input.sourceId}`,
         method: "GET",
         captureMode: "rows",
       },
@@ -1267,27 +1573,30 @@ function syntheticRelationshipSourceResult(
       artifacts: [{
         kind: "rows",
         extension: "json",
-        fetchedUrl: "https://example.com/signature-relationships",
-        contentText: JSON.stringify({ relationshipCandidateId, rawValue }),
+        fetchedUrl: `https://example.com/${input.sourceId}`,
+        contentText: JSON.stringify({
+          relationshipCandidateId: input.relationshipCandidateId,
+          rawValue: input.rawValue,
+        }),
       }],
       parsed: {
         items: [{
-          itemKey: "example-relationship-row",
+          itemKey: input.sourceItemKey,
           itemType: "fixture_row",
           title: "Example relationship row",
-          body: { rawValue },
+          body: { rawValue: input.rawValue },
         }],
         relationshipCandidates: [{
-          relationshipCandidateId,
-          sourceItemKey: "example-relationship-row",
-          fromEntityRef: "dc.source_board",
-          toEntityRef: "dc.target_agency",
-          relationshipType: "governed_by",
-          rawValue,
+          relationshipCandidateId: input.relationshipCandidateId,
+          sourceItemKey: input.sourceItemKey,
+          fromEntityRef: input.fromEntityRef,
+          toEntityRef: input.toEntityRef,
+          relationshipType: input.relationshipType,
+          rawValue: input.rawValue,
           needsReview: true,
           evidence: [{
             fieldPath: "governingAgency",
-            observedValue: rawValue,
+            observedValue: input.rawValue,
           }],
         }],
       },

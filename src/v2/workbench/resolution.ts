@@ -51,6 +51,9 @@ async function enrichResolutionEvent(
   store: WorkbenchStore,
   event: ResolutionEventInput,
 ): Promise<ResolutionEventInput> {
+  if (event.eventType === "defer_review_item" || event.eventType === "reopen_review_item") {
+    return await enrichReviewStatusResolutionEvent(store, event);
+  }
   if (
     event.eventType !== "accept_entity_candidate" &&
     event.eventType !== "reject_entity_candidate" &&
@@ -129,10 +132,76 @@ async function enrichResolutionEvent(
   };
 }
 
+async function enrichReviewStatusResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const reviewItem = queryOne<{
+    itemType: string;
+    subjectId: string;
+  }>(
+    store.db,
+    `select item_type as itemType,
+            subject_id as subjectId
+     from review_items
+     where review_item_id = ?`,
+    [event.subjectId],
+  );
+  if (!reviewItem || reviewItem.itemType !== "relationship_candidate") return event;
+  const metadata = await relationshipResolutionMetadata(store, reviewItem.subjectId);
+  if (!metadata) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      review_item_type: event.payload.review_item_type ?? reviewItem.itemType,
+      review_subject_id: event.payload.review_subject_id ?? reviewItem.subjectId,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+    },
+  };
+}
+
 async function enrichRelationshipResolutionEvent(
   store: WorkbenchStore,
   event: ResolutionEventInput,
 ): Promise<ResolutionEventInput> {
+  const metadata = await relationshipResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+      ...(event.eventType === "accept_relationship_candidate"
+        ? {
+          resolved_relationship_type: event.payload.resolved_relationship_type ??
+            event.payload.relationshipType ??
+            metadata.relationshipType,
+          resolved_from_entity_id: event.payload.resolved_from_entity_id ??
+            event.payload.fromEntityId ??
+            metadata.fromEntityRef,
+          resolved_to_entity_id: event.payload.resolved_to_entity_id ?? event.payload.toEntityId ??
+            metadata.toEntityRef,
+        }
+        : {}),
+    },
+  };
+}
+
+async function relationshipResolutionMetadata(
+  store: WorkbenchStore,
+  relationshipCandidateId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    relationshipType: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+  } | undefined
+> {
   const candidate = queryOne<{
     sourceId: string;
     itemKey: string;
@@ -153,16 +222,16 @@ async function enrichRelationshipResolutionEvent(
      from relationship_candidates
      join source_items on source_items.source_item_id = relationship_candidates.source_item_id
      where relationship_candidates.relationship_candidate_id = ?`,
-    [event.subjectId],
+    [relationshipCandidateId],
   );
-  if (!candidate) return event;
+  if (!candidate) return undefined;
   const evidenceRows = store.db.prepare(
     `select field_path as fieldPath,
             observed_value as observedValue
      from relationship_candidate_evidence
      where relationship_candidate_id = ?
      order by field_path, observed_value`,
-  ).all(event.subjectId) as Array<{
+  ).all(relationshipCandidateId) as Array<{
     fieldPath: string;
     observedValue: string;
   }>;
@@ -185,24 +254,11 @@ async function enrichRelationshipResolutionEvent(
     }),
   )}`;
   return {
-    ...event,
-    payload: {
-      ...event.payload,
-      fact_signature: event.payload.fact_signature ?? factSignature,
-      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
-      ...(event.eventType === "accept_relationship_candidate"
-        ? {
-          resolved_relationship_type: event.payload.resolved_relationship_type ??
-            event.payload.relationshipType ??
-            candidate.relationshipType,
-          resolved_from_entity_id: event.payload.resolved_from_entity_id ??
-            event.payload.fromEntityId ??
-            candidate.fromEntityRef,
-          resolved_to_entity_id: event.payload.resolved_to_entity_id ?? event.payload.toEntityId ??
-            candidate.toEntityRef,
-        }
-        : {}),
-    },
+    factSignature,
+    evidenceHash,
+    relationshipType: candidate.relationshipType,
+    fromEntityRef: candidate.fromEntityRef,
+    toEntityRef: candidate.toEntityRef,
   };
 }
 
