@@ -21,6 +21,7 @@ interface CanonicalEndpointRow {
 
 interface CandidateEndpointStatusRow {
   reviewStatus: string;
+  stalePriorDecision?: number | null;
 }
 
 export interface ReconciliationSummary {
@@ -60,6 +61,7 @@ type EndpointState =
   | "missing"
   | "pending_candidate"
   | "placeholder"
+  | "stale_candidate"
   | "rejected_candidate";
 
 interface EndpointStatus {
@@ -229,9 +231,20 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
   }
   const statuses = queryAll<CandidateEndpointStatusRow>(
     store.db,
-    "select review_status as reviewStatus from entity_candidates where proposed_entity_id = ?",
+    `select entity_candidates.review_status as reviewStatus,
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
+     from entity_candidates
+     left join review_items
+       on review_items.subject_id = entity_candidates.candidate_id
+      and review_items.item_type = 'entity_candidate'
+     where entity_candidates.proposed_entity_id = ?`,
     [entityId],
   );
+  if (
+    statuses.some((row) => row.reviewStatus === "pending" && row.stalePriorDecision === 1)
+  ) {
+    return { entityId, state: "stale_candidate" };
+  }
   if (statuses.some((row) => row.reviewStatus === "pending")) {
     return { entityId, state: "pending_candidate" };
   }
