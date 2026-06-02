@@ -37,6 +37,20 @@ interface WorkbenchStatusSnapshot {
     open: number;
     deferred: number;
   };
+  reconciliation: {
+    blocked: number;
+    firstBlockedSubjectId?: string;
+    firstBlockedReason?: string;
+    blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
+    blockedByReason: Array<{ reason: string; count: number }>;
+    firstBlocked?: {
+      subjectId: string;
+      reason: string;
+      relationshipType: string;
+      rawValue?: string | null;
+      blockers: Array<{ blockerId: string; blockerState: string }>;
+    };
+  };
   canonical: {
     entities: number;
     relationships: number;
@@ -363,6 +377,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const openReview = workbench.listReviewItems({ status: "open" }).length;
   const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
+  const reconciliation = workbench.reconciliationSummary();
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
   const next = nextCommand({
@@ -381,6 +396,14 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
       open: openReview,
       deferred: deferredReview,
     },
+    reconciliation: {
+      blocked: reconciliation.blockedCount,
+      firstBlockedSubjectId: reconciliation.firstBlocked?.subjectId,
+      firstBlockedReason: reconciliation.firstBlocked?.reason,
+      blockedByRelationshipType: reconciliation.blockedByRelationshipType,
+      blockedByReason: reconciliation.blockedByReason,
+      firstBlocked: reconciliation.firstBlocked,
+    },
     canonical: {
       entities,
       relationships,
@@ -396,6 +419,15 @@ function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
     `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
+    `Reconciliation: ${status.reconciliation.blocked} blocked${
+      status.reconciliation.blockedByRelationshipType.length > 0
+        ? ` (${
+          status.reconciliation.blockedByRelationshipType
+            .map((row) => `${row.relationshipType}=${row.count}`)
+            .join(", ")
+        })`
+        : ""
+    }`,
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Next: ${status.nextCommand}`,
   ].join("\n");

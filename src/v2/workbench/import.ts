@@ -2,6 +2,7 @@ import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } f
 import { run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ArtifactRecord {
@@ -337,6 +338,35 @@ function importParsedOutput(
     }
   }
   for (const reviewItem of parsed.reviewItems ?? []) {
+    if (reviewItem.itemType === "relationship_candidate") {
+      run(
+        store.db,
+        `insert into relationship_review_templates(
+           review_item_id, subject_id, reason, default_action, details_json, created_at, updated_at
+         ) values(
+           ?, ?, ?, ?, ?,
+           coalesce((select created_at from relationship_review_templates where review_item_id = ?), ?),
+           ?
+         )
+         on conflict(review_item_id) do update set
+           subject_id = excluded.subject_id,
+           reason = excluded.reason,
+           default_action = excluded.default_action,
+           details_json = excluded.details_json,
+           updated_at = excluded.updated_at`,
+        [
+          reviewItem.reviewItemId,
+          reviewItem.subjectId,
+          reviewItem.reason,
+          reviewItem.defaultAction,
+          JSON.stringify(reviewItem.details),
+          reviewItem.reviewItemId,
+          nowIso(),
+          nowIso(),
+        ],
+      );
+      continue;
+    }
     run(
       store.db,
       "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
@@ -354,6 +384,7 @@ function importParsedOutput(
       ],
     );
   }
+  reconcileRelationshipCandidates(store);
 }
 
 function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {

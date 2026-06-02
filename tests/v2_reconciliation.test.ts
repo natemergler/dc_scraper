@@ -1,0 +1,272 @@
+import { assert, assertEquals, assertRejects } from "@std/assert";
+import { join } from "@std/path";
+import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { Workbench } from "../src/v2/workbench.ts";
+import {
+  councilCommitteeHealthDetailFixture,
+  councilCommitteesFixture,
+  councilCommitteeWholeDetailFixture,
+  quickbaseAppointmentsCsvFixture,
+  quickbaseFixture,
+} from "./helpers/v2_fixtures.ts";
+
+Deno.test("quickbase relationship candidates with unresolved endpoints are blocked after import", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return quickbaseAppointmentsCsvFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const relationshipCandidates = workbench.db.prepare(
+    "select count(*) as count from relationship_candidates where review_status = 'pending'",
+  ).get() as { count: number };
+  const relationshipReviewItems = workbench.listReviewItems({ mode: "relationships" });
+  const blockedItems = workbench.db.prepare(
+    `select subject_id as subjectId,
+            state,
+            reason,
+            details_json as detailsJson
+     from reconciliation_items
+     where subject_type = 'relationship_candidate'
+     order by subject_id`,
+  ).all() as Array<{ subjectId: string; state: string; reason: string; detailsJson: string }>;
+  workbench.close();
+
+  assertEquals(relationshipCandidates.count > 0, true);
+  assertEquals(relationshipReviewItems.length, 0);
+  assert(blockedItems.length > 0);
+  assertEquals(
+    blockedItems.some((item) =>
+      item.subjectId ===
+        "relationship.mota.quickbase.district_of_columbia_rental_housing_commission_governed_by_office_of_housing_and_community_development_designee" &&
+      item.state === "blocked" &&
+      item.reason === "unresolved_endpoints"
+    ),
+    true,
+  );
+});
+
+Deno.test("accepting a prerequisite entity reprocesses blocked relationships into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const before = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.council.committees",
+  });
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const after = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.council.committees",
+  });
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(before.length, 0);
+  assertEquals(blockedBefore.count, 1);
+  assert(
+    after.some((item) =>
+      item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+    ),
+  );
+  assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  await assertRejects(
+    () =>
+      workbench.appendResolutionEvent(
+        {
+          eventType: "accept_relationship_candidate",
+          subjectId: "relationship.council.committees.committee_of_the_whole_part_of",
+          payload: {},
+        },
+        resolutionsDir,
+      ),
+    Error,
+    "Cannot accept blocked relationship candidate",
+  );
+
+  const placeholder = workbench.db.prepare(
+    "select count(*) as count from canonical_entities where is_placeholder = 1",
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(placeholder.count, 0);
+});
+
+Deno.test("status json reports blocked reconciliation counts", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return quickbaseAppointmentsCsvFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blocked: number;
+      firstBlockedReason?: string;
+      blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
+      firstBlocked?: {
+        subjectId: string;
+        relationshipType: string;
+        blockers: Array<{ blockerId: string; blockerState: string }>;
+      };
+    };
+  };
+
+  assertEquals(statusOutput.code, 0);
+  assert(status.reconciliation.blocked > 0);
+  assertEquals(status.reconciliation.firstBlockedReason, "unresolved_endpoints");
+  assert(
+    status.reconciliation.blockedByRelationshipType.some((row) =>
+      row.relationshipType === "governed_by" && row.count > 0
+    ),
+  );
+  assert(status.reconciliation.firstBlocked);
+  assert(status.reconciliation.firstBlocked.blockers.length > 0);
+});
