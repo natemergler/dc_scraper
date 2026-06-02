@@ -654,9 +654,147 @@ Deno.test("failed parsed imports keep artifacts but roll back partial typed rows
   assertEquals(counts, { artifacts: 1, items: 0, entityCandidates: 0 });
 });
 
-Deno.test("quickbase connector parses public CSV appointment rows into seats, statuses, authorities, and review items", async () => {
-  const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
+Deno.test(
+  "quickbase connector parses public CSV appointment rows into seats, statuses, authorities, and appointee observations",
+  async () => {
+    const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
 "Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`;
+    const result = await getConnector("mota.quickbase").run(
+      createConnectorContext({
+        fetcher: async (url: string) => {
+          const body = (() => {
+            switch (url) {
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+                return quickbaseFixture;
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+                return appointmentsCsvWithAlias;
+              default:
+                throw new Error(`Unexpected url ${url}`);
+            }
+          })();
+          return {
+            status: 200,
+            text: async () => body,
+            json: async <T>() => JSON.parse(body) as T,
+          };
+        },
+      }),
+    );
+    assertEquals(result.endpointResults.length, 2);
+    assertEquals(result.endpointResults[1].status, "success");
+    const parsed = result.endpointResults[1].parsed;
+    assert(parsed);
+    assertEquals(parsed.items?.length, 6);
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.name === "Downtown Revitalization Committee"
+      ),
+    );
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.name === "District of Columbia Rental Housing Commission"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) => candidate.relationshipType === "has_seat"),
+    );
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.kind === "seat" && candidate.name ===
+          "District of Columbia Rental Housing Commission Chairperson"
+      ),
+    );
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.kind === "appointment_status" && candidate.name === "Filled"
+      ),
+    );
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "has_seat" &&
+        candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission" &&
+        candidate.toEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "has_status" &&
+        candidate.fromEntityRef ===
+          "dc.district_of_columbia_rental_housing_commission_chairperson" &&
+        candidate.toEntityRef === "status.filled"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "holds" &&
+        candidate.toEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "has_status" &&
+        candidate.fromEntityRef.startsWith("observation.") &&
+        candidate.toEntityRef === "status.filled"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "overseen_by" &&
+        candidate.toEntityRef === "dc.council_of_the_district_of_columbia"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "designated_by" &&
+        candidate.rawValue === "Alcoholic Beverages and Cannabis Administration (ABCA) Designee" &&
+        candidate.toEntityRef === "dc.alcoholic_beverage_and_cannabis_administration"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "appointed_by" &&
+        candidate.rawValue === "Mayoral Appointee" &&
+        candidate.toEntityRef === "dc.mayor"
+      ),
+    );
+    assert(
+      parsed.reviewItems?.some((item) =>
+        item.reason ===
+          "Review appointing or designating authority inferred from Quickbase appointment row"
+      ),
+    );
+    assert(
+      parsed.reviewItems?.some((item) =>
+        item.reason === "Review seat status from Quickbase appointment row"
+      ),
+    );
+    assert(
+      parsed.reviewItems?.some((item) =>
+        item.reason === "Review public appointee observation from Quickbase appointment row"
+      ),
+    );
+    assert(
+      parsed.reviewItems?.some((item) => item.itemType === "relationship_candidate"),
+    );
+    assert(
+      parsed.reviewItems?.every((item) => item.itemType !== "source_status"),
+    );
+    assert(
+      parsed.datasets?.some((dataset) => dataset.category === "appointments"),
+    );
+  },
+);
+
+Deno.test("quickbase connector derives public appointee observations from live-style name columns", async () => {
+  const liveStyleCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"Dr.","Antoinette","Mitchell","","New Appointment","Adult Career Pathways Task Force","Office of the State Superintendent of Education (OSSE) Designee","Active / filled seat","Mayoral Appointee, DC Agency Representative","02-16-2016","antoinette.mitchell@dc.gov"
 `;
   const result = await getConnector("mota.quickbase").run(
     createConnectorContext({
@@ -666,7 +804,7 @@ Deno.test("quickbase connector parses public CSV appointment rows into seats, st
             case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
               return quickbaseFixture;
             case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return appointmentsCsvWithAlias;
+              return liveStyleCsv;
             default:
               throw new Error(`Unexpected url ${url}`);
           }
@@ -679,89 +817,29 @@ Deno.test("quickbase connector parses public CSV appointment rows into seats, st
       },
     }),
   );
-  assertEquals(result.endpointResults.length, 2);
-  assertEquals(result.endpointResults[1].status, "success");
+
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
-  assertEquals(parsed.items?.length, 6);
   assert(
     parsed.entityCandidates?.some((candidate) =>
-      candidate.name === "Downtown Revitalization Committee"
-    ),
-  );
-  assert(
-    parsed.entityCandidates?.some((candidate) =>
-      candidate.name === "District of Columbia Rental Housing Commission"
-    ),
-  );
-  assert(
-    parsed.relationshipCandidates?.some((candidate) => candidate.relationshipType === "has_seat"),
-  );
-  assert(
-    parsed.entityCandidates?.some((candidate) =>
-      candidate.kind === "seat" && candidate.name ===
-        "District of Columbia Rental Housing Commission Chairperson"
-    ),
-  );
-  assert(
-    parsed.entityCandidates?.some((candidate) =>
-      candidate.kind === "appointment_status" && candidate.name === "Filled"
+      candidate.kind === "appointee_observation" && candidate.name === "Dr. Antoinette Mitchell"
     ),
   );
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "has_seat" &&
-      candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission" &&
-      candidate.toEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson"
+      candidate.relationshipType === "holds" &&
+      candidate.fromEntityRef ===
+        "observation.adult_career_pathways_task_force_row_1_dr_antoinette_mitchell" &&
+      candidate.toEntityRef ===
+        "dc.adult_career_pathways_task_force_office_of_the_state_superintendent_of_education_designee"
     ),
   );
-  assert(
-    parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "has_status" &&
-      candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson" &&
-      candidate.toEntityRef === "status.filled"
-    ),
-  );
-  assert(
-    parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "overseen_by" &&
-      candidate.toEntityRef === "dc.council_of_the_district_of_columbia"
-    ),
-  );
-  assert(
-    parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "designated_by" &&
-      candidate.rawValue === "Alcoholic Beverages and Cannabis Administration (ABCA) Designee" &&
-      candidate.toEntityRef === "dc.alcoholic_beverage_and_cannabis_administration"
-    ),
-  );
-  assert(
-    parsed.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "appointed_by" &&
-      candidate.rawValue === "Mayoral Appointee" &&
-      candidate.toEntityRef === "dc.mayor"
-    ),
-  );
-  assert(
-    parsed.reviewItems?.some((item) =>
-      item.reason ===
-        "Review appointing or designating authority inferred from Quickbase appointment row"
-    ),
-  );
-  assert(
-    parsed.reviewItems?.some((item) =>
-      item.reason === "Review seat status from Quickbase appointment row"
-    ),
-  );
-  assert(
-    parsed.reviewItems?.some((item) => item.itemType === "relationship_candidate"),
-  );
-  assert(
-    parsed.reviewItems?.every((item) => item.itemType !== "source_status"),
-  );
-  assert(
-    parsed.datasets?.some((dataset) => dataset.category === "appointments"),
-  );
+  const publicFacts = JSON.stringify({
+    entityCandidates: parsed.entityCandidates,
+    relationshipCandidates: parsed.relationshipCandidates,
+    reviewItems: parsed.reviewItems,
+  });
+  assert(!publicFacts.includes("antoinette.mitchell@dc.gov"));
 });
 
 Deno.test("quickbase connector keeps contact columns out of public fact candidates", async () => {
@@ -2959,6 +3037,105 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
   assert(remainingSeatRelationships.length > 0);
 });
 
+Deno.test("batch accept-safe accepts scoped Quickbase appointee observation relationships only for accepted endpoints", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(
+      createConnectorContext({
+        fetcher: async (url: string) => {
+          const body = (() => {
+            switch (url) {
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+                return quickbaseFixture;
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+                return quickbaseAppointmentsCsvFixture;
+              default:
+                throw new Error(`Unexpected url ${url}`);
+            }
+          })();
+          return {
+            status: 200,
+            text: async () => body,
+            json: async <T>() => JSON.parse(body) as T,
+          };
+        },
+      }),
+    ),
+    dataDir,
+  );
+  for (
+    const subjectId of [
+      "candidate.mota.quickbase.council_of_the_district_of_columbia_seat_chairperson",
+      "candidate.mota.quickbase.appointment_status_filled",
+      "candidate.mota.quickbase.appointee_observation_council_of_the_district_of_columbia_row_3_john_smith",
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  workbench.close();
+
+  const commonArgs = [
+    "run",
+    "--allow-read",
+    "--allow-write",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+    "--allow-ffi",
+    "scripts/dc.ts",
+    "review",
+    "batch",
+    "accept-safe",
+    "--mode",
+    "relationships",
+    "--subject-prefix",
+    "relationship.mota.quickbase.observation_council_of_the_district_of_columbia_row_3_john_smith",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ];
+
+  const holdsOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "holds"],
+  }).output();
+  assertEquals(holdsOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(holdsOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "has_status"],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(statusOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopened.close();
+  assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
+    "observation.council_of_the_district_of_columbia_row_3_john_smith:has_status:status.filled",
+    "observation.council_of_the_district_of_columbia_row_3_john_smith:holds:dc.council_of_the_district_of_columbia_chairperson",
+  ]);
+});
+
 Deno.test("batch defer-default defers only scoped default-defer relationship items", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -3886,6 +4063,10 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(
     readme,
     "Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.",
+  );
+  assertStringIncludes(
+    readme,
+    "Public appointment observations may appear as `appointee_observation` entities, with `holds` and `has_status` facts kept separate from seat structure.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
