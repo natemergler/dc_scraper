@@ -18,13 +18,14 @@ The compact release had 333 accepted entities, 245 accepted relationships, 30 da
 legal refs, and 18 pending legal refs; the remaining review queue was still large at 390 open items,
 with 136 explicitly deferred review items and no source-status review items for successful captures.
 
-Fresh June 2, 2026 smoke on a new temp workbench fetched `dcgis.agencies`,
-`dcgis.boards_commissions_councils`, `open_dc.public_bodies`, `mota.quickbase`,
-`council.members`, `council.committees`, `council.lims`, `oanc.anc_profiles`,
-`legal.entrypoints`, and `admin.service_requests_311`; safe entity review accepted 333 items,
-follow-up safe legal and relationship batches resolved the Councilmember/committee/ANC/public-body
-slice, and the release built with 326 accepted entities, 171 accepted relationships, 78 accepted
-legal refs, and 209 `entity_legal_refs` rows.
+Fresh June 2, 2026 structure-lane smoke on a new temp workbench fetched `dcgis.agencies`,
+`dcgis.boards_commissions_councils`, `open_dc.public_bodies`, `mota.quickbase`, `council.members`,
+`council.committees`, `council.lims`, `oanc.anc_profiles`, `legal.entrypoints`, and
+`admin.service_requests_311`; safe entity review accepted 333 items, follow-up safe legal and
+relationship batches resolved the Councilmember/committee/ANC/public-body slice, and the release
+built with 326 accepted entities, 171 accepted relationships, 78 accepted legal refs, and 209
+`entity_legal_refs` rows. This was a structure-lane subset, not a full pass across every configured
+source family.
 
 | Source family                       | Tier | Access path                                                                   | Capture depth                 | Contributes                                                                                 | Current review/release status                                                                                                                                                                                                                                                                                                                                                                                 | Known gaps                                                                                                                                                                                             | Blocks credible release? | Next action                                                                           |
 | ----------------------------------- | ---- | ----------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------- |

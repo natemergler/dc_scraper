@@ -1158,6 +1158,47 @@ Deno.test("Council members connector captures seats and ward representations", a
   );
 });
 
+Deno.test("Council ward parsing skips order inference when a ward label is absent", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return `
+<html><body>
+  <main>
+    <h3>Ward Members</h3>
+    <ul>
+      <li><a href="https://dccouncil.gov/council/charles-allen/">Councilmember Charles Allen</a></li>
+    </ul>
+  </main>
+</body></html>
+`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.members").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assert(
+    parsed.entityCandidates?.some((candidate) => candidate.name === "Councilmember Charles Allen"),
+  );
+  assert(
+    !parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 1 Council Seat"),
+  );
+  assert(
+    !parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("Ward 1")
+    ),
+  );
+});
+
 Deno.test("Council committee member parsing captures chair and member relationships", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
@@ -1233,6 +1274,20 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
   assert(parsed);
   assertEquals(parsed.items?.length, 3);
   assertEquals(parsed.legalRefs?.length, 2);
+  const anc34gItem = parsed.items?.find((item) => item.itemKey === "anc-34g");
+  const anc6cItem = parsed.items?.find((item) => item.itemKey === "anc-6c");
+  const anc34gBody = anc34gItem?.body as {
+    wardNumbers?: number[];
+    commissioners?: Array<{ name: string; role?: string }>;
+  };
+  const anc6cBody = anc6cItem?.body as {
+    wardNumbers?: number[];
+    commissioners?: Array<{ name: string; role?: string }>;
+  };
+  assertEquals(anc34gBody.wardNumbers, [3, 4]);
+  assertEquals(anc6cBody.wardNumbers, [6]);
+  assertEquals(anc34gBody.commissioners?.[0].role, "Vice Chairperson");
+  assertEquals(anc6cBody.commissioners?.[1].role, "Chairperson");
   assert(
     parsed.entityCandidates?.some((candidate) =>
       candidate.name === "Advisory Neighborhood Commissions"
@@ -1240,10 +1295,16 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
   );
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "ANC 3/4G"));
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 3"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 4"));
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "SMD 6C01"));
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "part_of" && candidate.toEntityRef === buildEntityId("Ward 3")
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "part_of" && candidate.toEntityRef === buildEntityId("Ward 4")
     ),
   );
   assert(
@@ -3621,6 +3682,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
+  assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
+  assertStringIncludes(
+    readme,
+    "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
+  );
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
