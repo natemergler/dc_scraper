@@ -65,6 +65,22 @@ interface EntityLegalAttachmentRow extends Record<string, string | number | null
   review_status: string;
 }
 
+interface RelationshipLegalAttachmentRow
+  extends Record<string, string | number | null | undefined> {
+  relationship_id: string;
+  from_entity_id: string;
+  from_entity_name: string;
+  relationship_type: string;
+  to_entity_id: string;
+  to_entity_name: string;
+  legal_ref_id: string;
+  ref_type: string;
+  citation_text: string;
+  normalized_citation?: string | null;
+  url?: string | null;
+  review_status: string;
+}
+
 export function searchEntities(store: WorkbenchStore, query: string): EntitySearchResult[] {
   return queryAll<EntitySearchResult>(
     store.db,
@@ -335,6 +351,38 @@ export function entityLegalRefs(store: WorkbenchStore): EntityLegalAttachmentRow
     join canonical_entities on canonical_entities.entity_id = entity_legal_refs.entity_id
     join legal_refs on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
     order by canonical_entities.name, legal_refs.normalized_citation, legal_refs.citation_text`,
+  );
+}
+
+export function relationshipLegalRefs(
+  store: WorkbenchStore,
+): RelationshipLegalAttachmentRow[] {
+  return queryAll(
+    store.db,
+    `select
+      relationship_legal_refs.relationship_id as relationship_id,
+      canonical_relationships.from_entity_id as from_entity_id,
+      from_entities.name as from_entity_name,
+      canonical_relationships.relationship_type as relationship_type,
+      canonical_relationships.to_entity_id as to_entity_id,
+      to_entities.name as to_entity_name,
+      relationship_legal_refs.legal_ref_id as legal_ref_id,
+      legal_refs.ref_type as ref_type,
+      legal_refs.citation_text as citation_text,
+      legal_refs.normalized_citation as normalized_citation,
+      legal_refs.url as url,
+      legal_refs.review_status as review_status
+    from relationship_legal_refs
+    join canonical_relationships on canonical_relationships.relationship_id = relationship_legal_refs.relationship_id
+    join canonical_entities as from_entities on from_entities.entity_id = canonical_relationships.from_entity_id
+    join canonical_entities as to_entities on to_entities.entity_id = canonical_relationships.to_entity_id
+    join legal_refs on legal_refs.legal_ref_id = relationship_legal_refs.legal_ref_id
+    order by
+      from_entities.name,
+      canonical_relationships.relationship_type,
+      to_entities.name,
+      legal_refs.normalized_citation,
+      legal_refs.citation_text`,
   );
 }
 
