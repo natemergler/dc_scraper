@@ -1878,3 +1878,116 @@ Deno.test("stale prerequisite candidates surface stale blocker audit for depende
     ),
   );
 });
+
+Deno.test("replay-conflict prerequisite candidates surface conflict blocker audit for dependent relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.existing_board', 'Existing Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.conflict.entities",
+      candidateId: "candidate.test.reconciliation.conflict.target_v1",
+      sourceItemKey: "conflict-target-row",
+      proposedEntityId: "dc.conflict_target",
+      name: "Conflict Target",
+      kind: "agency",
+      observedName: "Conflict Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: "candidate.test.reconciliation.conflict.target_v1",
+      payload: {
+        entityId: "dc.existing_board",
+        candidateIds: ["candidate.test.reconciliation.conflict.target_v1"],
+      },
+    },
+    resolutionsDir,
+  );
+  workbench.db.prepare("delete from canonical_entities where entity_id = 'dc.existing_board'")
+    .run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.conflict.entities",
+      candidateId: "candidate.test.reconciliation.conflict.target_v2",
+      sourceItemKey: "conflict-target-row",
+      proposedEntityId: "dc.conflict_target",
+      name: "Conflict Target",
+      kind: "agency",
+      observedName: "Conflict Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.conflict.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.conflict",
+      sourceItemKey: "conflict-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.conflict_target",
+      relationshipType: "governed_by",
+      rawValue: "Conflict Target",
+    }),
+    dataDir,
+  );
+
+  const blocked = workbench.db.prepare(
+    `select blocker_state as blockerState,
+            details_json as detailsJson
+     from reconciliation_blockers
+     where subject_type = 'relationship_candidate'
+       and subject_id = 'relationship.test.reconciliation.conflict'`,
+  ).get() as { blockerState: string; detailsJson: string } | undefined;
+  const relationshipReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.conflict",
+  });
+  workbench.close();
+
+  assert(blocked);
+  assertEquals(blocked.blockerState, "replay_conflict");
+  assertStringIncludes(blocked.detailsJson, '"state":"replay_conflict"');
+  assertEquals(relationshipReviewItems.length, 0);
+
+  const statusOutput = await new Deno.Command("deno", {
+    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
+    cwd: Deno.cwd(),
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blockedByBlockerState: Array<{ blockerState: string; count: number }>;
+      firstBlocked?: {
+        subjectId: string;
+        blockers: Array<{ blockerState: string; blockerLabel: string }>;
+      };
+    };
+  };
+
+  assert(
+    status.reconciliation.blockedByBlockerState.some((row) =>
+      row.blockerState === "replay_conflict" && row.count === 1
+    ),
+  );
+  assertEquals(
+    status.reconciliation.firstBlocked?.subjectId,
+    "relationship.test.reconciliation.conflict",
+  );
+  assert(
+    status.reconciliation.firstBlocked?.blockers.some((blocker) =>
+      blocker.blockerState === "replay_conflict" && blocker.blockerLabel === "Conflict Target"
+    ),
+  );
+});

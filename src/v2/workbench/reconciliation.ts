@@ -25,6 +25,7 @@ interface CandidateEndpointStatusRow {
   runStartedAt: string;
   reviewStatus: string;
   stalePriorDecision?: number | null;
+  replayConflict?: number | null;
 }
 
 export interface ReconciliationSummary {
@@ -64,6 +65,7 @@ type EndpointState =
   | "missing"
   | "pending_candidate"
   | "placeholder"
+  | "replay_conflict"
   | "stale_candidate"
   | "rejected_candidate";
 
@@ -226,7 +228,8 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
             source_items.item_key as itemKey,
             source_runs.started_at as runStartedAt,
             entity_candidates.review_status as reviewStatus,
-            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
+            json_extract(review_items.details_json, '$.replayConflict') as replayConflict
      from entity_candidates
      join source_items on source_items.source_item_id = entity_candidates.source_item_id
      join source_runs on source_runs.run_id = source_items.run_id
@@ -243,6 +246,11 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
     currentStatuses.some((row) => row.reviewStatus === "pending" && row.stalePriorDecision === 1)
   ) {
     return { entityId, state: "stale_candidate" };
+  }
+  if (
+    currentStatuses.some((row) => row.reviewStatus === "pending" && row.replayConflict === 1)
+  ) {
+    return { entityId, state: "replay_conflict" };
   }
   const canonical = queryOne<CanonicalEndpointRow>(
     store.db,
