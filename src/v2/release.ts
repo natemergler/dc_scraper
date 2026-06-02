@@ -10,6 +10,7 @@ type SourceRow = ReturnType<Workbench["sourceInventory"]>[number];
 type DatasetRow = ReturnType<Workbench["datasets"]>[number];
 type LegalRefRow = ReturnType<Workbench["legalRefs"]>[number];
 type EntityLegalRefRow = ReturnType<Workbench["entityLegalRefs"]>[number];
+type RelationshipLegalRefRow = ReturnType<Workbench["relationshipLegalRefs"]>[number];
 type SourceArtifactRow = ReturnType<Workbench["sourceArtifacts"]>[number];
 
 export async function buildV2Release(
@@ -23,6 +24,7 @@ export async function buildV2Release(
   const datasets: DatasetRow[] = workbench.datasets();
   const legalRefs: LegalRefRow[] = workbench.legalRefs();
   const entityLegalRefs: EntityLegalRefRow[] = workbench.entityLegalRefs();
+  const relationshipLegalRefs: RelationshipLegalRefRow[] = workbench.relationshipLegalRefs();
   const sourceArtifacts: SourceArtifactRow[] = workbench.sourceArtifacts();
   const summary = buildReleaseSummary(
     workbench,
@@ -32,6 +34,7 @@ export async function buildV2Release(
     datasets,
     legalRefs,
     entityLegalRefs,
+    relationshipLegalRefs,
   );
   const files = new Map<string, string>();
   files.set("entities.json", JSON.stringify(entities, null, 2));
@@ -40,6 +43,7 @@ export async function buildV2Release(
   files.set("datasets.json", JSON.stringify(datasets, null, 2));
   files.set("legal_refs.json", JSON.stringify(legalRefs, null, 2));
   files.set("entity_legal_refs.json", JSON.stringify(entityLegalRefs, null, 2));
+  files.set("relationship_legal_refs.json", JSON.stringify(relationshipLegalRefs, null, 2));
   files.set(
     "entities.csv",
     toCsv(
@@ -124,6 +128,26 @@ export async function buildV2Release(
       entityLegalRefs,
     ),
   );
+  files.set(
+    "relationship_legal_refs.csv",
+    toCsv(
+      [
+        "relationship_id",
+        "from_entity_id",
+        "from_entity_name",
+        "relationship_type",
+        "to_entity_id",
+        "to_entity_name",
+        "legal_ref_id",
+        "ref_type",
+        "citation_text",
+        "normalized_citation",
+        "url",
+        "review_status",
+      ],
+      relationshipLegalRefs,
+    ),
+  );
   assertReleaseFilesDoNotContainContactInfo(files);
   for (const [name, content] of files) {
     await Deno.writeTextFile(join(outDir, name), content);
@@ -135,6 +159,7 @@ export async function buildV2Release(
     datasets,
     legalRefs,
     entityLegalRefs,
+    relationshipLegalRefs,
   });
   const readme = buildReadme(summary);
   await Deno.writeTextFile(join(outDir, "README.md"), readme);
@@ -214,6 +239,7 @@ async function buildReleaseSqlite(
     datasets: DatasetRow[];
     legalRefs: LegalRefRow[];
     entityLegalRefs: EntityLegalRefRow[];
+    relationshipLegalRefs: RelationshipLegalRefRow[];
   },
 ): Promise<void> {
   await Deno.remove(path).catch((error) => {
@@ -303,6 +329,25 @@ async function buildReleaseSqlite(
         url text,
         review_status text not null,
         foreign key (entity_id) references entities(id),
+        foreign key (legal_ref_id) references legal_refs(id)
+      );
+
+      create table relationship_legal_refs (
+        relationship_id text not null,
+        from_entity_id text not null,
+        from_entity_name text not null,
+        relationship_type text not null,
+        to_entity_id text not null,
+        to_entity_name text not null,
+        legal_ref_id text not null,
+        ref_type text not null,
+        citation_text text not null,
+        normalized_citation text,
+        url text,
+        review_status text not null,
+        foreign key (relationship_id) references relationships(id),
+        foreign key (from_entity_id) references entities(id),
+        foreign key (to_entity_id) references entities(id),
         foreign key (legal_ref_id) references legal_refs(id)
       );
     `);
@@ -398,6 +443,25 @@ async function buildReleaseSqlite(
         row.review_status,
       ]);
     }
+    const insertRelationshipLegalRef = db.prepare(
+      "insert into relationship_legal_refs(relationship_id, from_entity_id, from_entity_name, relationship_type, to_entity_id, to_entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.relationshipLegalRefs) {
+      insertRelationshipLegalRef.run([
+        row.relationship_id,
+        row.from_entity_id,
+        row.from_entity_name,
+        row.relationship_type,
+        row.to_entity_id,
+        row.to_entity_name,
+        row.legal_ref_id,
+        row.ref_type,
+        row.citation_text,
+        row.normalized_citation ?? null,
+        row.url ?? null,
+        row.review_status,
+      ]);
+    }
   } finally {
     db.close();
   }
@@ -427,6 +491,7 @@ Files:
 - \`datasets.*\`: public dataset inventory
 - \`legal_refs.*\`: normalized and source-backed legal references
 - \`entity_legal_refs.*\`: entity-linked legal reference attachments
+- \`relationship_legal_refs.*\`: relationship-linked legal reference attachments
 
 Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.
 
@@ -445,6 +510,7 @@ Public appointment observations may appear as \`appointee_observation\` entities
 - legal refs by type: ${legalByType}
 - legal refs by review_status: ${legalByStatus}
 - entity legal refs: total=${summary.entity_legal_refs_count}
+- relationship legal refs: total=${summary.relationship_legal_refs_count}
 
 Relationship coverage note: accepted relationships may represent only a partial reviewed slice of discovered relationship candidates.
 `;
@@ -458,6 +524,7 @@ function buildReleaseSummary(
   datasets: DatasetRow[],
   legalRefs: LegalRefRow[],
   entityLegalRefs: EntityLegalRefRow[],
+  relationshipLegalRefs: RelationshipLegalRefRow[],
 ) {
   const reviewByStatus = workbench.db.prepare(
     "select status, count(*) as count from review_items group by status order by status",
@@ -476,6 +543,7 @@ function buildReleaseSummary(
     legal_refs_by_type: countByRefType(legalRefs, (row) => row.ref_type),
     legal_refs_by_review_status: countByReviewStatus(legalRefs, (row) => row.review_status),
     entity_legal_refs_count: entityLegalRefs.length,
+    relationship_legal_refs_count: relationshipLegalRefs.length,
   };
 }
 

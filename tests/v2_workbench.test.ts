@@ -1033,6 +1033,14 @@ Deno.test("Open DC second detail-page shape yields administered and legal-author
       candidate.rawValue === "Mayor's Order 2019-010"
     ),
   );
+  assert(
+    detail.legalRefs?.some((legalRef) =>
+      legalRef.legalRefId ===
+        "legal.open_dc.public_bodies.commission_on_example_services_authority" &&
+      legalRef.attachRelationshipRef ===
+        "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by"
+    ),
+  );
 });
 
 Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyond the default limit", async () => {
@@ -1605,6 +1613,51 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
       item.subjectId === "dc.council_of_the_district_of_columbia"
     ),
   );
+});
+
+Deno.test("relationship acceptance migrates pending legal attachments onto the canonical relationship id", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body><a href="/public-bodies/commission-on-example-services">Commission on Example Services</a></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/commission-on-example-services":
+          return openDcCommissionFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 })),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  const legalAttachmentRows = workbench.db.prepare(
+    "select relationship_id as relationshipId, legal_ref_id as legalRefId from relationship_legal_refs order by relationship_id",
+  ).all().map((row) => row as { relationshipId: string; legalRefId: string });
+  workbench.close();
+  assertEquals(legalAttachmentRows, [{
+    relationshipId: "dc.commission_on_example_services:authorized_by:legal.mayor_s_order_2019_010",
+    legalRefId: "legal.open_dc.public_bodies.commission_on_example_services_authority",
+  }]);
 });
 
 Deno.test("relationship review renders endpoint status and placeholder implications", async () => {
@@ -4021,6 +4074,13 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "dc.board_accountancy",
     "legal.open_dc.public_bodies.board_accountancy_authority",
   ]);
+  workbench.db.prepare(
+    "insert into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values(?, ?, ?)",
+  ).run([
+    "relationship_legal_ref.board_accountancy.part_of.authority",
+    "dc.board_accountancy:part_of:dc.council",
+    "legal.open_dc.public_bodies.board_accountancy_authority",
+  ]);
   const outDir = join(dir, "release");
   const staleFile = join(outDir, "stale-extra-report.csv");
   await ensureDir(outDir);
@@ -4028,6 +4088,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
   const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
+  const relationshipLegalRefsCsv = await Deno.readTextFile(
+    join(outDir, "relationship_legal_refs.csv"),
+  );
   const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
   const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -4059,6 +4122,8 @@ Deno.test("release builder creates focused v2 package with stable files and no r
       "legal_refs.csv",
       "legal_refs.json",
       "manifest.json",
+      "relationship_legal_refs.csv",
+      "relationship_legal_refs.json",
       "relationships.csv",
       "relationships.json",
       "sources.csv",
@@ -4077,6 +4142,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(entityLegalRefsCsv, "dc.board_accountancy");
   assertEquals(entityLegalRefsCsv.split("\n").length > 1, true);
+  assertStringIncludes(
+    relationshipLegalRefsCsv,
+    "relationship_id,from_entity_id,from_entity_name,relationship_type,to_entity_id,to_entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
+  );
+  assertStringIncludes(relationshipLegalRefsCsv, "dc.board_accountancy:part_of:dc.council");
   assert(!legalRefsCsv.includes("not-for-release@example.com"));
   assert(!manifestText.includes("not-for-release@example.com"));
   assert(!manifestText.includes("202-555-0100"));
@@ -4085,6 +4155,10 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
+  assertStringIncludes(
+    readme,
+    "`relationship_legal_refs.*`: relationship-linked legal reference attachments",
+  );
   assertStringIncludes(
     readme,
     "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
@@ -4098,6 +4172,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "Public appointment observations may appear as `appointee_observation` entities, with `holds` and `has_status` facts kept separate from seat structure.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
+  assertStringIncludes(readme, "relationship legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(
@@ -4112,6 +4187,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "entity_legal_refs",
     "incoming_relationships",
     "legal_refs",
+    "relationship_legal_refs",
     "relationships",
     "sources",
   ]);
@@ -4132,7 +4208,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Files: 15");
+  assertStringIncludes(inspectText, "Files: 17");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -4157,7 +4233,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   };
   assertEquals(inspectJsonOutput.code, 0);
   assertEquals(inspectJson.outDir, outDir);
-  assertEquals(inspectJson.fileCount, 15);
+  assertEquals(inspectJson.fileCount, 17);
   assertEquals(inspectJson.releaseSummary.source_count, 1);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
