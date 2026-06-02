@@ -658,6 +658,51 @@ create index if not exists relationship_candidate_evidence_candidate_idx on rela
 create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
 create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
 `,
+}, {
+  version: 7,
+  name: "v2_relationship_reconciliation_foundation",
+  sql: `
+create table relationship_review_templates (
+  review_item_id text primary key,
+  subject_id text not null unique references relationship_candidates(relationship_candidate_id),
+  reason text not null,
+  default_action text not null check (default_action in ('accept', 'reject', 'defer')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null
+);
+
+create table reconciliation_items (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  state text not null check (state in ('blocked', 'review_ready')),
+  reason text not null,
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id)
+);
+
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id, blocker_key)
+);
+
+create index if not exists relationship_review_templates_subject_idx
+  on relationship_review_templates(subject_id);
+create index if not exists reconciliation_items_state_idx
+  on reconciliation_items(state, subject_type, subject_id);
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+ `,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {

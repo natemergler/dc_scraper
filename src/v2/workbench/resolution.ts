@@ -1,7 +1,6 @@
 import { ensureDir } from "@std/fs";
 import { join, relative } from "@std/path";
 import {
-  buildReviewItemId,
   type CandidateStatus,
   compactDatePart,
   nowIso,
@@ -11,6 +10,7 @@ import {
   slugify,
 } from "../domain.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ResolutionRecord {
@@ -113,6 +113,7 @@ function applyResolutionEventInCurrentTransaction(
       setReviewStatus(store, event.subjectId, "open");
       break;
   }
+  reconcileRelationshipCandidates(store);
 }
 
 export async function replayResolutionDirectory(
@@ -158,6 +159,9 @@ export async function replayResolutionDirectory(
     store.db.exec("delete from canonical_entities");
     store.db.exec("delete from resolution_events");
     run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
+    run(store.db, "delete from review_items where item_type = 'relationship_candidate'");
+    run(store.db, "delete from reconciliation_blockers");
+    run(store.db, "delete from reconciliation_items");
     run(store.db, "update entity_candidates set review_status = 'pending'");
     run(store.db, "update relationship_candidates set review_status = 'pending'");
     run(store.db, "update legal_refs set review_status = 'pending'");
@@ -165,6 +169,7 @@ export async function replayResolutionDirectory(
     for (const record of records) {
       applyResolutionEventInCurrentTransaction(store, record);
     }
+    reconcileRelationshipCandidates(store);
   });
 }
 
@@ -325,12 +330,12 @@ function acceptRelationshipCandidate(
     throw new Error(`Conflict: relationship candidate ${relationshipCandidateId} was rejected`);
   }
   const relationshipType = String(payload.relationshipType ?? candidate.relationshipType);
-  const fromEntityId = ensureEntityExists(
+  const fromEntityId = requireAcceptedEntity(
     store,
     String(payload.fromEntityId ?? candidate.fromEntityRef),
     relationshipCandidateId,
   );
-  const toEntityId = ensureEntityExists(
+  const toEntityId = requireAcceptedEntity(
     store,
     String(payload.toEntityId ?? candidate.toEntityRef),
     relationshipCandidateId,
@@ -352,49 +357,26 @@ function acceptRelationshipCandidate(
   resolveReviewBySubject(store, relationshipCandidateId);
 }
 
-function ensureEntityExists(
+function requireAcceptedEntity(
   store: WorkbenchStore,
   entityId: string,
-  relationshipCandidateId?: string,
+  relationshipCandidateId: string,
 ): string {
-  const existing = queryOne<{ entityId: string }>(
+  const existing = queryOne<{ entityId: string; isPlaceholder: number }>(
     store.db,
-    "select entity_id as entityId from canonical_entities where entity_id = ?",
+    "select entity_id as entityId, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
     [entityId],
   );
-  if (existing) return entityId;
-  const name = entityId.split(".").slice(1).join(" ").replaceAll("_", " ").replaceAll(
-    /\b\w/g,
-    (part) => part.toUpperCase(),
-  );
-  run(
-    store.db,
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values(?, ?, 'placeholder', 'placeholder', '[]', 1, ?, ?, ?)",
-    [
-      entityId,
-      name,
-      relationshipCandidateId
-        ? `Created while accepting relationship candidate ${relationshipCandidateId}`
-        : `Created while accepting a relationship candidate for ${entityId}`,
-      nowIso(),
-      nowIso(),
-    ],
-  );
-  run(
-    store.db,
-    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, 'placeholder_entity', ?, ?, 'defer', 'open', ?, ?, ?)",
-    [
-      buildReviewItemId(entityId, "placeholder"),
-      entityId,
-      "Placeholder entity created while accepting relationship candidate",
-      JSON.stringify({
-        entityId,
-        relationshipCandidateId,
-      }),
-      nowIso(),
-      nowIso(),
-    ],
-  );
+  if (!existing) {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is not an accepted canonical entity`,
+    );
+  }
+  if (existing.isPlaceholder === 1) {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is still a placeholder`,
+    );
+  }
   return entityId;
 }
 

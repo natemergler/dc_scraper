@@ -25,6 +25,10 @@ import {
 import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
 import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
 import {
+  reconcileRelationshipCandidates,
+  reconciliationSummary as readReconciliationSummary,
+} from "./workbench/reconciliation.ts";
+import {
   listReviewItems as readReviewQueue,
   nextReviewItem as peekNextReviewItem,
   type ReviewItemFilters,
@@ -56,7 +60,9 @@ export class Workbench implements WorkbenchStore {
   }
 
   init(): WorkbenchMeta {
-    return initWorkbench(this);
+    const meta = initWorkbench(this);
+    reconcileRelationshipCandidates(this);
+    return meta;
   }
 
   meta(): WorkbenchMeta {
@@ -155,5 +161,9 @@ export class Workbench implements WorkbenchStore {
 
   sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {
     return readSourceArtifacts(this);
+  }
+
+  reconciliationSummary(): ReturnType<typeof readReconciliationSummary> {
+    return readReconciliationSummary(this);
   }
 }
