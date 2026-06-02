@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -199,6 +199,90 @@ Deno.test("blocked relationship acceptance fails instead of creating placeholder
   workbench.close();
 
   assertEquals(placeholder.count, 0);
+});
+
+Deno.test("placeholder endpoints keep relationship candidates blocked until the placeholder is resolved", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'placeholder', 'placeholder', '[]', 1, 'fixture placeholder', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const blockedBefore = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  const reviewBefore = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.council.committees",
+  });
+
+  workbench.db.prepare(
+    "update canonical_entities set name = 'Council of the District of Columbia', kind = 'council', review_status = 'accepted', is_placeholder = 0, placeholder_reason = null, updated_at = datetime('now') where entity_id = 'dc.council_of_the_district_of_columbia'",
+  ).run();
+  workbench.init();
+
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewAfter = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.council.committees",
+  });
+  workbench.close();
+
+  assert(blockedBefore);
+  assertStringIncludes(blockedBefore.detailsJson, '"state":"placeholder"');
+  assertEquals(reviewBefore.length, 0);
+  assertEquals(blockedAfter.count, 0);
+  assert(
+    reviewAfter.some((item) =>
+      item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+    ),
+  );
 });
 
 Deno.test("status json reports blocked reconciliation counts", async () => {
