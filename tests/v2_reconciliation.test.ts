@@ -1990,6 +1990,106 @@ Deno.test("changed relationship evidence after a prior defer becomes stale open 
   assertEquals(deferredItems.length, 0);
 });
 
+Deno.test("accepted prerequisite refetch clears stale blocker and reprocesses dependent relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.refetch.entities",
+      candidateId: "candidate.test.reconciliation.refetch.target_v1",
+      sourceItemKey: "refetch-target-row",
+      proposedEntityId: "dc.refetch_target",
+      name: "Refetch Target",
+      kind: "agency",
+      observedName: "Refetch Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.reconciliation.refetch.target_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.refetch.entities",
+      candidateId: "candidate.test.reconciliation.refetch.target_v2",
+      sourceItemKey: "refetch-target-row",
+      proposedEntityId: "dc.refetch_target",
+      name: "Refetch Target",
+      kind: "agency",
+      observedName: "Refetch Target Updated",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.refetch.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.refetch",
+      sourceItemKey: "refetch-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.refetch_target",
+      relationshipType: "governed_by",
+      rawValue: "Refetch Target Updated",
+    }),
+    dataDir,
+  );
+
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.refetch'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewBefore = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.refetch",
+  });
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.refetch.entities",
+      candidateId: "candidate.test.reconciliation.refetch.target_v3",
+      sourceItemKey: "refetch-target-row",
+      proposedEntityId: "dc.refetch_target",
+      name: "Refetch Target",
+      kind: "agency",
+      observedName: "Refetch Target",
+    }),
+    dataDir,
+  );
+
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.refetch'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewAfter = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.refetch",
+  });
+  workbench.close();
+
+  assertEquals(blockedBefore.count, 1);
+  assertEquals(reviewBefore.length, 0);
+  assertEquals(blockedAfter.count, 0);
+  assert(
+    reviewAfter.some((item) => item.subjectId === "relationship.test.reconciliation.refetch"),
+  );
+});
+
 Deno.test("status json reports blocked reconciliation counts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
