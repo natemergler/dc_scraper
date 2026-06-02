@@ -6,6 +6,8 @@ import {
   councilCommitteeHealthDetailFixture,
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
+  dcgisMetadataFixture,
+  dcgisRowsFixture,
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
@@ -147,6 +149,71 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
   assertEquals(blockedAfter.count, 0);
 });
 
+Deno.test("relationship review items are rebuilt from workbench state without connector templates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("council.committees").run(createConnectorContext({ fetcher }));
+  for (const endpointResult of result.endpointResults) {
+    if (!endpointResult.parsed?.reviewItems) continue;
+    endpointResult.parsed.reviewItems = endpointResult.parsed.reviewItems.filter((item) =>
+      item.itemType !== "relationship_candidate"
+    );
+  }
+
+  await workbench.importConnectorResult(result, dataDir);
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const item = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.council.committees",
+  }).find((reviewItem) =>
+    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+  );
+  workbench.close();
+
+  assert(item);
+  assertEquals(item.reason, "Review committee to Council relationship");
+  assertEquals(item.defaultAction, "accept");
+  assertEquals(item.details.relationshipType, "part_of");
+  assertEquals(item.details.fromEntityRef, "dc.committee_of_the_whole");
+  assertEquals(item.details.toEntityRef, "dc.council_of_the_district_of_columbia");
+});
+
 Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -283,6 +350,87 @@ Deno.test("placeholder endpoints keep relationship candidates blocked until the 
       item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
     ),
   );
+});
+
+Deno.test("relationship review defaults are rebuilt from workbench state without connector relationship review items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const mixedBranchRowsFixture = {
+    features: [
+      ...dcgisRowsFixture.features,
+      {
+        attributes: {
+          AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Settlement Fund",
+          TYPE: "Fund",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+    ],
+  };
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(mixedBranchRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return mixedBranchRowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
+  });
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0]?.parsed;
+  if (!parsed) throw new Error("Expected parsed DCGIS output");
+  parsed.reviewItems = (parsed.reviewItems ?? []).filter((item) =>
+    item.itemType !== "relationship_candidate"
+  );
+
+  await workbench.importConnectorResult(result, dataDir);
+  for (const item of workbench.listReviewItems({ mode: "entities" })) {
+    await workbench.appendResolutionEvent(
+      {
+        eventType: "accept_entity_candidate",
+        subjectId: item.subjectId,
+        payload: {},
+      },
+      resolutionsDir,
+    );
+  }
+
+  const items = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "part_of",
+    subjectPrefix: "relationship.dcgis.agencies",
+  });
+  const executiveItem = items.find((item) => item.details.rawValue === "Executive");
+  const otherItem = items.find((item) => item.details.rawValue === "Other");
+  workbench.close();
+
+  assertEquals(executiveItem?.reason, "Review agency relationship inferred from branch metadata");
+  assertEquals(executiveItem?.defaultAction, "accept");
+  assertEquals(otherItem?.defaultAction, "defer");
 });
 
 Deno.test("status json reports blocked reconciliation counts", async () => {

@@ -1,23 +1,17 @@
-import { buildReviewItemId, nowIso } from "../domain.ts";
+import { nowIso } from "../domain.ts";
 import { queryAll, queryOne, run } from "./db.ts";
+import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface RelationshipCandidateRow {
   relationshipCandidateId: string;
+  sourceId: string;
   fromEntityRef: string;
   toEntityRef: string;
   relationshipType: string;
   rawValue?: string | null;
   needsReview: number;
   reviewStatus: string;
-}
-
-interface RelationshipReviewTemplateRow {
-  reviewItemId: string;
-  reason: string;
-  defaultAction: string;
-  detailsJson: string;
-  createdAt: string;
 }
 
 interface CanonicalEndpointRow {
@@ -67,14 +61,16 @@ interface EndpointStatus {
 export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
   const candidates = queryAll<RelationshipCandidateRow>(
     store.db,
-    `select relationship_candidate_id as relationshipCandidateId,
+    `select relationship_candidates.relationship_candidate_id as relationshipCandidateId,
+            source_items.source_id as sourceId,
             from_entity_ref as fromEntityRef,
             to_entity_ref as toEntityRef,
             relationship_type as relationshipType,
             raw_value as rawValue,
             needs_review as needsReview,
             review_status as reviewStatus
-     from relationship_candidates`,
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id`,
   );
 
   for (const candidate of candidates) {
@@ -261,26 +257,7 @@ function upsertRelationshipReviewItem(
   store: WorkbenchStore,
   candidate: RelationshipCandidateRow,
 ): void {
-  const template = queryOne<RelationshipReviewTemplateRow>(
-    store.db,
-    `select review_item_id as reviewItemId,
-            reason,
-            default_action as defaultAction,
-            details_json as detailsJson,
-            created_at as createdAt
-     from relationship_review_templates
-     where subject_id = ?`,
-    [candidate.relationshipCandidateId],
-  );
-  const reviewItemId = template?.reviewItemId ??
-    buildReviewItemId(candidate.relationshipCandidateId, "relationship");
-  const details = template?.detailsJson ?? JSON.stringify({
-    fromEntityRef: candidate.fromEntityRef,
-    toEntityRef: candidate.toEntityRef,
-    relationshipType: candidate.relationshipType,
-    rawValue: candidate.rawValue ?? null,
-    needsReview: candidate.needsReview === 1,
-  });
+  const review = buildRelationshipReviewDraft(candidate);
   const now = nowIso();
   run(
     store.db,
@@ -297,14 +274,14 @@ function upsertRelationshipReviewItem(
        details_json = excluded.details_json,
        updated_at = excluded.updated_at`,
     [
-      reviewItemId,
+      review.reviewItemId,
       candidate.relationshipCandidateId,
-      template?.reason ?? "Review relationship candidate",
-      template?.defaultAction ?? (candidate.needsReview === 1 ? "accept" : "defer"),
-      reviewItemId,
-      details,
-      reviewItemId,
-      template?.createdAt ?? now,
+      review.reason,
+      review.defaultAction,
+      review.reviewItemId,
+      JSON.stringify(review.details),
+      review.reviewItemId,
+      now,
       now,
     ],
   );

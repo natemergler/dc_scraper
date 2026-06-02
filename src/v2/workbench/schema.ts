@@ -703,6 +703,12 @@ create index if not exists reconciliation_items_state_idx
 create index if not exists reconciliation_blockers_subject_idx
   on reconciliation_blockers(subject_type, subject_id);
  `,
+}, {
+  version: 8,
+  name: "v2_remove_relationship_review_templates",
+  sql: `
+drop table if exists relationship_review_templates;
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
