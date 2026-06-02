@@ -621,6 +621,63 @@ Deno.test("changed entity evidence after a prior accept becomes stale review wor
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("changed entity evidence after later entity field edits preserves prior resolved fields", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_edit_v1";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(firstCandidateId, "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: firstCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "set_entity_fields",
+      subjectId: "dc.example_body",
+      payload: {
+        entityId: "dc.example_body",
+        fields: { branch: "reviewed-branch", cluster: "reviewed-cluster" },
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_edit_v2";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(secondCandidateId, "Example Body (Updated Source Text)"),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  workbench.close();
+
+  assert(staleItem);
+  const priorResolvedFields = staleItem.details.priorResolvedFields as {
+    branch?: string;
+    cluster?: string;
+  };
+  assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(priorResolvedFields.branch, "reviewed-branch");
+  assertEquals(priorResolvedFields.cluster, "reviewed-cluster");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
 Deno.test("deferred entity review decisions are reused across refetch when candidate ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
