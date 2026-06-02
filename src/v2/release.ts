@@ -415,6 +415,8 @@ function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
   const reviewByType =
     summary.review_items_by_type.map((item) => `${item.item_type}=${item.count}`).join(", ") ||
     "none";
+  const reviewDebtByType = renderReviewDebt(summary.review_debt_by_type, "item_type");
+  const reviewDebtBySource = renderReviewDebt(summary.review_debt_by_source, "source_id");
   return `# DCGov v2 Release
 
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
@@ -436,6 +438,8 @@ Civic role relationship types used by the workbench: holds, represents, member_o
 - relationships by review_status: ${relationshipStatus}
 - review items by status: ${reviewByStatus}
 - review items by type: ${reviewByType}
+- review debt by type: ${reviewDebtByType}
+- review debt by source: ${reviewDebtBySource}
 - stale review: ${summary.stale_review_item_count} (${
     renderStaleByPriorDecision(summary.stale_review_by_prior_decision_state)
   })
@@ -467,6 +471,7 @@ function buildReleaseSummary(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
   const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
+  const reviewDebt = workbench.reviewDebtSummary();
   const reconciliation = workbench.reconciliationSummary();
   const staleReview = workbench.staleReviewSummary();
   const placeholderEntityCount = workbench.db.prepare(
@@ -479,6 +484,16 @@ function buildReleaseSummary(
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
     review_items_by_status: reviewByStatus,
     review_items_by_type: reviewByType,
+    review_debt_by_type: reviewDebt.byType.map((row) => ({
+      item_type: row.itemType,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
+    review_debt_by_source: reviewDebt.bySource.map((row) => ({
+      source_id: row.sourceId,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
     open_review_item_count: openReviewItemCount,
     deferred_review_item_count: deferredReviewItemCount,
     stale_review_item_count: staleReview.count,
@@ -557,6 +572,14 @@ function countByRefType<T>(
     ref_type,
     count,
   }));
+}
+
+function renderReviewDebt<T extends string>(
+  rows: Array<Record<T, string> & { open_count: number; deferred_count: number }>,
+  nameKey: T,
+): string {
+  return rows.map((row) => `${row[nameKey]}(open=${row.open_count},deferred=${row.deferred_count})`)
+    .join(", ") || "none";
 }
 
 function renderStatusCounts(rows: Array<{ review_status: string; count: number }>): string {

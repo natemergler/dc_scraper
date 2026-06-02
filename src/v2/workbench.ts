@@ -31,6 +31,7 @@ import {
 import {
   listReviewItems as readReviewQueue,
   nextReviewItem as peekNextReviewItem,
+  reviewDebtSummary as readReviewDebtSummary,
   type ReviewItemFilters,
   staleReviewSummary as readStaleReviewSummary,
 } from "./workbench/review.ts";
@@ -112,6 +113,10 @@ export class Workbench implements WorkbenchStore {
 
   staleReviewSummary(): ReturnType<typeof readStaleReviewSummary> {
     return readStaleReviewSummary(this);
+  }
+
+  reviewDebtSummary(): ReturnType<typeof readReviewDebtSummary> {
+    return readReviewDebtSummary(this);
   }
 
   async appendResolutionEvent(
