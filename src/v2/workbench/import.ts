@@ -1,4 +1,5 @@
 import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
+import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { run, withTransaction } from "./db.ts";
@@ -116,6 +117,7 @@ export async function importConnectorResult(
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
+        autoAcceptSafeLegalRefs(store);
         autoPromoteSafeEntityCandidates(store);
         reconcileRelationshipCandidates(store);
         await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);

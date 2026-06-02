@@ -17,6 +17,7 @@ import {
   upsertEndpoint as writeEndpointRecord,
   upsertSource as writeSourceRecord,
 } from "./workbench/catalog.ts";
+import { autoAcceptSafeLegalRefs } from "./workbench/auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./workbench/auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./workbench/auto_promote.ts";
 import {
@@ -66,6 +67,7 @@ export class Workbench implements WorkbenchStore {
 
   init(): WorkbenchMeta {
     const meta = initWorkbench(this);
+    autoAcceptSafeLegalRefs(this);
     autoPromoteSafeEntityCandidates(this);
     reconcileRelationshipCandidates(this);
     autoAcceptSafeRelationshipCandidates(this);

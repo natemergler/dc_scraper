@@ -11,6 +11,7 @@ import {
   sha256Hex,
   slugify,
 } from "../domain.ts";
+import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
@@ -649,12 +650,14 @@ export async function replayResolutionDirectory(
     run(store.db, "update relationship_candidates set review_status = 'pending'");
     run(store.db, "update legal_refs set review_status = 'pending'");
     run(store.db, "update review_items set status = 'open' where status = 'resolved'");
+    autoAcceptSafeLegalRefs(store);
     autoPromoteSafeEntityCandidates(store);
     for (const record of records) {
       applyResolutionEventInCurrentTransaction(store, record, {
         deferRelationshipReconciliation: true,
       });
     }
+    autoAcceptSafeLegalRefs(store);
     reconcileRelationshipCandidates(store);
     autoAcceptSafeRelationshipCandidates(store);
   });

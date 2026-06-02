@@ -28,7 +28,9 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const limit = readNumberFlag(args, "--limit");
   if (args[0] === "source" && !args[1]) {
     printSourceHelp({
-      tips: ["run `dc source list` to see fetch status and `dc source fetch dcgis.agencies` to start"],
+      tips: [
+        "run `dc source list` to see fetch status and `dc source fetch dcgis.agencies` to start",
+      ],
       showAvailableSources: true,
     });
     return true;
@@ -48,7 +50,9 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   }
   if (args[0] === "source" && args[1] === "inspect" && !args[2]) {
     printSourceHelp({
-      tips: ["run `dc source inspect dcgis.agencies` after a fetch or `dc source list` to browse ids"],
+      tips: [
+        "run `dc source inspect dcgis.agencies` after a fetch or `dc source list` to browse ids",
+      ],
       showAvailableSources: true,
     });
     return true;
