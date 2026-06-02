@@ -502,3 +502,78 @@ Deno.test("status json reports blocked reconciliation counts", async () => {
   assert(status.reconciliation.firstBlocked);
   assert(status.reconciliation.firstBlocked.blockers.length > 0);
 });
+
+Deno.test("status surfaces blocked work by source with readable blocker labels", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blockedBySource: Array<{ sourceId: string; count: number }>;
+      firstBlocked?: {
+        sourceId: string;
+        blockers: Array<{ blockerId: string; blockerState: string; blockerLabel: string }>;
+      };
+    };
+  };
+
+  assertEquals(statusOutput.code, 0);
+  assert(
+    status.reconciliation.blockedBySource.some((row) =>
+      row.sourceId === "council.committees" && row.count > 0
+    ),
+  );
+  assertEquals(status.reconciliation.firstBlocked?.sourceId, "council.committees");
+  assert(
+    status.reconciliation.firstBlocked?.blockers.some((blocker) =>
+      blocker.blockerState === "pending_candidate" &&
+      blocker.blockerLabel === "Committee of the Whole"
+    ),
+  );
+});

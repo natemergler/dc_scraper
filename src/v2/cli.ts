@@ -41,14 +41,16 @@ interface WorkbenchStatusSnapshot {
     blocked: number;
     firstBlockedSubjectId?: string;
     firstBlockedReason?: string;
+    blockedBySource: Array<{ sourceId: string; count: number }>;
     blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
     blockedByReason: Array<{ reason: string; count: number }>;
     firstBlocked?: {
       subjectId: string;
+      sourceId: string;
       reason: string;
       relationshipType: string;
       rawValue?: string | null;
-      blockers: Array<{ blockerId: string; blockerState: string }>;
+      blockers: Array<{ blockerId: string; blockerState: string; blockerLabel: string }>;
     };
   };
   canonical: {
@@ -400,6 +402,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
       blocked: reconciliation.blockedCount,
       firstBlockedSubjectId: reconciliation.firstBlocked?.subjectId,
       firstBlockedReason: reconciliation.firstBlocked?.reason,
+      blockedBySource: reconciliation.blockedBySource,
       blockedByRelationshipType: reconciliation.blockedByRelationshipType,
       blockedByReason: reconciliation.blockedByReason,
       firstBlocked: reconciliation.firstBlocked,
@@ -413,6 +416,20 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
 }
 
 function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
+  const reconciliationDetails = [
+    status.reconciliation.blockedByRelationshipType.length > 0
+      ? status.reconciliation.blockedByRelationshipType
+        .map((row) => `${row.relationshipType}=${row.count}`)
+        .join(", ")
+      : undefined,
+    status.reconciliation.blockedBySource.length > 0
+      ? `sources ${
+        status.reconciliation.blockedBySource
+          .map((row) => `${row.sourceId}=${row.count}`)
+          .join(", ")
+      }`
+      : undefined,
+  ].filter((value): value is string => Boolean(value)).join("; ");
   return [
     "",
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
@@ -420,13 +437,7 @@ function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
     }`,
     `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
     `Reconciliation: ${status.reconciliation.blocked} blocked${
-      status.reconciliation.blockedByRelationshipType.length > 0
-        ? ` (${
-          status.reconciliation.blockedByRelationshipType
-            .map((row) => `${row.relationshipType}=${row.count}`)
-            .join(", ")
-        })`
-        : ""
+      reconciliationDetails ? ` (${reconciliationDetails})` : ""
     }`,
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Next: ${status.nextCommand}`,
