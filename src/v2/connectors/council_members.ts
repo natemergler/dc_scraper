@@ -156,10 +156,11 @@ function buildCouncilSeatRoleCandidates(sections: CouncilMemberBlock[]): EntityC
       }
     }
     if (section.title === "Ward Members") {
-      for (const [index, person] of section.people.entries()) {
-        const wardNumber = parseWardNumber(person.name) ?? index + 1;
+      for (const person of section.people) {
+        const wardNumber = parseWardNumber(person.name);
+        if (!wardNumber) continue;
         candidates.push(
-          buildRoleCandidate(`Ward ${wardNumber} Council Seat`, index, section.title),
+          buildRoleCandidate(`Ward ${wardNumber} Council Seat`, wardNumber - 1, section.title),
         );
       }
     }
@@ -243,8 +244,9 @@ function buildCouncilMemberRelationships(
       continue;
     }
     if (section.title === "Ward Members") {
-      for (const [index, person] of section.people.entries()) {
-        const wardNumber = parseWardNumber(person.name) ?? index + 1;
+      for (const person of section.people) {
+        const wardNumber = parseWardNumber(person.name);
+        if (!wardNumber) continue;
         relationships.push(...buildRoleRelationships(
           person.name,
           person.url,

@@ -224,10 +224,10 @@ export const councilCommitteeHealthDetailFixture = `
   <h1>Committee on Health</h1>
   <p>The committee has broad jurisdiction over health agencies.</p>
   <main>
-    <h3>Councilmembers</h3>
+    <h2>Councilmembers</h2>
     <h4>Chairperson</h4>
     <p><a href="https://dccouncil.gov/council/christina-henderson/">At-Large Councilmember Christina Henderson</a></p>
-    <h3>Councilmembers</h3>
+    <h4>Councilmembers</h4>
     <ul class="unstyled-list block-list row small-up-1 medium-up-2 large-up-3">
       <li><a href="https://dccouncil.gov/council/charles-allen/">Ward 6 Councilmember Charles Allen</a></li>
       <li><a href="https://dccouncil.gov/council/wendell-felder/">Ward 7 Councilmember Wendell Felder</a></li>

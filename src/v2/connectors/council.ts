@@ -394,16 +394,15 @@ function parseCommitteeMembers(html: string): {
   chairperson?: { name: string; url: string };
   members: Array<{ name: string; url: string }>;
 } {
-  const sections = [
-    ...html.matchAll(
-      /<h3[^>]*>\s*Councilmembers\s*<\/h3>\s*([\s\S]*?)(?=<h3[^>]*>|<footer|<\/main>)/gsi,
-    ),
-  ];
-  const chairSection = sections[0]?.[1] ?? "";
-  const membersSection = sections[1]?.[1] ?? "";
-  const chairpersonMatch = chairSection.match(
+  const councilmembersBlock = html.match(
+    /<h[1-6][^>]*>\s*Councilmembers\s*<\/h[1-6]>\s*([\s\S]*?)(?=<h[1-3][^>]*>|<footer|<\/main>)/i,
+  )?.[1] ?? "";
+  const chairpersonMatch = councilmembersBlock.match(
     /<h4[^>]*>\s*Chairperson\s*<\/h4>[\s\S]*?<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i,
   );
+  const membersSection = councilmembersBlock.match(
+    /<h4[^>]*>\s*Councilmembers\s*<\/h4>\s*([\s\S]*)/i,
+  )?.[1] ?? "";
   const chairperson = chairpersonMatch
     ? {
       url: chairpersonMatch[1],

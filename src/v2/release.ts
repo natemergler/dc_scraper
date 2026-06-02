@@ -428,6 +428,8 @@ Files:
 - \`legal_refs.*\`: normalized and source-backed legal references
 - \`entity_legal_refs.*\`: entity-linked legal reference attachments
 
+Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.
+
 ## Release summary
 
 - entities by review_status: ${entityStatus}
