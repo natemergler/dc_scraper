@@ -201,6 +201,11 @@ Deno.test("trusted committee candidates auto-promote during import and unblock r
      where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
        and state = 'blocked'`,
   ).get() as { count: number };
+  const relationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia'`,
+  ).get() as { relationshipId: string } | undefined;
   const relationshipItems = workbench.listReviewItems({
     mode: "relationships",
     relationshipType: "part_of",
@@ -214,10 +219,15 @@ Deno.test("trusted committee candidates auto-promote during import and unblock r
 
   assertEquals(committee?.reviewStatus, "accepted");
   assertEquals(blocked.count, 0);
-  assert(
+  assertEquals(
+    relationship?.relationshipId,
+    "dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia",
+  );
+  assertEquals(
     relationshipItems.some((item) =>
       item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
     ),
+    false,
   );
   assertEquals(
     entityItems.some((item) =>
@@ -320,6 +330,16 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
 
   const fetcher = async (url: string) => ({
     status: 200,
@@ -360,19 +380,19 @@ Deno.test("relationship review items are rebuilt from workbench state without co
 
   const item = workbench.listReviewItems({
     mode: "relationships",
-    relationshipType: "part_of",
+    relationshipType: "overseen_by",
     subjectPrefix: "relationship.council.committees",
   }).find((reviewItem) =>
-    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+    reviewItem.subjectId === "relationship.council.committees.committee_on_health_oversight_1"
   );
   workbench.close();
 
   assert(item);
-  assertEquals(item.reason, "Review committee to Council relationship");
+  assertEquals(item.reason, "Review Council committee oversight relationship");
   assertEquals(item.defaultAction, "accept");
-  assertEquals(item.details.relationshipType, "part_of");
-  assertEquals(item.details.fromEntityRef, "dc.committee_of_the_whole");
-  assertEquals(item.details.toEntityRef, "dc.council_of_the_district_of_columbia");
+  assertEquals(item.details.relationshipType, "overseen_by");
+  assertEquals(item.details.fromEntityRef, "dc.dc_health");
+  assertEquals(item.details.toEntityRef, "dc.committee_on_health");
 });
 
 Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {
@@ -495,21 +515,20 @@ Deno.test("placeholder endpoints keep relationship candidates blocked until the 
      where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
        and state = 'blocked'`,
   ).get() as { count: number };
-  const reviewAfter = workbench.listReviewItems({
-    mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.council.committees",
-  });
+  const relationshipAfter = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia'`,
+  ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
   assert(blockedBefore);
   assertStringIncludes(blockedBefore.detailsJson, '"state":"placeholder"');
   assertEquals(reviewBefore.length, 0);
   assertEquals(blockedAfter.count, 0);
-  assert(
-    reviewAfter.some((item) =>
-      item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
-    ),
+  assertEquals(
+    relationshipAfter?.relationshipId,
+    "dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia",
   );
 });
 
