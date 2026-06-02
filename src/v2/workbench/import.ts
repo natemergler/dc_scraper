@@ -5,6 +5,7 @@ import {
   type LegalRefInput,
   normalizeName,
   nowIso,
+  type RelationshipCandidateInput,
   sha256Hex,
   slugify,
 } from "../domain.ts";
@@ -33,6 +34,12 @@ interface EntityDecisionHint {
 
 interface LegalRefDecisionHint {
   legalRefId: string;
+  factSignature: string;
+  evidenceHash: string;
+}
+
+interface RelationshipDecisionHint {
+  relationshipCandidateId: string;
   factSignature: string;
   evidenceHash: string;
 }
@@ -81,6 +88,13 @@ export async function importConnectorResult(
         ),
       )
       : [];
+    const relationshipDecisionHints = endpointResult.parsed?.relationshipCandidates
+      ? await Promise.all(
+        endpointResult.parsed.relationshipCandidates.map((candidate) =>
+          buildRelationshipDecisionHint(endpointResult.endpoint.sourceId, candidate)
+        ),
+      )
+      : [];
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
@@ -121,6 +135,7 @@ export async function importConnectorResult(
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
+        await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
       }
       run(
         store.db,
@@ -158,6 +173,17 @@ async function buildLegalRefDecisionHint(
     legalRefId: legalRef.legalRefId,
     factSignature: legalRefFactSignature(sourceId, legalRef),
     evidenceHash: await legalRefEvidenceHash(legalRef),
+  };
+}
+
+async function buildRelationshipDecisionHint(
+  sourceId: string,
+  candidate: RelationshipCandidateInput,
+): Promise<RelationshipDecisionHint> {
+  return {
+    relationshipCandidateId: candidate.relationshipCandidateId,
+    factSignature: relationshipFactSignature(sourceId, candidate),
+    evidenceHash: await relationshipEvidenceHash(candidate),
   };
 }
 
@@ -336,6 +362,104 @@ async function reuseOrMarkStaleLegalRefDecisions(
   }
 }
 
+async function reuseOrMarkStaleRelationshipDecisions(
+  store: WorkbenchStore,
+  hints: RelationshipDecisionHint[],
+): Promise<void> {
+  let changed = false;
+  for (const hint of hints) {
+    const priorDecision = queryOne<{
+      eventType: string;
+      eventId: string;
+      evidenceHash?: string | null;
+      resolvedRelationshipType?: string | null;
+      resolvedFromEntityId?: string | null;
+      resolvedToEntityId?: string | null;
+    }>(
+      store.db,
+      `select event_type as eventType,
+              event_id as eventId,
+              json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+              json_extract(payload_json, '$.resolved_relationship_type') as resolvedRelationshipType,
+              json_extract(payload_json, '$.resolved_from_entity_id') as resolvedFromEntityId,
+              json_extract(payload_json, '$.resolved_to_entity_id') as resolvedToEntityId
+       from resolution_events
+       where event_type in ('accept_relationship_candidate', 'reject_relationship_candidate')
+         and json_extract(payload_json, '$.fact_signature') = ?
+       order by created_at desc, event_id desc
+       limit 1`,
+      [hint.factSignature],
+    );
+    if (!priorDecision?.evidenceHash) continue;
+
+    if (priorDecision.evidenceHash === hint.evidenceHash) {
+      const candidate = queryOne<{ reviewStatus: string }>(
+        store.db,
+        `select review_status as reviewStatus
+         from relationship_candidates
+         where relationship_candidate_id = ?`,
+        [hint.relationshipCandidateId],
+      );
+      if (!candidate) continue;
+      if (priorDecision.eventType === "accept_relationship_candidate") {
+        if (candidate.reviewStatus !== "accepted") {
+          reuseAcceptedRelationshipDecision(store, hint.relationshipCandidateId, priorDecision);
+        }
+      } else if (candidate.reviewStatus !== "rejected") {
+        run(
+          store.db,
+          "update relationship_candidates set review_status = 'rejected' where relationship_candidate_id = ?",
+          [hint.relationshipCandidateId],
+        );
+      }
+      run(
+        store.db,
+        "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'relationship_candidate'",
+        [nowIso(), hint.relationshipCandidateId],
+      );
+      changed = true;
+      continue;
+    }
+
+    const reviewItem = queryOne<{ reason: string; detailsJson: string }>(
+      store.db,
+      `select reason, details_json as detailsJson
+       from review_items
+       where subject_id = ? and item_type = 'relationship_candidate'`,
+      [hint.relationshipCandidateId],
+    );
+    if (!reviewItem) continue;
+    const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
+    const priorDecisionState = priorDecision.eventType === "accept_relationship_candidate"
+      ? "accepted"
+      : "rejected";
+    details.priorDecisionState = priorDecisionState;
+    details.stalePriorDecision = true;
+    details.factSignature = hint.factSignature;
+    details.evidenceHash = hint.evidenceHash;
+    const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
+    const staleReason = reviewItem.reason.includes(staleSuffix)
+      ? reviewItem.reason
+      : `${reviewItem.reason} (${staleSuffix})`;
+    run(
+      store.db,
+      `update review_items
+       set reason = ?, default_action = ?, details_json = ?, status = 'open', updated_at = ?
+       where subject_id = ? and item_type = 'relationship_candidate'`,
+      [
+        staleReason,
+        priorDecisionState === "accepted" ? "accept" : "reject",
+        JSON.stringify(details),
+        nowIso(),
+        hint.relationshipCandidateId,
+      ],
+    );
+  }
+  if (changed) {
+    reconcileRelationshipCandidates(store);
+  }
+}
+
 function mergeAcceptedEntityCandidate(
   store: WorkbenchStore,
   candidateId: string,
@@ -427,6 +551,45 @@ async function legalRefEvidenceHash(
   return `sha256:${await sha256Hex(JSON.stringify(canonicalEvidence))}`;
 }
 
+function relationshipFactSignature(
+  sourceId: string,
+  candidate: Pick<
+    RelationshipCandidateInput,
+    "sourceItemKey" | "fromEntityRef" | "toEntityRef" | "relationshipType"
+  >,
+): string {
+  return [
+    "relationship_candidate",
+    sourceId,
+    candidate.sourceItemKey,
+    candidate.fromEntityRef,
+    candidate.relationshipType,
+    candidate.toEntityRef,
+  ].join(":");
+}
+
+async function relationshipEvidenceHash(
+  candidate: Pick<RelationshipCandidateInput, "rawValue" | "needsReview" | "evidence">,
+): Promise<string> {
+  const canonicalEvidence = {
+    rawValue: candidate.rawValue ?? null,
+    needsReview: candidate.needsReview === true,
+    evidence: candidate.evidence
+      .map((row: { fieldPath: string; observedValue: string }) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      }))
+      .sort((left: { fieldPath: string; observedValue: string }, right: {
+        fieldPath: string;
+        observedValue: string;
+      }) =>
+        left.fieldPath.localeCompare(right.fieldPath) ||
+        left.observedValue.localeCompare(right.observedValue)
+      ),
+  };
+  return `sha256:${await sha256Hex(JSON.stringify(canonicalEvidence))}`;
+}
+
 function reuseAcceptedLegalRefDecision(
   store: WorkbenchStore,
   legalRefId: string,
@@ -445,6 +608,42 @@ function reuseAcceptedLegalRefDecision(
       priorDecision.resolvedUrl ?? null,
       legalRefId,
     ],
+  );
+}
+
+function reuseAcceptedRelationshipDecision(
+  store: WorkbenchStore,
+  relationshipCandidateId: string,
+  priorDecision: {
+    eventId: string;
+    resolvedRelationshipType?: string | null;
+    resolvedFromEntityId?: string | null;
+    resolvedToEntityId?: string | null;
+  },
+): void {
+  const relationshipType = priorDecision.resolvedRelationshipType;
+  const fromEntityId = priorDecision.resolvedFromEntityId;
+  const toEntityId = priorDecision.resolvedToEntityId;
+  if (!relationshipType || !fromEntityId || !toEntityId) return;
+  const relationshipId = `${fromEntityId}:${relationshipType}:${toEntityId}`;
+  const existing = queryOne<{ relationshipId: string }>(
+    store.db,
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
+    [relationshipId],
+  );
+  if (!existing) {
+    run(
+      store.db,
+      `insert into canonical_relationships(
+         relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at
+       ) values(?, ?, ?, ?, 'accepted', ?, ?)`,
+      [relationshipId, fromEntityId, relationshipType, toEntityId, priorDecision.eventId, nowIso()],
+    );
+  }
+  run(
+    store.db,
+    "update relationship_candidates set review_status = 'accepted' where relationship_candidate_id = ?",
+    [relationshipCandidateId],
   );
 }
 

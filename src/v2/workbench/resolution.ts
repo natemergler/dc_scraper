@@ -54,10 +54,18 @@ async function enrichResolutionEvent(
   if (
     event.eventType !== "accept_entity_candidate" &&
     event.eventType !== "reject_entity_candidate" &&
+    event.eventType !== "accept_relationship_candidate" &&
+    event.eventType !== "reject_relationship_candidate" &&
     event.eventType !== "accept_legal_ref" &&
     event.eventType !== "reject_legal_ref"
   ) {
     return event;
+  }
+  if (
+    event.eventType === "accept_relationship_candidate" ||
+    event.eventType === "reject_relationship_candidate"
+  ) {
+    return await enrichRelationshipResolutionEvent(store, event);
   }
   if (event.eventType === "accept_legal_ref" || event.eventType === "reject_legal_ref") {
     return await enrichLegalRefResolutionEvent(store, event);
@@ -115,6 +123,83 @@ async function enrichResolutionEvent(
         ? {
           resolved_entity_id: event.payload.resolved_entity_id ?? event.payload.entityId ??
             candidate.proposedEntityId,
+        }
+        : {}),
+    },
+  };
+}
+
+async function enrichRelationshipResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const candidate = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+    relationshipType: string;
+    rawValue?: string | null;
+    needsReview: number;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.to_entity_ref as toEntityRef,
+            relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.raw_value as rawValue,
+            relationship_candidates.needs_review as needsReview
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.relationship_candidate_id = ?`,
+    [event.subjectId],
+  );
+  if (!candidate) return event;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from relationship_candidate_evidence
+     where relationship_candidate_id = ?
+     order by field_path, observed_value`,
+  ).all(event.subjectId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const factSignature = [
+    "relationship_candidate",
+    candidate.sourceId,
+    candidate.itemKey,
+    candidate.fromEntityRef,
+    candidate.relationshipType,
+    candidate.toEntityRef,
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify({
+      rawValue: candidate.rawValue ?? null,
+      needsReview: candidate.needsReview === 1,
+      evidence: evidenceRows.map((row) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      })),
+    }),
+  )}`;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? factSignature,
+      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
+      ...(event.eventType === "accept_relationship_candidate"
+        ? {
+          resolved_relationship_type: event.payload.resolved_relationship_type ??
+            event.payload.relationshipType ??
+            candidate.relationshipType,
+          resolved_from_entity_id: event.payload.resolved_from_entity_id ??
+            event.payload.fromEntityId ??
+            candidate.fromEntityRef,
+          resolved_to_entity_id: event.payload.resolved_to_entity_id ?? event.payload.toEntityId ??
+            candidate.toEntityRef,
         }
         : {}),
     },
