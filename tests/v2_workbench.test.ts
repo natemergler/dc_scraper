@@ -56,9 +56,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 7);
-  assertEquals(second.schemaVersion, 7);
-  assertEquals(second.migrations.length, 7);
+  assertEquals(first.schemaVersion, 8);
+  assertEquals(second.schemaVersion, 8);
+  assertEquals(second.migrations.length, 8);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -179,7 +179,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 7");
+  assertStringIncludes(statusText, "Schema version: 8");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Next: dc source list");
@@ -206,7 +206,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     review: { open: number; deferred: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 7);
+  assertEquals(jsonStatus.schemaVersion, 8);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.nextCommand, "dc source list");
@@ -654,7 +654,7 @@ Deno.test("failed parsed imports keep artifacts but roll back partial typed rows
   assertEquals(counts, { artifacts: 1, items: 0, entityCandidates: 0 });
 });
 
-Deno.test("quickbase connector parses public CSV appointment rows into seats, authorities, and review items", async () => {
+Deno.test("quickbase connector parses public CSV appointment rows into seats, statuses, authorities, and review items", async () => {
   const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
 "Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
 `;
@@ -704,10 +704,22 @@ Deno.test("quickbase connector parses public CSV appointment rows into seats, au
     ),
   );
   assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.kind === "appointment_status" && candidate.name === "Filled"
+    ),
+  );
+  assert(
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "has_seat" &&
       candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission" &&
       candidate.toEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "has_status" &&
+      candidate.fromEntityRef === "dc.district_of_columbia_rental_housing_commission_chairperson" &&
+      candidate.toEntityRef === "status.filled"
     ),
   );
   assert(
@@ -734,6 +746,11 @@ Deno.test("quickbase connector parses public CSV appointment rows into seats, au
     parsed.reviewItems?.some((item) =>
       item.reason ===
         "Review appointing or designating authority inferred from Quickbase appointment row"
+    ),
+  );
+  assert(
+    parsed.reviewItems?.some((item) =>
+      item.reason === "Review seat status from Quickbase appointment row"
     ),
   );
   assert(
@@ -1858,6 +1875,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
 
 Deno.test("public-body seat relationship inverses stay user-facing", () => {
   assertEquals(inverseRelationshipType("has_seat"), "seat_on");
+  assertEquals(inverseRelationshipType("has_status"), "status_of");
   assertEquals(inverseRelationshipType("designated_by"), "designates");
 });
 
@@ -2797,7 +2815,7 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   assertEquals(remainingOversight.length, 2);
 });
 
-Deno.test("batch accept-safe accepts scoped Quickbase seat structure and authority only for accepted endpoints", async () => {
+Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, and authority only for accepted endpoints", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -2835,6 +2853,7 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure and authori
     const subjectId of [
       "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc",
       "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc_seat_alcoholic_beverages_and_cannabis_administration_designee",
+      "candidate.mota.quickbase.appointment_status_filled",
     ]
   ) {
     await workbench.appendResolutionEvent(
@@ -2890,6 +2909,16 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure and authori
     "Accepted 1 safe review item(s).",
   );
 
+  const hasStatusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "has_status"],
+  }).output();
+  assertEquals(hasStatusOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(hasStatusOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
   const designatedByOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [...commonArgs, "--relationship-type", "designated_by"],
@@ -2925,6 +2954,7 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure and authori
     "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:has_status:status.filled",
   ]);
   assert(remainingSeatRelationships.length > 0);
 });
@@ -3855,7 +3885,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "Public-body seat relationship types used by the workbench: has_seat, appointed_by, and designated_by.",
+    "Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");

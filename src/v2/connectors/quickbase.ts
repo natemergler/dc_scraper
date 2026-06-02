@@ -265,6 +265,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
 
   const seenBoards = new Map<string, string>();
   const seenSeats = new Set<string>();
+  const seenStatuses = new Set<string>();
   const entityCandidates: EntityCandidateInput[] = [];
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   const reviewItems: ReviewItemInput[] = [];
@@ -320,6 +321,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     }
 
     const seatRecord = buildSeatRecord(board, seat);
+    const statusRecord = buildSeatStatusRecord(appointmentStatus);
     if (seatRecord && !seenSeats.has(seatRecord.entityId)) {
       seenSeats.add(seatRecord.entityId);
       entityCandidates.push({
@@ -350,6 +352,36 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
             seatLabel: seatRecord.label,
             seatDesignation: seatRecord.rawValue,
             appointmentStatus,
+          },
+        ),
+      );
+    }
+
+    if (statusRecord && !seenStatuses.has(statusRecord.entityId)) {
+      seenStatuses.add(statusRecord.entityId);
+      entityCandidates.push({
+        candidateId: statusRecord.candidateId,
+        sourceItemKey: itemKey,
+        proposedEntityId: statusRecord.entityId,
+        name: statusRecord.name,
+        kind: "appointment_status",
+        rawKind: "appointment_status",
+        cluster: "Appointment Status",
+        confidence: 0.99,
+        duplicateHint: statusRecord.name,
+        evidence: [
+          fieldEvidence(quickbaseColumns.status, statusRecord.rawValue),
+          fieldEvidence("row", String(index + 1)),
+        ],
+      });
+      reviewItems.push(
+        buildCandidateReviewItem(
+          statusRecord.candidateId,
+          "Review MOTA appointment status vocabulary",
+          "accept",
+          {
+            source: quickbaseSource.sourceId,
+            status: statusRecord.name,
           },
         ),
       );
@@ -390,6 +422,46 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
             relationshipType: candidate.relationshipType,
             rawValue: seat,
             appointmentStatus,
+          },
+        });
+      }
+    }
+
+    if (seatRecord && statusRecord) {
+      const relationshipCandidateId = buildRelationshipCandidateId(
+        quickbaseSource.sourceId,
+        `${seatRecord.name}-has-status-${statusRecord.name}`,
+      );
+      const relationshipKey = `${seatRecord.entityId}>${statusRecord.entityId}:has_status`;
+      if (!relationshipKeys.has(relationshipKey)) {
+        relationshipKeys.add(relationshipKey);
+        const candidate: RelationshipCandidateInput = {
+          relationshipCandidateId,
+          sourceItemKey: itemKey,
+          fromEntityRef: seatRecord.entityId,
+          toEntityRef: statusRecord.entityId,
+          relationshipType: "has_status",
+          rawValue: statusRecord.rawValue,
+          needsReview: true,
+          evidence: [
+            fieldEvidence(quickbaseColumns.status, statusRecord.rawValue),
+            fieldEvidence("row", String(index + 1)),
+            fieldEvidence(quickbaseColumns.seat, seat),
+          ],
+        };
+        relationshipCandidates.push(candidate);
+        reviewItems.push({
+          reviewItemId: buildReviewItemId(relationshipCandidateId, "seat-status"),
+          itemType: "relationship_candidate",
+          subjectId: relationshipCandidateId,
+          reason: "Review seat status from Quickbase appointment row",
+          defaultAction: "accept",
+          details: {
+            fromEntityRef: seatRecord.entityId,
+            toEntityRef: statusRecord.entityId,
+            relationshipType: candidate.relationshipType,
+            rawValue: statusRecord.rawValue,
+            seatDesignation: seatRecord.rawValue,
           },
         });
       }
@@ -507,6 +579,13 @@ interface QuickbaseSeatRecord {
   rawValue: string;
 }
 
+interface QuickbaseSeatStatusRecord {
+  candidateId: string;
+  entityId: string;
+  name: string;
+  rawValue: string;
+}
+
 interface SeatAuthorityRecord {
   relationshipType: "appointed_by" | "designated_by";
   authorityName: string;
@@ -524,6 +603,17 @@ function buildSeatRecord(board: string, seat: string): QuickbaseSeatRecord | und
     entityId: buildEntityId(entityName),
     label,
     name: entityName,
+    rawValue,
+  };
+}
+
+function buildSeatStatusRecord(status: string): QuickbaseSeatStatusRecord | undefined {
+  const rawValue = maybeString(status);
+  if (!rawValue) return undefined;
+  return {
+    candidateId: buildCandidateId(quickbaseSource.sourceId, `appointment-status-${rawValue}`),
+    entityId: buildEntityId(rawValue, "status"),
+    name: rawValue,
     rawValue,
   };
 }

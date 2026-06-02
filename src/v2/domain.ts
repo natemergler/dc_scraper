@@ -20,6 +20,7 @@ export type CandidateStatus = "pending" | "accepted" | "rejected";
 export type RelationshipType =
   | "part_of"
   | "has_seat"
+  | "has_status"
   | "governed_by"
   | "overseen_by"
   | "appointed_by"
@@ -375,6 +376,8 @@ export function inverseRelationshipType(type: string): string {
       return "has_part";
     case "has_seat":
       return "seat_on";
+    case "has_status":
+      return "status_of";
     case "governed_by":
       return "governs";
     case "overseen_by":
