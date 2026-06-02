@@ -221,6 +221,7 @@ function isScopedQuickbaseSeatAccept(filters: ReviewItemFilters): boolean {
   return Boolean(filters.subjectPrefix?.startsWith("relationship.mota.quickbase")) &&
     (
       filters.relationshipType === "has_seat" ||
+      filters.relationshipType === "has_status" ||
       filters.relationshipType === "appointed_by" ||
       filters.relationshipType === "designated_by"
     );
