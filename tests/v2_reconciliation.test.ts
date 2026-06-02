@@ -1045,6 +1045,117 @@ Deno.test("changed legal ref evidence after a prior accept becomes stale review 
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("edited legal ref accept decisions are reused across refetch when legal ref ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstLegalRefId = "legal.test.signature.legal_refs.code_edit_v1";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      firstLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: firstLegalRefId,
+      payload: {
+        normalizedCitation: "D.C. Code 1-204.22 (reviewed)",
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondLegalRefId = "legal.test.signature.legal_refs.code_edit_v2";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      secondLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = ?",
+  ).get(firstLegalRefId) as { payloadJson: string };
+  const secondLegalRef = workbench.db.prepare(
+    "select review_status as reviewStatus, normalized_citation as normalizedCitation from legal_refs where legal_ref_id = ?",
+  ).get(secondLegalRefId) as { reviewStatus: string; normalizedCitation: string };
+  const openItems = workbench.listReviewItems({ mode: "legal", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+    resolved_normalized_citation?: string;
+  };
+  assertStringIncludes(payload.fact_signature ?? "", "legal_ref:test.signature.legal_refs");
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(payload.resolved_normalized_citation, "D.C. Code 1-204.22 (reviewed)");
+  assertEquals(secondLegalRef.reviewStatus, "accepted");
+  assertEquals(secondLegalRef.normalizedCitation, "D.C. Code 1-204.22 (reviewed)");
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed legal ref evidence after a prior edited accept preserves prior resolved details", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstLegalRefId = "legal.test.signature.legal_refs.code_edit_v1";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      firstLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: firstLegalRefId,
+      payload: {
+        normalizedCitation: "D.C. Code 1-204.22 (reviewed)",
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondLegalRefId = "legal.test.signature.legal_refs.code_edit_v2";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      secondLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22?changed=1",
+    ),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "legal",
+    status: "open",
+  }).find((item) => item.subjectId === secondLegalRefId);
+  workbench.close();
+
+  assert(staleItem);
+  assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(staleItem.details.priorResolvedNormalizedCitation, "D.C. Code 1-204.22 (reviewed)");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
 Deno.test("deferred legal ref review decisions are reused across refetch when legal ref ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1358,6 +1469,143 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertEquals(secondCandidate.reviewStatus, "pending");
   assert(staleItem);
   assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
+Deno.test("edited relationship accept decisions are reused across refetch when relationship candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ], [
+      "dc.alt_agency",
+      "Alt Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_edit_v1";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(firstCandidateId, "Target Agency"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: firstCandidateId,
+      payload: {
+        relationshipType: "authorized_by",
+        toEntityId: "dc.alt_agency",
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_edit_v2";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(secondCandidateId, "Target Agency"),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = ?",
+  ).get(firstCandidateId) as { payloadJson: string };
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const relationshipCount = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where relationship_id = 'dc.source_board:authorized_by:dc.alt_agency'",
+  ).get() as { count: number };
+  const openItems = workbench.listReviewItems({ mode: "relationships", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+    resolved_relationship_type?: string;
+    resolved_to_entity_id?: string;
+  };
+  assertStringIncludes(
+    payload.fact_signature ?? "",
+    "relationship_candidate:test.signature.relationships",
+  );
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(payload.resolved_relationship_type, "authorized_by");
+  assertEquals(payload.resolved_to_entity_id, "dc.alt_agency");
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(relationshipCount.count, 1);
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed relationship evidence after a prior edited accept preserves prior resolved details", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ], [
+      "dc.alt_agency",
+      "Alt Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_edit_v1";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(firstCandidateId, "Target Agency"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: firstCandidateId,
+      payload: {
+        relationshipType: "authorized_by",
+        toEntityId: "dc.alt_agency",
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_governed_by_target_agency_edit_v2";
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(secondCandidateId, "Target Agency (Updated Source Text)"),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  workbench.close();
+
+  assert(staleItem);
+  assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(staleItem.details.priorResolvedRelationshipType, "authorized_by");
+  assertEquals(staleItem.details.priorResolvedFromEntityId, "dc.source_board");
+  assertEquals(staleItem.details.priorResolvedToEntityId, "dc.alt_agency");
   assertEquals(staleItem.details.stalePriorDecision, true);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });

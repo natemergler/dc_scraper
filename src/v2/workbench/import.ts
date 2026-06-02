@@ -449,6 +449,17 @@ async function reuseOrMarkStaleLegalRefDecisions(
     details.stalePriorDecision = true;
     details.factSignature = hint.factSignature;
     details.evidenceHash = hint.evidenceHash;
+    if (priorDecisionState === "accepted") {
+      if (priorDecision.resolvedRefType) {
+        details.priorResolvedRefType = priorDecision.resolvedRefType;
+      }
+      if (priorDecision.resolvedNormalizedCitation !== undefined) {
+        details.priorResolvedNormalizedCitation = priorDecision.resolvedNormalizedCitation;
+      }
+      if (priorDecision.resolvedUrl !== undefined) {
+        details.priorResolvedUrl = priorDecision.resolvedUrl;
+      }
+    }
     const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
     const staleReason = reviewItem.reason.includes(staleSuffix)
       ? reviewItem.reason
@@ -727,6 +738,17 @@ async function reuseOrMarkStaleRelationshipDecisions(
     details.stalePriorDecision = true;
     details.factSignature = hint.factSignature;
     details.evidenceHash = hint.evidenceHash;
+    if (priorDecisionState === "accepted") {
+      if (priorDecision.resolvedRelationshipType) {
+        details.priorResolvedRelationshipType = priorDecision.resolvedRelationshipType;
+      }
+      if (priorDecision.resolvedFromEntityId) {
+        details.priorResolvedFromEntityId = priorDecision.resolvedFromEntityId;
+      }
+      if (priorDecision.resolvedToEntityId) {
+        details.priorResolvedToEntityId = priorDecision.resolvedToEntityId;
+      }
+    }
     const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
     const staleReason = reviewItem.reason.includes(staleSuffix)
       ? reviewItem.reason
