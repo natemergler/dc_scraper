@@ -43,6 +43,16 @@ interface WorkbenchStatusSnapshot {
     open: number;
     deferred: number;
   };
+  placeholders: {
+    count: number;
+    byReason: Array<{ reason: string; count: number }>;
+    firstPlaceholder?: {
+      entityId: string;
+      name: string;
+      kind: string;
+      placeholderReason?: string | null;
+    };
+  };
   reconciliation: {
     blocked: number;
     firstBlockedSubjectId?: string;
@@ -386,6 +396,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const openReview = workbench.listReviewItems({ status: "open" }).length;
   const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
+  const placeholders = workbench.placeholderSummary();
   const reconciliation = workbench.reconciliationSummary();
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
@@ -405,6 +416,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
       open: openReview,
       deferred: deferredReview,
     },
+    placeholders,
     reconciliation: {
       blocked: reconciliation.blockedCount,
       firstBlockedSubjectId: reconciliation.firstBlocked?.subjectId,
@@ -451,6 +463,15 @@ function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
     `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
+    `Placeholders: ${status.placeholders.count}${
+      status.placeholders.firstPlaceholder
+        ? ` first ${status.placeholders.firstPlaceholder.name}${
+          status.placeholders.firstPlaceholder.placeholderReason
+            ? ` (${status.placeholders.firstPlaceholder.placeholderReason})`
+            : ""
+        }`
+        : ""
+    }`,
     `Reconciliation: ${status.reconciliation.blocked} blocked${
       reconciliationDetails ? ` (${reconciliationDetails})` : ""
     }`,

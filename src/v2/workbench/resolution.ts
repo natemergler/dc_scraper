@@ -3,10 +3,12 @@ import { join, relative } from "@std/path";
 import {
   type CandidateStatus,
   compactDatePart,
+  normalizeName,
   nowIso,
   parseLegalReference,
   type ResolutionEventInput,
   type ReviewStatus,
+  sha256Hex,
   slugify,
 } from "../domain.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
@@ -24,6 +26,7 @@ export async function appendResolutionEvent(
   event: ResolutionEventInput,
   resolutionsDir: string,
 ): Promise<{ filePath: string; sequenceNumber: number }> {
+  const enrichedEvent = await enrichResolutionEvent(store, event);
   const dayDir = join(resolutionsDir, compactDatePart());
   const filePath = join(dayDir, "001-auto-review.jsonl");
   let sequenceNumber = 1;
@@ -34,14 +37,80 @@ export async function appendResolutionEvent(
     if (!(error instanceof Deno.errors.NotFound)) throw error;
   }
   const line = JSON.stringify({
-    event_type: event.eventType,
-    subject_id: event.subjectId,
-    payload: event.payload,
+    event_type: enrichedEvent.eventType,
+    subject_id: enrichedEvent.subjectId,
+    payload: enrichedEvent.payload,
   });
-  applyResolutionEvent(store, event, relative(resolutionsDir, filePath), sequenceNumber);
+  applyResolutionEvent(store, enrichedEvent, relative(resolutionsDir, filePath), sequenceNumber);
   await ensureDir(dayDir);
   await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   return { filePath, sequenceNumber };
+}
+
+async function enrichResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  if (event.eventType !== "accept_entity_candidate" && event.eventType !== "reject_entity_candidate") {
+    return event;
+  }
+  const candidate = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    proposedEntityId: string;
+    name: string;
+    kind: string;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            entity_candidates.proposed_entity_id as proposedEntityId,
+            entity_candidates.name,
+            entity_candidates.kind
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     where entity_candidates.candidate_id = ?`,
+    [event.subjectId],
+  );
+  if (!candidate) return event;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from entity_candidate_evidence
+     where candidate_id = ?
+     order by field_path, observed_value`,
+  ).all(event.subjectId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const factSignature = [
+    "entity_candidate",
+    candidate.sourceId,
+    candidate.itemKey,
+    candidate.proposedEntityId,
+    slugify(normalizeName(candidate.name)),
+    candidate.kind,
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify(evidenceRows.map((row) => ({
+      fieldPath: row.fieldPath,
+      observedValue: row.observedValue,
+    }))),
+  )}`;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? factSignature,
+      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
+      ...(event.eventType === "accept_entity_candidate"
+        ? {
+          resolved_entity_id: event.payload.resolved_entity_id ?? event.payload.entityId ??
+            candidate.proposedEntityId,
+        }
+        : {}),
+    },
+  };
 }
 
 export function applyResolutionEvent(

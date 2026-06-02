@@ -1510,6 +1510,74 @@ Deno.test("blocked relationship reconciliation stores endpoint status for audit"
   );
 });
 
+Deno.test("status surfaces placeholder risk with readable reason", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.placeholder_example', 'Placeholder Example', 'placeholder', 'placeholder', '[]', 1, 'fixture placeholder', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  assertStringIncludes(statusText, "Placeholders: 1");
+  assertStringIncludes(statusText, "Placeholder Example");
+  assertStringIncludes(statusText, "fixture placeholder");
+
+  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(jsonStatusOutput.code, 0);
+  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+    placeholders: {
+      count: number;
+      byReason: Array<{ reason: string; count: number }>;
+      firstPlaceholder?: {
+        entityId: string;
+        name: string;
+        placeholderReason?: string | null;
+      };
+    };
+  };
+  assertEquals(jsonStatus.placeholders.count, 1);
+  assertEquals(jsonStatus.placeholders.firstPlaceholder?.entityId, "dc.placeholder_example");
+  assertEquals(jsonStatus.placeholders.firstPlaceholder?.name, "Placeholder Example");
+  assertEquals(jsonStatus.placeholders.firstPlaceholder?.placeholderReason, "fixture placeholder");
+  assert(
+    jsonStatus.placeholders.byReason.some((row) =>
+      row.reason === "fixture placeholder" && row.count === 1
+    ),
+  );
+});
+
 Deno.test("dc review relationships can edit endpoints before accepting", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

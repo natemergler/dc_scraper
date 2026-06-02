@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { buildReviewItemId, type ConnectorResult } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   councilCommitteeHealthDetailFixture,
@@ -433,6 +434,106 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
   assertEquals(otherItem?.defaultAction, "defer");
 });
 
+Deno.test("accepted entity decisions are reused across refetch when candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.signature.entities.example_v1", "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.signature.entities.example_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.signature.entities.example_v2", "Example Body"),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = 'candidate.test.signature.entities.example_v1'",
+  ).get() as { payloadJson: string };
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = 'candidate.test.signature.entities.example_v2'",
+  ).get() as { reviewStatus: string };
+  const canonical = workbench.db.prepare(
+    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.example_body'",
+  ).get() as { mergedCandidateIds: string };
+  const openItems = workbench.listReviewItems({ mode: "entities", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(payload.fact_signature ?? "", "entity_candidate:test.signature.entities");
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(openItems.length, 0);
+  assertEquals(
+    JSON.parse(canonical.mergedCandidateIds) as string[],
+    [
+      "candidate.test.signature.entities.example_v1",
+      "candidate.test.signature.entities.example_v2",
+    ],
+  );
+});
+
+Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.signature.entities.example_v1", "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.signature.entities.example_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(
+      "candidate.test.signature.entities.example_v2",
+      "Example Body (Updated Source Text)",
+    ),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = 'candidate.test.signature.entities.example_v2'",
+  ).get() as { reviewStatus: string };
+  const staleItem = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  }).find((item) => item.subjectId === "candidate.test.signature.entities.example_v2");
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "pending");
+  assert(staleItem);
+  assertEquals(staleItem.details.priorDecisionState, "accepted");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
 Deno.test("status json reports blocked reconciliation counts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -659,3 +760,63 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
     ),
   );
 });
+
+function syntheticEntitySourceResult(candidateId: string, observedName: string): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.signature.entities",
+      title: "Test Signature Entities",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/signature-entities",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.signature.entities.main",
+        sourceId: "test.signature.entities",
+        title: "Signature entity rows",
+        kind: "fixture",
+        url: "https://example.com/signature-entities",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/signature-entities",
+        contentText: JSON.stringify({ candidateId, observedName }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "example-row",
+          itemType: "fixture_row",
+          title: "Example row",
+          body: { observedName },
+        }],
+        entityCandidates: [{
+          candidateId,
+          sourceItemKey: "example-row",
+          proposedEntityId: "dc.example_body",
+          name: "Example Body",
+          kind: "board",
+          evidence: [{
+            fieldPath: "name",
+            observedValue: observedName,
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: buildReviewItemId(candidateId, "entity-review"),
+          itemType: "entity_candidate",
+          subjectId: candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "accept",
+          details: {
+            name: "Example Body",
+            kind: "board",
+          },
+        }],
+      },
+    }],
+  };
+}
