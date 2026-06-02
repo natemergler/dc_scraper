@@ -577,3 +577,85 @@ Deno.test("status surfaces blocked work by source with readable blocker labels",
     ),
   );
 });
+
+Deno.test("rejecting a prerequisite keeps dependent relationships blocked with rejected blocker audit", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_entity_candidate",
+      subjectId: "candidate.council.committees.committee_of_the_whole",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blockedByBlockerState: Array<{ blockerState: string; count: number }>;
+      firstBlocked?: {
+        blockers: Array<{ blockerId: string; blockerState: string; blockerLabel: string }>;
+      };
+    };
+  };
+
+  assertEquals(statusOutput.code, 0);
+  assert(
+    status.reconciliation.blockedByBlockerState.some((row) =>
+      row.blockerState === "rejected_candidate" && row.count > 0
+    ),
+  );
+  assert(
+    status.reconciliation.firstBlocked?.blockers.some((blocker) =>
+      blocker.blockerState === "rejected_candidate" &&
+      blocker.blockerLabel === "Committee of the Whole"
+    ),
+  );
+});

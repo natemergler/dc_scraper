@@ -29,6 +29,10 @@ export interface ReconciliationSummary {
     sourceId: string;
     count: number;
   }>;
+  blockedByBlockerState: Array<{
+    blockerState: string;
+    count: number;
+  }>;
   blockedByRelationshipType: Array<{
     relationshipType: string;
     count: number;
@@ -116,6 +120,15 @@ export function reconciliationSummary(store: WorkbenchStore): ReconciliationSumm
      group by source_items.source_id
      order by count(*) desc, source_items.source_id`,
   );
+  const blockedByBlockerState = queryAll<{ blockerState: string; count: number }>(
+    store.db,
+    `select blocker_state as blockerState,
+            count(*) as count
+     from reconciliation_blockers
+     where subject_type = 'relationship_candidate'
+     group by blocker_state
+     order by count(*) desc, blocker_state`,
+  );
   const blockedByRelationshipType = queryAll<{ relationshipType: string; count: number }>(
     store.db,
     `select relationship_candidates.relationship_type as relationshipType,
@@ -194,6 +207,7 @@ export function reconciliationSummary(store: WorkbenchStore): ReconciliationSumm
   return {
     blockedCount,
     blockedBySource,
+    blockedByBlockerState,
     blockedByRelationshipType,
     blockedByReason,
     firstBlocked,

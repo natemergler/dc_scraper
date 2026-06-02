@@ -3778,6 +3778,123 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }
 });
 
+Deno.test("release summary surfaces unresolved review debt and placeholder risk neutrally", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', 0, null, datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.placeholder_example', 'Placeholder Example', 'placeholder', 'placeholder', '[]', 1, 'fixture placeholder', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const outDir = join(dir, "release");
+  await buildV2Release(workbench, outDir);
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
+    release_summary: {
+      open_review_item_count: number;
+      deferred_review_item_count: number;
+      blocked_reconciliation_count: number;
+      placeholder_entity_count: number;
+      blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
+      review_status_note: string;
+    };
+  };
+  const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  workbench.close();
+
+  assert(manifest.release_summary.open_review_item_count > 0);
+  assert(manifest.release_summary.blocked_reconciliation_count > 0);
+  assertEquals(manifest.release_summary.placeholder_entity_count, 1);
+  assert(
+    manifest.release_summary.blocked_reconciliation_by_source.some((row) =>
+      row.source_id === "council.committees" && row.count > 0
+    ),
+  );
+  assertStringIncludes(
+    manifest.release_summary.review_status_note,
+    "Release built with unresolved workbench state:",
+  );
+  assertStringIncludes(readme, "review status note:");
+  assertStringIncludes(readme, "blocked by source: council.committees=");
+
+  const inspectOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+    ],
+  }).output();
+  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  assertEquals(inspectOutput.code, 0);
+  assertStringIncludes(inspectText, "Review status: open=");
+  assertStringIncludes(inspectText, "Blocked by source: council.committees=");
+
+  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+      "--json",
+    ],
+  }).output();
+  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+    releaseSummary: {
+      blocked_reconciliation_count: number;
+      placeholder_entity_count: number;
+      blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
+    };
+  };
+  assertEquals(inspectJsonOutput.code, 0);
+  assert(inspectJson.releaseSummary.blocked_reconciliation_count > 0);
+  assertEquals(inspectJson.releaseSummary.placeholder_entity_count, 1);
+  assert(
+    inspectJson.releaseSummary.blocked_reconciliation_by_source.some((row) =>
+      row.source_id === "council.committees" && row.count > 0
+    ),
+  );
+});
+
 Deno.test("release builder rejects email-shaped contact info in release rows", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

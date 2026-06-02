@@ -441,6 +441,8 @@ Civic role relationship types used by the workbench: holds, represents, member_o
 - legal refs by type: ${legalByType}
 - legal refs by review_status: ${legalByStatus}
 - entity legal refs: total=${summary.entity_legal_refs_count}
+- review status note: ${summary.review_status_note}
+- blocked by source: ${renderBlockedBySource(summary.blocked_reconciliation_by_source)}
 
 Relationship coverage note: accepted relationships may represent only a partial reviewed slice of discovered relationship candidates.
 `;
@@ -461,11 +463,32 @@ function buildReleaseSummary(
   const reviewByType = workbench.db.prepare(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
+  const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
+  const reconciliation = workbench.reconciliationSummary();
+  const placeholderEntityCount = workbench.db.prepare(
+    "select count(*) as count from canonical_entities where is_placeholder = 1",
+  ).get() as { count: number };
+  const openReviewItemCount = reviewStatusCounts.get("open") ?? 0;
+  const deferredReviewItemCount = reviewStatusCounts.get("deferred") ?? 0;
   return {
     entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
     review_items_by_status: reviewByStatus,
     review_items_by_type: reviewByType,
+    open_review_item_count: openReviewItemCount,
+    deferred_review_item_count: deferredReviewItemCount,
+    blocked_reconciliation_count: reconciliation.blockedCount,
+    blocked_reconciliation_by_source: reconciliation.blockedBySource.map((row) => ({
+      source_id: row.sourceId,
+      count: row.count,
+    })),
+    placeholder_entity_count: placeholderEntityCount.count,
+    review_status_note: buildReviewStatusNote({
+      openReviewItemCount,
+      deferredReviewItemCount,
+      blockedReconciliationCount: reconciliation.blockedCount,
+      placeholderEntityCount: placeholderEntityCount.count,
+    }),
     source_count: sources.length,
     failed_source_count: sources.filter((row) => row.latest_status === "failed").length,
     dataset_count: datasets.length,
@@ -473,6 +496,23 @@ function buildReleaseSummary(
     legal_refs_by_review_status: countByReviewStatus(legalRefs, (row) => row.review_status),
     entity_legal_refs_count: entityLegalRefs.length,
   };
+}
+
+function buildReviewStatusNote(counts: {
+  openReviewItemCount: number;
+  deferredReviewItemCount: number;
+  blockedReconciliationCount: number;
+  placeholderEntityCount: number;
+}): string {
+  if (
+    counts.openReviewItemCount === 0 &&
+    counts.deferredReviewItemCount === 0 &&
+    counts.blockedReconciliationCount === 0 &&
+    counts.placeholderEntityCount === 0
+  ) {
+    return "No open review items, deferred review items, blocked reconciliation items, or placeholder entities were present at release build time.";
+  }
+  return `Release built with unresolved workbench state: open review=${counts.openReviewItemCount}, deferred review=${counts.deferredReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
 }
 
 function countByReviewStatus<T>(
@@ -509,6 +549,10 @@ function countByRefType<T>(
 
 function renderStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
   return rows.map((row) => `${row.review_status}=${row.count}`).join(", ") || "none";
+}
+
+function renderBlockedBySource(rows: Array<{ source_id: string; count: number }>): string {
+  return rows.map((row) => `${row.source_id}=${row.count}`).join(", ") || "none";
 }
 
 function toCsv<T extends Record<string, string | number | null | undefined>>(
