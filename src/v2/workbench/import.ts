@@ -13,6 +13,7 @@ import { queryOne, run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ArtifactRecord {
@@ -674,7 +675,25 @@ async function reuseOrMarkStaleRelationshipDecisions(
       if (!candidate) continue;
       if (priorDecision.eventType === "accept_relationship_candidate") {
         if (candidate.reviewStatus !== "accepted") {
-          reuseAcceptedRelationshipDecision(store, hint.relationshipCandidateId, priorDecision);
+          const reused = reuseAcceptedRelationshipDecision(
+            store,
+            hint.relationshipCandidateId,
+            priorDecision,
+          );
+          if (!reused.reused) {
+            markRelationshipReplayConflict(
+              store,
+              hint,
+              "accepted",
+              priorDecision.resolvedRelationshipType ?? null,
+              priorDecision.resolvedFromEntityId ?? null,
+              priorDecision.resolvedToEntityId ?? null,
+              `prior accepted decision could not be replayed because resolved endpoint ${
+                reused.missingEndpointId ?? "is missing"
+              } is missing`,
+            );
+            continue;
+          }
         }
       } else if (candidate.reviewStatus !== "rejected") {
         run(
@@ -729,6 +748,116 @@ async function reuseOrMarkStaleRelationshipDecisions(
   if (changed) {
     reconcileRelationshipCandidates(store);
   }
+}
+
+function markRelationshipReplayConflict(
+  store: WorkbenchStore,
+  hint: RelationshipDecisionHint,
+  priorDecisionState: "accepted",
+  resolvedRelationshipType: string | null,
+  resolvedFromEntityId: string | null,
+  resolvedToEntityId: string | null,
+  conflictReason: string,
+): void {
+  const reviewItem = queryOne<{
+    reviewItemId: string;
+    reason: string;
+    defaultAction: string;
+    detailsJson: string;
+  }>(
+    store.db,
+    `select review_item_id as reviewItemId,
+            reason,
+            default_action as defaultAction,
+            details_json as detailsJson
+     from review_items
+     where subject_id = ? and item_type = 'relationship_candidate'`,
+    [hint.relationshipCandidateId],
+  );
+  const fallbackReviewItem = reviewItem ??
+    relationshipReplayDraft(store, hint.relationshipCandidateId);
+  if (!fallbackReviewItem) return;
+  const details = JSON.parse(fallbackReviewItem.detailsJson) as Record<string, unknown>;
+  details.priorDecisionState = priorDecisionState;
+  details.factSignature = hint.factSignature;
+  details.evidenceHash = hint.evidenceHash;
+  details.replayConflict = true;
+  if (resolvedRelationshipType) details.priorResolvedRelationshipType = resolvedRelationshipType;
+  if (resolvedFromEntityId) details.priorResolvedFromEntityId = resolvedFromEntityId;
+  if (resolvedToEntityId) details.priorResolvedToEntityId = resolvedToEntityId;
+  const reason = fallbackReviewItem.reason.includes(conflictReason)
+    ? fallbackReviewItem.reason
+    : `${fallbackReviewItem.reason} (${conflictReason})`;
+  run(
+    store.db,
+    `insert into review_items(
+       review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at
+     ) values(
+       ?, 'relationship_candidate', ?, ?, ?, 'open', ?, ?, ?
+     )
+     on conflict(review_item_id) do update set
+       reason = excluded.reason,
+       default_action = excluded.default_action,
+       status = 'open',
+       details_json = excluded.details_json,
+       updated_at = excluded.updated_at`,
+    [
+      fallbackReviewItem.reviewItemId,
+      hint.relationshipCandidateId,
+      reason,
+      fallbackReviewItem.defaultAction,
+      JSON.stringify(details),
+      nowIso(),
+      nowIso(),
+    ],
+  );
+}
+
+function relationshipReplayDraft(
+  store: WorkbenchStore,
+  relationshipCandidateId: string,
+): {
+  reviewItemId: string;
+  reason: string;
+  defaultAction: string;
+  detailsJson: string;
+} | undefined {
+  const candidate = queryOne<{
+    sourceId: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+    relationshipType: string;
+    rawValue?: string | null;
+    needsReview: number;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.to_entity_ref as toEntityRef,
+            relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.raw_value as rawValue,
+            relationship_candidates.needs_review as needsReview
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.relationship_candidate_id = ?`,
+    [relationshipCandidateId],
+  );
+  if (!candidate) return undefined;
+  const draft = buildRelationshipReviewDraft({
+    relationshipCandidateId,
+    sourceId: candidate.sourceId,
+    fromEntityRef: candidate.fromEntityRef,
+    toEntityRef: candidate.toEntityRef,
+    relationshipType: candidate.relationshipType,
+    rawValue: candidate.rawValue ?? null,
+    needsReview: candidate.needsReview,
+  });
+  return {
+    reviewItemId: draft.reviewItemId,
+    reason: draft.reason,
+    defaultAction: draft.defaultAction,
+    detailsJson: JSON.stringify(draft.details),
+  };
 }
 
 function reuseOrMarkStaleDeferredRelationshipReview(
@@ -974,11 +1103,25 @@ function reuseAcceptedRelationshipDecision(
     resolvedFromEntityId?: string | null;
     resolvedToEntityId?: string | null;
   },
-): void {
+): { reused: boolean; missingEndpointId?: string } {
   const relationshipType = priorDecision.resolvedRelationshipType;
   const fromEntityId = priorDecision.resolvedFromEntityId;
   const toEntityId = priorDecision.resolvedToEntityId;
-  if (!relationshipType || !fromEntityId || !toEntityId) return;
+  if (!relationshipType || !fromEntityId || !toEntityId) return { reused: false };
+  if (
+    !queryOne(store.db, "select entity_id from canonical_entities where entity_id = ?", [
+      fromEntityId,
+    ])
+  ) {
+    return { reused: false, missingEndpointId: fromEntityId };
+  }
+  if (
+    !queryOne(store.db, "select entity_id from canonical_entities where entity_id = ?", [
+      toEntityId,
+    ])
+  ) {
+    return { reused: false, missingEndpointId: toEntityId };
+  }
   const relationshipId = `${fromEntityId}:${relationshipType}:${toEntityId}`;
   const existing = queryOne<{ relationshipId: string }>(
     store.db,
@@ -999,6 +1142,7 @@ function reuseAcceptedRelationshipDecision(
     "update relationship_candidates set review_status = 'accepted' where relationship_candidate_id = ?",
     [relationshipCandidateId],
   );
+  return { reused: true };
 }
 
 function importParsedOutput(
