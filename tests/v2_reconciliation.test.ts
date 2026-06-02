@@ -1992,6 +1992,107 @@ Deno.test("replay-conflict prerequisite candidates surface conflict blocker audi
   );
 });
 
+Deno.test("accepting a replay-conflict prerequisite reprocesses blocked relationships into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.existing_board', 'Existing Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.conflict.resolve.entities",
+      candidateId: "candidate.test.reconciliation.conflict.resolve.target_v1",
+      sourceItemKey: "conflict-resolve-target-row",
+      proposedEntityId: "dc.conflict_resolve_target",
+      name: "Conflict Resolve Target",
+      kind: "agency",
+      observedName: "Conflict Resolve Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "merge_entity_candidates",
+      subjectId: "candidate.test.reconciliation.conflict.resolve.target_v1",
+      payload: {
+        entityId: "dc.existing_board",
+        candidateIds: ["candidate.test.reconciliation.conflict.resolve.target_v1"],
+      },
+    },
+    resolutionsDir,
+  );
+  workbench.db.prepare("delete from canonical_entities where entity_id = 'dc.existing_board'")
+    .run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.conflict.resolve.entities",
+      candidateId: "candidate.test.reconciliation.conflict.resolve.target_v2",
+      sourceItemKey: "conflict-resolve-target-row",
+      proposedEntityId: "dc.conflict_resolve_target",
+      name: "Conflict Resolve Target",
+      kind: "agency",
+      observedName: "Conflict Resolve Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.conflict.resolve.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.conflict.resolve",
+      sourceItemKey: "conflict-resolve-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.conflict_resolve_target",
+      relationshipType: "governed_by",
+      rawValue: "Conflict Resolve Target",
+    }),
+    dataDir,
+  );
+
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.conflict.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.reconciliation.conflict.resolve.target_v2",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.conflict.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewAfter = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.conflict.resolve",
+  });
+  workbench.close();
+
+  assertEquals(blockedBefore.count, 1);
+  assertEquals(blockedAfter.count, 0);
+  assert(
+    reviewAfter.some((item) =>
+      item.subjectId === "relationship.test.reconciliation.conflict.resolve"
+    ),
+  );
+});
+
 Deno.test("deferred prerequisite candidates surface deferred blocker audit for dependent relationships", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -2083,6 +2184,181 @@ Deno.test("deferred prerequisite candidates surface deferred blocker audit for d
     status.reconciliation.firstBlocked?.blockers.some((blocker) =>
       blocker.blockerState === "deferred_candidate" &&
       blocker.blockerLabel === "Deferred Target"
+    ),
+  );
+});
+
+Deno.test("accepting a deferred prerequisite reprocesses blocked relationships into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const candidateId = "candidate.test.reconciliation.deferred.resolve.target_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.deferred.resolve.entities",
+      candidateId,
+      sourceItemKey: "deferred-resolve-target-row",
+      proposedEntityId: "dc.deferred_resolve_target",
+      name: "Deferred Resolve Target",
+      kind: "agency",
+      observedName: "Deferred Resolve Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(candidateId, "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.deferred.resolve.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.deferred.resolve",
+      sourceItemKey: "deferred-resolve-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.deferred_resolve_target",
+      relationshipType: "governed_by",
+      rawValue: "Deferred Resolve Target",
+    }),
+    dataDir,
+  );
+
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.deferred.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: candidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.deferred.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewAfter = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.deferred.resolve",
+  });
+  workbench.close();
+
+  assertEquals(blockedBefore.count, 1);
+  assertEquals(blockedAfter.count, 0);
+  assert(
+    reviewAfter.some((item) =>
+      item.subjectId === "relationship.test.reconciliation.deferred.resolve"
+    ),
+  );
+});
+
+Deno.test("accepting a corrected stale prerequisite after rejection reprocesses blocked relationships into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.rejected.resolve.entities",
+      candidateId: "candidate.test.reconciliation.rejected.resolve.target_v1",
+      sourceItemKey: "rejected-resolve-target-row",
+      proposedEntityId: "dc.rejected_resolve_target",
+      name: "Rejected Resolve Target",
+      kind: "agency",
+      observedName: "Rejected Resolve Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_entity_candidate",
+      subjectId: "candidate.test.reconciliation.rejected.resolve.target_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.rejected.resolve.entities",
+      candidateId: "candidate.test.reconciliation.rejected.resolve.target_v2",
+      sourceItemKey: "rejected-resolve-target-row",
+      proposedEntityId: "dc.rejected_resolve_target",
+      name: "Rejected Resolve Target",
+      kind: "agency",
+      observedName: "Rejected Resolve Target Updated",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.rejected.resolve.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.rejected.resolve",
+      sourceItemKey: "rejected-resolve-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.rejected_resolve_target",
+      relationshipType: "governed_by",
+      rawValue: "Rejected Resolve Target Updated",
+    }),
+    dataDir,
+  );
+
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.rejected.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.reconciliation.rejected.resolve.target_v2",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reconciliation.rejected.resolve'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const reviewAfter = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.rejected.resolve",
+  });
+  workbench.close();
+
+  assertEquals(blockedBefore.count, 1);
+  assertEquals(blockedAfter.count, 0);
+  assert(
+    reviewAfter.some((item) =>
+      item.subjectId === "relationship.test.reconciliation.rejected.resolve"
     ),
   );
 });
