@@ -36,6 +36,19 @@ export interface StaleReviewSummary {
   };
 }
 
+export interface ReviewDebtSummary {
+  byType: Array<{
+    itemType: ReviewItemRecord["itemType"];
+    openCount: number;
+    deferredCount: number;
+  }>;
+  bySource: Array<{
+    sourceId: string;
+    openCount: number;
+    deferredCount: number;
+  }>;
+}
+
 export function listReviewItems(
   store: WorkbenchStore,
   modeOrFilters?: string | ReviewItemFilters,
@@ -201,6 +214,60 @@ export function staleReviewSummary(store: WorkbenchStore): StaleReviewSummary {
         priorDecisionState: firstStale.priorDecisionState ?? undefined,
       }
       : undefined,
+  };
+}
+
+export function reviewDebtSummary(store: WorkbenchStore): ReviewDebtSummary {
+  const byType = queryAll<{
+    itemType: ReviewItemRecord["itemType"];
+    openCount: number;
+    deferredCount: number;
+  }>(
+    store.db,
+    `select item_type as itemType,
+            sum(case when status = 'open' then 1 else 0 end) as openCount,
+            sum(case when status = 'deferred' then 1 else 0 end) as deferredCount
+     from review_items
+     where status in ('open', 'deferred')
+     group by item_type
+     order by openCount + deferredCount desc, itemType`,
+  );
+  const bySource = queryAll<{
+    sourceId: string;
+    openCount: number;
+    deferredCount: number;
+  }>(
+    store.db,
+    `select coalesce(
+              entity_source.source_id,
+              relationship_source.source_id,
+              legal_source.source_id,
+              case when review_items.item_type = 'source_status' then review_items.subject_id end,
+              case when review_items.item_type = 'placeholder_entity' then 'workbench' end,
+              'unknown'
+            ) as sourceId,
+            sum(case when review_items.status = 'open' then 1 else 0 end) as openCount,
+            sum(case when review_items.status = 'deferred' then 1 else 0 end) as deferredCount
+     from review_items
+     left join entity_candidates
+       on entity_candidates.candidate_id = review_items.subject_id
+     left join source_items as entity_source
+       on entity_source.source_item_id = entity_candidates.source_item_id
+     left join relationship_candidates
+       on relationship_candidates.relationship_candidate_id = review_items.subject_id
+     left join source_items as relationship_source
+       on relationship_source.source_item_id = relationship_candidates.source_item_id
+     left join legal_refs
+       on legal_refs.legal_ref_id = review_items.subject_id
+     left join source_items as legal_source
+       on legal_source.source_item_id = legal_refs.source_item_id
+     where review_items.status in ('open', 'deferred')
+     group by sourceId
+     order by openCount + deferredCount desc, sourceId`,
+  );
+  return {
+    byType,
+    bySource,
   };
 }
 
