@@ -1991,3 +1991,98 @@ Deno.test("replay-conflict prerequisite candidates surface conflict blocker audi
     ),
   );
 });
+
+Deno.test("deferred prerequisite candidates surface deferred blocker audit for dependent relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const candidateId = "candidate.test.reconciliation.deferred.target_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.deferred.entities",
+      candidateId,
+      sourceItemKey: "deferred-target-row",
+      proposedEntityId: "dc.deferred_target",
+      name: "Deferred Target",
+      kind: "agency",
+      observedName: "Deferred Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(candidateId, "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.deferred.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.deferred",
+      sourceItemKey: "deferred-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.deferred_target",
+      relationshipType: "governed_by",
+      rawValue: "Deferred Target",
+    }),
+    dataDir,
+  );
+
+  const blocked = workbench.db.prepare(
+    `select blocker_state as blockerState,
+            details_json as detailsJson
+     from reconciliation_blockers
+     where subject_type = 'relationship_candidate'
+       and subject_id = 'relationship.test.reconciliation.deferred'`,
+  ).get() as { blockerState: string; detailsJson: string } | undefined;
+  const relationshipReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation.deferred",
+  });
+  workbench.close();
+
+  assert(blocked);
+  assertEquals(blocked.blockerState, "deferred_candidate");
+  assertStringIncludes(blocked.detailsJson, '"state":"deferred_candidate"');
+  assertEquals(relationshipReviewItems.length, 0);
+
+  const statusOutput = await new Deno.Command("deno", {
+    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
+    cwd: Deno.cwd(),
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blockedByBlockerState: Array<{ blockerState: string; count: number }>;
+      firstBlocked?: {
+        subjectId: string;
+        blockers: Array<{ blockerState: string; blockerLabel: string }>;
+      };
+    };
+  };
+
+  assert(
+    status.reconciliation.blockedByBlockerState.some((row) =>
+      row.blockerState === "deferred_candidate" && row.count === 1
+    ),
+  );
+  assertEquals(
+    status.reconciliation.firstBlocked?.subjectId,
+    "relationship.test.reconciliation.deferred",
+  );
+  assert(
+    status.reconciliation.firstBlocked?.blockers.some((blocker) =>
+      blocker.blockerState === "deferred_candidate" &&
+      blocker.blockerLabel === "Deferred Target"
+    ),
+  );
+});

@@ -54,9 +54,9 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     ),
   );
   workbench.close();
-  assertEquals(first.schemaVersion, 10);
-  assertEquals(second.schemaVersion, 10);
-  assertEquals(second.migrations.length, 10);
+  assertEquals(first.schemaVersion, 11);
+  assertEquals(second.schemaVersion, 11);
+  assertEquals(second.migrations.length, 11);
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -177,7 +177,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 10");
+  assertStringIncludes(statusText, "Schema version: 11");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -206,7 +206,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 10);
+  assertEquals(jsonStatus.schemaVersion, 11);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);

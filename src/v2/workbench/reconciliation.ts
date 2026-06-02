@@ -24,6 +24,7 @@ interface CandidateEndpointStatusRow {
   itemKey: string;
   runStartedAt: string;
   reviewStatus: string;
+  reviewItemStatus?: string | null;
   stalePriorDecision?: number | null;
   replayConflict?: number | null;
 }
@@ -64,6 +65,7 @@ type EndpointState =
   | "accepted"
   | "missing"
   | "pending_candidate"
+  | "deferred_candidate"
   | "placeholder"
   | "replay_conflict"
   | "stale_candidate"
@@ -228,6 +230,7 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
             source_items.item_key as itemKey,
             source_runs.started_at as runStartedAt,
             entity_candidates.review_status as reviewStatus,
+            review_items.status as reviewItemStatus,
             json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
             json_extract(review_items.details_json, '$.replayConflict') as replayConflict
      from entity_candidates
@@ -251,6 +254,13 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
     currentStatuses.some((row) => row.reviewStatus === "pending" && row.replayConflict === 1)
   ) {
     return { entityId, state: "replay_conflict" };
+  }
+  if (
+    currentStatuses.some((row) =>
+      row.reviewStatus === "pending" && row.reviewItemStatus === "deferred"
+    )
+  ) {
+    return { entityId, state: "deferred_candidate" };
   }
   const canonical = queryOne<CanonicalEndpointRow>(
     store.db,
