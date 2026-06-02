@@ -387,10 +387,13 @@ async function reuseOrMarkStaleRelationshipDecisions(
        where event_type in ('accept_relationship_candidate', 'reject_relationship_candidate')
          and json_extract(payload_json, '$.fact_signature') = ?
        order by created_at desc, event_id desc
-       limit 1`,
+      limit 1`,
       [hint.factSignature],
     );
-    if (!priorDecision?.evidenceHash) continue;
+    if (!priorDecision?.evidenceHash) {
+      reuseOrMarkStaleDeferredRelationshipReview(store, hint);
+      continue;
+    }
 
     if (priorDecision.evidenceHash === hint.evidenceHash) {
       const candidate = queryOne<{ reviewStatus: string }>(
@@ -458,6 +461,88 @@ async function reuseOrMarkStaleRelationshipDecisions(
   if (changed) {
     reconcileRelationshipCandidates(store);
   }
+}
+
+function reuseOrMarkStaleDeferredRelationshipReview(
+  store: WorkbenchStore,
+  hint: RelationshipDecisionHint,
+): void {
+  const priorReviewDecision = queryOne<{
+    eventType: string;
+    reviewItemId: string;
+    evidenceHash?: string | null;
+  }>(
+    store.db,
+    `select event_type as eventType,
+            subject_id as reviewItemId,
+            json_extract(payload_json, '$.evidence_hash') as evidenceHash
+     from resolution_events
+     where event_type in ('defer_review_item', 'reopen_review_item')
+       and json_extract(payload_json, '$.fact_signature') = ?
+     order by created_at desc, event_id desc
+     limit 1`,
+    [hint.factSignature],
+  );
+  if (!priorReviewDecision?.evidenceHash || priorReviewDecision.eventType !== "defer_review_item") {
+    return;
+  }
+
+  const reviewItem = queryOne<{
+    reviewItemId: string;
+    reason: string;
+    detailsJson: string;
+    status: string;
+  }>(
+    store.db,
+    `select review_item_id as reviewItemId,
+            reason,
+            details_json as detailsJson,
+            status
+     from review_items
+     where subject_id = ? and item_type = 'relationship_candidate'`,
+    [hint.relationshipCandidateId],
+  );
+  if (!reviewItem || reviewItem.status === "resolved") return;
+  if (priorReviewDecision.reviewItemId !== reviewItem.reviewItemId) {
+    run(
+      store.db,
+      "update review_items set status = 'resolved', updated_at = ? where review_item_id = ?",
+      [nowIso(), priorReviewDecision.reviewItemId],
+    );
+  }
+
+  if (priorReviewDecision.evidenceHash === hint.evidenceHash) {
+    run(
+      store.db,
+      `update review_items
+       set status = 'deferred', updated_at = ?
+       where subject_id = ? and item_type = 'relationship_candidate'`,
+      [nowIso(), hint.relationshipCandidateId],
+    );
+    return;
+  }
+
+  const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
+  details.priorDecisionState = "deferred";
+  details.stalePriorDecision = true;
+  details.factSignature = hint.factSignature;
+  details.evidenceHash = hint.evidenceHash;
+  const staleSuffix = "changed since a prior deferred decision";
+  const staleReason = reviewItem.reason.includes(staleSuffix)
+    ? reviewItem.reason
+    : `${reviewItem.reason} (${staleSuffix})`;
+  run(
+    store.db,
+    `update review_items
+     set reason = ?, details_json = ?, status = 'open', updated_at = ?
+     where subject_id = ? and item_type = 'relationship_candidate'`,
+    [
+      staleReason,
+      JSON.stringify(details),
+      nowIso(),
+      hint.relationshipCandidateId,
+    ],
+  );
 }
 
 function mergeAcceptedEntityCandidate(
