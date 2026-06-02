@@ -759,6 +759,31 @@ drop table reconciliation_blockers_old;
 create index if not exists reconciliation_blockers_subject_idx
   on reconciliation_blockers(subject_type, subject_id);
 `,
+}, {
+  version: 11,
+  name: "v2_deferred_candidate_blocker_state",
+  sql: `
+alter table reconciliation_blockers rename to reconciliation_blockers_old;
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null,
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'deferred_candidate', 'placeholder', 'stale_candidate', 'replay_conflict', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key(subject_type, subject_id, blocker_key)
+);
+insert into reconciliation_blockers
+select subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+from reconciliation_blockers_old;
+drop table reconciliation_blockers_old;
+
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`,
 }];
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
