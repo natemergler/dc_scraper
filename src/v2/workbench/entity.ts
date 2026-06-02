@@ -54,6 +54,17 @@ interface EntityLegalRefRow {
   refType: string;
 }
 
+interface EntityLegalAttachmentRow extends Record<string, string | number | null | undefined> {
+  entity_id: string;
+  entity_name: string;
+  legal_ref_id: string;
+  ref_type: string;
+  citation_text: string;
+  normalized_citation?: string | null;
+  url?: string | null;
+  review_status: string;
+}
+
 export function searchEntities(store: WorkbenchStore, query: string): EntitySearchResult[] {
   return queryAll<EntitySearchResult>(
     store.db,
@@ -305,6 +316,25 @@ export function legalRefs(store: WorkbenchStore): Array<{
       legal_refs.ref_type,
       legal_refs.normalized_citation,
       legal_refs.citation_text`,
+  );
+}
+
+export function entityLegalRefs(store: WorkbenchStore): EntityLegalAttachmentRow[] {
+  return queryAll(
+    store.db,
+    `select
+      entity_legal_refs.entity_id as entity_id,
+      canonical_entities.name as entity_name,
+      entity_legal_refs.legal_ref_id as legal_ref_id,
+      legal_refs.ref_type as ref_type,
+      legal_refs.citation_text as citation_text,
+      legal_refs.normalized_citation as normalized_citation,
+      legal_refs.url as url,
+      legal_refs.review_status as review_status
+    from entity_legal_refs
+    join canonical_entities on canonical_entities.entity_id = entity_legal_refs.entity_id
+    join legal_refs on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
+    order by canonical_entities.name, legal_refs.normalized_citation, legal_refs.citation_text`,
   );
 }
 

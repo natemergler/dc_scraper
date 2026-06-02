@@ -10,6 +10,7 @@ import {
   type WorkbenchMeta,
 } from "./domain.ts";
 import {
+  comparePublicBodies as readPublicBodyComparison,
   listSources as listSourceRows,
   type SourceSummary,
   sourceSummary as readSourceSummary,
@@ -32,6 +33,7 @@ import {
   canonicalEntities as readCanonicalEntities,
   canonicalRelationships as readCanonicalRelationships,
   datasets as readDatasets,
+  entityLegalRefs as readEntityLegalRefs,
   entityView as readEntityView,
   legalRefs as readLegalRefs,
   searchEntities as findEntities,
@@ -82,6 +84,10 @@ export class Workbench implements WorkbenchStore {
 
   sourceSummary(sourceId: string): SourceSummary {
     return readSourceSummary(this, sourceId);
+  }
+
+  comparePublicBodies(): ReturnType<typeof readPublicBodyComparison> {
+    return readPublicBodyComparison(this);
   }
 
   listSources(): ReturnType<typeof listSourceRows> {
@@ -141,6 +147,10 @@ export class Workbench implements WorkbenchStore {
 
   legalRefs(): ReturnType<typeof readLegalRefs> {
     return readLegalRefs(this);
+  }
+
+  entityLegalRefs(): ReturnType<typeof readEntityLegalRefs> {
+    return readEntityLegalRefs(this);
   }
 
   sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {

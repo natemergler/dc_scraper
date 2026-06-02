@@ -9,6 +9,7 @@ type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
 type SourceRow = ReturnType<Workbench["sourceInventory"]>[number];
 type DatasetRow = ReturnType<Workbench["datasets"]>[number];
 type LegalRefRow = ReturnType<Workbench["legalRefs"]>[number];
+type EntityLegalRefRow = ReturnType<Workbench["entityLegalRefs"]>[number];
 type SourceArtifactRow = ReturnType<Workbench["sourceArtifacts"]>[number];
 
 export async function buildV2Release(
@@ -21,6 +22,7 @@ export async function buildV2Release(
   const sources: SourceRow[] = workbench.sourceInventory();
   const datasets: DatasetRow[] = workbench.datasets();
   const legalRefs: LegalRefRow[] = workbench.legalRefs();
+  const entityLegalRefs: EntityLegalRefRow[] = workbench.entityLegalRefs();
   const sourceArtifacts: SourceArtifactRow[] = workbench.sourceArtifacts();
   const summary = buildReleaseSummary(
     workbench,
@@ -29,6 +31,7 @@ export async function buildV2Release(
     sources,
     datasets,
     legalRefs,
+    entityLegalRefs,
   );
   const files = new Map<string, string>();
   files.set("entities.json", JSON.stringify(entities, null, 2));
@@ -36,6 +39,7 @@ export async function buildV2Release(
   files.set("sources.json", JSON.stringify(sources, null, 2));
   files.set("datasets.json", JSON.stringify(datasets, null, 2));
   files.set("legal_refs.json", JSON.stringify(legalRefs, null, 2));
+  files.set("entity_legal_refs.json", JSON.stringify(entityLegalRefs, null, 2));
   files.set(
     "entities.csv",
     toCsv(
@@ -104,6 +108,22 @@ export async function buildV2Release(
       legalRefs,
     ),
   );
+  files.set(
+    "entity_legal_refs.csv",
+    toCsv(
+      [
+        "entity_id",
+        "entity_name",
+        "legal_ref_id",
+        "ref_type",
+        "citation_text",
+        "normalized_citation",
+        "url",
+        "review_status",
+      ],
+      entityLegalRefs,
+    ),
+  );
   assertReleaseFilesDoNotContainContactInfo(files);
   for (const [name, content] of files) {
     await Deno.writeTextFile(join(outDir, name), content);
@@ -114,6 +134,7 @@ export async function buildV2Release(
     sources,
     datasets,
     legalRefs,
+    entityLegalRefs,
   });
   const readme = buildReadme(summary);
   await Deno.writeTextFile(join(outDir, "README.md"), readme);
@@ -192,6 +213,7 @@ async function buildReleaseSqlite(
     sources: SourceRow[];
     datasets: DatasetRow[];
     legalRefs: LegalRefRow[];
+    entityLegalRefs: EntityLegalRefRow[];
   },
 ): Promise<void> {
   await Deno.remove(path).catch((error) => {
@@ -269,6 +291,19 @@ async function buildReleaseSqlite(
         source_url text,
         needs_review integer not null,
         review_status text not null
+      );
+
+      create table entity_legal_refs (
+        entity_id text not null,
+        entity_name text not null,
+        legal_ref_id text not null,
+        ref_type text not null,
+        citation_text text not null,
+        normalized_citation text,
+        url text,
+        review_status text not null,
+        foreign key (entity_id) references entities(id),
+        foreign key (legal_ref_id) references legal_refs(id)
       );
     `);
     const insertEntity = db.prepare(
@@ -348,6 +383,21 @@ async function buildReleaseSqlite(
         row.review_status,
       ]);
     }
+    const insertEntityLegalRef = db.prepare(
+      "insert into entity_legal_refs(entity_id, entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of rows.entityLegalRefs) {
+      insertEntityLegalRef.run([
+        row.entity_id,
+        row.entity_name,
+        row.legal_ref_id,
+        row.ref_type,
+        row.citation_text,
+        row.normalized_citation ?? null,
+        row.url ?? null,
+        row.review_status,
+      ]);
+    }
   } finally {
     db.close();
   }
@@ -376,6 +426,7 @@ Files:
 - \`sources.*\`: source inventory and latest artifact metadata
 - \`datasets.*\`: public dataset inventory
 - \`legal_refs.*\`: normalized and source-backed legal references
+- \`entity_legal_refs.*\`: entity-linked legal reference attachments
 
 ## Release summary
 
@@ -387,6 +438,7 @@ Files:
 - datasets: total=${summary.dataset_count}
 - legal refs by type: ${legalByType}
 - legal refs by review_status: ${legalByStatus}
+- entity legal refs: total=${summary.entity_legal_refs_count}
 
 Relationship coverage note: accepted relationships may represent only a partial reviewed slice of discovered relationship candidates.
 `;
@@ -399,6 +451,7 @@ function buildReleaseSummary(
   sources: SourceRow[],
   datasets: DatasetRow[],
   legalRefs: LegalRefRow[],
+  entityLegalRefs: EntityLegalRefRow[],
 ) {
   const reviewByStatus = workbench.db.prepare(
     "select status, count(*) as count from review_items group by status order by status",
@@ -416,6 +469,7 @@ function buildReleaseSummary(
     dataset_count: datasets.length,
     legal_refs_by_type: countByRefType(legalRefs, (row) => row.ref_type),
     legal_refs_by_review_status: countByReviewStatus(legalRefs, (row) => row.review_status),
+    entity_legal_refs_count: entityLegalRefs.length,
   };
 }
 
