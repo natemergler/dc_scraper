@@ -24,6 +24,9 @@ import {
   ancProfile6cFixture,
   arcgisLayerDetailFixture,
   arcgisServiceLayersFixture,
+  begaAboutFixture,
+  begaOgeFixture,
+  begaOogFixture,
   councilCommitteeHealthDetailFixture,
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
@@ -552,6 +555,9 @@ Deno.test("imports representative connector results and source inspection stays 
     ["https://www.dccourts.gov/", dcCourtsHomeFixture],
     ["https://www.dccourts.gov/court-of-appeals", dcCourtOfAppealsFixture],
     ["https://www.dccourts.gov/superior-court", dcSuperiorCourtFixture],
+    ["https://bega.dc.gov/node/61616/", begaAboutFixture],
+    ["https://bega.dc.gov/page/office-government-ethics", begaOgeFixture],
+    ["https://www.open-dc.gov/office-open-government", begaOogFixture],
   ]);
   const fetcher = async (url: string) => {
     const body = responses.get(url);
@@ -574,6 +580,7 @@ Deno.test("imports representative connector results and source inspection stays 
       "admin.budget_sources",
       "admin.enterprise_dataset_inventory",
       "dccourts.structure",
+      "bega.structure",
       "admin.permits_licenses",
       "admin.crime_public_safety",
       "admin.procurement_sources",
@@ -589,6 +596,7 @@ Deno.test("imports representative connector results and source inspection stays 
   const quickbase = workbench.sourceSummary("mota.quickbase");
   const enterpriseInventory = workbench.sourceSummary("admin.enterprise_dataset_inventory");
   const courtsSummary = workbench.sourceSummary("dccourts.structure");
+  const begaSummary = workbench.sourceSummary("bega.structure");
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
@@ -611,6 +619,9 @@ Deno.test("imports representative connector results and source inspection stays 
   assertEquals(courtsSummary.itemCount, 3);
   assertEquals(courtsSummary.entityCandidateCount, 12);
   assertEquals(courtsSummary.relationshipCandidateCount, 11);
+  assertEquals(begaSummary.itemCount, 3);
+  assertEquals(begaSummary.entityCandidateCount, 3);
+  assertEquals(begaSummary.relationshipCandidateCount, 2);
   assertEquals(hasRegisterRef, true);
   assertEquals(permitSummary.fieldCount > 0, true);
   assertEquals(categories.has("procurement"), true);
@@ -1159,6 +1170,69 @@ Deno.test("DC Courts connector captures the root courts structure and direct Sup
       candidate.relationshipType === "part_of" &&
       candidate.fromEntityRef === buildEntityId("Tax Division") &&
       candidate.toEntityRef === buildEntityId("Superior Court")
+    ),
+  );
+});
+
+Deno.test("BEGA connector captures BEGA with the OGE and OOG offices only", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://bega.dc.gov/node/61616/":
+          return begaAboutFixture;
+        case "https://bega.dc.gov/page/office-government-ethics":
+          return begaOgeFixture;
+        case "https://www.open-dc.gov/office-open-government":
+          return begaOogFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("bega.structure").run(createConnectorContext({ fetcher }));
+  const items = result.endpointResults.flatMap((endpoint) => endpoint.parsed?.items ?? []);
+  const entityCandidates = result.endpointResults.flatMap((endpoint) =>
+    endpoint.parsed?.entityCandidates ?? []
+  );
+  const relationshipCandidates = result.endpointResults.flatMap((endpoint) =>
+    endpoint.parsed?.relationshipCandidates ?? []
+  );
+  assertEquals(result.endpointResults.length, 3);
+  assertEquals(items.length, 3);
+  assertEquals(entityCandidates.length, 3);
+  assertEquals(relationshipCandidates.length, 2);
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "Board of Ethics and Government Accountability" && candidate.kind ===
+        "agency"
+    ),
+  );
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "Office of Government Ethics" && candidate.kind === "office"
+    ),
+  );
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "Office of Open Government" && candidate.kind === "office"
+    ),
+  );
+  assert(
+    relationshipCandidates.some((candidate) =>
+      candidate.relationshipType === "part_of" &&
+      candidate.fromEntityRef === buildEntityId("Office of Government Ethics") &&
+      candidate.toEntityRef === buildEntityId("Board of Ethics and Government Accountability")
+    ),
+  );
+  assert(
+    relationshipCandidates.some((candidate) =>
+      candidate.relationshipType === "part_of" &&
+      candidate.fromEntityRef === buildEntityId("Office of Open Government") &&
+      candidate.toEntityRef === buildEntityId("Board of Ethics and Government Accountability")
     ),
   );
 });
@@ -3400,6 +3474,120 @@ Deno.test("batch accept-safe accepts scoped DC Courts structure relationships on
   assert(
     acceptedRelationships.some((row) =>
       row.relationshipId === "dc.court_of_appeals:part_of:dc.district_of_columbia_courts"
+    ),
+  );
+});
+
+Deno.test("batch accept-safe accepts scoped BEGA structure relationships once endpoints are accepted", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://bega.dc.gov/node/61616/":
+          return begaAboutFixture;
+        case "https://bega.dc.gov/page/office-government-ethics":
+          return begaOgeFixture;
+        case "https://www.open-dc.gov/office-open-government":
+          return begaOogFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("bega.structure").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatch = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.bega.structure",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(entityBatch.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatch.stdout),
+    "Accepted 3 safe review item(s).",
+  );
+
+  const relationshipBatch = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--subject-prefix",
+      "relationship.bega.structure",
+      "--relationship-type",
+      "part_of",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(relationshipBatch.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatch.stdout),
+    "Accepted 2 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'part_of' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopened.close();
+  assertEquals(acceptedRelationships.length, 2);
+  assert(
+    acceptedRelationships.some((row) =>
+      row.relationshipId ===
+        "dc.office_of_government_ethics:part_of:dc.board_of_ethics_and_government_accountability"
+    ),
+  );
+  assert(
+    acceptedRelationships.some((row) =>
+      row.relationshipId ===
+        "dc.office_of_open_government:part_of:dc.board_of_ethics_and_government_accountability"
     ),
   );
 });
