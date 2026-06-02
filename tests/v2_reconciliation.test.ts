@@ -624,6 +624,70 @@ Deno.test("changed entity evidence after a prior accept becomes stale review wor
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("unchanged entity refetch keeps later entity field edits without reopening review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_edit_keep_v1";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(firstCandidateId, "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: firstCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "set_entity_fields",
+      subjectId: "dc.example_body",
+      payload: {
+        entityId: "dc.example_body",
+        fields: { branch: "reviewed-branch", cluster: "reviewed-cluster" },
+      },
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_edit_keep_v2";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(secondCandidateId, "Example Body"),
+    dataDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    "select branch, cluster, merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.example_body'",
+  ).get() as { branch: string; cluster: string; mergedCandidateIds: string };
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const openItems = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  });
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(canonical.branch, "reviewed-branch");
+  assertEquals(canonical.cluster, "reviewed-cluster");
+  assertEquals(
+    JSON.parse(canonical.mergedCandidateIds) as string[],
+    [
+      firstCandidateId,
+      secondCandidateId,
+    ],
+  );
+  assertEquals(openItems.length, 0);
+});
+
 Deno.test("changed entity evidence after later entity field edits preserves prior resolved fields", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
