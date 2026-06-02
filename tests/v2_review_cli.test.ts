@@ -46,7 +46,7 @@ function legalEntrypointsFetcher() {
   });
 }
 
-Deno.test("dc review legal supports scripted normalize-and-quit flow", async () => {
+Deno.test("dc review legal supports scripted normalize-and-quit flow for the remaining ambiguous ref", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -82,7 +82,7 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow", async () 
     stderr: "piped",
   }).spawn();
   const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("n\ndc_code\nD.C. Official Code\nq\n"));
+  await writer.write(new TextEncoder().encode("n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"));
   await writer.close();
   const output = await child.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -92,14 +92,17 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow", async () 
   assertStringIncludes(stdout, "Review item:");
   assertStringIncludes(stdout, "n normalize and accept");
   assertStringIncludes(stdout, "Saved resolution.");
-  assertStringIncludes(stdout, "Review stopped.");
+  assertStringIncludes(stdout, "No review items remain.");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
   const accepted = reopened.legalRefs().filter((ref) => ref.review_status === "accepted");
   reopened.close();
-  assertEquals(accepted.length, 1);
-  assertEquals(accepted[0].normalized_citation, "D.C. Official Code");
+  assertEquals(accepted.length, 3);
+  assertEquals(
+    accepted.some((ref) => ref.normalized_citation === "DCMR and D.C. Register entrypoint"),
+    true,
+  );
 });
 
 Deno.test("scripted review CLI accepts a candidate and entity show renders evidence and backlinks", async () => {

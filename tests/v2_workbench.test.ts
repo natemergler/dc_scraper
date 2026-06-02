@@ -1866,7 +1866,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
 });
 
-Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
+Deno.test("safe legal refs auto-accept on import and remaining legal resolutions update release status truth", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1891,30 +1891,17 @@ Deno.test("legal refs import into a reviewable queue and legal resolutions updat
   await workbench.importConnectorResult(result, dataDir);
 
   const items = workbench.listReviewItems("legal");
-  assertEquals(items.length, 3);
-  assert(items.some((item) => item.defaultAction === "accept"));
-  assert(items.some((item) => item.defaultAction === "defer"));
+  assertEquals(items.length, 1);
+  assert(items.every((item) => item.defaultAction === "defer"));
 
-  const codeItem = items.find((item) => item.details.refType === "dc_code");
   const registerItem = items.find((item) => item.details.refType === "dc_register");
-  const orderItem = items.find((item) => item.details.refType === "mayors_order");
-  assert(codeItem);
   assert(registerItem);
-  assert(orderItem);
-  await workbench.appendResolutionEvent(
-    { eventType: "accept_legal_ref", subjectId: codeItem.subjectId, payload: {} },
-    resolutionsDir,
-  );
   await workbench.appendResolutionEvent(
     {
       eventType: "accept_legal_ref",
       subjectId: registerItem.subjectId,
       payload: { refType: "dcmr", normalizedCitation: "DCMR and D.C. Register entrypoint" },
     },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    { eventType: "reject_legal_ref", subjectId: orderItem.subjectId, payload: {} },
     resolutionsDir,
   );
 
@@ -1937,12 +1924,11 @@ Deno.test("legal refs import into a reviewable queue and legal resolutions updat
     manifest.release_summary.legal_refs_by_type.map((row) => [row.ref_type, row.count]),
   );
   workbench.close();
-  assertEquals(statuses.get("accepted"), 2);
-  assertEquals(statuses.get("rejected"), 1);
+  assertEquals(statuses.get("accepted"), 3);
   assertEquals(types.get("dcmr"), 1);
 });
 
-Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambiguous rows", async () => {
+Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe import auto-accept", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1992,7 +1978,7 @@ Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambi
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
   assertStringIncludes(batchText, "Skipped 1 item(s) that were not safe to auto-accept.");
 
   const reopened = new Workbench(dbPath);
