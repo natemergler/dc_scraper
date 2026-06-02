@@ -1,4 +1,6 @@
 import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
@@ -114,7 +116,10 @@ export async function importConnectorResult(
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
+        autoPromoteSafeEntityCandidates(store);
+        reconcileRelationshipCandidates(store);
         await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
+        autoAcceptSafeRelationshipCandidates(store);
       }
       run(
         store.db,
@@ -391,7 +396,6 @@ function importParsedOutput(
       ],
     );
   }
-  reconcileRelationshipCandidates(store);
 }
 
 function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {

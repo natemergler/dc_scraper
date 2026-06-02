@@ -26,8 +26,31 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
+  if (args[0] === "source" && !args[1]) {
+    printSourceHelp({
+      tips: ["run `dc source list` to see fetch status and `dc source fetch dcgis.agencies` to start"],
+      showAvailableSources: true,
+    });
+    return true;
+  }
   if (args[0] === "source" && isHelp(args[1])) {
     printSourceHelp();
+    return true;
+  }
+  if (args[0] === "source" && args[1] === "fetch" && !args[2]) {
+    printSourceHelp({
+      tips: [
+        "run `dc source fetch dcgis.agencies` for a single source or `dc source list` to browse source ids",
+      ],
+      showAvailableSources: true,
+    });
+    return true;
+  }
+  if (args[0] === "source" && args[1] === "inspect" && !args[2]) {
+    printSourceHelp({
+      tips: ["run `dc source inspect dcgis.agencies` after a fetch or `dc source list` to browse ids"],
+      showAvailableSources: true,
+    });
     return true;
   }
   if (args[0] === "review" && isHelp(args[1])) {
@@ -376,7 +399,12 @@ Interactive actions:
 `);
 }
 
-function printSourceHelp(): void {
+function printSourceHelp(
+  options: {
+    tips?: string[];
+    showAvailableSources?: boolean;
+  } = {},
+): void {
   console.log(`dc source
 
 Usage:
@@ -385,6 +413,16 @@ Usage:
   dc source inspect <source-id> [--db <path>] [--json]
   dc source compare public-bodies [--db <path>] [--json]
 `);
+  if (options.showAvailableSources) {
+    console.log("Available sources:");
+    for (const connector of connectors) {
+      console.log(`  ${connector.sourceId}`);
+    }
+    console.log("");
+  }
+  for (const tip of options.tips ?? []) {
+    console.log(`Tip: ${tip}`);
+  }
 }
 
 function printEntityHelp(): void {

@@ -40,6 +40,7 @@ import {
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
+import { syntheticCustomEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const dir = await Deno.makeTempDir();
@@ -412,6 +413,46 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(releaseError, "");
 });
 
+Deno.test("source prefix commands guide the operator toward the next fetch action", async () => {
+  const sourceOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+    ],
+  }).output();
+  const sourceText = new TextDecoder().decode(sourceOutput.stdout);
+  assertEquals(sourceOutput.code, 0);
+  assertStringIncludes(sourceText, "dc source");
+  assertStringIncludes(sourceText, "Available sources:");
+  assertStringIncludes(sourceText, "dcgis.agencies");
+  assertStringIncludes(sourceText, "Tip: run `dc source list`");
+
+  const fetchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "fetch",
+    ],
+  }).output();
+  const fetchText = new TextDecoder().decode(fetchOutput.stdout);
+  assertEquals(fetchOutput.code, 0);
+  assertStringIncludes(fetchText, "dc source fetch <source-id>");
+  assertStringIncludes(fetchText, "Tip: run `dc source fetch dcgis.agencies`");
+  assertStringIncludes(fetchText, "dc source list");
+});
+
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -559,15 +600,15 @@ Deno.test("imports representative connector results and source inspection stays 
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
-  const branchCandidate = workbench.listReviewItems({ type: "entity_candidate" }).find((item) =>
-    item.subjectId === "candidate.dcgis.agencies.branch_executive"
-  );
+  const branchEntity = workbench.db.prepare(
+    "select entity_id as entityId, review_status as reviewStatus from canonical_entities where entity_id = 'dc.executive_branch'",
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
   workbench.close();
   assertEquals(dcgis.fieldCount, 7);
   assertEquals(dcgis.entityCandidateCount, 3);
   assertEquals(dcgis.relationshipCandidateCount, 2);
-  assert(branchCandidate);
-  assertEquals(branchCandidate.details.kind, "branch");
+  assertEquals(branchEntity?.entityId, "dc.executive_branch");
+  assertEquals(branchEntity?.reviewStatus, "accepted");
   assertEquals(quickbase.latestStatus, "success");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
   assertEquals(quickbase.itemCount > 0, true);
@@ -986,7 +1027,7 @@ Deno.test("Open DC public bodies can be safely accepted before relationship revi
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -1501,7 +1542,7 @@ Deno.test("blocked relationship reconciliation stores endpoint status for audit"
   assert(reconciliationItem);
   assertStringIncludes(
     reconciliationItem.detailsJson,
-    '"fromEndpoint":{"entityId":"dc.committee_of_the_whole","state":"pending_candidate"',
+    '"fromEndpoint":{"entityId":"dc.committee_of_the_whole","state":"accepted"',
   );
   assertStringIncludes(
     reconciliationItem.detailsJson,
@@ -2104,14 +2145,31 @@ Deno.test("blocked relationships stay out of the live review order while entity 
     await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_queue.entities",
+      candidateId: "candidate.test.review_queue.entities.example",
+      sourceItemKey: "review-queue-entity-row",
+      proposedEntityId: "dc.review_queue_entity",
+      name: "Review Queue Entity",
+      kind: "board",
+      observedName: "Review Queue Entity",
+    }),
+    dataDir,
+  );
   const items = workbench.listReviewItems();
+  const blockedSubjectIds = new Set(
+    workbench.db.prepare(
+      "select subject_id as subjectId from reconciliation_items where subject_type = 'relationship_candidate' and state = 'blocked'",
+    ).all().map((row) => (row as { subjectId: string }).subjectId),
+  );
   const blockedRelationships = workbench.db.prepare(
     "select count(*) as count from reconciliation_items where subject_type = 'relationship_candidate' and state = 'blocked'",
   ).get() as { count: number };
   workbench.close();
   assert(blockedRelationships.count > 0);
   assert(items.every((item) => item.itemType !== "source_status"));
-  assert(items.every((item) => item.itemType !== "relationship_candidate"));
+  assert(items.every((item) => !blockedSubjectIds.has(item.subjectId)));
   assert(items.some((item) => item.itemType === "entity_candidate"));
 });
 
@@ -2119,7 +2177,6 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
@@ -2147,13 +2204,17 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_list.entities",
+      candidateId: "candidate.test.review_list.entities.example",
+      sourceItemKey: "review-list-entity-row",
+      proposedEntityId: "dc.review_list_entity",
+      name: "Review List Entity",
+      kind: "board",
+      observedName: "Review List Entity",
+    }),
+    dataDir,
   );
   workbench.close();
   const output = await new Deno.Command(Deno.execPath(), {
@@ -2176,7 +2237,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--type",
       "entity_candidate",
       "--subject-prefix",
-      "candidate.council.committees",
+      "candidate.test.review_list",
       "--db",
       dbPath,
     ],
@@ -2208,7 +2269,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--type",
       "entity_candidate",
       "--subject-prefix",
-      "candidate.council.committees",
+      "candidate.test.review_list",
       "--db",
       dbPath,
       "--json",
@@ -2221,7 +2282,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(jsonOutput.code, 0);
   assertEquals(json.count, json.items.length);
   assert(json.items.every((item) => item.itemType === "entity_candidate"));
-  assert(json.items.every((item) => item.subjectId.startsWith("candidate.council.committees")));
+  assert(json.items.every((item) => item.subjectId.startsWith("candidate.test.review_list")));
 
   const relationshipTypeJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2394,6 +2455,30 @@ Deno.test("deferred review items stay visible but sort behind open items", async
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.deferred.entities.one",
+      candidateId: "candidate.test.deferred.entities.one",
+      sourceItemKey: "deferred-entity-row-one",
+      proposedEntityId: "dc.deferred_entity_one",
+      name: "Deferred Entity One",
+      kind: "board",
+      observedName: "Deferred Entity One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.deferred.entities.two",
+      candidateId: "candidate.test.deferred.entities.two",
+      sourceItemKey: "deferred-entity-row-two",
+      proposedEntityId: "dc.deferred_entity_two",
+      name: "Deferred Entity Two",
+      kind: "board",
+      observedName: "Deferred Entity Two",
+    }),
+    dataDir,
+  );
   const deferredItem = workbench.listReviewItems({ type: "entity_candidate" })[0];
   assert(deferredItem);
   await workbench.appendResolutionEvent(
@@ -2437,6 +2522,19 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
   });
   await workbench.importConnectorResult(
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.batch_accept_safe.entities",
+      candidateId: "candidate.test.batch_accept_safe.entities.example",
+      sourceItemKey: "batch-accept-safe-entity-row",
+      proposedEntityId: "dc.batch_accept_safe_entity",
+      name: "Batch Accept Safe Entity",
+      kind: "board",
+      observedName: "Batch Accept Safe Entity",
+      confidence: 0.99,
+    }),
     dataDir,
   );
   workbench.close();
@@ -2518,14 +2616,6 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
-  );
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
@@ -2559,7 +2649,7 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 1 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -2571,17 +2661,10 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
     relationshipType: "part_of",
     subjectPrefix: "relationship.council.committees",
   });
-  const blockedPartOf = reopened.db.prepare(
-    `select count(*) as count
-     from reconciliation_items
-     where subject_id = 'relationship.council.committees.committee_on_health_part_of'
-       and state = 'blocked'`,
-  ).get() as { count: number };
   reopened.close();
   assertEquals(relationship.relationshipType, "part_of");
   assertEquals(relationship.toEntityId, "dc.council_of_the_district_of_columbia");
   assertEquals(unresolvedPartOf.length, 0);
-  assertEquals(blockedPartOf.count, 1);
 });
 
 Deno.test("batch accept-safe accepts scoped Council oversight only for accepted endpoints", async () => {
@@ -2935,8 +3018,8 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
     items: Array<{ details: { rawValue: string } }>;
   };
   assertEquals(executiveListOutput.code, 0);
-  assertEquals(executiveList.count, 2);
-  assert(executiveList.items.every((item) => item.details.rawValue === "Executive"));
+  assertEquals(executiveList.count, 0);
+  assertEquals(executiveList.items.length, 0);
 
   const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2962,7 +3045,7 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   assertEquals(relationshipBatchOutput.code, 0);
   assertStringIncludes(
     new TextDecoder().decode(relationshipBatchOutput.stdout),
-    "Accepted 2 safe review item(s).",
+    "Accepted 0 safe review item(s).",
   );
 
   const broadRelationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
@@ -2988,7 +3071,7 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   const broadRelationshipBatchText = new TextDecoder().decode(
     broadRelationshipBatchOutput.stdout,
   );
-  assertStringIncludes(broadRelationshipBatchText, "Accepted 1 safe review item(s).");
+  assertStringIncludes(broadRelationshipBatchText, "Accepted 0 safe review item(s).");
   assertStringIncludes(
     broadRelationshipBatchText,
     "Skipped 1 item(s) that were not safe to auto-accept.",
