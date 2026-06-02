@@ -3,13 +3,7 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import {
-  councilCommitteeHealthDetailFixture,
-  councilCommitteesFixture,
-  councilCommitteeWholeDetailFixture,
-  quickbaseAppointmentsCsvFixture,
-  quickbaseFixture,
-} from "./helpers/v2_fixtures.ts";
+import { quickbaseAppointmentsCsvFixture, quickbaseFixture } from "./helpers/v2_fixtures.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -92,30 +86,30 @@ Deno.test("status surfaces blocked work by source with readable blocker labels",
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
-
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-
   await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.status.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.status.pending",
+      sourceItemKey: "status-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.status.entities",
+      candidateId: "candidate.test.reconciliation.status.pending_target",
+      sourceItemKey: "status-entity-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
     dataDir,
   );
   workbench.close();
@@ -148,14 +142,16 @@ Deno.test("status surfaces blocked work by source with readable blocker labels",
   assertEquals(statusOutput.code, 0);
   assert(
     status.reconciliation.blockedBySource.some((row) =>
-      row.sourceId === "council.committees" && row.count > 0
+      row.sourceId === "test.reconciliation.status.relationships" && row.count > 0
     ),
   );
-  assertEquals(status.reconciliation.firstBlocked?.sourceId, "council.committees");
+  assertEquals(
+    status.reconciliation.firstBlocked?.sourceId,
+    "test.reconciliation.status.relationships",
+  );
   assert(
     status.reconciliation.firstBlocked?.blockers.some((blocker) =>
-      blocker.blockerState === "pending_candidate" &&
-      blocker.blockerLabel === "Committee of the Whole"
+      blocker.blockerState === "pending_candidate" && blocker.blockerLabel === "Pending Target"
     ),
   );
 });
@@ -168,36 +164,36 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
-
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-
   await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.reject.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.reject",
+      sourceItemKey: "reject-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.rejected_target",
+      relationshipType: "governed_by",
+      rawValue: "Rejected Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.reject.entities",
+      candidateId: "candidate.test.reconciliation.reject.target",
+      sourceItemKey: "reject-entity-row",
+      proposedEntityId: "dc.rejected_target",
+      name: "Rejected Target",
+      kind: "agency",
+      observedName: "Rejected Target",
+    }),
     dataDir,
   );
   await workbench.appendResolutionEvent(
     {
       eventType: "reject_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
+      subjectId: "candidate.test.reconciliation.reject.target",
       payload: {},
     },
     resolutionsDir,
@@ -236,8 +232,7 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
   );
   assert(
     status.reconciliation.firstBlocked?.blockers.some((blocker) =>
-      blocker.blockerState === "rejected_candidate" &&
-      blocker.blockerLabel === "Committee of the Whole"
+      blocker.blockerState === "rejected_candidate" && blocker.blockerLabel === "Rejected Target"
     ),
   );
 });

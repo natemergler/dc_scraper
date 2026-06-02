@@ -17,6 +17,8 @@ import {
   upsertEndpoint as writeEndpointRecord,
   upsertSource as writeSourceRecord,
 } from "./workbench/catalog.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./workbench/auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./workbench/auto_promote.ts";
 import {
   appendResolutionEvent as appendResolutionRecord,
   applyResolutionEvent as applyResolutionRecord,
@@ -64,7 +66,9 @@ export class Workbench implements WorkbenchStore {
 
   init(): WorkbenchMeta {
     const meta = initWorkbench(this);
+    autoPromoteSafeEntityCandidates(this);
     reconcileRelationshipCandidates(this);
+    autoAcceptSafeRelationshipCandidates(this);
     return meta;
   }
 

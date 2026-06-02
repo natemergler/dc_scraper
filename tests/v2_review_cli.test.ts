@@ -8,6 +8,7 @@ import {
   openDcIndexFixture,
   openDcTaskForceFixture,
 } from "./helpers/v2_fixtures.ts";
+import { syntheticCustomEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 
 function openDcPublicBodiesFetcher() {
   return async (url: string) => ({
@@ -115,6 +116,18 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
     })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.entities",
+      candidateId: "candidate.test.review_cli.board_accountancy",
+      sourceItemKey: "review-cli-board-accountancy",
+      proposedEntityId: "dc.board_of_accountancy",
+      name: "Board of Accountancy",
+      kind: "board",
+      observedName: "Board of Accountancy",
+    }),
+    dataDir,
+  );
   workbench.close();
   const reviewRun = new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -130,6 +143,8 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
       "review",
       "--mode",
       "entities",
+      "--subject-prefix",
+      "candidate.test.review_cli",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -154,7 +169,7 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   );
   assertStringIncludes(reviewText, "evidence:");
   assertStringIncludes(reviewText, "name <- Board of Accountancy");
-  assertStringIncludes(reviewText, "source: open_dc.public_bodies @");
+  assertStringIncludes(reviewText, "source: test.review_cli.entities @");
   assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -260,10 +275,15 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   const workbench = new Workbench(dbPath);
   workbench.init();
   await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({
-      fetcher: openDcPublicBodiesFetcher(),
-      limit: 1,
-    })),
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.enter",
+      candidateId: "candidate.test.review_cli.enter.board_accountancy",
+      sourceItemKey: "review-cli-enter-board-accountancy",
+      proposedEntityId: "dc.board_of_accountancy",
+      name: "Board of Accountancy",
+      kind: "board",
+      observedName: "Board of Accountancy",
+    }),
     dataDir,
   );
   workbench.close();
@@ -316,10 +336,27 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   const workbench = new Workbench(dbPath);
   workbench.init();
   await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({
-      fetcher: openDcPublicBodiesFetcher(),
-      limit: 2,
-    })),
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.quit_one",
+      candidateId: "candidate.test.review_cli.quit_one.board_accountancy",
+      sourceItemKey: "review-cli-quit-board-accountancy",
+      proposedEntityId: "dc.board_of_accountancy",
+      name: "Board of Accountancy",
+      kind: "board",
+      observedName: "Board of Accountancy",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.quit_two",
+      candidateId: "candidate.test.review_cli.quit_two.task_force",
+      sourceItemKey: "review-cli-quit-task-force",
+      proposedEntityId: "dc.adult_career_pathways_task_force",
+      name: "Adult Career Pathways Task Force",
+      kind: "task_force",
+      observedName: "Adult Career Pathways Task Force",
+    }),
     dataDir,
   );
   workbench.close();

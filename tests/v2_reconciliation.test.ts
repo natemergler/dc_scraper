@@ -17,7 +17,7 @@ import {
   syntheticCustomRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("quickbase relationship candidates with unresolved endpoints are blocked after import", async () => {
+Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint relationships blocked after import", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -50,6 +50,10 @@ Deno.test("quickbase relationship candidates with unresolved endpoints are block
     "select count(*) as count from relationship_candidates where review_status = 'pending'",
   ).get() as { count: number };
   const relationshipReviewItems = workbench.listReviewItems({ mode: "relationships" });
+  const entityReviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.mota.quickbase",
+  });
   const blockedItems = workbench.db.prepare(
     `select subject_id as subjectId,
             state,
@@ -62,7 +66,8 @@ Deno.test("quickbase relationship candidates with unresolved endpoints are block
   workbench.close();
 
   assertEquals(relationshipCandidates.count > 0, true);
-  assertEquals(relationshipReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length > 0, true);
+  assertEquals(entityReviewItems.length, 0);
   assert(blockedItems.length > 0);
   assertEquals(
     blockedItems.some((item) =>
@@ -80,6 +85,81 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
   const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reprocess.accept.relationships",
+      relationshipCandidateId: "relationship.test.reprocess.accept",
+      sourceItemKey: "accept-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.accept_target",
+      relationshipType: "governed_by",
+      rawValue: "Accept Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reprocess.accept.entities",
+      candidateId: "candidate.test.reprocess.accept",
+      sourceItemKey: "accept-entity-row",
+      proposedEntityId: "dc.accept_target",
+      name: "Accept Target",
+      kind: "agency",
+      observedName: "Accept Target",
+    }),
+    dataDir,
+  );
+
+  const before = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reprocess",
+  });
+  const blockedBefore = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reprocess.accept'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.reprocess.accept",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const after = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reprocess",
+  });
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.reprocess.accept'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(before.length, 0);
+  assertEquals(blockedBefore.count, 1);
+  assert(
+    after.some((item) => item.subjectId === "relationship.test.reprocess.accept"),
+  );
+  assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
@@ -110,48 +190,41 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
     dataDir,
   );
 
-  const before = workbench.listReviewItems({
-    mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.council.committees",
-  });
-  const blockedBefore = workbench.db.prepare(
+  const committee = workbench.db.prepare(
+    `select review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.committee_of_the_whole'`,
+  ).get() as { reviewStatus: string } | undefined;
+  const blocked = workbench.db.prepare(
     `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
        and state = 'blocked'`,
   ).get() as { count: number };
-
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
-  );
-
-  const after = workbench.listReviewItems({
+  const relationshipItems = workbench.listReviewItems({
     mode: "relationships",
     relationshipType: "part_of",
     subjectPrefix: "relationship.council.committees",
   });
-  const blockedAfter = workbench.db.prepare(
-    `select count(*) as count
-     from reconciliation_items
-     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'
-       and state = 'blocked'`,
-  ).get() as { count: number };
+  const entityItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.council.committees",
+  });
   workbench.close();
 
-  assertEquals(before.length, 0);
-  assertEquals(blockedBefore.count, 1);
+  assertEquals(committee?.reviewStatus, "accepted");
+  assertEquals(blocked.count, 0);
   assert(
-    after.some((item) =>
+    relationshipItems.some((item) =>
       item.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
     ),
   );
-  assertEquals(blockedAfter.count, 0);
+  assertEquals(
+    entityItems.some((item) =>
+      item.subjectId === "candidate.council.committees.committee_of_the_whole"
+    ),
+    false,
+  );
 });
 
 Deno.test("merging a prerequisite entity candidate reprocesses blocked relationships into review-ready work", async () => {
@@ -512,12 +585,15 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
     relationshipType: "part_of",
     subjectPrefix: "relationship.dcgis.agencies",
   });
+  const acceptedRelationships = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where relationship_type = 'part_of'",
+  ).get() as { count: number };
   const executiveItem = items.find((item) => item.details.rawValue === "Executive");
   const otherItem = items.find((item) => item.details.rawValue === "Other");
   workbench.close();
 
-  assertEquals(executiveItem?.reason, "Review agency relationship inferred from branch metadata");
-  assertEquals(executiveItem?.defaultAction, "accept");
+  assertEquals(executiveItem, undefined);
+  assertEquals(acceptedRelationships.count > 0, true);
   assertEquals(otherItem?.defaultAction, "defer");
 });
 

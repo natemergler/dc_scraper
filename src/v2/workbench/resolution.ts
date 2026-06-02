@@ -11,6 +11,8 @@ import {
   sha256Hex,
   slugify,
 } from "../domain.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -21,10 +23,15 @@ interface ResolutionRecord {
   sequenceNumber: number;
 }
 
+interface AppendResolutionOptions {
+  deferRelationshipReconciliation?: boolean;
+}
+
 export async function appendResolutionEvent(
   store: WorkbenchStore,
   event: ResolutionEventInput,
   resolutionsDir: string,
+  options: AppendResolutionOptions = {},
 ): Promise<{ filePath: string; sequenceNumber: number }> {
   const enrichedEvent = await enrichResolutionEvent(store, event);
   const dayDir = join(resolutionsDir, compactDatePart());
@@ -41,10 +48,74 @@ export async function appendResolutionEvent(
     subject_id: enrichedEvent.subjectId,
     payload: enrichedEvent.payload,
   });
-  applyResolutionEvent(store, enrichedEvent, relative(resolutionsDir, filePath), sequenceNumber);
+  applyResolutionEvent(
+    store,
+    enrichedEvent,
+    relative(resolutionsDir, filePath),
+    sequenceNumber,
+    options,
+  );
   await ensureDir(dayDir);
   await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   return { filePath, sequenceNumber };
+}
+
+export async function appendResolutionEvents(
+  store: Pick<WorkbenchStore, "db">,
+  events: ResolutionEventInput[],
+  resolutionsDir: string,
+  options: AppendResolutionOptions = {},
+): Promise<Array<{ filePath: string; sequenceNumber: number }>> {
+  if (events.length === 0) return [];
+  const enrichedEvents: ResolutionEventInput[] = [];
+  for (const event of events) {
+    enrichedEvents.push(await enrichResolutionEvent(store as WorkbenchStore, event));
+  }
+  const dayDir = join(resolutionsDir, compactDatePart());
+  const filePath = join(dayDir, "001-auto-review.jsonl");
+  let sequenceNumber = 1;
+  try {
+    const existing = await Deno.readTextFile(filePath);
+    sequenceNumber = existing.split("\n").filter(Boolean).length + 1;
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  const lines: string[] = [];
+  const records: ResolutionRecord[] = [];
+  for (const [index, enrichedEvent] of enrichedEvents.entries()) {
+    const currentSequenceNumber = sequenceNumber + index;
+    lines.push(JSON.stringify({
+      event_type: enrichedEvent.eventType,
+      subject_id: enrichedEvent.subjectId,
+      payload: enrichedEvent.payload,
+    }));
+    records.push({
+      event: enrichedEvent,
+      resolutionFile: relative(resolutionsDir, filePath),
+      sequenceNumber: currentSequenceNumber,
+    });
+  }
+  withTransaction(store.db, () => {
+    for (const record of records) {
+      applyResolutionEventInCurrentTransaction(store as WorkbenchStore, record, {
+        deferRelationshipReconciliation: true,
+      });
+    }
+    if (!options.deferRelationshipReconciliation) {
+      reconcileRelationshipCandidates(store as WorkbenchStore);
+      if (
+        records.some((record) => shouldAutoAcceptRelationshipsAfterEvent(record.event.eventType))
+      ) {
+        autoAcceptSafeRelationshipCandidates(store as WorkbenchStore);
+      }
+    }
+  });
+  await ensureDir(dayDir);
+  await Deno.writeTextFile(filePath, `${lines.join("\n")}\n`, { append: true, create: true });
+  return records.map((record) => ({
+    filePath: join(resolutionsDir, record.resolutionFile),
+    sequenceNumber: record.sequenceNumber,
+  }));
 }
 
 async function enrichResolutionEvent(
@@ -450,19 +521,25 @@ export function applyResolutionEvent(
   event: ResolutionEventInput,
   resolutionFile: string,
   sequenceNumber: number,
+  options: AppendResolutionOptions = {},
 ): void {
   withTransaction(store.db, () => {
-    applyResolutionEventInCurrentTransaction(store, {
-      event,
-      resolutionFile,
-      sequenceNumber,
-    });
+    applyResolutionEventInCurrentTransaction(
+      store,
+      {
+        event,
+        resolutionFile,
+        sequenceNumber,
+      },
+      options,
+    );
   });
 }
 
 function applyResolutionEventInCurrentTransaction(
   store: WorkbenchStore,
   record: ResolutionRecord,
+  options: AppendResolutionOptions = {},
 ): void {
   const { event, resolutionFile, sequenceNumber } = record;
   const eventId = resolutionEventId(resolutionFile, sequenceNumber);
@@ -514,7 +591,12 @@ function applyResolutionEventInCurrentTransaction(
       setReviewStatus(store, event.subjectId, "open");
       break;
   }
-  reconcileRelationshipCandidates(store);
+  if (!options.deferRelationshipReconciliation) {
+    reconcileRelationshipCandidates(store);
+    if (shouldAutoAcceptRelationshipsAfterEvent(event.eventType)) {
+      autoAcceptSafeRelationshipCandidates(store);
+    }
+  }
 }
 
 export async function replayResolutionDirectory(
@@ -567,11 +649,23 @@ export async function replayResolutionDirectory(
     run(store.db, "update relationship_candidates set review_status = 'pending'");
     run(store.db, "update legal_refs set review_status = 'pending'");
     run(store.db, "update review_items set status = 'open' where status = 'resolved'");
+    autoPromoteSafeEntityCandidates(store);
     for (const record of records) {
-      applyResolutionEventInCurrentTransaction(store, record);
+      applyResolutionEventInCurrentTransaction(store, record, {
+        deferRelationshipReconciliation: true,
+      });
     }
     reconcileRelationshipCandidates(store);
+    autoAcceptSafeRelationshipCandidates(store);
   });
+}
+
+function shouldAutoAcceptRelationshipsAfterEvent(
+  eventType: ResolutionEventInput["eventType"],
+): boolean {
+  return eventType === "accept_entity_candidate" ||
+    eventType === "merge_entity_candidates" ||
+    eventType === "set_entity_fields";
 }
 
 function resolutionEventId(resolutionFile: string, sequenceNumber: number): string {

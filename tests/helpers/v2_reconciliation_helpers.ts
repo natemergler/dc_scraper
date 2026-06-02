@@ -77,6 +77,7 @@ export function syntheticCustomEntitySourceResult(input: {
   name: string;
   kind: string;
   observedName: string;
+  confidence?: number;
 }): ConnectorResult {
   return {
     source: {
@@ -119,6 +120,7 @@ export function syntheticCustomEntitySourceResult(input: {
           proposedEntityId: input.proposedEntityId,
           name: input.name,
           kind: input.kind,
+          confidence: input.confidence,
           evidence: [{
             fieldPath: "name",
             observedValue: input.observedName,
@@ -233,6 +235,7 @@ export function syntheticCustomRelationshipSourceResult(input: {
   toEntityRef: string;
   relationshipType: RelationshipType;
   rawValue: string;
+  needsReview?: boolean;
 }): ConnectorResult {
   return {
     source: {
@@ -276,7 +279,7 @@ export function syntheticCustomRelationshipSourceResult(input: {
           toEntityRef: input.toEntityRef,
           relationshipType: input.relationshipType,
           rawValue: input.rawValue,
-          needsReview: true,
+          needsReview: input.needsReview ?? true,
           evidence: [{
             fieldPath: "governingAgency",
             observedValue: input.rawValue,
