@@ -74,7 +74,8 @@ Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint 
       item.subjectId ===
         "relationship.mota.quickbase.district_of_columbia_rental_housing_commission_governed_by_office_of_housing_and_community_development_designee" &&
       item.state === "blocked" &&
-      item.reason === "unresolved_endpoints"
+      item.reason === "unresolved_endpoints" &&
+      item.detailsJson.includes('"state":"missing"')
     ),
     true,
   );
@@ -154,6 +155,173 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
     after.some((item) => item.subjectId === "relationship.test.reprocess.accept"),
   );
   assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("relationship imports seed reviewable endpoint candidates for missing direct endpoint text", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.seeded.endpoint.relationships",
+      relationshipCandidateId: "relationship.test.seeded.endpoint",
+      sourceItemKey: "seeded-endpoint-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.office_of_missing_things",
+      relationshipType: "governed_by",
+      rawValue: "Office of Missing Things",
+    }),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            name,
+            kind,
+            review_status as reviewStatus
+     from entity_candidates
+     where proposed_entity_id = 'dc.office_of_missing_things'`,
+  ).get() as {
+    candidateId: string;
+    name: string;
+    kind: string;
+    reviewStatus: string;
+  } | undefined;
+  const blockedBefore = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.test.seeded.endpoint'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  const entityItemsBefore = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.test.seeded.endpoint.relationships",
+  });
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.name, "Office of Missing Things");
+  assertEquals(seededCandidate.kind, "office");
+  assertEquals(seededCandidate.reviewStatus, "pending");
+  assert(blockedBefore);
+  assertStringIncludes(blockedBefore.detailsJson, '"state":"pending_candidate"');
+  assertEquals(
+    entityItemsBefore.some((item) => item.subjectId === seededCandidate.candidateId),
+    true,
+  );
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: seededCandidate.candidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const relationshipItemsAfter = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.seeded.endpoint",
+  });
+  const blockedAfter = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.seeded.endpoint'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(
+    relationshipItemsAfter.some((item) => item.subjectId === "relationship.test.seeded.endpoint"),
+    true,
+  );
+  assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("relationship imports do not seed generic missing endpoints", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.seeded.generic.relationships",
+      relationshipCandidateId: "relationship.test.seeded.generic",
+      sourceItemKey: "generic-endpoint-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.other",
+      relationshipType: "governed_by",
+      rawValue: "Other",
+    }),
+    dataDir,
+  );
+
+  const seededCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where proposed_entity_id = 'dc.other'",
+  ).get() as { count: number };
+  const blocked = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.test.seeded.generic'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+
+  assertEquals(seededCount.count, 0);
+  assert(blocked);
+  assertStringIncludes(blocked.detailsJson, '"state":"missing"');
+});
+
+Deno.test("relationship imports do not seed endpoint candidates when the endpoint is already known", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.office_of_planning', 'Office of Planning', 'office', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.seeded.known.relationships",
+      relationshipCandidateId: "relationship.test.seeded.known",
+      sourceItemKey: "known-endpoint-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.office_of_planning",
+      relationshipType: "governed_by",
+      rawValue: "Office of Planning",
+    }),
+    dataDir,
+  );
+
+  const seededCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where candidate_id like 'candidate.test.seeded.known.relationships.relationship_%'",
+  ).get() as { count: number };
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.test.seeded.known'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(seededCount.count, 0);
+  assertEquals(blockedCount.count, 0);
 });
 
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {

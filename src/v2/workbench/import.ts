@@ -1,8 +1,21 @@
-import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
+import {
+  buildCandidateId,
+  buildEntityId,
+  buildReviewItemId,
+  type ConnectorResult,
+  detectEntityKind,
+  type EntityCandidateInput,
+  type LegalRefInput,
+  normalizeName,
+  nowIso,
+  type ParsedEndpointOutput,
+  type RelationshipCandidateInput,
+  type ReviewItemInput,
+} from "../domain.ts";
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
-import { run, withTransaction } from "./db.ts";
+import { queryOne, run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
@@ -41,6 +54,13 @@ export async function importConnectorResult(
     result.source.notes,
   );
   for (const endpointResult of result.endpointResults) {
+    const parsed = endpointResult.parsed
+      ? augmentParsedOutputWithRelationshipEndpointCandidates(
+        store,
+        endpointResult.endpoint.sourceId,
+        endpointResult.parsed,
+      )
+      : undefined;
     upsertEndpoint(store, endpointResult.endpoint);
     const runId = makeId("run");
     const startedAt = nowIso();
@@ -56,23 +76,23 @@ export async function importConnectorResult(
       ],
     );
     const artifactRecords: ArtifactRecord[] = [];
-    const entityDecisionHints = endpointResult.parsed?.entityCandidates
+    const entityDecisionHints = parsed?.entityCandidates
       ? await Promise.all(
-        endpointResult.parsed.entityCandidates.map((candidate) =>
+        parsed.entityCandidates.map((candidate) =>
           buildEntityDecisionHint(endpointResult.endpoint.sourceId, candidate)
         ),
       )
       : [];
-    const legalRefDecisionHints = endpointResult.parsed?.legalRefs
+    const legalRefDecisionHints = parsed?.legalRefs
       ? await Promise.all(
-        endpointResult.parsed.legalRefs.map((legalRef) =>
+        parsed.legalRefs.map((legalRef) =>
           buildLegalRefDecisionHint(endpointResult.endpoint.sourceId, legalRef)
         ),
       )
       : [];
-    const relationshipDecisionHints = endpointResult.parsed?.relationshipCandidates
+    const relationshipDecisionHints = parsed?.relationshipCandidates
       ? await Promise.all(
-        endpointResult.parsed.relationshipCandidates.map((candidate) =>
+        parsed.relationshipCandidates.map((candidate) =>
           buildRelationshipDecisionHint(endpointResult.endpoint.sourceId, candidate)
         ),
       )
@@ -104,7 +124,7 @@ export async function importConnectorResult(
         );
         artifactRecords.push({ artifactId, artifactPath: relativePath });
       }
-      if (endpointResult.parsed) {
+      if (parsed) {
         withTransaction(store.db, () => {
           importParsedOutput(
             store,
@@ -112,7 +132,7 @@ export async function importConnectorResult(
             endpointResult.endpoint.endpointId,
             runId,
             artifactRecords,
-            endpointResult.parsed,
+            parsed,
           );
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
@@ -137,6 +157,118 @@ export async function importConnectorResult(
       throw error;
     }
   }
+}
+
+function augmentParsedOutputWithRelationshipEndpointCandidates(
+  store: Pick<WorkbenchStore, "db">,
+  sourceId: string,
+  parsed: ParsedEndpointOutput,
+): ParsedEndpointOutput {
+  const seededCandidates = buildSeededRelationshipEndpointCandidates(
+    store,
+    sourceId,
+    parsed.relationshipCandidates ?? [],
+    parsed.entityCandidates ?? [],
+  );
+  if (seededCandidates.length === 0) return parsed;
+  return {
+    ...parsed,
+    entityCandidates: [...(parsed.entityCandidates ?? []), ...seededCandidates],
+    reviewItems: [
+      ...(parsed.reviewItems ?? []),
+      ...seededCandidates.map((candidate) => seededRelationshipEndpointReviewItem(candidate)),
+    ],
+  };
+}
+
+function buildSeededRelationshipEndpointCandidates(
+  store: Pick<WorkbenchStore, "db">,
+  sourceId: string,
+  relationshipCandidates: RelationshipCandidateInput[],
+  entityCandidates: EntityCandidateInput[],
+): EntityCandidateInput[] {
+  const existingEntityIds = new Set(
+    entityCandidates.map((candidate) => candidate.proposedEntityId),
+  );
+  const seededCandidates: EntityCandidateInput[] = [];
+  for (const relationshipCandidate of relationshipCandidates) {
+    const seededCandidate = seededRelationshipEndpointCandidate(sourceId, relationshipCandidate);
+    if (!seededCandidate) continue;
+    if (existingEntityIds.has(seededCandidate.proposedEntityId)) continue;
+    if (endpointAlreadyKnown(store, seededCandidate.proposedEntityId)) continue;
+    seededCandidates.push(seededCandidate);
+    existingEntityIds.add(seededCandidate.proposedEntityId);
+  }
+  return seededCandidates;
+}
+
+function seededRelationshipEndpointCandidate(
+  sourceId: string,
+  relationshipCandidate: RelationshipCandidateInput,
+): EntityCandidateInput | undefined {
+  if (relationshipCandidate.toEntityRef.startsWith("legal.")) return undefined;
+  const observedName = normalizeName(relationshipCandidate.rawValue ?? "");
+  if (!observedName || !isSeedableEndpointName(observedName)) return undefined;
+  if (buildEntityId(observedName) !== relationshipCandidate.toEntityRef) return undefined;
+  return {
+    candidateId: buildCandidateId(
+      sourceId,
+      `${relationshipCandidate.relationshipCandidateId}.endpoint`,
+    ),
+    sourceItemKey: relationshipCandidate.sourceItemKey,
+    proposedEntityId: relationshipCandidate.toEntityRef,
+    name: observedName,
+    kind: detectEntityKind(undefined, observedName),
+    evidence: relationshipCandidate.evidence.map((evidence) => ({
+      ...evidence,
+      observedValue: observedName,
+    })),
+  };
+}
+
+function seededRelationshipEndpointReviewItem(
+  candidate: EntityCandidateInput,
+): ReviewItemInput {
+  return {
+    reviewItemId: buildReviewItemId(candidate.candidateId, "seeded-endpoint"),
+    itemType: "entity_candidate",
+    subjectId: candidate.candidateId,
+    reason: "Review entity candidate inferred from relationship endpoint text",
+    defaultAction: "accept",
+    details: {
+      name: candidate.name,
+      kind: candidate.kind,
+      proposedEntityId: candidate.proposedEntityId,
+      seededFrom: "relationship_endpoint",
+    },
+  };
+}
+
+function isSeedableEndpointName(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized !== "other" &&
+    normalized !== "unknown" &&
+    normalized !== "n/a" &&
+    normalized !== "na" &&
+    normalized !== "none";
+}
+
+function endpointAlreadyKnown(
+  store: Pick<WorkbenchStore, "db">,
+  entityId: string,
+): boolean {
+  return Boolean(queryOne<{ found: number }>(
+    store.db,
+    `select 1 as found
+     from canonical_entities
+     where entity_id = ?
+     union all
+     select 1 as found
+     from entity_candidates
+     where proposed_entity_id = ?
+     limit 1`,
+    [entityId, entityId],
+  ));
 }
 
 function importParsedOutput(

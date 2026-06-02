@@ -174,7 +174,7 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.rejected_target",
       relationshipType: "governed_by",
-      rawValue: "Rejected Target",
+      rawValue: "Chairperson (Rejected Target designee)",
     }),
     dataDir,
   );
