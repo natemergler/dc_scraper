@@ -706,6 +706,75 @@ Deno.test("accepted relationship decisions are reused across refetch when relati
   assertEquals(openItems.length, 0);
 });
 
+Deno.test("rejected relationship decisions are reused across refetch when relationship candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(
+      "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v1",
+      "Target Agency",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_relationship_candidate",
+      subjectId:
+        "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(
+      "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v2",
+      "Target Agency",
+    ),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = 'relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v1'",
+  ).get() as { payloadJson: string };
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v2'",
+  ).get() as { reviewStatus: string };
+  const relationshipCount = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where relationship_id = 'dc.source_board:governed_by:dc.target_agency'",
+  ).get() as { count: number };
+  const openItems = workbench.listReviewItems({ mode: "relationships", status: "open" });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(
+    payload.fact_signature ?? "",
+    "relationship_candidate:test.signature.relationships",
+  );
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(secondCandidate.reviewStatus, "rejected");
+  assertEquals(relationshipCount.count, 0);
+  assertEquals(openItems.length, 0);
+});
+
 Deno.test("changed relationship evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -766,6 +835,69 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertEquals(staleItem.details.priorDecisionState, "accepted");
   assertEquals(staleItem.details.stalePriorDecision, true);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
+Deno.test("changed relationship evidence after a prior reject becomes stale review work instead of silent reuse", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(
+      "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v1",
+      "Target Agency",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_relationship_candidate",
+      subjectId:
+        "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticRelationshipSourceResult(
+      "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v2",
+      "Target Agency (Updated Source Text)",
+    ),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v2'",
+  ).get() as { reviewStatus: string };
+  const staleItem = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+  }).find((item) =>
+    item.subjectId ===
+      "relationship.test.signature.relationships.source_board_governed_by_target_agency_reject_v2"
+  );
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "pending");
+  assert(staleItem);
+  assertEquals(staleItem.defaultAction, "reject");
+  assertEquals(staleItem.details.priorDecisionState, "rejected");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior rejected decision");
 });
 
 Deno.test("status json reports blocked reconciliation counts", async () => {
