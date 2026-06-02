@@ -339,32 +339,7 @@ function importParsedOutput(
   }
   for (const reviewItem of parsed.reviewItems ?? []) {
     if (reviewItem.itemType === "relationship_candidate") {
-      run(
-        store.db,
-        `insert into relationship_review_templates(
-           review_item_id, subject_id, reason, default_action, details_json, created_at, updated_at
-         ) values(
-           ?, ?, ?, ?, ?,
-           coalesce((select created_at from relationship_review_templates where review_item_id = ?), ?),
-           ?
-         )
-         on conflict(review_item_id) do update set
-           subject_id = excluded.subject_id,
-           reason = excluded.reason,
-           default_action = excluded.default_action,
-           details_json = excluded.details_json,
-           updated_at = excluded.updated_at`,
-        [
-          reviewItem.reviewItemId,
-          reviewItem.subjectId,
-          reviewItem.reason,
-          reviewItem.defaultAction,
-          JSON.stringify(reviewItem.details),
-          reviewItem.reviewItemId,
-          nowIso(),
-          nowIso(),
-        ],
-      );
+      // Relationship review visibility is derived from reconciled candidate state.
       continue;
     }
     run(
