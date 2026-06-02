@@ -73,59 +73,18 @@ async function enrichResolutionEvent(
   if (event.eventType === "accept_legal_ref" || event.eventType === "reject_legal_ref") {
     return await enrichLegalRefResolutionEvent(store, event);
   }
-  const candidate = queryOne<{
-    sourceId: string;
-    itemKey: string;
-    proposedEntityId: string;
-    name: string;
-    kind: string;
-  }>(
-    store.db,
-    `select source_items.source_id as sourceId,
-            source_items.item_key as itemKey,
-            entity_candidates.proposed_entity_id as proposedEntityId,
-            entity_candidates.name,
-            entity_candidates.kind
-     from entity_candidates
-     join source_items on source_items.source_item_id = entity_candidates.source_item_id
-     where entity_candidates.candidate_id = ?`,
-    [event.subjectId],
-  );
-  if (!candidate) return event;
-  const evidenceRows = store.db.prepare(
-    `select field_path as fieldPath,
-            observed_value as observedValue
-     from entity_candidate_evidence
-     where candidate_id = ?
-     order by field_path, observed_value`,
-  ).all(event.subjectId) as Array<{
-    fieldPath: string;
-    observedValue: string;
-  }>;
-  const factSignature = [
-    "entity_candidate",
-    candidate.sourceId,
-    candidate.itemKey,
-    candidate.proposedEntityId,
-    slugify(normalizeName(candidate.name)),
-    candidate.kind,
-  ].join(":");
-  const evidenceHash = `sha256:${await sha256Hex(
-    JSON.stringify(evidenceRows.map((row) => ({
-      fieldPath: row.fieldPath,
-      observedValue: row.observedValue,
-    }))),
-  )}`;
+  const metadata = await entityResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
   return {
     ...event,
     payload: {
       ...event.payload,
-      fact_signature: event.payload.fact_signature ?? factSignature,
-      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
       ...(event.eventType === "accept_entity_candidate"
         ? {
           resolved_entity_id: event.payload.resolved_entity_id ?? event.payload.entityId ??
-            candidate.proposedEntityId,
+            metadata.proposedEntityId,
         }
         : {}),
     },
@@ -147,8 +106,12 @@ async function enrichReviewStatusResolutionEvent(
      where review_item_id = ?`,
     [event.subjectId],
   );
-  if (!reviewItem || reviewItem.itemType !== "relationship_candidate") return event;
-  const metadata = await relationshipResolutionMetadata(store, reviewItem.subjectId);
+  if (!reviewItem) return event;
+  const metadata = await reviewStatusResolutionMetadata(
+    store,
+    reviewItem.itemType,
+    reviewItem.subjectId,
+  );
   if (!metadata) return event;
   return {
     ...event,
@@ -160,6 +123,23 @@ async function enrichReviewStatusResolutionEvent(
       evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
     },
   };
+}
+
+async function reviewStatusResolutionMetadata(
+  store: WorkbenchStore,
+  itemType: string,
+  subjectId: string,
+): Promise<{ factSignature: string; evidenceHash: string } | undefined> {
+  switch (itemType) {
+    case "entity_candidate":
+      return await entityResolutionMetadata(store, subjectId);
+    case "relationship_candidate":
+      return await relationshipResolutionMetadata(store, subjectId);
+    case "legal_ref":
+      return await legalRefResolutionMetadata(store, subjectId);
+    default:
+      return undefined;
+  }
 }
 
 async function enrichRelationshipResolutionEvent(
@@ -187,6 +167,66 @@ async function enrichRelationshipResolutionEvent(
         }
         : {}),
     },
+  };
+}
+
+async function entityResolutionMetadata(
+  store: WorkbenchStore,
+  candidateId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    proposedEntityId: string;
+  } | undefined
+> {
+  const candidate = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    proposedEntityId: string;
+    name: string;
+    kind: string;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            entity_candidates.proposed_entity_id as proposedEntityId,
+            entity_candidates.name,
+            entity_candidates.kind
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     where entity_candidates.candidate_id = ?`,
+    [candidateId],
+  );
+  if (!candidate) return undefined;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from entity_candidate_evidence
+     where candidate_id = ?
+     order by field_path, observed_value`,
+  ).all(candidateId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const factSignature = [
+    "entity_candidate",
+    candidate.sourceId,
+    candidate.itemKey,
+    candidate.proposedEntityId,
+    slugify(normalizeName(candidate.name)),
+    candidate.kind,
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify(evidenceRows.map((row) => ({
+      fieldPath: row.fieldPath,
+      observedValue: row.observedValue,
+    }))),
+  )}`;
+  return {
+    factSignature,
+    evidenceHash,
+    proposedEntityId: candidate.proposedEntityId,
   };
 }
 
@@ -262,10 +302,18 @@ async function relationshipResolutionMetadata(
   };
 }
 
-async function enrichLegalRefResolutionEvent(
+async function legalRefResolutionMetadata(
   store: WorkbenchStore,
-  event: ResolutionEventInput,
-): Promise<ResolutionEventInput> {
+  legalRefId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    resolvedRefType: string;
+    resolvedNormalizedCitation: string | null;
+    url: string | null;
+  } | undefined
+> {
   const legalRef = queryOne<{
     sourceId: string;
     itemKey: string;
@@ -284,28 +332,25 @@ async function enrichLegalRefResolutionEvent(
      from legal_refs
      join source_items on source_items.source_item_id = legal_refs.source_item_id
      where legal_refs.legal_ref_id = ?`,
-    [event.subjectId],
+    [legalRefId],
   );
-  if (!legalRef) return event;
+  if (!legalRef) return undefined;
   const evidenceRows = store.db.prepare(
     `select field_path as fieldPath,
             observed_value as observedValue
      from legal_ref_evidence
      where legal_ref_id = ?
      order by field_path, observed_value`,
-  ).all(event.subjectId) as Array<{
+  ).all(legalRefId) as Array<{
     fieldPath: string;
     observedValue: string;
   }>;
   const parsed = parseLegalReference(legalRef.citationText, legalRef.url ?? undefined);
   const inferredRefType = legalRef.refType === "unknown" ? parsed.refType : legalRef.refType;
-  const resolvedRefType = String(event.payload.refType ?? inferredRefType);
-  const resolvedNormalizedCitation = event.payload.normalizedCitation === null ? null : String(
-    event.payload.normalizedCitation ??
-      legalRef.normalizedCitation ??
-      parsed.normalizedCitation ??
-      "",
-  ) || null;
+  const resolvedRefType = inferredRefType;
+  const resolvedNormalizedCitation = legalRef.normalizedCitation ??
+    parsed.normalizedCitation ??
+    null;
   const factSignature = [
     "legal_ref",
     legalRef.sourceId,
@@ -326,17 +371,38 @@ async function enrichLegalRefResolutionEvent(
     }),
   )}`;
   return {
+    factSignature,
+    evidenceHash,
+    resolvedRefType,
+    resolvedNormalizedCitation,
+    url: legalRef.url ?? null,
+  };
+}
+
+async function enrichLegalRefResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const metadata = await legalRefResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
+  const resolvedRefType = String(event.payload.refType ?? metadata.resolvedRefType);
+  const resolvedNormalizedCitation = event.payload.normalizedCitation === null ? null : String(
+    event.payload.normalizedCitation ??
+      metadata.resolvedNormalizedCitation ??
+      "",
+  ) || null;
+  return {
     ...event,
     payload: {
       ...event.payload,
-      fact_signature: event.payload.fact_signature ?? factSignature,
-      evidence_hash: event.payload.evidence_hash ?? evidenceHash,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
       ...(event.eventType === "accept_legal_ref"
         ? {
           resolved_ref_type: event.payload.resolved_ref_type ?? resolvedRefType,
           resolved_normalized_citation: event.payload.resolved_normalized_citation ??
             resolvedNormalizedCitation,
-          resolved_url: event.payload.resolved_url ?? legalRef.url ?? null,
+          resolved_url: event.payload.resolved_url ?? metadata.url,
         }
         : {}),
     },
