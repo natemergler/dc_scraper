@@ -7,7 +7,7 @@ import {
   type SourceFieldInput,
   type SourceItemInput,
 } from "../domain.ts";
-import { artifact, fieldEvidence } from "./shared.ts";
+import { artifact, fieldEvidence, toPublicHttpUrl } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 
 const admin311Source: SourceDefinition = {
@@ -89,6 +89,276 @@ export const admin311Connector: SourceConnector = {
           datasets: [dataset],
         },
       }],
+    };
+  },
+};
+
+const enterpriseDatasetInventorySource: SourceDefinition = {
+  sourceId: "admin.enterprise_dataset_inventory",
+  title: "Enterprise Dataset Inventory and Government Operations Catalog",
+  kind: "dataset_inventory",
+  accessMethod: "official_arcgis_rest",
+  baseUrl:
+    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5",
+  notes:
+    "Captures the live Enterprise Dataset Inventory rows plus the surrounding Government Operations service catalog. This lane is inventory-only and does not turn table families into graph facts.",
+};
+
+const governmentOperationsServiceUrl =
+  "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer";
+
+interface GovernmentOperationsCatalogGroup {
+  itemKey: string;
+  title: string;
+  classification: string;
+  nextLane: string;
+  notes: string;
+  entryIds: number[];
+}
+
+const governmentOperationsCatalogGroups: GovernmentOperationsCatalogGroup[] = [
+  {
+    itemKey: "enterprise-dataset-inventory-current",
+    title: "Enterprise Dataset Inventory",
+    classification: "current_inventory_source",
+    nextLane: "#65 current inventory rows",
+    notes: "Use the live table rows as compact dataset inventory only.",
+    entryIds: [5],
+  },
+  {
+    itemKey: "enterprise-dataset-inventory-history",
+    title: "Historical Enterprise Dataset Inventory tables",
+    classification: "inventory_only",
+    nextLane: "defer unless a history lane needs year-over-year comparison",
+    notes:
+      "Keep historical tables visible as source inventory without ingesting every year by default.",
+    entryIds: [7, 11, 12, 21, 22, 26, 27, 31, 33],
+  },
+  {
+    itemKey: "district-agencies",
+    title: "District Government Agencies",
+    classification: "active_structure_lane",
+    nextLane: "covered by dcgis.agencies",
+    notes: "This is already a structure lane, not a new dataset-inventory target.",
+    entryIds: [6],
+  },
+  {
+    itemKey: "district-boards-commissions-councils",
+    title: "District Boards Commissions and Councils",
+    classification: "active_structure_lane",
+    nextLane: "covered by dcgis.boards_commissions_councils",
+    notes:
+      "Keep this visible here as catalog context, but route modeling through the existing structure source.",
+    entryIds: [24],
+  },
+  {
+    itemKey: "election-infrastructure",
+    title: "Election infrastructure layers",
+    classification: "inventory_only",
+    nextLane: "retain shallow elections metadata only",
+    notes:
+      "Treat vote centers and drop boxes as metadata inventory, not a new BOE structure lane yet.",
+    entryIds: [8, 9, 10],
+  },
+  {
+    itemKey: "foia-tables",
+    title: "FOIA tables and reports",
+    classification: "defer_person_heavy_records",
+    nextLane: "separate FOIA/privacy decision required",
+    notes:
+      "Do not ingest request rows or cumulative reports into the graph or release datasets beyond catalog visibility.",
+    entryIds: [1, 14, 25, 28, 32, 34, 36],
+  },
+  {
+    itemKey: "pass-procurement",
+    title: "PASS / STaR2 procurement tables",
+    classification: "inventory_only",
+    nextLane: "keep at source inventory until a dedicated procurement lane exists",
+    notes:
+      "Expose the procurement family as official tables without turning transactions or solicitations into graph facts.",
+    entryIds: [2, 3, 4, 16, 17, 18, 19, 20, 37],
+  },
+  {
+    itemKey: "employee-salary",
+    title: "DC Government Employee Salary",
+    classification: "out_of_scope_person_heavy",
+    nextLane: "do not ingest without a separate scope and privacy decision",
+    notes: "Salary records are explicitly outside the civic-structure release surface.",
+    entryIds: [35],
+  },
+];
+
+export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
+  sourceId: enterpriseDatasetInventorySource.sourceId,
+  source: enterpriseDatasetInventorySource,
+  async run(context: ConnectorContext): Promise<ConnectorResult> {
+    const catalogEndpoint: SourceEndpointDefinition = {
+      endpointId: "admin.enterprise_dataset_inventory.catalog",
+      sourceId: enterpriseDatasetInventorySource.sourceId,
+      title: "Government Operations catalog metadata",
+      kind: "arcgis_service",
+      url: governmentOperationsServiceUrl,
+      method: "GET",
+      captureMode: "schema",
+    };
+    const metadataEndpoint: SourceEndpointDefinition = {
+      endpointId: "admin.enterprise_dataset_inventory.table_metadata",
+      sourceId: enterpriseDatasetInventorySource.sourceId,
+      title: "Enterprise Dataset Inventory table metadata",
+      kind: "arcgis_table",
+      url: enterpriseDatasetInventorySource.baseUrl,
+      method: "GET",
+      captureMode: "schema",
+    };
+    const rowsEndpoint: SourceEndpointDefinition = {
+      endpointId: "admin.enterprise_dataset_inventory.rows",
+      sourceId: enterpriseDatasetInventorySource.sourceId,
+      title: "Enterprise Dataset Inventory rows",
+      kind: "arcgis_table",
+      url: enterpriseDatasetInventorySource.baseUrl,
+      method: "GET",
+      captureMode: "rows",
+    };
+
+    const catalogUrl = `${governmentOperationsServiceUrl}?f=json`;
+    const catalogResponse = await context.fetcher(catalogUrl);
+    const catalogText = await catalogResponse.text();
+    const catalogPayload = JSON.parse(catalogText) as Record<string, unknown>;
+
+    const metadataUrl = `${enterpriseDatasetInventorySource.baseUrl}?f=json`;
+    const metadataResponse = await context.fetcher(metadataUrl);
+    const metadataText = await metadataResponse.text();
+    const metadataPayload = JSON.parse(metadataText) as Record<string, unknown>;
+    const fields: SourceFieldInput[] =
+      ((metadataPayload.fields ?? []) as Array<Record<string, unknown>>)
+        .map((field, index) => ({
+          fieldName: String(field.name ?? ""),
+          fieldType: String(field.type ?? "unknown"),
+          fieldLabel: String(field.alias ?? field.name ?? ""),
+          ordinal: index,
+        }));
+
+    const countUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
+      where: "1=1",
+      returnCountOnly: "true",
+      f: "json",
+    });
+    const countResponse = await context.fetcher(countUrl);
+    const countText = await countResponse.text();
+    const countPayload = JSON.parse(countText) as Record<string, unknown>;
+    const totalCount = Math.max(0, Number(countPayload.count ?? 0));
+    const requestedCount = typeof context.limit === "number"
+      ? Math.min(totalCount, context.limit)
+      : totalCount;
+    const maxRecordCount = Math.max(1, Number(metadataPayload.maxRecordCount ?? 1000));
+
+    const rowArtifacts: ReturnType<typeof artifact>[] = [];
+    const items: SourceItemInput[] = [];
+    const datasets: DatasetInput[] = [];
+
+    for (let offset = 0; offset < requestedCount; offset += maxRecordCount) {
+      const pageSize = Math.min(maxRecordCount, requestedCount - offset);
+      const pageUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
+        where: "1=1",
+        outFields: "*",
+        orderByFields: "OBJECTID",
+        returnGeometry: "false",
+        resultOffset: String(offset),
+        resultRecordCount: String(pageSize),
+        f: "json",
+      });
+      const pageResponse = await context.fetcher(pageUrl);
+      const pageText = await pageResponse.text();
+      const pagePayload = JSON.parse(pageText) as Record<string, unknown>;
+      const artifactIndex = rowArtifacts.length;
+      rowArtifacts.push(artifact("rows", "json", pageUrl, pageText));
+      for (const feature of (pagePayload.features ?? []) as Array<Record<string, unknown>>) {
+        const attributes = (feature.attributes ?? {}) as Record<string, unknown>;
+        const objectId = Number(attributes.OBJECTID ?? 0);
+        const rawDatasetId = String(attributes.DATASET_ID ?? `objectid-${objectId}`);
+        const datasetName = String(attributes.DATASET_NAME ?? rawDatasetId);
+        const datasetUrl = toPublicHttpUrl(
+          enterpriseDatasetInventorySource.baseUrl,
+          toOptionalString(attributes.DATASET_URL),
+        );
+        const systemUpdatedOn = formatArcGisDate(attributes.SYSTEM_UPDATED_ON);
+        const itemKey = `dataset-${objectId || items.length + 1}`;
+        items.push({
+          itemKey,
+          itemType: "enterprise_dataset_inventory_row",
+          title: datasetName,
+          artifactIndex,
+          body: {
+            datasetId: rawDatasetId,
+            publicationStatus: toOptionalString(attributes.PUBLICATION_STATUS),
+            agencyName: toOptionalString(attributes.AGENCY_NAME),
+            datasetName,
+            datasetCategory: toOptionalString(attributes.DATASET_CATEGORY),
+            datasetStatus: toOptionalString(attributes.DATASET_STATUS),
+            datasetUrl,
+            systemUpdatedOn,
+            objectId,
+            sourceTableUrl: enterpriseDatasetInventorySource.baseUrl,
+            sourceRow: attributes,
+          },
+        });
+        datasets.push({
+          datasetId: buildDatasetId(enterpriseDatasetInventorySource.sourceId, rawDatasetId),
+          sourceItemKey: itemKey,
+          name: datasetName,
+          category: normalizeDatasetCategory(
+            toOptionalString(attributes.DATASET_CATEGORY) ?? "dataset inventory",
+          ),
+          ownerName: toOptionalString(attributes.AGENCY_NAME),
+          accessMethod: enterpriseDatasetInventorySource.accessMethod,
+          artifactDepth: "rows",
+          officialUrl: datasetUrl,
+          evidence: [
+            fieldEvidence("DATASET_ID", rawDatasetId, artifactIndex),
+            fieldEvidence(
+              "AGENCY_NAME",
+              toOptionalString(attributes.AGENCY_NAME) ?? "",
+              artifactIndex,
+            ),
+            fieldEvidence(
+              "DATASET_STATUS",
+              toOptionalString(attributes.DATASET_STATUS) ?? "",
+              artifactIndex,
+            ),
+          ],
+        });
+      }
+    }
+
+    return {
+      source: enterpriseDatasetInventorySource,
+      endpointResults: [
+        {
+          endpoint: catalogEndpoint,
+          status: "success",
+          artifacts: [artifact("schema", "json", catalogUrl, catalogText)],
+          parsed: {
+            items: buildGovernmentOperationsCatalogItems(catalogPayload),
+          },
+        },
+        {
+          endpoint: metadataEndpoint,
+          status: "success",
+          artifacts: [artifact("schema", "json", metadataUrl, metadataText)],
+          parsed: {
+            fields,
+          },
+        },
+        {
+          endpoint: rowsEndpoint,
+          status: "success",
+          artifacts: rowArtifacts,
+          parsed: {
+            items,
+            datasets,
+          },
+        },
+      ],
     };
   },
 };
@@ -214,6 +484,64 @@ function buildArcGisCatalogConnector(spec: ArcGisCatalogSpec): SourceConnector {
       };
     },
   };
+}
+
+function buildGovernmentOperationsCatalogItems(
+  payload: Record<string, unknown>,
+): SourceItemInput[] {
+  const entries = [
+    ...((payload.layers ?? []) as Array<Record<string, unknown>>).map((entry) => ({
+      id: Number(entry.id),
+      name: String(entry.name ?? `Layer ${entry.id ?? "unknown"}`),
+      entryType: "layer",
+    })),
+    ...((payload.tables ?? []) as Array<Record<string, unknown>>).map((entry) => ({
+      id: Number(entry.id),
+      name: String(entry.name ?? `Table ${entry.id ?? "unknown"}`),
+      entryType: "table",
+    })),
+  ];
+  return governmentOperationsCatalogGroups.flatMap((group) => {
+    const matchedEntries = entries.filter((entry) => group.entryIds.includes(entry.id));
+    if (matchedEntries.length === 0) return [];
+    return [{
+      itemKey: group.itemKey,
+      itemType: "government_operations_catalog_group",
+      title: group.title,
+      body: {
+        classification: group.classification,
+        nextLane: group.nextLane,
+        notes: group.notes,
+        matchedEntries,
+      },
+    }];
+  });
+}
+
+function buildArcGisQueryUrl(
+  baseUrl: string,
+  params: Record<string, string>,
+): string {
+  const url = new URL(`${baseUrl}/query`);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url.toString();
+}
+
+function formatArcGisDate(value: unknown): string | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return new Date(value).toISOString();
+}
+
+function normalizeDatasetCategory(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") ||
+    "dataset_inventory";
+}
+
+function toOptionalString(value: unknown): string | undefined {
+  const text = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+  return text ? text : undefined;
 }
 
 const adminPermitSource: SourceDefinition = {

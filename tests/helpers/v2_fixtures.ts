@@ -102,6 +102,90 @@ export const dcgisBoardsCommissionsCouncilsRowsFixture = {
   ],
 };
 
+export const governmentOperationsCatalogFixture = {
+  layers: [
+    { id: 13, name: "DC Study Area - Draft", type: "Feature Layer" },
+    { id: 10, name: "Early Vote Center", type: "Feature Layer" },
+    { id: 9, name: "Election Day Vote Center", type: "Feature Layer" },
+    { id: 8, name: "Mail Ballot Drop Boxes", type: "Feature Layer" },
+  ],
+  tables: [
+    { id: 1, name: "FOIA Requests", type: "Table" },
+    { id: 5, name: "Enterprise Dataset Inventory", type: "Table" },
+    { id: 6, name: "District Government Agencies", type: "Table" },
+    { id: 11, name: "Enterprise Dataset Inventory - 2025", type: "Table" },
+    { id: 15, name: "Film and Television Rebate Fund", type: "Table" },
+    { id: 24, name: "District Boards Commissions and Councils", type: "Table" },
+    { id: 35, name: "DC Government Employee Salary", type: "Table" },
+    { id: 37, name: "PASS Contracts", type: "Table" },
+  ],
+};
+
+export const enterpriseDatasetInventoryMetadataFixture = {
+  name: "Enterprise Dataset Inventory",
+  maxRecordCount: 2,
+  fields: [
+    { name: "DATASET_ID", type: "esriFieldTypeString", alias: "Dataset Identifier" },
+    { name: "PUBLICATION_STATUS", type: "esriFieldTypeString", alias: "Publication Status" },
+    { name: "AGENCY_NAME", type: "esriFieldTypeString", alias: "Agency Name" },
+    { name: "DATASET_NAME", type: "esriFieldTypeString", alias: "Dataset Name" },
+    { name: "DATASET_CATEGORY", type: "esriFieldTypeString", alias: "Dataset Category" },
+    { name: "DATASET_STATUS", type: "esriFieldTypeString", alias: "Dataset Status" },
+    { name: "DATASET_URL", type: "esriFieldTypeString", alias: "Dataset URL" },
+    { name: "SYSTEM_UPDATED_ON", type: "esriFieldTypeDate", alias: "System Updated On" },
+    { name: "OBJECTID", type: "esriFieldTypeOID", alias: "OBJECTID" },
+  ],
+};
+
+export const enterpriseDatasetInventoryRowsPageOneFixture = {
+  features: [
+    {
+      attributes: {
+        DATASET_ID: "OUC-EDI-000531",
+        PUBLICATION_STATUS: "Published",
+        AGENCY_NAME: "Office of Unified Communications",
+        DATASET_NAME: "311 City Service Requests",
+        DATASET_CATEGORY: "Public Services",
+        DATASET_STATUS: "Active",
+        DATASET_URL: "https://opendata.dc.gov/datasets/DCGIS::311-city-service-requests/about",
+        SYSTEM_UPDATED_ON: 1772631031000,
+        OBJECTID: 1,
+      },
+    },
+    {
+      attributes: {
+        DATASET_ID: "DOB-EDI-000474",
+        PUBLICATION_STATUS: "Published",
+        AGENCY_NAME: "Department of Buildings",
+        DATASET_NAME: "Vacant Buildings Inspections",
+        DATASET_CATEGORY: "Business and Economic Development",
+        DATASET_STATUS: "Active",
+        DATASET_URL: null,
+        SYSTEM_UPDATED_ON: 1772631116000,
+        OBJECTID: 2,
+      },
+    },
+  ],
+};
+
+export const enterpriseDatasetInventoryRowsPageTwoFixture = {
+  features: [
+    {
+      attributes: {
+        DATASET_ID: "OCFO-EDI-009999",
+        PUBLICATION_STATUS: "Audit Completed",
+        AGENCY_NAME: "Office of the Chief Financial Officer",
+        DATASET_NAME: "Film Rebate Ledger",
+        DATASET_CATEGORY: "Government Operations",
+        DATASET_STATUS: "Retired",
+        DATASET_URL: "https://example.dc.gov/datasets/film-rebate-ledger",
+        SYSTEM_UPDATED_ON: 1772633333000,
+        OBJECTID: 3,
+      },
+    },
+  ],
+};
+
 export const openDcIndexFixture = `
 <html><body>
   <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
