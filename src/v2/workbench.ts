@@ -40,6 +40,7 @@ import {
   entityLegalRefs as readEntityLegalRefs,
   entityView as readEntityView,
   legalRefs as readLegalRefs,
+  placeholderSummary as readPlaceholderSummary,
   searchEntities as findEntities,
   sourceArtifacts as readSourceArtifacts,
   sourceInventory as readSourceInventory,
@@ -157,6 +158,10 @@ export class Workbench implements WorkbenchStore {
 
   entityLegalRefs(): ReturnType<typeof readEntityLegalRefs> {
     return readEntityLegalRefs(this);
+  }
+
+  placeholderSummary(): ReturnType<typeof readPlaceholderSummary> {
+    return readPlaceholderSummary(this);
   }
 
   sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {
