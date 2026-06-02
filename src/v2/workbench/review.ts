@@ -222,6 +222,7 @@ function isScopedQuickbaseSeatAccept(filters: ReviewItemFilters): boolean {
     (
       filters.relationshipType === "has_seat" ||
       filters.relationshipType === "has_status" ||
+      filters.relationshipType === "holds" ||
       filters.relationshipType === "appointed_by" ||
       filters.relationshipType === "designated_by"
     );
