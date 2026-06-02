@@ -24,6 +24,18 @@ export interface ReviewItemFilters {
   limit?: number;
 }
 
+export interface StaleReviewSummary {
+  count: number;
+  byPriorDecisionState: Array<{ priorDecisionState: string; count: number }>;
+  firstStale?: {
+    reviewItemId: string;
+    itemType: ReviewItemRecord["itemType"];
+    subjectId: string;
+    reason: string;
+    priorDecisionState?: string;
+  };
+}
+
 export function listReviewItems(
   store: WorkbenchStore,
   modeOrFilters?: string | ReviewItemFilters,
@@ -141,6 +153,55 @@ export function nextReviewItem(
   modeOrFilters?: string | ReviewItemFilters,
 ): ReviewItemRecord | undefined {
   return listReviewItems(store, modeOrFilters).at(0);
+}
+
+export function staleReviewSummary(store: WorkbenchStore): StaleReviewSummary {
+  const count = queryOne<{ count: number }>(
+    store.db,
+    `select count(*) as count
+     from review_items
+     where json_extract(details_json, '$.stalePriorDecision') = 1`,
+  )?.count ?? 0;
+  const byPriorDecisionState = queryAll<{ priorDecisionState?: string | null; count: number }>(
+    store.db,
+    `select coalesce(json_extract(details_json, '$.priorDecisionState'), 'unknown') as priorDecisionState,
+            count(*) as count
+     from review_items
+     where json_extract(details_json, '$.stalePriorDecision') = 1
+     group by coalesce(json_extract(details_json, '$.priorDecisionState'), 'unknown')
+     order by count(*) desc, priorDecisionState`,
+  ).map((row) => ({
+    priorDecisionState: row.priorDecisionState ?? "unknown",
+    count: row.count,
+  }));
+  const firstStale = queryOne<{
+    reviewItemId: string;
+    itemType: ReviewItemRecord["itemType"];
+    subjectId: string;
+    reason: string;
+    priorDecisionState?: string | null;
+  }>(
+    store.db,
+    `select review_item_id as reviewItemId,
+            item_type as itemType,
+            subject_id as subjectId,
+            reason,
+            json_extract(details_json, '$.priorDecisionState') as priorDecisionState
+     from review_items
+     where json_extract(details_json, '$.stalePriorDecision') = 1
+     order by updated_at, review_item_id
+     limit 1`,
+  );
+  return {
+    count,
+    byPriorDecisionState,
+    firstStale: firstStale
+      ? {
+        ...firstStale,
+        priorDecisionState: firstStale.priorDecisionState ?? undefined,
+      }
+      : undefined,
+  };
 }
 
 export function canBatchAcceptReviewItem(

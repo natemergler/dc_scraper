@@ -436,6 +436,9 @@ Civic role relationship types used by the workbench: holds, represents, member_o
 - relationships by review_status: ${relationshipStatus}
 - review items by status: ${reviewByStatus}
 - review items by type: ${reviewByType}
+- stale review: ${summary.stale_review_item_count} (${
+    renderStaleByPriorDecision(summary.stale_review_by_prior_decision_state)
+  })
 - sources: total=${summary.source_count}, failed=${summary.failed_source_count}
 - datasets: total=${summary.dataset_count}
 - legal refs by type: ${legalByType}
@@ -465,6 +468,7 @@ function buildReleaseSummary(
   ).all() as Array<{ item_type: string; count: number }>;
   const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
   const reconciliation = workbench.reconciliationSummary();
+  const staleReview = workbench.staleReviewSummary();
   const placeholderEntityCount = workbench.db.prepare(
     "select count(*) as count from canonical_entities where is_placeholder = 1",
   ).get() as { count: number };
@@ -477,6 +481,11 @@ function buildReleaseSummary(
     review_items_by_type: reviewByType,
     open_review_item_count: openReviewItemCount,
     deferred_review_item_count: deferredReviewItemCount,
+    stale_review_item_count: staleReview.count,
+    stale_review_by_prior_decision_state: staleReview.byPriorDecisionState.map((row) => ({
+      prior_decision_state: row.priorDecisionState,
+      count: row.count,
+    })),
     blocked_reconciliation_count: reconciliation.blockedCount,
     blocked_reconciliation_by_source: reconciliation.blockedBySource.map((row) => ({
       source_id: row.sourceId,
@@ -486,6 +495,7 @@ function buildReleaseSummary(
     review_status_note: buildReviewStatusNote({
       openReviewItemCount,
       deferredReviewItemCount,
+      staleReviewItemCount: staleReview.count,
       blockedReconciliationCount: reconciliation.blockedCount,
       placeholderEntityCount: placeholderEntityCount.count,
     }),
@@ -501,18 +511,20 @@ function buildReleaseSummary(
 function buildReviewStatusNote(counts: {
   openReviewItemCount: number;
   deferredReviewItemCount: number;
+  staleReviewItemCount: number;
   blockedReconciliationCount: number;
   placeholderEntityCount: number;
 }): string {
   if (
     counts.openReviewItemCount === 0 &&
     counts.deferredReviewItemCount === 0 &&
+    counts.staleReviewItemCount === 0 &&
     counts.blockedReconciliationCount === 0 &&
     counts.placeholderEntityCount === 0
   ) {
-    return "No open review items, deferred review items, blocked reconciliation items, or placeholder entities were present at release build time.";
+    return "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present at release build time.";
   }
-  return `Release built with unresolved workbench state: open review=${counts.openReviewItemCount}, deferred review=${counts.deferredReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
+  return `Release built with unresolved workbench state: open review=${counts.openReviewItemCount}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
 }
 
 function countByReviewStatus<T>(
@@ -553,6 +565,12 @@ function renderStatusCounts(rows: Array<{ review_status: string; count: number }
 
 function renderBlockedBySource(rows: Array<{ source_id: string; count: number }>): string {
   return rows.map((row) => `${row.source_id}=${row.count}`).join(", ") || "none";
+}
+
+function renderStaleByPriorDecision(
+  rows: Array<{ prior_decision_state: string; count: number }> | undefined,
+): string {
+  return rows?.map((row) => `${row.prior_decision_state}=${row.count}`).join(", ") || "none";
 }
 
 function toCsv<T extends Record<string, string | number | null | undefined>>(
