@@ -621,6 +621,107 @@ Deno.test("changed entity evidence after a prior accept becomes stale review wor
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("deferred entity review decisions are reused across refetch when candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(firstCandidateId, "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstCandidateId, "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(secondCandidateId, "Example Body"),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = ?",
+  ).get(buildReviewItemId(firstCandidateId, "entity-review")) as { payloadJson: string };
+  const deferredItems = workbench.listReviewItems({
+    mode: "entities",
+    status: "deferred",
+  });
+  const openItems = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(payload.fact_signature ?? "", "entity_candidate:test.signature.entities");
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(
+    deferredItems.some((item) => item.subjectId === secondCandidateId),
+    true,
+  );
+  assertEquals(deferredItems.length, 1);
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed entity evidence after a prior defer becomes stale open review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(firstCandidateId, "Example Body"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstCandidateId, "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult(secondCandidateId, "Example Body (Updated Source Text)"),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "entities",
+    status: "open",
+  }).find((item) => item.subjectId === secondCandidateId);
+  const deferredItems = workbench.listReviewItems({
+    mode: "entities",
+    status: "deferred",
+  });
+  workbench.close();
+
+  assert(staleItem);
+  assertEquals(staleItem.status, "open");
+  assertEquals(staleItem.details.priorDecisionState, "deferred");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior deferred decision");
+  assertEquals(deferredItems.length, 0);
+});
+
 Deno.test("accepted legal ref decisions are reused across refetch when legal ref ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -722,6 +823,123 @@ Deno.test("changed legal ref evidence after a prior accept becomes stale review 
   assertEquals(staleItem.details.priorDecisionState, "accepted");
   assertEquals(staleItem.details.stalePriorDecision, true);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
+Deno.test("deferred legal ref review decisions are reused across refetch when legal ref ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstLegalRefId = "legal.test.signature.legal_refs.code_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      firstLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstLegalRefId, "legal-ref"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondLegalRefId = "legal.test.signature.legal_refs.code_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      secondLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+
+  const resolutionPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where subject_id = ?",
+  ).get(buildReviewItemId(firstLegalRefId, "legal-ref")) as { payloadJson: string };
+  const deferredItems = workbench.listReviewItems({
+    mode: "legal",
+    status: "deferred",
+  });
+  const openItems = workbench.listReviewItems({
+    mode: "legal",
+    status: "open",
+  });
+  workbench.close();
+
+  const payload = JSON.parse(resolutionPayload.payloadJson) as {
+    fact_signature?: string;
+    evidence_hash?: string;
+  };
+  assertStringIncludes(payload.fact_signature ?? "", "legal_ref:test.signature.legal_refs");
+  assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
+  assertEquals(
+    deferredItems.some((item) => item.subjectId === secondLegalRefId),
+    true,
+  );
+  assertEquals(deferredItems.length, 1);
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("changed legal ref evidence after a prior defer becomes stale open review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstLegalRefId = "legal.test.signature.legal_refs.code_defer_v1";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      firstLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(firstLegalRefId, "legal-ref"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondLegalRefId = "legal.test.signature.legal_refs.code_defer_v2";
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      secondLegalRefId,
+      "D.C. Official Code § 1-204.22",
+      "https://code.dccouncil.us/us/dc/council/code/sections/1-204.22?changed=1",
+    ),
+    dataDir,
+  );
+
+  const staleItem = workbench.listReviewItems({
+    mode: "legal",
+    status: "open",
+  }).find((item) => item.subjectId === secondLegalRefId);
+  const deferredItems = workbench.listReviewItems({
+    mode: "legal",
+    status: "deferred",
+  });
+  workbench.close();
+
+  assert(staleItem);
+  assertEquals(staleItem.status, "open");
+  assertEquals(staleItem.details.priorDecisionState, "deferred");
+  assertEquals(staleItem.details.stalePriorDecision, true);
+  assertStringIncludes(staleItem.reason, "changed since a prior deferred decision");
+  assertEquals(deferredItems.length, 0);
 });
 
 Deno.test("accepted relationship decisions are reused across refetch when relationship candidate ids change", async () => {
@@ -1338,6 +1556,111 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
     status.reconciliation.firstBlocked?.blockers.some((blocker) =>
       blocker.blockerState === "rejected_candidate" &&
       blocker.blockerLabel === "Committee of the Whole"
+    ),
+  );
+});
+
+Deno.test("stale prerequisite candidates surface stale blocker audit for dependent relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.stale.entities",
+      candidateId: "candidate.test.reconciliation.stale.target_v1",
+      sourceItemKey: "stale-target-row",
+      proposedEntityId: "dc.stale_target",
+      name: "Stale Target",
+      kind: "agency",
+      observedName: "Stale Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_entity_candidate",
+      subjectId: "candidate.test.reconciliation.stale.target_v1",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.stale.entities",
+      candidateId: "candidate.test.reconciliation.stale.target_v2",
+      sourceItemKey: "stale-target-row",
+      proposedEntityId: "dc.stale_target",
+      name: "Stale Target",
+      kind: "agency",
+      observedName: "Stale Target Updated",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.stale.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.stale",
+      sourceItemKey: "stale-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.stale_target",
+      relationshipType: "governed_by",
+      rawValue: "Stale Target Updated",
+    }),
+    dataDir,
+  );
+
+  const blocked = workbench.db.prepare(
+    `select blocker_state as blockerState,
+            details_json as detailsJson
+     from reconciliation_blockers
+     where subject_type = 'relationship_candidate'
+       and subject_id = 'relationship.test.reconciliation.stale'`,
+  ).get() as { blockerState: string; detailsJson: string } | undefined;
+  const relationshipReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.reconciliation",
+  });
+  workbench.close();
+
+  assert(blocked);
+  assertEquals(blocked.blockerState, "stale_candidate");
+  assertStringIncludes(blocked.detailsJson, '"state":"stale_candidate"');
+  assertEquals(relationshipReviewItems.length, 0);
+
+  const statusOutput = await new Deno.Command("deno", {
+    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
+    cwd: Deno.cwd(),
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    reconciliation: {
+      blockedByBlockerState: Array<{ blockerState: string; count: number }>;
+      firstBlocked?: {
+        subjectId: string;
+        blockers: Array<{ blockerState: string; blockerLabel: string }>;
+      };
+    };
+  };
+
+  assert(
+    status.reconciliation.blockedByBlockerState.some((row) =>
+      row.blockerState === "stale_candidate" && row.count === 1
+    ),
+  );
+  assertEquals(
+    status.reconciliation.firstBlocked?.subjectId,
+    "relationship.test.reconciliation.stale",
+  );
+  assert(
+    status.reconciliation.firstBlocked?.blockers.some((blocker) =>
+      blocker.blockerState === "stale_candidate" && blocker.blockerLabel === "Stale Target"
     ),
   );
 });
