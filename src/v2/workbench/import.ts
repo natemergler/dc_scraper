@@ -308,6 +308,15 @@ async function reuseOrMarkStaleEntityDecisions(
     if (priorDecisionState === "merged" && decision.resolvedEntityId) {
       details.priorResolvedEntityId = decision.resolvedEntityId;
     }
+    if (
+      (priorDecisionState === "accepted" || priorDecisionState === "merged") &&
+      decision.resolvedEntityId
+    ) {
+      const priorResolvedFields = latestResolvedEntityFields(store, decision.resolvedEntityId);
+      if (priorResolvedFields) {
+        details.priorResolvedFields = priorResolvedFields;
+      }
+    }
     const staleSuffix = `changed since a prior ${priorDecisionState} decision`;
     const staleReason = reviewItem.reason.includes(staleSuffix)
       ? reviewItem.reason
@@ -361,6 +370,10 @@ function markEntityReplayConflict(
   details.factSignature = hint.factSignature;
   details.evidenceHash = hint.evidenceHash;
   details.replayConflict = true;
+  const priorResolvedFields = latestResolvedEntityFields(store, resolvedEntityId);
+  if (priorResolvedFields) {
+    details.priorResolvedFields = priorResolvedFields;
+  }
   const reason = reviewItem.reason.includes(conflictReason)
     ? reviewItem.reason
     : `${reviewItem.reason} (${conflictReason})`;
@@ -988,6 +1001,25 @@ function mergeAcceptedEntityCandidate(
     candidateId,
   ]);
   return true;
+}
+
+function latestResolvedEntityFields(
+  store: WorkbenchStore,
+  entityId: string,
+): Record<string, unknown> | undefined {
+  const row = queryOne<{ payloadJson: string }>(
+    store.db,
+    `select payload_json as payloadJson
+     from resolution_events
+     where event_type = 'set_entity_fields'
+       and subject_id = ?
+     order by created_at desc, event_id desc
+     limit 1`,
+    [entityId],
+  );
+  if (!row) return undefined;
+  const payload = JSON.parse(row.payloadJson) as { fields?: Record<string, unknown> };
+  return payload.fields && Object.keys(payload.fields).length > 0 ? payload.fields : undefined;
 }
 
 function entityFactSignature(
