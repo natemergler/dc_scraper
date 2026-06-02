@@ -209,7 +209,8 @@ function canBatchAcceptRelationshipItem(
 }
 
 function isScopedReviewNeededRelationshipAccept(filters: ReviewItemFilters): boolean {
-  return isScopedCouncilOversightAccept(filters) || isScopedQuickbaseSeatAccept(filters);
+  return isScopedCouncilOversightAccept(filters) || isScopedQuickbaseSeatAccept(filters) ||
+    isScopedDcCourtsStructureAccept(filters);
 }
 
 function isScopedCouncilOversightAccept(filters: ReviewItemFilters): boolean {
@@ -226,6 +227,11 @@ function isScopedQuickbaseSeatAccept(filters: ReviewItemFilters): boolean {
       filters.relationshipType === "appointed_by" ||
       filters.relationshipType === "designated_by"
     );
+}
+
+function isScopedDcCourtsStructureAccept(filters: ReviewItemFilters): boolean {
+  return Boolean(filters.subjectPrefix?.startsWith("relationship.dccourts.structure")) &&
+    filters.relationshipType === "part_of";
 }
 
 function canBatchAcceptLegalItem(

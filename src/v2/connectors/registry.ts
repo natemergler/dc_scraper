@@ -1,4 +1,5 @@
 import { dcgisAgenciesConnector, dcgisBoardsCommissionsCouncilsConnector } from "./dcgis.ts";
+import { dcCourtsConnector } from "./courts.ts";
 import { openDcConnector } from "./open_dc.ts";
 import { councilCommitteesConnector, councilLimsConnector } from "./council.ts";
 import { councilMembersConnector } from "./council_members.ts";
@@ -21,6 +22,7 @@ import { defaultFetcher } from "./shared.ts";
 export const connectors: SourceConnector[] = [
   dcgisAgenciesConnector,
   dcgisBoardsCommissionsCouncilsConnector,
+  dcCourtsConnector,
   openDcConnector,
   councilMembersConnector,
   councilCommitteesConnector,
