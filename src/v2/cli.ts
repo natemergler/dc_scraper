@@ -20,6 +20,12 @@ interface ReleaseManifest {
     relationships_by_review_status?: Array<{ review_status: string; count: number }>;
     legal_refs_by_type?: Array<{ ref_type: string; count: number }>;
     legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
+    open_review_item_count?: number;
+    deferred_review_item_count?: number;
+    blocked_reconciliation_count?: number;
+    blocked_reconciliation_by_source?: Array<{ source_id: string; count: number }>;
+    placeholder_entity_count?: number;
+    review_status_note?: string;
     source_count?: number;
     failed_source_count?: number;
     dataset_count?: number;
@@ -42,6 +48,7 @@ interface WorkbenchStatusSnapshot {
     firstBlockedSubjectId?: string;
     firstBlockedReason?: string;
     blockedBySource: Array<{ sourceId: string; count: number }>;
+    blockedByBlockerState: Array<{ blockerState: string; count: number }>;
     blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
     blockedByReason: Array<{ reason: string; count: number }>;
     firstBlocked?: {
@@ -403,6 +410,7 @@ function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
       firstBlockedSubjectId: reconciliation.firstBlocked?.subjectId,
       firstBlockedReason: reconciliation.firstBlocked?.reason,
       blockedBySource: reconciliation.blockedBySource,
+      blockedByBlockerState: reconciliation.blockedByBlockerState,
       blockedByRelationshipType: reconciliation.blockedByRelationshipType,
       blockedByReason: reconciliation.blockedByReason,
       firstBlocked: reconciliation.firstBlocked,
@@ -426,6 +434,13 @@ function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       ? `sources ${
         status.reconciliation.blockedBySource
           .map((row) => `${row.sourceId}=${row.count}`)
+          .join(", ")
+      }`
+      : undefined,
+    status.reconciliation.blockedByBlockerState.length > 0
+      ? `blockers ${
+        status.reconciliation.blockedByBlockerState
+          .map((row) => `${row.blockerState}=${row.count}`)
           .join(", ")
       }`
       : undefined,
@@ -464,10 +479,19 @@ function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): str
     `Files: ${inspection.fileCount}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
+    `Review status: open=${summary.open_review_item_count ?? 0}, deferred=${
+      summary.deferred_review_item_count ?? 0
+    }, blocked=${summary.blocked_reconciliation_count ?? 0}, placeholders=${
+      summary.placeholder_entity_count ?? 0
+    }`,
+    `Blocked by source: ${
+      renderNamedCounts(summary.blocked_reconciliation_by_source ?? [], "source_id")
+    }`,
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
     `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
+    `Review note: ${summary.review_status_note ?? "none"}`,
   ].join("\n");
 }
 
