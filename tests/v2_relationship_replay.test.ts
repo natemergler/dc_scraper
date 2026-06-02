@@ -2,7 +2,11 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import { syntheticRelationshipSourceResult } from "./helpers/v2_reconciliation_helpers.ts";
+import {
+  syntheticCustomRelationshipSourceResult,
+  syntheticLegalRefSourceResult,
+  syntheticRelationshipSourceResult,
+} from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("accepted relationship decisions are reused across refetch when relationship candidate ids change", async () => {
   const dir = await Deno.makeTempDir();
@@ -70,6 +74,88 @@ Deno.test("accepted relationship decisions are reused across refetch when relati
   assertStringIncludes(payload.evidence_hash ?? "", "sha256:");
   assertEquals(secondCandidate.reviewStatus, "accepted");
   assertEquals(relationshipCount.count, 1);
+  assertEquals(openItems.length, 0);
+});
+
+Deno.test("accepted legal-authority relationship decisions are reused across refetch when candidate ids change", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.authority",
+      "D.C. Code § 3-1202.03",
+      "https://code.dccouncil.us/us/dc/council/code/sections/3-1202.03",
+    ),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: "legal.test.signature.legal_refs.authority",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const firstCandidateId =
+    "relationship.test.signature.relationships.source_board_authorized_by_legal_ref_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.signature.relationships",
+      relationshipCandidateId: firstCandidateId,
+      sourceItemKey: "authorized-by-legal-ref-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "legal.d_c_code_3_1202_03",
+      relationshipType: "authorized_by",
+      rawValue: "D.C. Code § 3-1202.03",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: firstCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId =
+    "relationship.test.signature.relationships.source_board_authorized_by_legal_ref_v2";
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.signature.relationships",
+      relationshipCandidateId: secondCandidateId,
+      sourceItemKey: "authorized-by-legal-ref-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "legal.d_c_code_3_1202_03",
+      relationshipType: "authorized_by",
+      rawValue: "D.C. Code § 3-1202.03",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const relationshipCount = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where relationship_type = 'authorized_by'",
+  ).get() as { count: number };
+  const openItems = workbench.listReviewItems({ mode: "relationships", status: "open" });
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(relationshipCount.count, 0);
   assertEquals(openItems.length, 0);
 });
 

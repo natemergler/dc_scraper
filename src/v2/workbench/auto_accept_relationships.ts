@@ -1,14 +1,15 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
 import { queryAll, run } from "./db.ts";
+import { endpointStatus } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_ACCEPT_RULES = new Map<string, Set<RelationshipType>>([
   ["council.committees", new Set(["chairs", "member_of", "part_of"])],
   ["council.members", new Set(["holds", "part_of", "represents"])],
   ["dcgis.agencies", new Set(["part_of"])],
-  ["dcgis.boards_commissions_councils", new Set(["part_of"])],
+  ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
   ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
-  ["open_dc.public_bodies", new Set(["governed_by"])],
+  ["open_dc.public_bodies", new Set(["authorized_by", "governed_by"])],
 ]);
 
 interface AutoAcceptRelationshipRow {
@@ -21,10 +22,6 @@ interface AutoAcceptRelationshipRow {
   reviewItemStatus: string;
   defaultAction: string;
   stalePriorDecision?: number | null;
-  fromReviewStatus?: string | null;
-  fromIsPlaceholder?: number | null;
-  toReviewStatus?: string | null;
-  toIsPlaceholder?: number | null;
 }
 
 export function autoAcceptSafeRelationshipCandidates(store: WorkbenchStore): number {
@@ -38,43 +35,33 @@ export function autoAcceptSafeRelationshipCandidates(store: WorkbenchStore): num
             relationship_candidates.needs_review as needsReview,
             review_items.status as reviewItemStatus,
             review_items.default_action as defaultAction,
-            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
-            from_entity.review_status as fromReviewStatus,
-            from_entity.is_placeholder as fromIsPlaceholder,
-            to_entity.review_status as toReviewStatus,
-            to_entity.is_placeholder as toIsPlaceholder
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
      from relationship_candidates
      join source_items on source_items.source_item_id = relationship_candidates.source_item_id
      join review_items
        on review_items.subject_id = relationship_candidates.relationship_candidate_id
       and review_items.item_type = 'relationship_candidate'
-     left join canonical_entities as from_entity
-       on from_entity.entity_id = relationship_candidates.from_entity_ref
-     left join canonical_entities as to_entity
-       on to_entity.entity_id = relationship_candidates.to_entity_ref
      where relationship_candidates.review_status = 'pending'`,
   );
 
   let acceptedCount = 0;
   for (const candidate of candidates) {
-    if (!isSafeToAutoAccept(candidate)) continue;
+    if (!isSafeToAutoAccept(store, candidate)) continue;
     acceptRelationshipCandidateDirect(store, candidate);
     acceptedCount += 1;
   }
   return acceptedCount;
 }
 
-function isSafeToAutoAccept(candidate: AutoAcceptRelationshipRow): boolean {
+function isSafeToAutoAccept(store: WorkbenchStore, candidate: AutoAcceptRelationshipRow): boolean {
   const allowedTypes = AUTO_ACCEPT_RULES.get(candidate.sourceId);
   if (!allowedTypes?.has(candidate.relationshipType)) return false;
   if (candidate.reviewItemStatus !== "open") return false;
   if (candidate.defaultAction !== "accept") return false;
   if (candidate.needsReview !== 0) return false;
   if (candidate.stalePriorDecision === 1) return false;
-  return candidate.fromReviewStatus === "accepted" &&
-    candidate.toReviewStatus === "accepted" &&
-    candidate.fromIsPlaceholder === 0 &&
-    candidate.toIsPlaceholder === 0;
+  return endpointStatus(store, candidate.fromEntityRef).state === "accepted" &&
+    endpointStatus(store, candidate.toEntityRef).state === "accepted";
 }
 
 function acceptRelationshipCandidateDirect(
@@ -105,20 +92,22 @@ function acceptRelationshipCandidateDirect(
   );
   const relationshipId =
     `${candidate.fromEntityRef}:${candidate.relationshipType}:${candidate.toEntityRef}`;
-  run(
-    store.db,
-    `insert or ignore into canonical_relationships(
-       relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at
-     ) values(?, ?, ?, ?, 'accepted', ?, ?)`,
-    [
-      relationshipId,
-      candidate.fromEntityRef,
-      candidate.relationshipType,
-      candidate.toEntityRef,
-      eventId,
-      nowIso(),
-    ],
-  );
+  if (!isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef)) {
+    run(
+      store.db,
+      `insert or ignore into canonical_relationships(
+         relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at
+       ) values(?, ?, ?, ?, 'accepted', ?, ?)`,
+      [
+        relationshipId,
+        candidate.fromEntityRef,
+        candidate.relationshipType,
+        candidate.toEntityRef,
+        eventId,
+        nowIso(),
+      ],
+    );
+  }
   run(
     store.db,
     "update relationship_candidates set review_status = 'accepted' where relationship_candidate_id = ?",
@@ -129,4 +118,11 @@ function acceptRelationshipCandidateDirect(
     "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'relationship_candidate'",
     [nowIso(), candidate.relationshipCandidateId],
   );
+}
+
+function isLegalAuthorityRelationship(
+  relationshipType: RelationshipType,
+  toEntityRef: string,
+): boolean {
+  return relationshipType === "authorized_by" && toEntityRef.startsWith("legal.");
 }

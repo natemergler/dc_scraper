@@ -1,4 +1,4 @@
-import { nowIso } from "../domain.ts";
+import { buildEntityId, nowIso } from "../domain.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -23,6 +23,16 @@ interface CandidateEndpointStatusRow {
   sourceId: string;
   itemKey: string;
   runStartedAt: string;
+  reviewStatus: string;
+  reviewItemStatus?: string | null;
+  stalePriorDecision?: number | null;
+  replayConflict?: number | null;
+}
+
+interface LegalEndpointStatusRow {
+  legalRefId: string;
+  citationText: string;
+  normalizedCitation?: string | null;
   reviewStatus: string;
   reviewItemStatus?: string | null;
   stalePriorDecision?: number | null;
@@ -223,7 +233,9 @@ export function reconciliationSummary(store: WorkbenchStore): ReconciliationSumm
   };
 }
 
-function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus {
+export function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus {
+  const legalStatus = legalEndpointStatus(store, entityId);
+  if (legalStatus) return legalStatus;
   const statuses = queryAll<CandidateEndpointStatusRow>(
     store.db,
     `select source_items.source_id as sourceId,
@@ -284,6 +296,59 @@ function endpointStatus(store: WorkbenchStore, entityId: string): EndpointStatus
     return { entityId, state: "rejected_candidate" };
   }
   return { entityId, state: "missing" };
+}
+
+function legalEndpointStatus(
+  store: WorkbenchStore,
+  entityId: string,
+): EndpointStatus | undefined {
+  if (!entityId.startsWith("legal.")) return undefined;
+  const statuses = queryAll<LegalEndpointStatusRow>(
+    store.db,
+    `select legal_refs.legal_ref_id as legalRefId,
+            legal_refs.citation_text as citationText,
+            legal_refs.normalized_citation as normalizedCitation,
+            legal_refs.review_status as reviewStatus,
+            review_items.status as reviewItemStatus,
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
+            json_extract(review_items.details_json, '$.replayConflict') as replayConflict
+     from legal_refs
+     left join review_items
+       on review_items.subject_id = legal_refs.legal_ref_id
+      and review_items.item_type = 'legal_ref'
+     order by legal_refs.legal_ref_id`,
+  ).filter((row) =>
+    buildEntityId(row.normalizedCitation ?? row.citationText, "legal") === entityId
+  );
+  if (statuses.length === 0) return { entityId, state: "missing" };
+
+  const name = statuses.find((row) => row.normalizedCitation)?.normalizedCitation ??
+    statuses[0]?.citationText;
+  if (
+    statuses.some((row) => row.reviewStatus === "pending" && row.stalePriorDecision === 1)
+  ) {
+    return { entityId, state: "stale_candidate", name };
+  }
+  if (
+    statuses.some((row) => row.reviewStatus === "pending" && row.replayConflict === 1)
+  ) {
+    return { entityId, state: "replay_conflict", name };
+  }
+  if (
+    statuses.some((row) => row.reviewStatus === "pending" && row.reviewItemStatus === "deferred")
+  ) {
+    return { entityId, state: "deferred_candidate", name };
+  }
+  if (statuses.some((row) => row.reviewStatus === "accepted")) {
+    return { entityId, state: "accepted", name };
+  }
+  if (statuses.some((row) => row.reviewStatus === "pending")) {
+    return { entityId, state: "pending_candidate", name };
+  }
+  if (statuses.some((row) => row.reviewStatus === "rejected")) {
+    return { entityId, state: "rejected_candidate", name };
+  }
+  return { entityId, state: "missing", name };
 }
 
 function latestSourceItemStatuses(

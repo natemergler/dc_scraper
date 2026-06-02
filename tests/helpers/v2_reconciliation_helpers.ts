@@ -196,17 +196,6 @@ export function syntheticLegalRefSourceResult(
             observedValue: url,
           }],
         }],
-        reviewItems: [{
-          reviewItemId: buildReviewItemId(legalRefId, "legal-ref"),
-          itemType: "legal_ref",
-          subjectId: legalRefId,
-          reason: "Review fixture legal ref",
-          defaultAction: "accept",
-          details: {
-            citationText,
-            refType: parsed.refType,
-          },
-        }],
       },
     }],
   };
