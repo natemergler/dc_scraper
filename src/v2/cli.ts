@@ -1,48 +1,14 @@
 import { join } from "@std/path";
-import { buildV2Release } from "./release.ts";
+import { handleAuditCommand } from "./cli_audit.ts";
+import { dcCommand } from "./command_prefix.ts";
+import { handleEntityCommand } from "./cli_entity.ts";
+import { handleReleaseCommand } from "./cli_release.ts";
+import { handleReviewCommand } from "./cli_review.ts";
+import { handleSourceCommand } from "./cli_source.ts";
+import { handleWorkbenchCommand } from "./cli_workbench.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
-import {
-  renderEntityView,
-  renderReviewItemSummary,
-  runBatchAcceptSafe,
-  runBatchDefer,
-  runBatchDeferDefault,
-  runInteractiveReview,
-} from "./workbench/review_cli.ts";
+import { buildWorkbenchStatus } from "./status.ts";
 import { Workbench } from "./workbench.ts";
-import type { ReviewItemFilters } from "./workbench/review.ts";
-
-interface ReleaseManifest {
-  generated_at?: string;
-  files?: Array<{ name: string }>;
-  release_summary?: {
-    entities_by_review_status?: Array<{ review_status: string; count: number }>;
-    relationships_by_review_status?: Array<{ review_status: string; count: number }>;
-    legal_refs_by_type?: Array<{ ref_type: string; count: number }>;
-    legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
-    source_count?: number;
-    failed_source_count?: number;
-    dataset_count?: number;
-  };
-}
-
-interface WorkbenchStatusSnapshot {
-  sources: {
-    fetched: number;
-    failed: number;
-    total: number;
-    firstFailedSourceId?: string;
-  };
-  review: {
-    open: number;
-    deferred: number;
-  };
-  canonical: {
-    entities: number;
-    relationships: number;
-  };
-  nextCommand: string;
-}
 
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
@@ -51,231 +17,163 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
-  if (args[0] === "source" && isHelp(args[1])) {
-    printSourceHelp();
-    return true;
-  }
-  if (args[0] === "review" && isHelp(args[1])) {
-    printReviewHelp();
-    return true;
-  }
-  if (args[0] === "entity" && isHelp(args[1])) {
-    printEntityHelp();
-    return true;
-  }
-  if (args[0] === "release" && isHelp(args[1])) {
-    printReleaseHelp();
-    return true;
-  }
-  if (args[0] === "workbench" && args[1] === "init") {
-    const meta = await withWorkbench(dbPath, (_workbench, meta) => meta);
-    console.log(`Initialized v2 workbench: ${dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
-    return true;
-  }
-  if (args[0] === "workbench" && args[1] === "status") {
-    const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
-      meta,
-      status: buildWorkbenchStatus(workbench),
-    }));
-    if (args.includes("--json")) {
-      console.log(JSON.stringify({ ...meta, ...status }, null, 2));
-      return true;
-    }
-    console.log(`DB: ${meta.dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
-    for (const migration of meta.migrations) {
-      console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
-    }
-    console.log(renderWorkbenchStatus(status));
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "fetch" && args[2]) {
-    const connector = getConnector(args[2]);
-    const result = await connector.run(createConnectorContext({ limit }));
-    await withWorkbench(dbPath, async (workbench) => {
-      await workbench.importConnectorResult(result, dataDir);
-    });
-    const statuses = result.endpointResults.map((item) =>
-      `${item.endpoint.endpointId}:${item.status}`
-    ).join(", ");
-    console.log(`Fetched ${connector.sourceId}`);
-    console.log(statuses);
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "inspect" && args[2]) {
-    const summary = await withWorkbench(
-      dbPath,
-      (workbench) => sourceSummaryOrConfigured(workbench, args[2]),
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(summary, null, 2));
-      return true;
-    }
-    console.log(`${summary.sourceId} - ${summary.title}`);
-    console.log(`Latest status: ${summary.latestStatus ?? "unfetched"}`);
-    console.log(`Latest run: ${summary.latestRunFinishedAt ?? "n/a"}`);
-    console.log(`Latest artifact: ${summary.latestArtifactPath ?? "n/a"}`);
-    console.log(
-      `Counts: items=${summary.itemCount} fields=${summary.fieldCount} entity_candidates=${summary.entityCandidateCount} relationship_candidates=${summary.relationshipCandidateCount}`,
-    );
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "compare" && args[2] === "public-bodies") {
-    const comparison = await withWorkbench(dbPath, (workbench) => workbench.comparePublicBodies());
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(comparison, null, 2));
-      return true;
-    }
-    console.log("Public-body overlap comparison");
-    for (const source of comparison.sourceSummaries) {
-      console.log(
-        `${source.sourceId} ${source.normalizedNameCount} names (${source.sharedNameCount} shared, ${source.exclusiveNameCount} exclusive) entity_candidates=${source.entityCandidateCount} relationship_candidates=${source.relationshipCandidateCount}`,
-      );
-    }
-    console.log(`Shared exact names: ${comparison.sharedNameCount}`);
-    for (const row of comparison.rows.filter((row) => row.sourceIds.length > 1)) {
-      console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
-    }
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "list") {
-    const rowsBySourceId = await withWorkbench(
-      dbPath,
-      (workbench) => new Map(workbench.listSources().map((row) => [row.sourceId, row])),
-    );
-    const sourceRows = connectors.map((connector) => {
-      const row = rowsBySourceId.get(connector.sourceId);
-      return {
-        sourceId: connector.sourceId,
-        title: connector.source.title,
-        status: row?.latestStatus ?? "unfetched",
-        latestRunFinishedAt: row?.latestRunFinishedAt,
-      };
-    });
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(sourceRows, null, 2));
-      return true;
-    }
-    for (const row of sourceRows) {
-      console.log(
-        `${row.sourceId} ${row.status}${
-          row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
-        }`,
-      );
-    }
-    return true;
-  }
-  if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runInteractiveReview(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "list") {
-    const items = await withWorkbench(
-      dbPath,
-      (workbench) => workbench.listReviewItems(readReviewFilters(args)),
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify({ count: items.length, items }, null, 2));
-      return true;
-    }
-    console.log(`Review items: ${items.length}`);
-    for (const item of items) {
-      console.log(renderReviewItemSummary(item));
-      console.log("");
-    }
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "accept-safe") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchAcceptSafe(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "defer") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchDefer(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "defer-default") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchDeferDefault(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (
-    args[0] === "review" && args[1] &&
-    ["entities", "relationships", "legal", "sources"].includes(args[1])
-  ) {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runInteractiveReview(
-        workbench,
-        { ...readReviewFilters(args), mode: args[1] },
-        resolutionsDir,
-      );
-    });
-    return true;
-  }
-  if (args[0] === "entity" && args[1] === "search" && args[2]) {
-    const rows = await withWorkbench(
-      dbPath,
-      (workbench) => workbench.searchEntities(readFreeTextArgument(args, 2)),
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(rows, null, 2));
-      return true;
-    }
-    for (const row of rows) {
-      const placeholderTag = row.isPlaceholder ? " placeholder" : "";
-      console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}${placeholderTag}`);
-    }
-    return true;
-  }
-  if (args[0] === "entity" && args[1] === "show" && args[2]) {
-    const view = await withWorkbench(dbPath, (workbench) => workbench.entityView(args[2]));
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(view, null, 2));
-      return true;
-    }
-    console.log(renderEntityView(view));
-    return true;
-  }
-  if (args[0] === "release" && args[1] === "build") {
-    const result = await withWorkbench(
-      dbPath,
-      async (workbench) => await buildV2Release(workbench, outDir),
-    );
-    console.log(`Built v2 release ${result.outDir}`);
-    return true;
-  }
-  if (args[0] === "release" && args[1] === "inspect") {
-    const manifest = JSON.parse(
-      await Deno.readTextFile(join(outDir, "manifest.json")),
-    ) as ReleaseManifest;
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(buildReleaseInspection(outDir, manifest), null, 2));
-      return true;
-    }
-    console.log(renderReleaseInspection(outDir, manifest));
-    return true;
-  }
+  const sourceHandled = await handleSourceCommand(args, { json: args.includes("--json"), limit }, {
+    connectors,
+    getConnector,
+    createConnectorContext,
+    importConnectorResult: async (result) =>
+      await withWorkbench(
+        dbPath,
+        async (workbench) => {
+          await workbench.importConnectorResult(result, dataDir);
+        },
+        { refreshDerivedState: false },
+      ),
+    readSourceSummary: async (sourceId) =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => sourceSummaryOrConfigured(workbench, sourceId),
+        { refreshDerivedState: false },
+      ),
+    readPublicBodyComparison: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => workbench.comparePublicBodies(),
+        { refreshDerivedState: false },
+      ),
+    readSourceRows: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => workbench.listSources(),
+        { refreshDerivedState: false },
+      ),
+    readWorkbenchStatus: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => buildWorkbenchStatus(workbench),
+        { readonly: true, fallbackToWritable: true },
+      ),
+  });
+  if (sourceHandled) return true;
+  const auditHandled = await handleAuditCommand(args, { json: args.includes("--json") }, {
+    readWorkbenchStatus: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench, meta) => ({
+          meta,
+          status: buildWorkbenchStatus(workbench),
+        }),
+        { readonly: true, fallbackToWritable: true },
+      ),
+  });
+  if (auditHandled) return true;
+  const reviewHandled = await handleReviewCommand(
+    args,
+    { json: args.includes("--json"), resolutionsDir },
+    {
+      withWorkbench: async (action) => await withWorkbench(dbPath, action),
+      withReadonlyWorkbench: async (action) =>
+        await withWorkbench(dbPath, action, {
+          readonly: true,
+          fallbackToWritable: true,
+        }),
+    },
+  );
+  if (reviewHandled) return true;
+  const releaseHandled = await handleReleaseCommand(
+    args,
+    { json: args.includes("--json"), outDir },
+    {
+      withWorkbench: async (action) =>
+        await withWorkbench(dbPath, action, {
+          readonly: true,
+          fallbackToWritable: true,
+        }),
+      readFile: async (path) => await Deno.readTextFile(path),
+    },
+  );
+  if (releaseHandled) return true;
+  const entityHandled = await handleEntityCommand(
+    args,
+    { json: args.includes("--json") },
+    {
+      searchEntities: async (query) =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.searchEntities(query),
+          { readonly: true, fallbackToWritable: true },
+        ),
+      entityView: async (entityId) =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.entityView(entityId),
+          { readonly: true, fallbackToWritable: true },
+        ),
+    },
+  );
+  if (entityHandled) return true;
+  const workbenchHandled = await handleWorkbenchCommand(args, {
+    initWorkbench: async () =>
+      await withWorkbench(dbPath, (_workbench, meta) => meta, {
+        refreshDerivedState: false,
+      }),
+  });
+  if (workbenchHandled) return true;
   return false;
 }
 
 async function withWorkbench<T>(
   dbPath: string,
   action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+  options?: {
+    refreshDerivedState?: boolean;
+    readonly?: boolean;
+    fallbackToWritable?: boolean;
+  },
 ): Promise<T> {
-  const workbench = new Workbench(dbPath);
+  if (options?.readonly) {
+    try {
+      return await withOpenedWorkbench(dbPath, action, {
+        readonly: true,
+        initialize: false,
+      });
+    } catch (error) {
+      if (!options.fallbackToWritable || !shouldFallbackToWritableWorkbench(error)) throw error;
+    }
+  }
+  return await withOpenedWorkbench(dbPath, action, {
+    readonly: false,
+    initialize: true,
+    refreshDerivedState: options?.refreshDerivedState,
+  });
+}
+
+async function withOpenedWorkbench<T>(
+  dbPath: string,
+  action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+  options: {
+    readonly: boolean;
+    initialize: boolean;
+    refreshDerivedState?: boolean;
+  },
+): Promise<T> {
+  const workbench = new Workbench(dbPath, { readonly: options.readonly });
   try {
-    const meta = workbench.init();
+    const meta = options.initialize
+      ? workbench.init({
+        refreshDerivedState: options.refreshDerivedState,
+      })
+      : workbench.meta();
     return await action(workbench, meta);
   } finally {
     workbench.close();
   }
+}
+
+function shouldFallbackToWritableWorkbench(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("unable to open database file") ||
+    error.message.includes("no such table:");
 }
 
 function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
@@ -312,220 +210,58 @@ function readFlag(args: string[], flag: string): string | undefined {
   return args[index + 1];
 }
 
-function isHelp(value: string | undefined): boolean {
-  return value === "help" || value === "--help" || value === "-h";
-}
-
 function readNumberFlag(args: string[], flag: string): number | undefined {
   const value = readFlag(args, flag);
   return value ? Number(value) : undefined;
 }
 
-function readReviewFilters(args: string[]): ReviewItemFilters {
-  const modeFlag = readFlag(args, "--mode");
-  const statusFlag = readFlag(args, "--status");
-  const typeFlag = readFlag(args, "--type");
-  const subjectPrefix = readFlag(args, "--subject-prefix");
-  const relationshipType = readFlag(args, "--relationship-type");
-  const rawValue = readFlag(args, "--raw-value");
-  const rawValueContains = readFlag(args, "--raw-value-contains");
-  const refType = readFlag(args, "--ref-type");
-  const limit = readNumberFlag(args, "--limit");
-  const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
-    ? args[1]
-    : undefined;
-  return {
-    mode: modeFlag ?? positionalMode,
-    status: statusFlag as ReviewItemFilters["status"] | undefined,
-    type: typeFlag as ReviewItemFilters["type"] | undefined,
-    subjectPrefix: subjectPrefix ?? undefined,
-    relationshipType: relationshipType ?? undefined,
-    rawValue: rawValue ?? undefined,
-    rawValueContains: rawValueContains ?? undefined,
-    refType: refType ?? undefined,
-    limit,
-  };
-}
-
-function readFreeTextArgument(args: string[], startIndex: number): string {
-  const values: string[] = [];
-  for (let index = startIndex; index < args.length; index += 1) {
-    if (args[index].startsWith("--")) break;
-    values.push(args[index]);
-  }
-  return values.join(" ");
-}
-
-function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
-  const sourceRows = workbench.listSources();
-  const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
-  const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
-  const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
-  const openReview = workbench.listReviewItems({ status: "open" }).length;
-  const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
-  const entities = workbench.canonicalEntities().length;
-  const relationships = workbench.canonicalRelationships().length;
-  const next = nextCommand({
-    fetchedSources,
-    failedSourceId: failedSource?.sourceId,
-    openReview,
-  });
-  return {
-    sources: {
-      fetched: fetchedSources,
-      failed: failedSources,
-      total: connectors.length,
-      firstFailedSourceId: failedSource?.sourceId,
-    },
-    review: {
-      open: openReview,
-      deferred: deferredReview,
-    },
-    canonical: {
-      entities,
-      relationships,
-    },
-    nextCommand: next,
-  };
-}
-
-function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
-  return [
-    "",
-    `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
-      status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
-    }`,
-    `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
-    `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
-    `Next: ${status.nextCommand}`,
-  ].join("\n");
-}
-
-function nextCommand(options: {
-  fetchedSources: number;
-  failedSourceId?: string;
-  openReview: number;
-}): string {
-  if (options.failedSourceId) return `dc source inspect ${options.failedSourceId}`;
-  if (options.openReview > 0) return "dc review";
-  if (options.fetchedSources < connectors.length) return "dc source list";
-  return "dc release build";
-}
-
-function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): string {
-  const inspection = buildReleaseInspection(outDir, manifest);
-  const summary = inspection.releaseSummary;
-  return [
-    `Release: ${inspection.outDir}`,
-    `Generated: ${inspection.generatedAt}`,
-    `Files: ${inspection.fileCount}`,
-    `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
-    `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
-    `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
-    `Datasets: total=${summary.dataset_count ?? 0}`,
-    `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
-    `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
-  ].join("\n");
-}
-
-function buildReleaseInspection(outDir: string, manifest: ReleaseManifest): {
-  outDir: string;
-  generatedAt: string;
-  fileCount: number;
-  releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
-} {
-  return {
-    outDir,
-    generatedAt: manifest.generated_at ?? "unknown",
-    fileCount: (manifest.files?.length ?? 0) + 1,
-    releaseSummary: manifest.release_summary ?? {},
-  };
-}
-
-function renderReviewStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
-  return rows.map((row) => `${row.review_status}=${row.count}`).join(", ") || "none";
-}
-
-function renderNamedCounts<T extends string>(
-  rows: Array<Record<T, string> & { count: number }>,
-  nameKey: T,
-): string {
-  return rows.map((row) => `${row[nameKey]}=${row.count}`).join(", ") || "none";
-}
-
 export function printHelp(): void {
   console.log(`dc civic-data workbench
 
+Workflow:
+  Fetch:   ${dcCommand("source list")} | ${dcCommand("source fetch --all")} | ${
+    dcCommand("source fetch dcgis.agencies")
+  }
+  Audit:   ${dcCommand("audit")} | ${dcCommand("status --json")} | ${
+    dcCommand("source inspect dcgis.agencies")
+  }
+  Review:  ${dcCommand("review")} | ${dcCommand("review list --mode entities")}
+  Release: ${dcCommand("release build")} | ${dcCommand("release inspect")}
+
 Usage:
-  dc init [--db <path>]
-  dc status [--db <path>] [--json]
-  dc doctor [--db <path>]
-  dc source list [--db <path>] [--json]
-  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
-  dc source inspect <source-id> [--db <path>] [--json]
-  dc source compare public-bodies [--db <path>] [--json]
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc entity search <query> [--db <path>] [--json]
-  dc entity show <entity-id> [--db <path>] [--json]
-  dc release build [--db <path>] [--out <dir>]
-  dc release inspect [--out <dir>] [--json]
+  ${dcCommand("init")} [--db <path>]
+  ${dcCommand("audit")} [status|doctor] [--db <path>] [--json]
+  ${dcCommand("status")} [--db <path>] [--json]
+  ${dcCommand("doctor")} [--db <path>] [--json]
+  ${dcCommand("source list")} [--db <path>] [--json]
+  ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>]
+  ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>]
+  ${dcCommand("source inspect <source-id>")} [--db <path>] [--json]
+  ${dcCommand("source compare public-bodies")} [--db <path>] [--json]
+  ${
+    dcCommand("review")
+  } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
+  ${
+    dcCommand("review list")
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  ${
+    dcCommand("review batch accept-safe")
+  } [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer-default")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${dcCommand("entity search <query>")} [--db <path>] [--json]
+  ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
+  ${dcCommand("release build")} [--db <path>] [--out <dir>]
+  ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Defaults:
   workbench db: data/workbench.sqlite
   source artifacts: data/v2_artifacts
   resolutions: resolutions/
   release output: releases/latest
-`);
-}
-
-function printReviewHelp(): void {
-  console.log(`dc review
-
-Usage:
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-
-Interactive actions:
-  Enter runs the default action for the current item.
-  a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
-`);
-}
-
-function printSourceHelp(): void {
-  console.log(`dc source
-
-Usage:
-  dc source list [--db <path>] [--json]
-  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
-  dc source inspect <source-id> [--db <path>] [--json]
-  dc source compare public-bodies [--db <path>] [--json]
-`);
-}
-
-function printEntityHelp(): void {
-  console.log(`dc entity
-
-Usage:
-  dc entity search <query> [--db <path>] [--json]
-  dc entity show <entity-id> [--db <path>] [--json]
-`);
-}
-
-function printReleaseHelp(): void {
-  console.log(`dc release
-
-Usage:
-  dc release build [--db <path>] [--out <dir>]
-  dc release inspect [--out <dir>] [--json]
-
-Release files:
-  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*
 `);
 }
