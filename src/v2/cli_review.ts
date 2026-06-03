@@ -16,6 +16,7 @@ export interface ReviewCommandOptions {
 
 export interface ReviewCommandDeps {
   withWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
+  withInteractiveWorkbench?<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
   withReadonlyWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
 }
 
@@ -30,7 +31,7 @@ export async function handleReviewCommand(
     return true;
   }
   if (!args[1] || args[1].startsWith("--")) {
-    await deps.withWorkbench(async (workbench) => {
+    await (deps.withInteractiveWorkbench ?? deps.withWorkbench)(async (workbench) => {
       await runInteractiveReview(workbench, readReviewFilters(args), options.resolutionsDir);
     });
     return true;
@@ -85,7 +86,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    await deps.withWorkbench(async (workbench) => {
+    await (deps.withInteractiveWorkbench ?? deps.withWorkbench)(async (workbench) => {
       await runInteractiveReview(
         workbench,
         { ...readReviewFilters(args), mode: args[1] },
