@@ -243,7 +243,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "`manifest.json`: package metadata, hashes, source provenance, and release summary",
+    "`manifest.json`: package metadata, file hashes, source inventory/artifact summary, and release summary",
   );
   assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
   assertStringIncludes(
