@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { handleSourceCommand, type SourceCommandDeps } from "../src/v2/cli_source.ts";
 import type { SourceConnector } from "../src/v2/connectors/shared.ts";
 import type { ConnectorResult } from "../src/v2/domain.ts";
@@ -124,15 +124,20 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   assertEquals(result, true);
   assertEquals(observedLimits, [3, 3]);
   assertEquals(imported, ["alpha.source", "beta.source"]);
-  assertStringIncludes(lines.join("\n"), "Fetched alpha.source");
-  assertStringIncludes(lines.join("\n"), "Fetched beta.source");
-  assertStringIncludes(lines.join("\n"), "Source fetch summary: 2/2 succeeded.");
+  const output = lines.join("\n");
+  assertMatch(output, /\[1\/2\] Starting alpha\.source - Alpha Source/);
+  assertMatch(output, /\[1\/2\] Finished alpha\.source in .* \(connector .*, import .*\)/);
+  assertMatch(output, /\[2\/2\] Starting beta\.source - Beta Source/);
+  assertMatch(output, /\[2\/2\] Finished beta\.source in .* \(connector .*, import .*\)/);
+  assertStringIncludes(output, "Fetched alpha.source");
+  assertStringIncludes(output, "Fetched beta.source");
+  assertStringIncludes(output, "Source fetch summary: 2/2 succeeded.");
   assertStringIncludes(
-    lines.join("\n"),
+    output,
     "Readiness: Unresolved workbench state: open review=2, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
   );
   assertStringIncludes(
-    lines.join("\n"),
+    output,
     "Next: deno task dc -- review",
   );
 });
@@ -194,24 +199,88 @@ Deno.test("source fetch --all continues through failures and throws a summary er
     },
   };
 
-  const original = console.log;
-  const lines: string[] = [];
-  console.log = (...args: unknown[]) => {
-    lines.push(args.map((value) => String(value)).join(" "));
-  };
-  try {
+  const { lines } = await captureConsoleLogs(async () =>
     await assertRejects(
       async () => await handleSourceCommand(["source", "fetch", "--all"], {}, deps),
       Error,
       "Failed 1 source(s): broken.source",
-    );
-  } finally {
-    console.log = original;
-  }
+    )
+  );
 
   assertEquals(imported, ["alpha.source"]);
-  assertStringIncludes(lines.join("\n"), "Fetch failed broken.source");
-  assertStringIncludes(lines.join("\n"), "fixture boom");
-  assertStringIncludes(lines.join("\n"), "Source fetch summary: 1/2 succeeded.");
+  const output = lines.join("\n");
+  assertMatch(output, /\[2\/2\] Starting broken\.source - Broken Source/);
+  assertMatch(output, /\[2\/2\] Fetch failed broken\.source after .* \(connector .*\)/);
+  assertStringIncludes(output, "Fetch failed broken.source");
+  assertStringIncludes(output, "fixture boom");
+  assertStringIncludes(output, "Source fetch summary: 1/2 succeeded.");
   assertEquals(lines.some((line) => line.startsWith("Next:")), false);
+});
+
+Deno.test("source fetch --all keeps json output free of progress logs", async () => {
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => ({
+      source: {
+        sourceId: "alpha.source",
+        title: "Alpha Source",
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: "https://example.com/alpha",
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: "alpha.source.main",
+          sourceId: "alpha.source",
+          title: "Alpha endpoint",
+          kind: "fixture",
+          url: "https://example.com/alpha",
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [],
+      }],
+    })),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async () => {},
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+    readWorkbenchStatus: async () => {
+      throw new Error("json mode should not read workbench readiness");
+    },
+  };
+
+  const { result, lines } = await captureConsoleLogs(async () =>
+    await handleSourceCommand(["source", "fetch", "--all"], { json: true }, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(lines.length, 1);
+  assertEquals(JSON.parse(lines[0]), {
+    count: 1,
+    outcomes: [{
+      sourceId: "alpha.source",
+      title: "Alpha Source",
+      status: "success",
+      endpointStatuses: ["alpha.source.main:success"],
+    }],
+  });
 });
