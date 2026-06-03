@@ -167,6 +167,10 @@ const knownEntityRefs = new Map<string, string>([
     "alcoholic beverages and cannabis administration",
     "dc.alcoholic_beverage_and_cannabis_administration",
   ],
+  [
+    "alcoholic beverages and cannabis administration (abca)",
+    "dc.alcoholic_beverage_and_cannabis_administration",
+  ],
   ["bicycle advisory council", "dc.bicycle_advisory_council"],
   [
     "board of review of anti-deficiency violations",
@@ -182,6 +186,15 @@ const knownEntityRefs = new Map<string, string>([
   ["commission on women", "dc.commission_for_women"],
   ["council", "dc.council_of_the_district_of_columbia"],
   ["council of the district of columbia", "dc.council_of_the_district_of_columbia"],
+  [
+    "department of consumer and regulatory affairs",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
+  [
+    "department of consumer and regulatory affairs (dcra)",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
+  ["department of disability services", "dc.department_on_disability_services"],
   [
     "developmental disabilities state planning council",
     "dc.developmental_disabilities_state_planning_council_dd_council",
@@ -219,12 +232,14 @@ const knownEntityRefs = new Map<string, string>([
   ["district of columbia auditor", "dc.office_of_the_dc_auditor"],
   ["district of columbia board of elections", "dc.board_of_elections"],
   ["district of columbia housing authority", "dc.dc_housing_authority"],
+  ["district of columbia public library", "dc.dc_public_library"],
   [
     "district of columbia health benefit exchange authority",
     "dc.health_benefit_exchange_authority",
   ],
   ["district of columbia public library system", "dc.dc_public_library"],
   ["district of columbia water and sewer authority", "dc.dc_water"],
+  ["doc", "dc.department_of_corrections"],
   ["dlcp/opl", "dc.department_of_licensing_and_consumer_protection"],
   ["does", "dc.department_of_employment_services"],
   ["doh", "dc.dc_health"],
@@ -236,11 +251,18 @@ const knownEntityRefs = new Map<string, string>([
   ["historic preservation review board", "dc.historic_preservation_review_board_hprb"],
   ["housing finance agency", "dc.dc_housing_finance_agency"],
   ["inspector general", "dc.office_of_the_inspector_general"],
+  ["mpd", "dc.metropolitan_police_department"],
   ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor's office of veteran's affairs", "dc.mayor_s_office_of_veterans_affairs"],
   ["national capital planning commission", "dc.national_capital_planning_commission_ncpc"],
   [
     "office of the attorney general for the district of columbia",
     "dc.office_of_the_attorney_general",
+  ],
+  ["office of city administrator", "dc.office_of_the_city_administrator"],
+  [
+    "office of the state superintendent for education",
+    "dc.office_of_the_state_superintendent_of_education",
   ],
   [
     "office of the people’s counsel",
@@ -261,7 +283,11 @@ const knownEntityRefs = new Map<string, string>([
     "dc.mayor_s_office_on_women_s_policy_and_initiatives",
   ],
   ["pedestrian advisory council", "dc.pedestrian_advisory_council"],
+  ["public charter school board", "dc.public_charter_school_board_pcsb"],
+  ["public charter school board (pcsb)", "dc.public_charter_school_board_pcsb"],
   ["secretary of the district of columbia", "dc.office_of_the_secretary"],
+  ["secretary of state of the district of columbia", "dc.office_of_the_secretary"],
+  ["state superintendent of education", "dc.office_of_the_state_superintendent_of_education"],
   ["state rehabilitation council", "dc.state_rehabilitation_council_src"],
   ["statewide health coordinating council", "dc.statewide_health_coordinating_council_shcc"],
   ["statewide independent living council", "dc.statewide_independent_living_council_silc"],

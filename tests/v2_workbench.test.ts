@@ -811,6 +811,66 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
   assert(!publicFacts.includes("private contact metadata"));
 });
 
+Deno.test("quickbase governing-agency parsing normalizes trusted designee seats and skips unsupported role seats", async () => {
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
+"Example Charter Board","Public Charter School Board (PCSB) Designee","Filled","Alex Doe","Active"
+"Example Licensing Board","Department of Consumer and Regulatory Affairs (DCRA) Designee","Filled","Sam Doe","Active"
+"Example Professional Board","Licensed Independent Clinical Social Worker (LICSW)","Filled","Pat Doe","Active"
+`.trim();
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return csv;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+
+  const relationships = result.endpointResults[1].parsed?.relationshipCandidates ?? [];
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Director of the Department of Employment Services (DOES) Designee" &&
+      candidate.toEntityRef === "dc.department_of_employment_services" &&
+      candidate.needsReview === false
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Public Charter School Board (PCSB) Designee" &&
+      candidate.toEntityRef === "dc.public_charter_school_board_pcsb" &&
+      candidate.needsReview === false
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Department of Consumer and Regulatory Affairs (DCRA) Designee" &&
+      candidate.toEntityRef === "dc.department_of_licensing_and_consumer_protection" &&
+      candidate.needsReview === false
+    ),
+  );
+  assertEquals(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Licensed Independent Clinical Social Worker (LICSW)"
+    ),
+    false,
+  );
+});
+
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1962,6 +2022,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.destination_dc",
   );
   assertEquals(
+    buildKnownEntityRef("Department of Consumer and Regulatory Affairs"),
+    "dc.department_of_licensing_and_consumer_protection",
+  );
+  assertEquals(
     buildKnownEntityRef("Deputy Mayor for Planning and Economic Development (DMPED)"),
     "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
   );
@@ -1978,16 +2042,36 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
   );
   assertEquals(
+    buildKnownEntityRef("MPD"),
+    "dc.metropolitan_police_department",
+  );
+  assertEquals(
     buildKnownEntityRef("Office on Returning Citizen Affairs"),
     "dc.mayor_s_office_on_returning_citizen_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of City Administrator"),
+    "dc.office_of_the_city_administrator",
   );
   assertEquals(
     buildKnownEntityRef("Office of Religious Affairs"),
     "dc.mayor_s_office_of_religious_affairs",
   );
   assertEquals(
+    buildKnownEntityRef("Public Charter School Board (PCSB)"),
+    "dc.public_charter_school_board_pcsb",
+  );
+  assertEquals(
     buildKnownEntityRef("Rental Housing Commission"),
     "dc.rental_housing_commission",
+  );
+  assertEquals(
+    buildKnownEntityRef("Secretary of State of the District of Columbia"),
+    "dc.office_of_the_secretary",
+  );
+  assertEquals(
+    buildKnownEntityRef("State Superintendent of Education"),
+    "dc.office_of_the_state_superintendent_of_education",
   );
 });
 

@@ -335,7 +335,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           toEntityRef: governingAgencyEntityId,
           relationshipType: "governed_by",
           rawValue: seat,
-          needsReview: true,
+          needsReview: false,
           evidence: [
             fieldEvidence(quickbaseColumns.seat, seat),
             fieldEvidence("row", String(index + 1)),
@@ -419,27 +419,69 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
 }
 
 function parseGoverningAgencyFromSeat(seat: string): string | undefined {
-  const direct = seat.trim();
+  const direct = maybeString(seat);
   if (!direct) return undefined;
-
-  const withoutDesignee = direct.replace(/\bdesignee$/i, "").trim();
-
-  const matchInParens = withoutDesignee.match(/\(([^()]+)\)/);
-  if (matchInParens?.[1]) {
-    const beforeMatch = maybeString(withoutDesignee.replace(/\([^)]*\)/g, "").trim());
-    const insideMatch = maybeString(matchInParens[1]);
-
-    if (beforeMatch && insideMatch && beforeMatch.length >= insideMatch.length) {
-      return beforeMatch;
-    }
-    if (insideMatch) {
-      return insideMatch;
-    }
+  const trustedPrefix = extractTrustedSeatOrganizationPrefix(direct);
+  const candidates = new Set(
+    [
+      extractParentheticalDesigneeOrganization(direct),
+      stripSeatAcronymParens(
+        stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix ?? "")),
+      ),
+      stripSeatAcronymParens(stripSeatRolePrefix(trustedPrefix ?? "")),
+      stripSeatAcronymParens(stripSeatSubunitDetails(trustedPrefix ?? "")),
+      stripSeatAcronymParens(trustedPrefix ?? ""),
+      stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix ?? "")),
+      stripSeatRolePrefix(trustedPrefix ?? ""),
+      stripSeatSubunitDetails(trustedPrefix ?? ""),
+      trustedPrefix,
+    ].map((value) => maybeString(value)).filter((value): value is string => Boolean(value)),
+  );
+  for (const candidate of candidates) {
+    if (isLikelyQuickbaseOrganization(candidate)) return candidate;
   }
+  return undefined;
+}
 
-  const normalized = withoutDesignee;
-  if (normalized.toLowerCase() === direct.toLowerCase()) return undefined;
-  return normalized;
+function extractParentheticalDesigneeOrganization(seat: string): string | undefined {
+  const match = seat.match(/\(([^()]*?)\s+(?:or\s+)?designee\b[^()]*/i);
+  return maybeString(match?.[1]);
+}
+
+function extractTrustedSeatOrganizationPrefix(seat: string): string | undefined {
+  for (
+    const pattern of [
+      /\s+alternate designee\b.*$/i,
+      /\s+alternate member\b.*$/i,
+      /\s+principal member\b.*$/i,
+      /\s+(?:or\s+)?designee\b.*$/i,
+    ]
+  ) {
+    const prefix = maybeString(seat.replace(pattern, ""));
+    if (prefix && prefix.length < seat.length) return prefix;
+  }
+  return undefined;
+}
+
+function stripSeatRolePrefix(value: string): string {
+  const match = value.match(
+    /^(?:director|executive director|chief executive officer|chair|chancellor|president|chief)\s+of(?:\s+the)?\s+(.+)$/i,
+  );
+  return maybeString(match?.[1]) ?? value;
+}
+
+function stripSeatSubunitDetails(value: string): string {
+  return maybeString(value.replace(/\)\s*(?:,|-)\s*.*$/i, ")")) ?? value;
+}
+
+function stripSeatAcronymParens(value: string): string {
+  return maybeString(value.replace(/\([^)]*\)/g, " ")) ?? value;
+}
+
+function isLikelyQuickbaseOrganization(value: string): boolean {
+  if (buildKnownEntityRef(value) !== buildEntityId(value)) return true;
+  return /\b(department|office|agency|administration|board|commission|council|committee|authority|university|library|district|mayor's office)\b/i
+    .test(value);
 }
 
 function deriveQuickbaseCluster(board: string): string | undefined {
