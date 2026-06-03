@@ -19,9 +19,12 @@ export type ReviewStatus = "open" | "resolved" | "deferred";
 export type CandidateStatus = "pending" | "accepted" | "rejected";
 export type RelationshipType =
   | "part_of"
+  | "has_seat"
+  | "has_status"
   | "governed_by"
   | "overseen_by"
   | "appointed_by"
+  | "designated_by"
   | "authorized_by"
   | "published_by"
   | "holds"
@@ -371,12 +374,18 @@ export function inverseRelationshipType(type: string): string {
   switch (type) {
     case "part_of":
       return "has_part";
+    case "has_seat":
+      return "seat_on";
+    case "has_status":
+      return "status_of";
     case "governed_by":
       return "governs";
     case "overseen_by":
       return "oversees";
     case "appointed_by":
       return "appoints";
+    case "designated_by":
+      return "designates";
     case "authorized_by":
       return "authorizes";
     case "published_by":
