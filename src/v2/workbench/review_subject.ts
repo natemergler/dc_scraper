@@ -42,6 +42,16 @@ export interface ReviewEvidenceRow {
   artifactPath: string;
 }
 
+type ReviewSubjectSourceLookupItem = Pick<
+  ReviewItemRecord,
+  "reviewItemId" | "itemType" | "subjectId"
+>;
+
+interface ReviewSubjectSourceRow {
+  reviewItemId: string;
+  sourceId?: string | null;
+}
+
 export function reviewSubject(
   store: Pick<WorkbenchStore, "db">,
   item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
@@ -146,9 +156,59 @@ export function reviewSubjectSourceId(
   store: Pick<WorkbenchStore, "db">,
   item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
 ): string {
-  if (item.itemType === "source_status") return item.subjectId;
-  if (item.itemType === "placeholder_entity") return "workbench";
+  const directSourceId = directReviewSubjectSourceId(item);
+  if (directSourceId !== undefined) return directSourceId;
   return reviewSubject(store, item)?.source.sourceId ?? "unknown";
+}
+
+export function reviewSubjectSourceIds(
+  store: Pick<WorkbenchStore, "db">,
+  items: readonly ReviewSubjectSourceLookupItem[],
+): Map<string, string> {
+  const sourceIds = new Map<string, string>();
+  const lookupReviewItemIds: string[] = [];
+  for (const item of items) {
+    const directSourceId = directReviewSubjectSourceId(item);
+    if (directSourceId !== undefined) {
+      sourceIds.set(item.reviewItemId, directSourceId);
+      continue;
+    }
+    lookupReviewItemIds.push(item.reviewItemId);
+  }
+  for (const reviewItemIdChunk of chunks(lookupReviewItemIds, 500)) {
+    const placeholders = reviewItemIdChunk.map(() => "?").join(", ");
+    for (
+      const row of queryAll<ReviewSubjectSourceRow>(
+        store.db,
+        `select review_items.review_item_id as reviewItemId,
+                source_items.source_id as sourceId
+         from review_items
+         left join entity_candidates
+           on review_items.item_type = 'entity_candidate'
+          and entity_candidates.candidate_id = review_items.subject_id
+         left join relationship_candidates
+           on review_items.item_type = 'relationship_candidate'
+          and relationship_candidates.relationship_candidate_id = review_items.subject_id
+         left join legal_refs
+           on review_items.item_type = 'legal_ref'
+          and legal_refs.legal_ref_id = review_items.subject_id
+         left join source_items
+           on source_items.source_item_id = coalesce(
+             entity_candidates.source_item_id,
+             relationship_candidates.source_item_id,
+             legal_refs.source_item_id
+           )
+         where review_items.review_item_id in (${placeholders})`,
+        reviewItemIdChunk,
+      )
+    ) {
+      sourceIds.set(row.reviewItemId, row.sourceId ?? "unknown");
+    }
+  }
+  for (const item of items) {
+    if (!sourceIds.has(item.reviewItemId)) sourceIds.set(item.reviewItemId, "unknown");
+  }
+  return sourceIds;
 }
 
 export function reviewEvidence(
@@ -195,4 +255,20 @@ export function reviewEvidence(
     );
   }
   return [];
+}
+
+function directReviewSubjectSourceId(
+  item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
+): string | undefined {
+  if (item.itemType === "source_status") return item.subjectId;
+  if (item.itemType === "placeholder_entity") return "workbench";
+  return undefined;
+}
+
+function chunks<T>(items: readonly T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
 }
