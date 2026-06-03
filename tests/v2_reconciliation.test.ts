@@ -324,6 +324,71 @@ Deno.test("relationship imports do not seed endpoint candidates when the endpoin
   assertEquals(blockedCount.count, 0);
 });
 
+Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into review-ready work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.rental_housing_commission', 'Rental Housing Commission', 'commission', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-on-housing/">Committee on Housing</a>
+            </body></html>
+          `;
+        case "https://dccouncil.gov/committees/committee-on-housing/":
+          return `
+            <html><body>
+              <h1>Committee on Housing</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Rental Housing Commission</li>
+              </ul>
+            </body></html>
+          `;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_on_housing_oversight_1'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const relationshipItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.council.committees.committee_on_housing_oversight_1",
+  });
+  workbench.close();
+
+  assertEquals(blockedCount.count, 0);
+  assertEquals(
+    relationshipItems.some((item) =>
+      item.subjectId === "relationship.council.committees.committee_on_housing_oversight_1"
+    ),
+    true,
+  );
+});
+
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
