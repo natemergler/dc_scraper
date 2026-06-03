@@ -589,15 +589,26 @@ Deno.test("doctor surfaces first blocked raw value and a concrete source inspect
   }).output();
   assertEquals(doctorOutput.code, 0);
   const doctorText = new TextDecoder().decode(doctorOutput.stdout);
-  assertStringIncludes(doctorText, "First blocked: relationship.test.blocked.doctor");
   assertStringIncludes(
     doctorText,
-    "Blocked raw value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+    "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Subject id: relationship.test.blocked.doctor",
   );
   assertStringIncludes(doctorText, "Blocked detail:");
   assertStringIncludes(
     doctorText,
-    "Blockers: dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health (missing)",
+    "Value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
   );
   assertStringIncludes(doctorText, "Inspect source: dc source inspect council.committees");
 });
