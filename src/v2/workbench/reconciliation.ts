@@ -1,6 +1,6 @@
 import { nowIso } from "../domain.ts";
 import { queryAll, run } from "./db.ts";
-import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
+import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -29,14 +29,24 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
      from relationship_candidates
      join source_items on source_items.source_item_id = relationship_candidates.source_item_id`,
   );
+  const endpointStatuses = endpointStatusMap(
+    store,
+    candidates.flatMap((candidate) => [candidate.fromEntityRef, candidate.toEntityRef]),
+  );
 
   for (const candidate of candidates) {
     if (candidate.reviewStatus !== "pending") {
       clearRelationshipReconciliationState(store, candidate.relationshipCandidateId);
       continue;
     }
-    const fromStatus = endpointStatus(store, candidate.fromEntityRef);
-    const toStatus = endpointStatus(store, candidate.toEntityRef);
+    const fromStatus = endpointStatuses.get(candidate.fromEntityRef) ?? {
+      entityId: candidate.fromEntityRef,
+      state: "missing",
+    };
+    const toStatus = endpointStatuses.get(candidate.toEntityRef) ?? {
+      entityId: candidate.toEntityRef,
+      state: "missing",
+    };
     const blockedEndpoints = [fromStatus, toStatus].filter((endpoint) =>
       endpoint.state !== "accepted"
     );
