@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import type { ConnectorResult } from "../src/v2/domain.ts";
+import type { ConnectorResult, RelationshipType } from "../src/v2/domain.ts";
 import { buildV2Release } from "../src/v2/release.ts";
 import { verifyWorkbenchRelease } from "../src/v2/release_verify.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -168,6 +168,23 @@ Deno.test("release verify accepts source-backed relationship rows", async () => 
   assertEquals(body.reasons, []);
   assertEquals(body.relationshipProvenanceCheckedCount, 1);
   assertEquals(body.relationshipProvenanceProblems, []);
+});
+
+Deno.test("release verify batches relationship evidence lookup across rows", async () => {
+  const { workbench, dataDir, resolutionsDir } = await readyRelationshipWorkbench();
+  await addAcceptedRelationship(workbench, dataDir, resolutionsDir, {
+    suffix: "oversight",
+    relationshipType: "overseen_by",
+  });
+  await addAcceptedRelationship(workbench, dataDir, resolutionsDir, {
+    suffix: "authority",
+    relationshipType: "authorized_by",
+  });
+
+  const prepareCount = countRelationshipEvidencePrepares(workbench);
+  workbench.close();
+
+  assertEquals(prepareCount, 1);
 });
 
 Deno.test("release verify accepts source-backed dataset and legal ref rows", async () => {
@@ -809,6 +826,59 @@ function runReleaseVerifyText(dbPath: string): Promise<Deno.CommandOutput> {
       dbPath,
     ],
   }).output();
+}
+
+async function addAcceptedRelationship(
+  workbench: Workbench,
+  dataDir: string,
+  resolutionsDir: string,
+  input: {
+    suffix: string;
+    relationshipType: RelationshipType;
+  },
+): Promise<void> {
+  const relationshipCandidateId = `relationship.test.release.verify.source_${input.suffix}_target`;
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: `test.release.verify.relationships.${input.suffix}`,
+      relationshipCandidateId,
+      sourceItemKey: `relationship-row-${input.suffix}`,
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: input.relationshipType,
+      rawValue: `Target Agency ${input.suffix}`,
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_relationship_candidate",
+      subjectId: relationshipCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+}
+
+function countRelationshipEvidencePrepares(workbench: Workbench): number {
+  const originalPrepare = workbench.db.prepare.bind(workbench.db);
+  const prepareOwner = workbench.db as unknown as {
+    prepare(sql: string): ReturnType<typeof workbench.db.prepare>;
+  };
+  let prepareCount = 0;
+  prepareOwner.prepare = (sql: string) => {
+    const normalizedSql = sql.replaceAll(/\s+/g, " ");
+    if (normalizedSql.includes("from relationship_candidate_evidence")) {
+      prepareCount += 1;
+    }
+    return originalPrepare(sql);
+  };
+  try {
+    verifyWorkbenchRelease(workbench);
+  } finally {
+    prepareOwner.prepare = originalPrepare;
+  }
+  return prepareCount;
 }
 
 function duplicateInventoryRows(workbench: Workbench, totalRows: number): void {
