@@ -1,16 +1,22 @@
 import { ensureDir } from "@std/fs";
 import { join, relative } from "@std/path";
 import {
-  buildReviewItemId,
   type CandidateStatus,
   compactDatePart,
+  normalizeName,
   nowIso,
   parseLegalReference,
   type ResolutionEventInput,
   type ReviewStatus,
+  sha256Hex,
   slugify,
 } from "../domain.ts";
+import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
+import { endpointStatus } from "./endpoint_status.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ResolutionRecord {
@@ -19,11 +25,17 @@ interface ResolutionRecord {
   sequenceNumber: number;
 }
 
+interface AppendResolutionOptions {
+  deferRelationshipReconciliation?: boolean;
+}
+
 export async function appendResolutionEvent(
   store: WorkbenchStore,
   event: ResolutionEventInput,
   resolutionsDir: string,
+  options: AppendResolutionOptions = {},
 ): Promise<{ filePath: string; sequenceNumber: number }> {
+  const enrichedEvent = await enrichResolutionEvent(store, event);
   const dayDir = join(resolutionsDir, compactDatePart());
   const filePath = join(dayDir, "001-auto-review.jsonl");
   let sequenceNumber = 1;
@@ -34,14 +46,476 @@ export async function appendResolutionEvent(
     if (!(error instanceof Deno.errors.NotFound)) throw error;
   }
   const line = JSON.stringify({
-    event_type: event.eventType,
-    subject_id: event.subjectId,
-    payload: event.payload,
+    event_type: enrichedEvent.eventType,
+    subject_id: enrichedEvent.subjectId,
+    payload: enrichedEvent.payload,
   });
-  applyResolutionEvent(store, event, relative(resolutionsDir, filePath), sequenceNumber);
+  applyResolutionEvent(
+    store,
+    enrichedEvent,
+    relative(resolutionsDir, filePath),
+    sequenceNumber,
+    options,
+  );
   await ensureDir(dayDir);
   await Deno.writeTextFile(filePath, `${line}\n`, { append: true, create: true });
   return { filePath, sequenceNumber };
+}
+
+export async function appendResolutionEvents(
+  store: Pick<WorkbenchStore, "db">,
+  events: ResolutionEventInput[],
+  resolutionsDir: string,
+  options: AppendResolutionOptions = {},
+): Promise<Array<{ filePath: string; sequenceNumber: number }>> {
+  if (events.length === 0) return [];
+  const enrichedEvents: ResolutionEventInput[] = [];
+  for (const event of events) {
+    enrichedEvents.push(await enrichResolutionEvent(store as WorkbenchStore, event));
+  }
+  const dayDir = join(resolutionsDir, compactDatePart());
+  const filePath = join(dayDir, "001-auto-review.jsonl");
+  let sequenceNumber = 1;
+  try {
+    const existing = await Deno.readTextFile(filePath);
+    sequenceNumber = existing.split("\n").filter(Boolean).length + 1;
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  const lines: string[] = [];
+  const records: ResolutionRecord[] = [];
+  for (const [index, enrichedEvent] of enrichedEvents.entries()) {
+    const currentSequenceNumber = sequenceNumber + index;
+    lines.push(JSON.stringify({
+      event_type: enrichedEvent.eventType,
+      subject_id: enrichedEvent.subjectId,
+      payload: enrichedEvent.payload,
+    }));
+    records.push({
+      event: enrichedEvent,
+      resolutionFile: relative(resolutionsDir, filePath),
+      sequenceNumber: currentSequenceNumber,
+    });
+  }
+  withTransaction(store.db, () => {
+    for (const record of records) {
+      applyResolutionEventInCurrentTransaction(store as WorkbenchStore, record, {
+        deferRelationshipReconciliation: true,
+      });
+    }
+    if (!options.deferRelationshipReconciliation) {
+      reconcileRelationshipCandidates(store as WorkbenchStore);
+      if (
+        records.some((record) => shouldAutoAcceptRelationshipsAfterEvent(record.event.eventType))
+      ) {
+        autoAcceptSafeRelationshipCandidates(store as WorkbenchStore);
+      }
+    }
+  });
+  await ensureDir(dayDir);
+  await Deno.writeTextFile(filePath, `${lines.join("\n")}\n`, { append: true, create: true });
+  return records.map((record) => ({
+    filePath: join(resolutionsDir, record.resolutionFile),
+    sequenceNumber: record.sequenceNumber,
+  }));
+}
+
+async function enrichResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  if (event.eventType === "defer_review_item" || event.eventType === "reopen_review_item") {
+    return await enrichReviewStatusResolutionEvent(store, event);
+  }
+  if (event.eventType === "merge_entity_candidates") {
+    return await enrichMergeEntityResolutionEvent(store, event);
+  }
+  if (
+    event.eventType !== "accept_entity_candidate" &&
+    event.eventType !== "reject_entity_candidate" &&
+    event.eventType !== "accept_relationship_candidate" &&
+    event.eventType !== "reject_relationship_candidate" &&
+    event.eventType !== "accept_legal_ref" &&
+    event.eventType !== "reject_legal_ref"
+  ) {
+    return event;
+  }
+  if (
+    event.eventType === "accept_relationship_candidate" ||
+    event.eventType === "reject_relationship_candidate"
+  ) {
+    return await enrichRelationshipResolutionEvent(store, event);
+  }
+  if (event.eventType === "accept_legal_ref" || event.eventType === "reject_legal_ref") {
+    return await enrichLegalRefResolutionEvent(store, event);
+  }
+  const metadata = await entityResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+      ...(event.eventType === "accept_entity_candidate"
+        ? {
+          resolved_entity_id: event.payload.resolved_entity_id ?? event.payload.entityId ??
+            metadata.proposedEntityId,
+        }
+        : {}),
+    },
+  };
+}
+
+async function enrichMergeEntityResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const candidateIds = Array.isArray(event.payload.candidateIds)
+    ? event.payload.candidateIds.filter((candidateId): candidateId is string =>
+      typeof candidateId === "string"
+    )
+    : [];
+  const resolvedEntityId = typeof event.payload.entityId === "string"
+    ? event.payload.entityId
+    : null;
+  const candidateReplays = [];
+  for (const candidateId of candidateIds) {
+    const metadata = await entityResolutionMetadata(store, candidateId);
+    if (!metadata) continue;
+    candidateReplays.push({
+      candidate_id: candidateId,
+      fact_signature: metadata.factSignature,
+      evidence_hash: metadata.evidenceHash,
+      resolved_entity_id: resolvedEntityId ?? metadata.proposedEntityId,
+    });
+  }
+  if (candidateReplays.length === 0) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      candidate_replays: event.payload.candidate_replays ?? candidateReplays,
+    },
+  };
+}
+
+async function enrichReviewStatusResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const reviewItem = queryOne<{
+    itemType: string;
+    subjectId: string;
+  }>(
+    store.db,
+    `select item_type as itemType,
+            subject_id as subjectId
+     from review_items
+     where review_item_id = ?`,
+    [event.subjectId],
+  );
+  if (!reviewItem) return event;
+  const metadata = await reviewStatusResolutionMetadata(
+    store,
+    reviewItem.itemType,
+    reviewItem.subjectId,
+  );
+  if (!metadata) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      review_item_type: event.payload.review_item_type ?? reviewItem.itemType,
+      review_subject_id: event.payload.review_subject_id ?? reviewItem.subjectId,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+    },
+  };
+}
+
+async function reviewStatusResolutionMetadata(
+  store: WorkbenchStore,
+  itemType: string,
+  subjectId: string,
+): Promise<{ factSignature: string; evidenceHash: string } | undefined> {
+  switch (itemType) {
+    case "entity_candidate":
+      return await entityResolutionMetadata(store, subjectId);
+    case "relationship_candidate":
+      return await relationshipResolutionMetadata(store, subjectId);
+    case "legal_ref":
+      return await legalRefResolutionMetadata(store, subjectId);
+    default:
+      return undefined;
+  }
+}
+
+async function enrichRelationshipResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const metadata = await relationshipResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+      ...(event.eventType === "accept_relationship_candidate"
+        ? {
+          resolved_relationship_type: event.payload.resolved_relationship_type ??
+            event.payload.relationshipType ??
+            metadata.relationshipType,
+          resolved_from_entity_id: event.payload.resolved_from_entity_id ??
+            event.payload.fromEntityId ??
+            metadata.fromEntityRef,
+          resolved_to_entity_id: event.payload.resolved_to_entity_id ?? event.payload.toEntityId ??
+            metadata.toEntityRef,
+        }
+        : {}),
+    },
+  };
+}
+
+async function entityResolutionMetadata(
+  store: WorkbenchStore,
+  candidateId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    proposedEntityId: string;
+  } | undefined
+> {
+  const candidate = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    proposedEntityId: string;
+    name: string;
+    kind: string;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            entity_candidates.proposed_entity_id as proposedEntityId,
+            entity_candidates.name,
+            entity_candidates.kind
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     where entity_candidates.candidate_id = ?`,
+    [candidateId],
+  );
+  if (!candidate) return undefined;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from entity_candidate_evidence
+     where candidate_id = ?
+     order by field_path, observed_value`,
+  ).all(candidateId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const factSignature = [
+    "entity_candidate",
+    candidate.sourceId,
+    candidate.itemKey,
+    candidate.proposedEntityId,
+    slugify(normalizeName(candidate.name)),
+    candidate.kind,
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify(evidenceRows.map((row) => ({
+      fieldPath: row.fieldPath,
+      observedValue: row.observedValue,
+    }))),
+  )}`;
+  return {
+    factSignature,
+    evidenceHash,
+    proposedEntityId: candidate.proposedEntityId,
+  };
+}
+
+async function relationshipResolutionMetadata(
+  store: WorkbenchStore,
+  relationshipCandidateId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    relationshipType: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+  } | undefined
+> {
+  const candidate = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+    relationshipType: string;
+    rawValue?: string | null;
+    needsReview: number;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.to_entity_ref as toEntityRef,
+            relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.raw_value as rawValue,
+            relationship_candidates.needs_review as needsReview
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.relationship_candidate_id = ?`,
+    [relationshipCandidateId],
+  );
+  if (!candidate) return undefined;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from relationship_candidate_evidence
+     where relationship_candidate_id = ?
+     order by field_path, observed_value`,
+  ).all(relationshipCandidateId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const factSignature = [
+    "relationship_candidate",
+    candidate.sourceId,
+    candidate.itemKey,
+    candidate.fromEntityRef,
+    candidate.relationshipType,
+    candidate.toEntityRef,
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify({
+      rawValue: candidate.rawValue ?? null,
+      needsReview: candidate.needsReview === 1,
+      evidence: evidenceRows.map((row) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      })),
+    }),
+  )}`;
+  return {
+    factSignature,
+    evidenceHash,
+    relationshipType: candidate.relationshipType,
+    fromEntityRef: candidate.fromEntityRef,
+    toEntityRef: candidate.toEntityRef,
+  };
+}
+
+async function legalRefResolutionMetadata(
+  store: WorkbenchStore,
+  legalRefId: string,
+): Promise<
+  {
+    factSignature: string;
+    evidenceHash: string;
+    resolvedRefType: string;
+    resolvedNormalizedCitation: string | null;
+    url: string | null;
+  } | undefined
+> {
+  const legalRef = queryOne<{
+    sourceId: string;
+    itemKey: string;
+    refType: string;
+    citationText: string;
+    normalizedCitation?: string | null;
+    url?: string | null;
+  }>(
+    store.db,
+    `select source_items.source_id as sourceId,
+            source_items.item_key as itemKey,
+            legal_refs.ref_type as refType,
+            legal_refs.citation_text as citationText,
+            legal_refs.normalized_citation as normalizedCitation,
+            legal_refs.url as url
+     from legal_refs
+     join source_items on source_items.source_item_id = legal_refs.source_item_id
+     where legal_refs.legal_ref_id = ?`,
+    [legalRefId],
+  );
+  if (!legalRef) return undefined;
+  const evidenceRows = store.db.prepare(
+    `select field_path as fieldPath,
+            observed_value as observedValue
+     from legal_ref_evidence
+     where legal_ref_id = ?
+     order by field_path, observed_value`,
+  ).all(legalRefId) as Array<{
+    fieldPath: string;
+    observedValue: string;
+  }>;
+  const parsed = parseLegalReference(legalRef.citationText, legalRef.url ?? undefined);
+  const inferredRefType = legalRef.refType === "unknown" ? parsed.refType : legalRef.refType;
+  const resolvedRefType = inferredRefType;
+  const resolvedNormalizedCitation = legalRef.normalizedCitation ??
+    parsed.normalizedCitation ??
+    null;
+  const factSignature = [
+    "legal_ref",
+    legalRef.sourceId,
+    legalRef.itemKey,
+    legalRef.refType,
+    slugify(normalizeName(legalRef.citationText)),
+  ].join(":");
+  const evidenceHash = `sha256:${await sha256Hex(
+    JSON.stringify({
+      refType: legalRef.refType,
+      citationText: legalRef.citationText,
+      normalizedCitation: legalRef.normalizedCitation ?? null,
+      url: legalRef.url ?? null,
+      evidence: evidenceRows.map((row) => ({
+        fieldPath: row.fieldPath,
+        observedValue: row.observedValue,
+      })),
+    }),
+  )}`;
+  return {
+    factSignature,
+    evidenceHash,
+    resolvedRefType,
+    resolvedNormalizedCitation,
+    url: legalRef.url ?? null,
+  };
+}
+
+async function enrichLegalRefResolutionEvent(
+  store: WorkbenchStore,
+  event: ResolutionEventInput,
+): Promise<ResolutionEventInput> {
+  const metadata = await legalRefResolutionMetadata(store, event.subjectId);
+  if (!metadata) return event;
+  const resolvedRefType = String(event.payload.refType ?? metadata.resolvedRefType);
+  const resolvedNormalizedCitation = event.payload.normalizedCitation === null ? null : String(
+    event.payload.normalizedCitation ??
+      metadata.resolvedNormalizedCitation ??
+      "",
+  ) || null;
+  return {
+    ...event,
+    payload: {
+      ...event.payload,
+      fact_signature: event.payload.fact_signature ?? metadata.factSignature,
+      evidence_hash: event.payload.evidence_hash ?? metadata.evidenceHash,
+      ...(event.eventType === "accept_legal_ref"
+        ? {
+          resolved_ref_type: event.payload.resolved_ref_type ?? resolvedRefType,
+          resolved_normalized_citation: event.payload.resolved_normalized_citation ??
+            resolvedNormalizedCitation,
+          resolved_url: event.payload.resolved_url ?? metadata.url,
+        }
+        : {}),
+    },
+  };
 }
 
 export function applyResolutionEvent(
@@ -49,19 +523,25 @@ export function applyResolutionEvent(
   event: ResolutionEventInput,
   resolutionFile: string,
   sequenceNumber: number,
+  options: AppendResolutionOptions = {},
 ): void {
   withTransaction(store.db, () => {
-    applyResolutionEventInCurrentTransaction(store, {
-      event,
-      resolutionFile,
-      sequenceNumber,
-    });
+    applyResolutionEventInCurrentTransaction(
+      store,
+      {
+        event,
+        resolutionFile,
+        sequenceNumber,
+      },
+      options,
+    );
   });
 }
 
 function applyResolutionEventInCurrentTransaction(
   store: WorkbenchStore,
   record: ResolutionRecord,
+  options: AppendResolutionOptions = {},
 ): void {
   const { event, resolutionFile, sequenceNumber } = record;
   const eventId = resolutionEventId(resolutionFile, sequenceNumber);
@@ -113,6 +593,12 @@ function applyResolutionEventInCurrentTransaction(
       setReviewStatus(store, event.subjectId, "open");
       break;
   }
+  if (!options.deferRelationshipReconciliation) {
+    reconcileRelationshipCandidates(store);
+    if (shouldAutoAcceptRelationshipsAfterEvent(event.eventType)) {
+      autoAcceptSafeRelationshipCandidates(store);
+    }
+  }
 }
 
 export async function replayResolutionDirectory(
@@ -158,14 +644,33 @@ export async function replayResolutionDirectory(
     store.db.exec("delete from canonical_entities");
     store.db.exec("delete from resolution_events");
     run(store.db, "delete from review_items where item_type = 'placeholder_entity'");
+    run(store.db, "delete from review_items where item_type = 'relationship_candidate'");
+    run(store.db, "delete from reconciliation_blockers");
+    run(store.db, "delete from reconciliation_items");
     run(store.db, "update entity_candidates set review_status = 'pending'");
     run(store.db, "update relationship_candidates set review_status = 'pending'");
     run(store.db, "update legal_refs set review_status = 'pending'");
     run(store.db, "update review_items set status = 'open' where status = 'resolved'");
+    autoAcceptSafeLegalRefs(store);
+    autoPromoteSafeEntityCandidates(store);
     for (const record of records) {
-      applyResolutionEventInCurrentTransaction(store, record);
+      applyResolutionEventInCurrentTransaction(store, record, {
+        deferRelationshipReconciliation: true,
+      });
     }
+    autoAcceptSafeLegalRefs(store);
+    reconcileRelationshipCandidates(store);
+    autoAcceptSafeRelationshipCandidates(store);
   });
+}
+
+function shouldAutoAcceptRelationshipsAfterEvent(
+  eventType: ResolutionEventInput["eventType"],
+): boolean {
+  return eventType === "accept_entity_candidate" ||
+    eventType === "accept_legal_ref" ||
+    eventType === "merge_entity_candidates" ||
+    eventType === "set_entity_fields";
 }
 
 function resolutionEventId(resolutionFile: string, sequenceNumber: number): string {
@@ -325,12 +830,12 @@ function acceptRelationshipCandidate(
     throw new Error(`Conflict: relationship candidate ${relationshipCandidateId} was rejected`);
   }
   const relationshipType = String(payload.relationshipType ?? candidate.relationshipType);
-  const fromEntityId = ensureEntityExists(
+  const fromEntityId = requireAcceptedEntity(
     store,
     String(payload.fromEntityId ?? candidate.fromEntityRef),
     relationshipCandidateId,
   );
-  const toEntityId = ensureEntityExists(
+  const toEntityId = requireAcceptedEntity(
     store,
     String(payload.toEntityId ?? candidate.toEntityRef),
     relationshipCandidateId,
@@ -341,7 +846,7 @@ function acceptRelationshipCandidate(
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
     [relationshipId],
   );
-  if (!existing) {
+  if (!existing && !isLegalAuthorityRelationship(relationshipType, toEntityId)) {
     run(
       store.db,
       "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values(?, ?, ?, ?, 'accepted', ?, ?)",
@@ -357,50 +862,38 @@ function acceptRelationshipCandidate(
   resolveReviewBySubject(store, relationshipCandidateId);
 }
 
-function ensureEntityExists(
+function requireAcceptedEntity(
   store: WorkbenchStore,
   entityId: string,
-  relationshipCandidateId?: string,
+  relationshipCandidateId: string,
 ): string {
-  const existing = queryOne<{ entityId: string }>(
+  const status = endpointStatus(store, entityId);
+  if (status.state !== "accepted") {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is not resolved`,
+    );
+  }
+  if (entityId.startsWith("legal.")) return entityId;
+  const existing = queryOne<{ entityId: string; isPlaceholder: number }>(
     store.db,
-    "select entity_id as entityId from canonical_entities where entity_id = ?",
+    "select entity_id as entityId, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
     [entityId],
   );
-  if (existing) return entityId;
-  const name = entityId.split(".").slice(1).join(" ").replaceAll("_", " ").replaceAll(
-    /\b\w/g,
-    (part) => part.toUpperCase(),
-  );
-  run(
-    store.db,
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values(?, ?, 'placeholder', 'placeholder', '[]', 1, ?, ?, ?)",
-    [
-      entityId,
-      name,
-      relationshipCandidateId
-        ? `Created while accepting relationship candidate ${relationshipCandidateId}`
-        : `Created while accepting a relationship candidate for ${entityId}`,
-      nowIso(),
-      nowIso(),
-    ],
-  );
-  run(
-    store.db,
-    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, 'placeholder_entity', ?, ?, 'defer', 'open', ?, ?, ?)",
-    [
-      buildReviewItemId(entityId, "placeholder"),
-      entityId,
-      "Placeholder entity created while accepting relationship candidate",
-      JSON.stringify({
-        entityId,
-        relationshipCandidateId,
-      }),
-      nowIso(),
-      nowIso(),
-    ],
-  );
+  if (!existing) {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is not an accepted canonical entity`,
+    );
+  }
+  if (existing.isPlaceholder === 1) {
+    throw new Error(
+      `Cannot accept blocked relationship candidate ${relationshipCandidateId}: endpoint ${entityId} is still a placeholder`,
+    );
+  }
   return entityId;
+}
+
+function isLegalAuthorityRelationship(relationshipType: string, toEntityId: string): boolean {
+  return relationshipType === "authorized_by" && toEntityId.startsWith("legal.");
 }
 
 function setEntityCandidateStatus(
