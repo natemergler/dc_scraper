@@ -416,7 +416,27 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(topLevelHelp.code, 0);
   assertStringIncludes(topLevelText, "Workflow:");
   assertStringIncludes(topLevelText, "dc source fetch --all");
+  assertStringIncludes(topLevelText, "dc audit");
   assertStringIncludes(topLevelText, "dc review | dc review list --mode entities");
+
+  const auditHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "--help",
+    ],
+  }).output();
+  const auditText = new TextDecoder().decode(auditHelp.stdout);
+  assertEquals(auditHelp.code, 0);
+  assertStringIncludes(auditText, "Usage:");
+  assertStringIncludes(auditText, "dc audit [--db <path>] [--json]");
+  assertStringIncludes(auditText, "dc audit doctor [--db <path>] [--json]");
 
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),

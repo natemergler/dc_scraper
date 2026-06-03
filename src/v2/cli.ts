@@ -1,4 +1,5 @@
 import { join } from "@std/path";
+import { handleAuditCommand } from "./cli_audit.ts";
 import { handleSourceCommand } from "./cli_source.ts";
 import { buildV2Release } from "./release.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
@@ -7,8 +8,6 @@ import {
   buildWorkbenchStatus,
   type ReleaseManifest,
   renderReleaseInspection,
-  renderWorkbenchDoctor,
-  renderWorkbenchStatus,
 } from "./status.ts";
 import {
   renderEntityView,
@@ -60,6 +59,14 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       ),
   });
   if (sourceHandled) return true;
+  const auditHandled = await handleAuditCommand(args, { json: args.includes("--json") }, {
+    readWorkbenchStatus: async () =>
+      await withWorkbench(dbPath, (workbench, meta) => ({
+        meta,
+        status: buildWorkbenchStatus(workbench),
+      })),
+  });
+  if (auditHandled) return true;
   if (args[0] === "review" && isHelp(args[1])) {
     printReviewHelp();
     return true;
@@ -78,40 +85,6 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     });
     console.log(`Initialized v2 workbench: ${dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
-    return true;
-  }
-  if (args[0] === "workbench" && args[1] === "status") {
-    const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
-      meta,
-      status: buildWorkbenchStatus(workbench),
-    }));
-    if (args.includes("--json")) {
-      console.log(JSON.stringify({ ...meta, ...status }, null, 2));
-      return true;
-    }
-    console.log(`DB: ${meta.dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
-    for (const migration of meta.migrations) {
-      console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
-    }
-    console.log(renderWorkbenchStatus(status));
-    return true;
-  }
-  if (args[0] === "workbench" && args[1] === "doctor") {
-    const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
-      meta,
-      status: buildWorkbenchStatus(workbench),
-    }));
-    if (args.includes("--json")) {
-      console.log(JSON.stringify({ ...meta, ...status }, null, 2));
-      return true;
-    }
-    console.log(`DB: ${meta.dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
-    for (const migration of meta.migrations) {
-      console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
-    }
-    console.log(renderWorkbenchDoctor(status));
     return true;
   }
   if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
@@ -316,14 +289,15 @@ export function printHelp(): void {
 
 Workflow:
   Fetch:   dc source list | dc source fetch --all | dc source fetch dcgis.agencies
-  Audit:   dc status | dc doctor | dc source inspect dcgis.agencies
+  Audit:   dc audit | dc status --json | dc source inspect dcgis.agencies
   Review:  dc review | dc review list --mode entities
   Release: dc release build | dc release inspect
 
 Usage:
   dc init [--db <path>]
+  dc audit [status|doctor] [--db <path>] [--json]
   dc status [--db <path>] [--json]
-  dc doctor [--db <path>]
+  dc doctor [--db <path>] [--json]
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source fetch --all [--db <path>] [--data-dir <path>] [--limit <n>]
