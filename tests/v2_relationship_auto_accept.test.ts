@@ -10,6 +10,7 @@ import {
   councilMembersFixture,
   dcgisBoardsCommissionsCouncilsMetadataFixture,
   dcgisBoardsCommissionsCouncilsRowsFixture,
+  quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
 import {
   syntheticCustomEntitySourceResult,
@@ -226,6 +227,86 @@ Deno.test("accepting a legal ref can auto-accept a newly safe Open DC authority 
   assertEquals(candidateBefore?.reviewStatus, "pending");
   assertEquals(candidate?.reviewStatus, "accepted");
   assertEquals(blockedAfter.count, 0);
+  assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("Quickbase trusted governing-agency seat relationships auto-accept when endpoints are accepted", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [
+      ["dc.department_of_employment_services", "Department of Employment Services"],
+      ["dc.public_charter_school_board_pcsb", "Public Charter School Board"],
+      [
+        "dc.department_of_licensing_and_consumer_protection",
+        "Department of Licensing and Consumer Protection",
+      ],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
+"Example Charter Board","Public Charter School Board (PCSB) Designee","Filled","Alex Doe","Active"
+"Example Licensing Board","Department of Consumer and Regulatory Affairs (DCRA) Designee","Filled","Sam Doe","Active"
+`.trim();
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return csv;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const relationships = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       ?,
+       ?,
+       ?
+     )
+     order by relationship_id`,
+  ).all(
+    `${buildEntityId("Example Charter Board")}:governed_by:dc.public_charter_school_board_pcsb`,
+    `${
+      buildEntityId("Example Licensing Board")
+    }:governed_by:dc.department_of_licensing_and_consumer_protection`,
+    `${buildEntityId("Example Role Board")}:governed_by:dc.department_of_employment_services`,
+  ) as Array<{ relationshipId: string }>;
+  const pendingRelationships = workbench.db.prepare(
+    "select count(*) as count from relationship_candidates where review_status = 'pending'",
+  ).get() as { count: number };
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.mota.quickbase",
+  });
+  workbench.close();
+
+  assertEquals(relationships.length, 3);
+  assertEquals(pendingRelationships.count, 0);
   assertEquals(reviewItems.length, 0);
 });
 

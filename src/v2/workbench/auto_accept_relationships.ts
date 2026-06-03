@@ -8,6 +8,7 @@ const AUTO_ACCEPT_RULES = new Map<string, Set<RelationshipType>>([
   ["council.members", new Set(["holds", "part_of", "represents"])],
   ["dcgis.agencies", new Set(["part_of"])],
   ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
+  ["mota.quickbase", new Set(["governed_by"])],
   ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
   ["open_dc.public_bodies", new Set(["authorized_by", "governed_by"])],
 ]);

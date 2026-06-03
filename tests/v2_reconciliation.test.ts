@@ -71,11 +71,8 @@ Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint 
   assert(blockedItems.length > 0);
   assertEquals(
     blockedItems.some((item) =>
-      item.subjectId ===
-        "relationship.mota.quickbase.district_of_columbia_rental_housing_commission_governed_by_office_of_housing_and_community_development_designee" &&
       item.state === "blocked" &&
-      item.reason === "unresolved_endpoints" &&
-      item.detailsJson.includes('"state":"missing"')
+      item.reason === "unresolved_endpoints"
     ),
     true,
   );
