@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { reconcileRelationshipCandidates } from "../src/v2/workbench/reconciliation.ts";
 import {
   councilCommitteeHealthDetailFixture,
   councilCommitteesFixture,
@@ -154,6 +155,42 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
   assertEquals(blockedAfter.count, 0);
 });
 
+Deno.test("relationship reconciliation resolves endpoint status in bulk", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.shared_source_board', 'Shared Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.shared_target_agency', 'Shared Target Agency', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  for (let index = 0; index < 8; index += 1) {
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "test.reconcile.bulk.relationships",
+        relationshipCandidateId: `relationship.test.reconcile.bulk.${index}`,
+        sourceItemKey: `bulk-relationship-row-${index}`,
+        fromEntityRef: "dc.shared_source_board",
+        toEntityRef: "dc.shared_target_agency",
+        relationshipType: "governed_by",
+        rawValue: `Shared Target Agency ${index}`,
+      }),
+      dataDir,
+    );
+  }
+
+  const queryCounts = countReconciliationPrepares(workbench);
+  workbench.close();
+
+  assert(queryCounts.prepareCount < 40);
+  assertEquals(queryCounts.endpointCandidateStatusQueries, 1);
+  assertEquals(queryCounts.endpointCanonicalQueries, 1);
+});
+
 Deno.test("relationship imports seed reviewable endpoint candidates for missing direct endpoint text", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -240,6 +277,34 @@ Deno.test("relationship imports seed reviewable endpoint candidates for missing 
   );
   assertEquals(blockedAfter.count, 0);
 });
+
+function countReconciliationPrepares(workbench: Workbench): {
+  prepareCount: number;
+  endpointCandidateStatusQueries: number;
+  endpointCanonicalQueries: number;
+} {
+  let prepareCount = 0;
+  let endpointCandidateStatusQueries = 0;
+  let endpointCanonicalQueries = 0;
+  const store = {
+    db: {
+      prepare(sql: string) {
+        prepareCount += 1;
+        if (sql.includes("entity_candidates.proposed_entity_id in")) {
+          endpointCandidateStatusQueries += 1;
+        }
+        if (sql.includes("canonical_entities") && sql.includes("entity_id in")) {
+          endpointCanonicalQueries += 1;
+        }
+        return workbench.db.prepare(sql);
+      },
+    },
+  };
+  reconcileRelationshipCandidates(
+    store as unknown as Parameters<typeof reconcileRelationshipCandidates>[0],
+  );
+  return { prepareCount, endpointCandidateStatusQueries, endpointCanonicalQueries };
+}
 
 Deno.test("relationship imports do not seed generic missing endpoints", async () => {
   const dir = await Deno.makeTempDir();
