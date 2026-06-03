@@ -29,10 +29,22 @@ The release contains exactly these public files:
 
 - `entities.*` contains canonical civic entities such as public bodies, offices, seats/roles, status
   markers, and source-backed public official observations.
+- Public official observations are source-backed role or seat observations, not a personnel or
+  contact directory.
+- `datasets.*` and `legal_refs.*` are separate inventory/reference tables. They are not promoted to
+  civic entities unless a source-backed entity fact supports that.
 - `relationships.*` stores one directed fact per row:
   `from_entity_id --relationship_type--> to_entity_id`.
 - Relationship types cover structure, authority/source, and civic role facts; incoming/backlink
   views are derived instead of storing inverse facts.
+- Relationship direction guide:
+  - `part_of`: component -> containing entity.
+  - `has_seat` / `has_status`: body, seat, or observation -> seat/status marker.
+  - `governed_by`, `overseen_by`, `appointed_by`, `designated_by`, `authorized_by`, `published_by`:
+    civic subject -> governing, oversight, appointment, designation, legal-authority, or publication
+    source.
+  - `holds`, `represents`, `member_of`, `chairs`: observation or role entity -> seat, district,
+    body, or committee role.
 - Pending, deferred, blocked, and stale work must stay visible in release summaries instead of being
   silently treated as complete.
 - DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not

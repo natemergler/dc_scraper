@@ -257,11 +257,23 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
+    "Public official observations are source-backed role or seat observations, not a personnel or contact directory.",
+  );
+  assertStringIncludes(
+    readme,
     "`relationships.*`: one directed fact per row, `from_entity_id --relationship_type--> to_entity_id`.",
   );
   assertStringIncludes(
     readme,
     "Relationship families: structure (`part_of`, `has_seat`, `has_status`), authority/source (`governed_by`, `overseen_by`, `appointed_by`, `designated_by`, `authorized_by`, `published_by`), and civic role (`holds`, `represents`, `member_of`, `chairs`).",
+  );
+  assertStringIncludes(
+    readme,
+    "Relationship direction guide: `part_of` points from a component to its containing entity;",
+  );
+  assertStringIncludes(
+    readme,
+    "`has_seat`/`has_status` point from a body, seat, or observation to the seat/status marker;",
   );
   assertStringIncludes(
     readme,

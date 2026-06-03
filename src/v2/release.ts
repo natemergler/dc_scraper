@@ -527,9 +527,13 @@ Files:
 
 \`entities.*\`: canonical civic entities such as public bodies, offices, seats/roles, status markers, and source-backed public official observations. Datasets and legal refs have their own tables.
 
+Public official observations are source-backed role or seat observations, not a personnel or contact directory.
+
 \`relationships.*\`: one directed fact per row, \`from_entity_id --relationship_type--> to_entity_id\`. Incoming/backlink views are derived from that directed row.
 
 Relationship families: structure (\`part_of\`, \`has_seat\`, \`has_status\`), authority/source (\`governed_by\`, \`overseen_by\`, \`appointed_by\`, \`designated_by\`, \`authorized_by\`, \`published_by\`), and civic role (\`holds\`, \`represents\`, \`member_of\`, \`chairs\`).
+
+Relationship direction guide: \`part_of\` points from a component to its containing entity; \`has_seat\`/\`has_status\` point from a body, seat, or observation to the seat/status marker; authority/source types point from the civic subject to the governing, oversight, appointment, designation, legal-authority, or publication source; civic-role types point from an observation or role entity to the seat, district, body, or committee role.
 
 Release tables keep their own \`review_status\`: accepted entity/relationship rows are materialized canonical facts, while inventory/reference rows such as datasets and legal refs can remain pending or deferred and stay visible in the summary.
 
