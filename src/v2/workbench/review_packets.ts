@@ -1,5 +1,10 @@
 import { dcCommand } from "../command_prefix.ts";
 import { type ReviewItemRecord, slugify } from "../domain.ts";
+import {
+  type ReviewCommandContext,
+  reviewContextArgs,
+  reviewFilterArgs,
+} from "./review_command_args.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import { reviewSubjectSourceId } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -20,10 +25,7 @@ export interface ReviewPacketRecord {
   reviewItemIds: string[];
 }
 
-export interface ReviewPacketCommandContext {
-  dbPath?: string;
-  resolutionsDir?: string;
-}
+export type ReviewPacketCommandContext = ReviewCommandContext;
 
 export interface ReviewPacketListOptions {
   commandContext?: ReviewPacketCommandContext;
@@ -172,8 +174,14 @@ function reviewPacketNextCommand(
       : originalFilters?.subjectPrefix ?? commandSubjectPrefix,
     originalFilters,
   );
-  const batchFilterArgs = reviewPacketFilterArgs(batchScopedFilters, { includeType: false });
-  const listFilterArgs = reviewPacketFilterArgs(listScopedFilters, { includeType: true });
+  const batchFilterArgs = reviewFilterArgs(batchScopedFilters, {
+    includeMode: true,
+    includeType: false,
+  });
+  const listFilterArgs = reviewFilterArgs(listScopedFilters, {
+    includeMode: true,
+    includeType: true,
+  });
   const openItems = items.filter((item) => item.status === "open");
   if (
     openItems.length > 0 &&
@@ -187,7 +195,7 @@ function reviewPacketNextCommand(
       [
         "review batch accept-safe",
         ...batchFilterArgs,
-        ...reviewPacketContextArgs(commandContext, "write"),
+        ...reviewContextArgs(commandContext, "write"),
       ]
         .join(" "),
     );
@@ -204,7 +212,7 @@ function reviewPacketNextCommand(
       [
         "review batch defer-default",
         ...batchFilterArgs,
-        ...reviewPacketContextArgs(commandContext, "write"),
+        ...reviewContextArgs(commandContext, "write"),
       ].join(" "),
     );
   }
@@ -214,7 +222,7 @@ function reviewPacketNextCommand(
       ...listFilterArgs,
       "--limit",
       "10",
-      ...reviewPacketContextArgs(commandContext, "read"),
+      ...reviewContextArgs(commandContext, "read"),
     ]
       .join(" "),
   );
@@ -244,30 +252,6 @@ function reviewPacketFilters(
     rawValueContains: originalFilters?.rawValueContains,
     refType: originalFilters?.refType ?? packet.refType,
   };
-}
-
-function reviewPacketFilterArgs(
-  filters: ReviewItemFilters,
-  options: { includeType: boolean },
-): string[] {
-  return [
-    "--mode",
-    filters.mode ? quoteShellArg(filters.mode) : undefined,
-    filters.status && filters.status !== "open" ? "--status" : undefined,
-    filters.status && filters.status !== "open" ? quoteShellArg(filters.status) : undefined,
-    options.includeType ? "--type" : undefined,
-    options.includeType && filters.type ? quoteShellArg(filters.type) : undefined,
-    filters.subjectPrefix ? "--subject-prefix" : undefined,
-    filters.subjectPrefix ? quoteShellArg(filters.subjectPrefix) : undefined,
-    filters.relationshipType ? "--relationship-type" : undefined,
-    filters.relationshipType ? quoteShellArg(filters.relationshipType) : undefined,
-    filters.rawValue ? "--raw-value" : undefined,
-    filters.rawValue ? quoteShellArg(filters.rawValue) : undefined,
-    filters.rawValueContains ? "--raw-value-contains" : undefined,
-    filters.rawValueContains ? quoteShellArg(filters.rawValueContains) : undefined,
-    filters.refType ? "--ref-type" : undefined,
-    filters.refType ? quoteShellArg(filters.refType) : undefined,
-  ].filter((value): value is string => Boolean(value));
 }
 
 function reviewPacketCommandStatus(
@@ -307,22 +291,6 @@ function reviewPacketRequestedPrefixCanScopeBatch(
   items: ReviewItemRecord[],
 ): boolean {
   return !requestedPrefix || items.every((item) => item.subjectId.startsWith(requestedPrefix));
-}
-
-function reviewPacketContextArgs(
-  context: ReviewPacketCommandContext | undefined,
-  mode: "read" | "write",
-): string[] {
-  return [
-    context?.dbPath ? "--db" : undefined,
-    context?.dbPath ? quoteShellArg(context.dbPath) : undefined,
-    mode === "write" && context?.resolutionsDir ? "--resolutions-dir" : undefined,
-    mode === "write" && context?.resolutionsDir ? quoteShellArg(context.resolutionsDir) : undefined,
-  ].filter((value): value is string => Boolean(value));
-}
-
-function quoteShellArg(value: string): string {
-  return /^[A-Za-z0-9._:-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 function commonSubjectPrefix(subjectIds: string[]): string | undefined {

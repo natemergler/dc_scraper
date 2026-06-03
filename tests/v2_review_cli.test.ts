@@ -8,7 +8,10 @@ import {
   openDcIndexFixture,
   openDcTaskForceFixture,
 } from "./helpers/v2_fixtures.ts";
-import { syntheticCustomEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
+import {
+  syntheticCustomEntitySourceResult,
+  syntheticCustomRelationshipSourceResult,
+} from "./helpers/v2_reconciliation_helpers.ts";
 
 function openDcPublicBodiesFetcher() {
   return async (url: string) => ({
@@ -415,6 +418,70 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assert(items.every((item) => item.status === "open"));
 });
 
+Deno.test("interactive review resume command preserves quoted filters", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  seedAcceptedEntity(workbench, "dc.target_agency", "Target Agency", "agency");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.quoted_resume",
+      relationshipCandidateId: "relationship.test.review_cli.quoted_resume.one",
+      sourceItemKey: "review-cli-quoted-resume-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Committee on Health's Work",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--raw-value-contains",
+      "Committee on Health's Work",
+      "--subject-prefix",
+      "relationship.test.review_cli.quoted_resume",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(
+    reviewText,
+    "Resume with deno task dc -- review relationships --subject-prefix relationship.test.review_cli.quoted_resume --relationship-type overseen_by --raw-value-contains 'Committee on Health'\\''s Work'.",
+  );
+});
+
 Deno.test("interactive relationship review quit reports filtered resume command", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -524,3 +591,14 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   reopened.close();
   assertEquals(deferred.length, 1);
 });
+
+function seedAcceptedEntity(
+  workbench: Workbench,
+  entityId: string,
+  name: string,
+  kind: string,
+): void {
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run([entityId, name, kind]);
+}
