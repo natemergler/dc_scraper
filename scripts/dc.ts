@@ -20,7 +20,7 @@ async function main(args: string[]): Promise<void> {
 function routeAliases(args: string[]): string[] {
   if (args[0] === "init") return ["workbench", "init", ...args.slice(1)];
   if (args[0] === "status" || args[0] === "doctor") {
-    return ["workbench", "status", ...args.slice(1)];
+    return ["audit", args[0], ...args.slice(1)];
   }
   return args;
 }
