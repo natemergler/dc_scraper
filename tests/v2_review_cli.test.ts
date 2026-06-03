@@ -120,7 +120,9 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
     stderr: "piped",
   }).spawn();
   const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"));
+  await writer.write(
+    new TextEncoder().encode("\nn\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"),
+  );
   await writer.close();
   const output = await child.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -238,7 +240,7 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("a\na\nq\n"));
+  await writer.write(new TextEncoder().encode("\na\na\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -402,7 +404,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -553,18 +555,18 @@ Deno.test("interactive review starts with an inbox summary for the current slice
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, "Review inbox");
+  assertStringIncludes(stdout, "Decision inbox");
   assertStringIncludes(stdout, "Open items in this slice: 2");
-  assertStringIncludes(stdout, "Top grouped slices:");
+  assertStringIncludes(stdout, "Choose a packet by the decision it will put in front of you:");
   assertStringIncludes(
     stdout,
-    "- [2 open] test.review_cli.inbox overseen_by - Review relationship candidate",
+    "1. [recommended] Committee on Health - test.review_cli.inbox overseen_by [default accept; packet 2 open]",
   );
 });
 
@@ -640,15 +642,19 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Unblocking Agency - test.review_cli.graph_priority entity candidate [default accept; packet 2 open; unblocks 1]",
+  );
+  assertStringIncludes(stdout, "Lead decision: Unblocking Agency [unblocks 1]");
   assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
   assertStringIncludes(stdout, "Review: Unblocking Agency");
-  assertEquals(stdout.includes("Review: Low Impact Board"), false);
 });
 
 Deno.test("interactive review --status deferred does not treat deferred items as actionable impact", async () => {
@@ -722,7 +728,7 @@ Deno.test("interactive review --status deferred does not treat deferred items as
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -812,15 +818,113 @@ Deno.test("interactive review --status all still prioritizes open unblocking wor
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Open Priority Target - zzz.open_priority entity candidate [default accept; packet 1 open; unblocks 1]",
+  );
   assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
   assertStringIncludes(stdout, "Review: Open Priority Target");
   assertEquals(stdout.includes("Review: Deferred First Alphabetically"), false);
+});
+
+Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of larger low-impact packets", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.low_impact",
+      candidateId: "candidate.aaa.low_impact.one",
+      sourceItemKey: "aaa-low-impact-one",
+      proposedEntityId: "dc.aaa_low_impact_one",
+      name: "Aaa Low Impact One",
+      kind: "board",
+      observedName: "Aaa Low Impact One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.low_impact",
+      candidateId: "candidate.aaa.low_impact.two",
+      sourceItemKey: "aaa-low-impact-two",
+      proposedEntityId: "dc.aaa_low_impact_two",
+      name: "Aaa Low Impact Two",
+      kind: "board",
+      observedName: "Aaa Low Impact Two",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "zzz.high_impact",
+      candidateId: "candidate.zzz.high_impact.target",
+      sourceItemKey: "zzz-high-impact-target",
+      proposedEntityId: "dc.zzz_high_impact_target",
+      name: "Zzz High Impact Target",
+      kind: "agency",
+      observedName: "Zzz High Impact Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "zzz.high_impact",
+      relationshipCandidateId: "relationship.zzz.high_impact.blocked",
+      sourceItemKey: "zzz-high-impact-blocked-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.zzz_high_impact_target",
+      relationshipType: "overseen_by",
+      rawValue: "Zzz High Impact Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assert(
+    stdout.indexOf("1. [recommended] Zzz High Impact Target") <
+      stdout.indexOf("2. Aaa Low Impact One"),
+  );
 });
 
 Deno.test("interactive review stays inside the current packet until it clears", async () => {
@@ -892,7 +996,7 @@ Deno.test("interactive review stays inside the current packet until it clears", 
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -956,7 +1060,7 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -1058,7 +1162,7 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n"));
+  await writer.write(new TextEncoder().encode("\n\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const text = new TextDecoder().decode(output.stdout);

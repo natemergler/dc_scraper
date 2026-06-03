@@ -562,7 +562,7 @@ Deno.test("interactive review shows packet context before the current item", asy
     stderr: "piped",
   }).spawn();
   const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\nq\n"));
   await writer.close();
   const output = await child.output();
 

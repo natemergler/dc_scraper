@@ -3208,7 +3208,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
   await writer.write(
-    new TextEncoder().encode("e\npart_of\n\ndc.council_of_the_district_of_columbia\n"),
+    new TextEncoder().encode("\ne\npart_of\n\ndc.council_of_the_district_of_columbia\n"),
   );
   await writer.close();
   const output = await reviewProcess.output();

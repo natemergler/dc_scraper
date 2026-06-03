@@ -102,11 +102,12 @@ export function printReviewHelp(): void {
   console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`${dcCommand("review")}\` for the highest-leverage packet first
-  2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
-  4. Run \`${dcCommand("status")}\` for readiness and the next broad surface
-  5. Apply a scoped batch deliberately, like \`${
+  1. Run \`${dcCommand("review")}\` to open the decision inbox
+  2. Press Enter for the recommended packet or choose another ranked decision packet
+  3. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
+  5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
+  6. Apply a scoped batch deliberately, like \`${
     dcCommand(
       "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
     )

@@ -47,9 +47,23 @@ export async function runInteractiveReview(
     ? { ...filters, status: "open" }
     : filters;
   let stickyPacketId: string | undefined;
-  let didShowInbox = false;
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
+    if (snapshot.items.length === 0) {
+      console.log("No review items remain.");
+      return;
+    }
+    if (!stickyPacketId || !snapshot.packets.some((packet) => packet.packetId === stickyPacketId)) {
+      stickyPacketId = await promptReviewInbox(workbench, snapshot);
+      if (!stickyPacketId) {
+        console.log(
+          `Review stopped. ${snapshot.items.length} item(s) remain. Resume with ${
+            renderResumeCommand(filters)
+          }.`,
+        );
+        return;
+      }
+    }
     const selection = nextInteractiveReviewSelection(snapshot, stickyPacketId);
     const item = selection?.item;
     if (!item) {
@@ -57,13 +71,8 @@ export async function runInteractiveReview(
       return;
     }
     const packet = selection.packet;
-    if (!didShowInbox) {
-      console.log(renderReviewInbox(snapshot, packet));
-      console.log("");
-      didShowInbox = true;
-    }
     if (packet && packet.count > 1) {
-      console.log(renderReviewPacketHeader(packet));
+      console.log(renderCurrentPacketSummary(workbench, snapshot, packet));
       console.log("");
     }
     if (selection?.decision && selection.decision.downstreamBlockedCount > 0) {
@@ -102,6 +111,7 @@ interface InteractiveReviewSnapshot {
   items: ReviewItemRecord[];
   itemsByReviewItemId: Map<string, ReviewItemRecord>;
   packets: ReviewPacketRecord[];
+  rankedPackets: ReviewPacketRecord[];
   decisions: UnresolvedDecisionNode[];
   decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>;
 }
@@ -137,10 +147,12 @@ function buildInteractiveReviewSnapshot(
   const decisionsByReviewItemId = new Map(
     decisions.map((decision) => [decision.reviewItemId, decision]),
   );
+  const rankedPackets = rankPacketsByPriority(packets, decisionsByReviewItemId);
   return {
     items,
     itemsByReviewItemId,
     packets,
+    rankedPackets,
     decisions,
     decisionsByReviewItemId,
   };
@@ -189,6 +201,13 @@ function selectPriorityPacket(
   packets: ReviewPacketRecord[],
   decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
 ): ReviewPacketRecord | undefined {
+  return rankPacketsByPriority(packets, decisionsByReviewItemId).at(0);
+}
+
+function rankPacketsByPriority(
+  packets: ReviewPacketRecord[],
+  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
+): ReviewPacketRecord[] {
   return [...packets].sort((left, right) =>
     packetPriorityScore(right, decisionsByReviewItemId) -
       packetPriorityScore(left, decisionsByReviewItemId) ||
@@ -196,7 +215,7 @@ function selectPriorityPacket(
     right.count - left.count ||
     left.sourceId.localeCompare(right.sourceId) ||
     left.packetId.localeCompare(right.packetId)
-  ).at(0);
+  );
 }
 
 function packetPriorityScore(
@@ -210,33 +229,135 @@ function packetPriorityScore(
 }
 
 function renderReviewInbox(
+  store: Pick<WorkbenchStore, "db">,
   snapshot: InteractiveReviewSnapshot,
-  currentPacket?: ReviewPacketRecord,
 ): string {
-  const packets = snapshot.packets.slice(0, 5);
-  const topPacketIds = new Set(packets.map((packet) => packet.packetId));
+  const choices = inboxChoices(store, snapshot);
   const lines = [
-    "Review inbox",
+    "Decision inbox",
     `Open items in this slice: ${snapshot.items.length}`,
+    "Choose a packet by the decision it will put in front of you:",
   ];
-  if (packets.length > 0) {
-    lines.push("Top grouped slices:");
-    lines.push(...packets.map((packet) => renderInboxPacketLine(packet)));
-  }
-  if (currentPacket && !topPacketIds.has(currentPacket.packetId)) {
-    lines.push("Current packet:");
-    lines.push(renderInboxPacketLine(currentPacket));
+  for (const [index, choice] of choices.entries()) {
+    lines.push(renderInboxChoiceLine(index, choice, snapshot));
   }
   return lines.join("\n");
 }
 
-function renderInboxPacketLine(packet: ReviewPacketRecord): string {
+async function promptReviewInbox(
+  store: Pick<WorkbenchStore, "db">,
+  snapshot: InteractiveReviewSnapshot,
+): Promise<string | undefined> {
+  const choices = inboxChoices(store, snapshot);
+  if (choices.length === 0) return undefined;
+  while (true) {
+    console.log(renderReviewInbox(store, snapshot));
+    console.log("");
+    const response = await promptLine(`Choose [Enter=1, 1-${choices.length}, q]: `);
+    if (response === undefined || response === "q") return undefined;
+    if (response === "") return choices[0].packet.packetId;
+    const selection = Number(response);
+    if (Number.isInteger(selection) && selection >= 1 && selection <= choices.length) {
+      return choices[selection - 1].packet.packetId;
+    }
+    console.log("That choice is not available.");
+  }
+}
+
+function renderCurrentPacketSummary(
+  store: Pick<WorkbenchStore, "db">,
+  snapshot: InteractiveReviewSnapshot,
+  packet: ReviewPacketRecord,
+): string {
+  const lines = [renderReviewPacketHeader(packet)];
+  const preview = packetLeadPreview(store, snapshot, packet);
+  if (preview) {
+    lines.push(`Lead decision: ${preview}`);
+  }
+  return lines.join("\n");
+}
+
+function renderInboxChoiceLine(
+  index: number,
+  choice: ReviewInboxChoice,
+  snapshot: Pick<InteractiveReviewSnapshot, "decisionsByReviewItemId">,
+): string {
+  const packet = choice.packet;
+  const impact = packetPriorityScore(packet, snapshot.decisionsByReviewItemId);
   const scope = packet.relationshipType
     ? `${packet.sourceId} ${packet.relationshipType}`
     : packet.refType
     ? `${packet.sourceId} ${packet.refType}`
     : `${packet.sourceId} ${humanizeToken(packet.itemType)}`;
-  return `- [${packet.openCount} open] ${scope} - ${packet.reason}`;
+  const prefix = index === 0 ? `${index + 1}. [recommended]` : `${index + 1}.`;
+  const impactText = impact > 0 ? `; unblocks ${impact}` : "";
+  return `${prefix} ${choice.title} - ${scope} [default ${choice.defaultAction}; packet ${packet.openCount} open${impactText}]`;
+}
+
+interface ReviewInboxChoice {
+  packet: ReviewPacketRecord;
+  title: string;
+  defaultAction: string;
+}
+
+function inboxChoices(
+  store: Pick<WorkbenchStore, "db">,
+  snapshot: InteractiveReviewSnapshot,
+): ReviewInboxChoice[] {
+  return snapshot.rankedPackets
+    .slice(0, 5)
+    .map((packet) => {
+      const leadItem = leadingPacketItem(snapshot, packet);
+      if (!leadItem) return undefined;
+      return {
+        packet,
+        title: reviewItemTitle(store, leadItem),
+        defaultAction: leadItem.defaultAction,
+      } satisfies ReviewInboxChoice;
+    })
+    .filter((choice): choice is ReviewInboxChoice => Boolean(choice));
+}
+
+function packetLeadPreview(
+  store: Pick<WorkbenchStore, "db">,
+  snapshot: InteractiveReviewSnapshot,
+  packet: ReviewPacketRecord,
+): string | undefined {
+  const leadItem = leadingPacketItem(snapshot, packet);
+  if (!leadItem) return undefined;
+  const impact = packetPriorityScore(packet, snapshot.decisionsByReviewItemId);
+  const title = reviewItemTitle(store, leadItem);
+  return impact > 0 ? `${title} [unblocks ${impact}]` : title;
+}
+
+function leadingPacketItem(
+  snapshot: Pick<
+    InteractiveReviewSnapshot,
+    "itemsByReviewItemId" | "decisionsByReviewItemId"
+  >,
+  packet: ReviewPacketRecord,
+): ReviewItemRecord | undefined {
+  const decision = packet.reviewItemIds
+    .map((reviewItemId) => snapshot.decisionsByReviewItemId.get(reviewItemId))
+    .filter((candidate): candidate is UnresolvedDecisionNode => Boolean(candidate))
+    .sort((left, right) =>
+      right.downstreamBlockedCount - left.downstreamBlockedCount ||
+      left.reviewItemId.localeCompare(right.reviewItemId)
+    )
+    .at(0);
+  if (decision) {
+    return snapshot.itemsByReviewItemId.get(decision.reviewItemId);
+  }
+  return packet.reviewItemIds
+    .map((reviewItemId) => snapshot.itemsByReviewItemId.get(reviewItemId))
+    .find((candidate): candidate is ReviewItemRecord => Boolean(candidate));
+}
+
+function reviewItemTitle(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): string {
+  return reviewSubjectContext(store, item, reviewSubject(store, item)).title;
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
