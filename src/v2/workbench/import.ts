@@ -299,8 +299,18 @@ function seededRelationshipEndpointReviewItem(
 function isSafeToBatchAcceptSeededEndpointCandidate(
   candidate: EntityCandidateInput,
 ): boolean {
-  return candidate.candidateId.startsWith("candidate.council.committees.relationship_") &&
-    candidate.candidateId.endsWith("_from_endpoint");
+  return isSafeCouncilSeededEndpointCandidate(candidate.candidateId) ||
+    isSafeDcgisGoverningEndpointCandidate(candidate.candidateId);
+}
+
+function isSafeCouncilSeededEndpointCandidate(candidateId: string): boolean {
+  return candidateId.startsWith("candidate.council.committees.relationship_") &&
+    candidateId.endsWith("_from_endpoint");
+}
+
+function isSafeDcgisGoverningEndpointCandidate(candidateId: string): boolean {
+  return candidateId.startsWith("candidate.dcgis.boards_commissions_councils.relationship_") &&
+    candidateId.endsWith("_to_endpoint");
 }
 
 function isSeedableEndpointName(value: string): boolean {
