@@ -44,7 +44,13 @@ export interface ReleaseManifest {
 
 export interface ReleasePackageProblem {
   fileName: string;
-  problem: "missing file" | "sha256 mismatch" | "unexpected file" | "unreadable file";
+  problem:
+    | "missing file"
+    | "sha256 mismatch"
+    | "unexpected file"
+    | "unexpected directory"
+    | "unexpected entry"
+    | "unreadable file";
   expectedSha256?: string;
   actualSha256?: string;
 }
@@ -365,9 +371,9 @@ export async function buildReleaseInspection(
     expectedFileCount: packageInspection.expectedFileCount,
     packageIntegrity: packageInspection.packageIntegrity,
     packageProblems: packageInspection.packageProblems,
-    readiness: packageInspection.packageIntegrity === "problem"
-      ? "not-ready"
-      : releaseReadiness(releaseSummary),
+    readiness: packageInspection.packageIntegrity === "ok"
+      ? releaseReadiness(releaseSummary)
+      : "not-ready",
     releaseSummary,
   };
 }
@@ -384,18 +390,19 @@ async function inspectReleasePackage(
   const expectedFiles = new Map((manifest.files ?? []).map((file) => [file.name, file.sha256]));
   const expectedFileCount = expectedFiles.size + 1;
   if (!manifest.files) {
+    const actualEntries = await listReleaseEntries(outDir).catch(() => []);
     return {
-      fileCount: expectedFileCount,
+      fileCount: actualEntries.length,
       expectedFileCount,
       packageIntegrity: "unknown",
       packageProblems: [],
     };
   }
-  const actualFiles = await listReleaseFiles(outDir);
-  const actualFileNames = new Set(actualFiles);
+  const actualEntries = await listReleaseEntries(outDir);
+  const actualEntryNames = new Set(actualEntries.map((entry) => entry.name));
   const packageProblems: ReleasePackageProblem[] = [];
   for (const [fileName, expectedSha256] of expectedFiles) {
-    if (!actualFileNames.has(fileName)) {
+    if (!actualEntryNames.has(fileName)) {
       packageProblems.push({ fileName, problem: "missing file", expectedSha256 });
       continue;
     }
@@ -414,29 +421,48 @@ async function inspectReleasePackage(
       packageProblems.push({ fileName, problem: "unreadable file", expectedSha256 });
     }
   }
-  for (const fileName of actualFiles) {
-    if (fileName === "manifest.json") continue;
-    if (!expectedFiles.has(fileName)) {
-      packageProblems.push({ fileName, problem: "unexpected file" });
+  for (const entry of actualEntries) {
+    if (entry.name === "manifest.json") continue;
+    if (!expectedFiles.has(entry.name)) {
+      packageProblems.push({
+        fileName: renderReleaseEntryName(entry),
+        problem: unexpectedEntryProblem(entry),
+      });
     }
   }
   packageProblems.sort((left, right) =>
     left.fileName.localeCompare(right.fileName) || left.problem.localeCompare(right.problem)
   );
   return {
-    fileCount: actualFiles.length,
+    fileCount: actualEntries.length,
     expectedFileCount,
     packageIntegrity: packageProblems.length === 0 ? "ok" : "problem",
     packageProblems,
   };
 }
 
-async function listReleaseFiles(outDir: string): Promise<string[]> {
-  const files: string[] = [];
+interface ReleaseDirectoryEntry {
+  name: string;
+  isFile: boolean;
+  isDirectory: boolean;
+}
+
+async function listReleaseEntries(outDir: string): Promise<ReleaseDirectoryEntry[]> {
+  const entries: ReleaseDirectoryEntry[] = [];
   for await (const entry of Deno.readDir(outDir)) {
-    if (entry.isFile) files.push(entry.name);
+    entries.push({ name: entry.name, isFile: entry.isFile, isDirectory: entry.isDirectory });
   }
-  return files.sort((left, right) => left.localeCompare(right));
+  return entries.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function renderReleaseEntryName(entry: ReleaseDirectoryEntry): string {
+  return entry.isDirectory ? `${entry.name}/` : entry.name;
+}
+
+function unexpectedEntryProblem(entry: ReleaseDirectoryEntry): ReleasePackageProblem["problem"] {
+  if (entry.isFile) return "unexpected file";
+  if (entry.isDirectory) return "unexpected directory";
+  return "unexpected entry";
 }
 
 async function releaseFileSha256(outDir: string, fileName: string): Promise<string> {

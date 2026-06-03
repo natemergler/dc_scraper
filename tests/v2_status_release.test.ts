@@ -20,8 +20,10 @@ import {
 } from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("release inspection readiness summarizes unresolved work severity", async () => {
+  const outDir = await makeMinimalReleaseDir();
   assertEquals(
-    (await buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 0,
         deferred_review_item_count: 0,
@@ -34,7 +36,8 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     "usable",
   );
   assertEquals(
-    (await buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 2,
         deferred_review_item_count: 0,
@@ -47,7 +50,8 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     "usable-with-warnings",
   );
   assertEquals(
-    (await buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 0,
         deferred_review_item_count: 0,
@@ -59,6 +63,23 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     })).readiness,
     "not-ready",
   );
+});
+
+Deno.test("release inspection treats missing file manifest as not-ready", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const inspection = await buildReleaseInspection(outDir, {
+    release_summary: {
+      open_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.packageIntegrity, "unknown");
+  assertEquals(inspection.readiness, "not-ready");
 });
 
 Deno.test("status surfaces placeholder risk with readable reason", async () => {
@@ -1018,6 +1039,8 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
   await Deno.writeTextFile(join(outDir, "entities.csv"), "changed\n");
   await Deno.remove(join(outDir, "relationships.json"));
   await Deno.writeTextFile(join(outDir, "extra.csv"), "stale\n");
+  await ensureDir(join(outDir, "raw_rows"));
+  await Deno.writeTextFile(join(outDir, "raw_rows", "rows.json"), "stale\n");
 
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -1063,7 +1086,18 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
       problem.fileName === "extra.csv" && problem.problem === "unexpected file"
     ),
   );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "raw_rows/" && problem.problem === "unexpected directory"
+    ),
+  );
 });
+
+async function makeMinimalReleaseDir(): Promise<string> {
+  const outDir = await Deno.makeTempDir();
+  await Deno.writeTextFile(join(outDir, "manifest.json"), "{}");
+  return outDir;
+}
 
 async function fileByteSha(path: string): Promise<string> {
   const bytes = await Deno.readFile(path);
