@@ -1,6 +1,6 @@
 import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
-import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
+import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
 import { listReviewPackets, renderReviewPacketHeader } from "./review_packets.ts";
@@ -18,6 +18,12 @@ interface ReviewSubjectContext {
   infoLabel?: string;
   sourceLine?: string;
   omittedDetailKeys: string[];
+  relationshipEndpoints?: RelationshipEndpointContext;
+}
+
+interface RelationshipEndpointContext {
+  from: EndpointStatus;
+  to: EndpointStatus;
 }
 
 export async function runInteractiveReview(
@@ -86,7 +92,7 @@ export function renderReviewItem(
     `default: ${renderDefaultAction(item)}`,
     `actions: ${availableActionLabels(item).join(", ")}`,
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
-    ...renderRelationshipBlock(store, item, subject),
+    ...renderRelationshipBlock(item, subject, context.relationshipEndpoints),
     ...renderDetailsBlock(item.details, context.omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -308,20 +314,19 @@ function renderDetailsBlock(
 }
 
 function renderRelationshipBlock(
-  store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
   subject: ReviewSubject | undefined,
+  endpoints: RelationshipEndpointContext | undefined,
 ): string[] {
   if (item.itemType !== "relationship_candidate") return [];
   if (!subject || subject.itemType !== "relationship_candidate") return [];
+  if (!endpoints) return [];
   const relationship = subject;
-  const from = endpointStatus(store, relationship.fromEntityRef);
-  const to = endpointStatus(store, relationship.toEntityRef);
   return [
     "relationship:",
     `- type: ${relationship.relationshipType}`,
-    `- from: ${renderEndpointStatus(from)}`,
-    `- to: ${renderEndpointStatus(to)}`,
+    `- from: ${renderEndpointStatus(endpoints.from)}`,
+    `- to: ${renderEndpointStatus(endpoints.to)}`,
     `- source: ${relationship.source.sourceId} / ${relationship.source.itemTitle}`,
     relationship.rawValue ? `- raw value: ${relationship.rawValue}` : undefined,
   ].filter((line): line is string => Boolean(line));
@@ -384,13 +389,16 @@ function reviewSubjectContext(
   if (item.itemType === "relationship_candidate") {
     if (subject?.itemType === "relationship_candidate") {
       const relationship = subject;
-      const from = endpointStatus(store, relationship.fromEntityRef);
-      const to = endpointStatus(store, relationship.toEntityRef);
+      const relationshipEndpoints = relationshipEndpointContext(store, relationship);
       return {
-        title: relationship.rawValue ?? `${endpointTitle(from)} -> ${endpointTitle(to)}`,
+        title: relationship.rawValue ??
+          `${endpointTitle(relationshipEndpoints.from)} -> ${
+            endpointTitle(relationshipEndpoints.to)
+          }`,
         infoLabel: humanizeToken(relationship.relationshipType),
         sourceLine: sourceLine(relationship.source),
         omittedDetailKeys: [],
+        relationshipEndpoints,
       };
     }
   }
@@ -405,6 +413,26 @@ function reviewSubjectContext(
   return {
     title: item.subjectId,
     omittedDetailKeys: [],
+  };
+}
+
+function relationshipEndpointContext(
+  store: Pick<WorkbenchStore, "db">,
+  relationship: Extract<ReviewSubject, { itemType: "relationship_candidate" }>,
+): RelationshipEndpointContext {
+  const statuses = endpointStatusMap(store, [
+    relationship.fromEntityRef,
+    relationship.toEntityRef,
+  ]);
+  return {
+    from: statuses.get(relationship.fromEntityRef) ?? {
+      entityId: relationship.fromEntityRef,
+      state: "missing",
+    },
+    to: statuses.get(relationship.toEntityRef) ?? {
+      entityId: relationship.toEntityRef,
+      state: "missing",
+    },
   };
 }
 

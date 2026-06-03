@@ -2,6 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import {
   legalEntrypointsFixture,
   openDcBoardFixture,
@@ -48,6 +49,39 @@ function legalEntrypointsFetcher() {
     },
   });
 }
+
+Deno.test("relationship review rendering batches endpoint status lookup", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  seedAcceptedEntity(workbench, "dc.target_agency", "Target Agency", "agency");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.render_relationships",
+      relationshipCandidateId: "relationship.test.review_cli.rendered",
+      sourceItemKey: "rendered-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "governed_by",
+      rawValue: "Target Agency",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  const item = workbench.listReviewItems({ mode: "relationships" })[0];
+
+  const queryCounts = countRenderEndpointStatusPrepares(workbench, item);
+  workbench.close();
+
+  assertEquals(queryCounts.endpointCandidateStatusQueries, 1);
+  assertEquals(queryCounts.endpointCanonicalQueries, 1);
+  assertStringIncludes(queryCounts.output, "Review: Target Agency");
+  assertStringIncludes(queryCounts.output, "- from: dc.source_board");
+  assertStringIncludes(queryCounts.output, "- to: dc.target_agency");
+});
 
 Deno.test("dc review legal supports scripted normalize-and-quit flow for the remaining ambiguous ref", async () => {
   const dir = await Deno.makeTempDir();
@@ -108,6 +142,46 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
     true,
   );
 });
+
+function countRenderEndpointStatusPrepares(
+  workbench: Workbench,
+  item: ReturnType<Workbench["listReviewItems"]>[number],
+): {
+  endpointCandidateStatusQueries: number;
+  endpointCanonicalQueries: number;
+  output: string;
+} {
+  const originalPrepare = workbench.db.prepare.bind(workbench.db);
+  const prepareOwner = workbench.db as unknown as {
+    prepare(sql: string): ReturnType<typeof workbench.db.prepare>;
+  };
+  let endpointCandidateStatusQueries = 0;
+  let endpointCanonicalQueries = 0;
+  let output = "";
+  prepareOwner.prepare = (sql: string) => {
+    const normalizedSql = sql.replaceAll(/\s+/g, " ");
+    if (
+      normalizedSql.includes("from entity_candidates") &&
+      normalizedSql.includes("where entity_candidates.proposed_entity_id in")
+    ) {
+      endpointCandidateStatusQueries += 1;
+    }
+    if (
+      normalizedSql.includes("from canonical_entities") &&
+      normalizedSql.includes("where entity_id in") &&
+      normalizedSql.includes("is_placeholder")
+    ) {
+      endpointCanonicalQueries += 1;
+    }
+    return originalPrepare(sql);
+  };
+  try {
+    output = renderReviewItem(workbench, item);
+  } finally {
+    prepareOwner.prepare = originalPrepare;
+  }
+  return { endpointCandidateStatusQueries, endpointCanonicalQueries, output };
+}
 
 Deno.test("scripted review CLI accepts a candidate and entity show renders evidence and backlinks", async () => {
   const dir = await Deno.makeTempDir();
