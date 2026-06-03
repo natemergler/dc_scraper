@@ -2574,6 +2574,219 @@ Deno.test("public body comparison report stays on public-body candidates and inc
   );
 });
 
+Deno.test("public body comparison report separates likely variants from exact overlaps", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const timestamp = new Date().toISOString();
+
+  const sourceDefs = [
+    {
+      sourceId: "dcgis.boards_commissions_councils",
+      title: "DCGIS Boards",
+      candidates: ["Board of Accountancy"],
+    },
+    {
+      sourceId: "open_dc.public_bodies",
+      title: "Open DC Public Bodies",
+      candidates: [
+        "Board of Accountancy",
+        "Advisory Board on Veterans Affairs for the District of Columbia",
+      ],
+    },
+    {
+      sourceId: "mota.quickbase",
+      title: "MOTA Quickbase",
+      candidates: ["Advisory Board on Veterans Affairs for the District of Columbia (ABVA)"],
+    },
+  ] as const;
+
+  for (const source of sourceDefs) {
+    const endpointId = `${source.sourceId}.endpoint`;
+    const runId = `${source.sourceId}.run`;
+    const artifactId = `${source.sourceId}.artifact`;
+    workbench.db.prepare(
+      "insert into sources(source_id, title, kind, access_method, base_url, updated_at) values(?, ?, ?, ?, ?, ?)",
+    ).run(
+      source.sourceId,
+      source.title,
+      "web",
+      "http",
+      `https://${source.sourceId}.example`,
+      timestamp,
+    );
+    workbench.db.prepare(
+      "insert into source_endpoints(endpoint_id, source_id, title, kind, url, method, capture_mode, updated_at) values(?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      endpointId,
+      source.sourceId,
+      `${source.title} endpoint`,
+      "html",
+      `https://${source.sourceId}.example/data`,
+      "GET",
+      "full",
+      timestamp,
+    );
+    workbench.db.prepare(
+      "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values(?, ?, ?, ?, ?, ?)",
+    ).run(runId, source.sourceId, endpointId, timestamp, timestamp, "success");
+    workbench.db.prepare(
+      "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      artifactId,
+      runId,
+      endpointId,
+      "page",
+      `${dir}/${source.sourceId}.html`,
+      `https://${source.sourceId}.example/data`,
+      `${source.sourceId}-hash`,
+      128,
+      timestamp,
+    );
+
+    for (const [index, name] of source.candidates.entries()) {
+      const sourceItemId = `${source.sourceId}.item.${index + 1}`;
+      workbench.db.prepare(
+        "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        sourceItemId,
+        source.sourceId,
+        endpointId,
+        runId,
+        artifactId,
+        `item-${index + 1}`,
+        "row",
+        name,
+        "{}",
+      );
+      workbench.db.prepare(
+        "insert into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        `candidate.${source.sourceId}.${index + 1}`,
+        sourceItemId,
+        buildEntityId(name),
+        name,
+        name,
+        "board",
+        "Board",
+        "pending",
+      );
+    }
+  }
+
+  const report = workbench.comparePublicBodies();
+  assertEquals(report.sharedNameCount, 1);
+  assertEquals(report.conservativeVariantMatchCount, 1);
+  assert(
+    report.rows.some((row) =>
+      row.displayName === "Board of Accountancy" &&
+      row.sourceIds.includes("dcgis.boards_commissions_councils") &&
+      row.sourceIds.includes("open_dc.public_bodies")
+    ),
+  );
+  assert(
+    !report.rows.some((row) =>
+      row.displayName ===
+        "Advisory Board on Veterans Affairs for the District of Columbia (ABVA)" &&
+      row.sourceIds.length > 1
+    ),
+  );
+  assertEquals(
+    report.conservativeVariantMatches.map((row) => row.variantName),
+    ["Advisory Board on Veterans Affairs for the District of Columbia"],
+  );
+  assertEquals(
+    report.conservativeVariantMatches[0]?.names.map((row) => row.displayName),
+    [
+      "Advisory Board on Veterans Affairs for the District of Columbia",
+      "Advisory Board on Veterans Affairs for the District of Columbia (ABVA)",
+    ],
+  );
+  assertEquals(
+    report.conservativeVariantMatches[0]?.sourceIds,
+    ["mota.quickbase", "open_dc.public_bodies"],
+  );
+  workbench.close();
+
+  const jsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+      "public-bodies",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(jsonOutput.code, 0);
+  const compareJson = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+    sharedNameCount: number;
+    conservativeVariantMatchCount: number;
+    conservativeVariantMatches: Array<{
+      variantName: string;
+      sourceIds: string[];
+      names: Array<{ displayName: string; sourceId: string }>;
+    }>;
+  };
+  assertEquals(compareJson.sharedNameCount, 1);
+  assertEquals(compareJson.conservativeVariantMatchCount, 1);
+  assertEquals(
+    compareJson.conservativeVariantMatches[0]?.variantName,
+    "Advisory Board on Veterans Affairs for the District of Columbia",
+  );
+  assertEquals(compareJson.conservativeVariantMatches[0]?.sourceIds, [
+    "mota.quickbase",
+    "open_dc.public_bodies",
+  ]);
+  assertEquals(
+    compareJson.conservativeVariantMatches[0]?.names.map((row) => row.displayName),
+    [
+      "Advisory Board on Veterans Affairs for the District of Columbia",
+      "Advisory Board on Veterans Affairs for the District of Columbia (ABVA)",
+    ],
+  );
+
+  const humanOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+      "public-bodies",
+      "--db",
+      dbPath,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(humanOutput.code, 0);
+  const humanText = new TextDecoder().decode(humanOutput.stdout);
+  assertStringIncludes(humanText, "Shared exact names: 1");
+  assertStringIncludes(
+    humanText,
+    "Conservative variant matches (review leads, not exact overlaps): 1",
+  );
+  assertStringIncludes(
+    humanText,
+    "Advisory Board on Veterans Affairs for the District of Columbia (ABVA)",
+  );
+});
+
 Deno.test("public body comparison report stays usable when Quickbase is unfetched", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -2671,6 +2884,116 @@ Deno.test("public body comparison report stays usable when Quickbase is unfetche
       row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
     ),
   );
+});
+
+Deno.test("public body comparison keeps conservative variant matches separate from exact overlaps", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  async function importComparisonCandidate(input: {
+    sourceId: string;
+    title: string;
+    candidateId: string;
+    name: string;
+    kind: string;
+    rawKind?: string;
+  }) {
+    await workbench.importConnectorResult({
+      source: {
+        sourceId: input.sourceId,
+        title: input.title,
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: `https://example.com/${input.sourceId}`,
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: `${input.sourceId}.main`,
+          sourceId: input.sourceId,
+          title: `${input.title} rows`,
+          kind: "fixture",
+          url: `https://example.com/${input.sourceId}`,
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [{
+          kind: "rows",
+          extension: "json",
+          fetchedUrl: `https://example.com/${input.sourceId}`,
+          contentText: JSON.stringify({ name: input.name }),
+        }],
+        parsed: {
+          items: [{
+            itemKey: `${input.candidateId}.row`,
+            itemType: "fixture_row",
+            title: input.name,
+            body: { name: input.name },
+          }],
+          entityCandidates: [{
+            candidateId: input.candidateId,
+            sourceItemKey: `${input.candidateId}.row`,
+            proposedEntityId: buildEntityId(input.name),
+            name: input.name,
+            kind: input.kind,
+            rawKind: input.rawKind,
+            evidence: [{
+              fieldPath: "name",
+              observedValue: input.name,
+            }],
+          }],
+        },
+      }],
+    }, dataDir);
+  }
+
+  await importComparisonCandidate({
+    sourceId: "dcgis.boards_commissions_councils",
+    title: "DCGIS Fixture",
+    candidateId: "candidate.dcgis.board_of_example",
+    name: "Board of Example",
+    kind: "board",
+  });
+  await importComparisonCandidate({
+    sourceId: "open_dc.public_bodies",
+    title: "Open DC Fixture",
+    candidateId: "candidate.open_dc.board_of_example_boe",
+    name: "Board of Example (BOE)",
+    kind: "board",
+  });
+  await importComparisonCandidate({
+    sourceId: "mota.quickbase",
+    title: "Quickbase Fixture",
+    candidateId: "candidate.quickbase.board_of_example_advisory",
+    name: "Board of Example (Advisory Board)",
+    kind: "board",
+  });
+
+  const report = workbench.comparePublicBodies();
+  assertEquals(report.sharedNameCount, 0);
+  assertEquals(report.rows.filter((row) => row.sourceIds.length > 1).length, 0);
+  assertEquals(report.conservativeVariantMatchCount, 1);
+  assertEquals(report.conservativeVariantMatches.length, 1);
+  const variant = report.conservativeVariantMatches[0];
+  assertEquals(variant.variantName, "Board of Example");
+  assertEquals(variant.matchKinds, ["acronym_parenthetical", "parenthetical_alias"]);
+  assertEquals(variant.sourceIds, [
+    "dcgis.boards_commissions_councils",
+    "mota.quickbase",
+    "open_dc.public_bodies",
+  ]);
+  assertEquals(
+    variant.names.map((row) => `${row.sourceId}:${row.displayName}`),
+    [
+      "dcgis.boards_commissions_councils:Board of Example",
+      "mota.quickbase:Board of Example (Advisory Board)",
+      "open_dc.public_bodies:Board of Example (BOE)",
+    ],
+  );
+  workbench.close();
 });
 
 Deno.test("legal authority acceptance keeps legal refs on the entity instead of a non-exported relationship", async () => {

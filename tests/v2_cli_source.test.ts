@@ -2,6 +2,7 @@ import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "
 import { handleSourceCommand, type SourceCommandDeps } from "../src/v2/cli_source.ts";
 import type { SourceConnector } from "../src/v2/connectors/shared.ts";
 import type { ConnectorResult } from "../src/v2/domain.ts";
+import type { PublicBodyComparisonReport } from "../src/v2/workbench/catalog.ts";
 
 function fixtureConnector(
   sourceId: string,
@@ -283,4 +284,96 @@ Deno.test("source fetch --all keeps json output free of progress logs", async ()
       endpointStatuses: ["alpha.source.main:success"],
     }],
   });
+});
+
+Deno.test("source compare public-bodies labels conservative variant matches separately from exact overlaps", async () => {
+  const comparison: PublicBodyComparisonReport = {
+    sourceSummaries: [{
+      sourceId: "dcgis.boards_commissions_councils",
+      title: "DCGIS Fixture",
+      latestStatus: "success",
+      latestRunFinishedAt: "2026-06-03T12:00:00Z",
+      latestArtifactPath: "artifacts/dcgis.json",
+      itemCount: 1,
+      fieldCount: 1,
+      entityCandidateCount: 1,
+      relationshipCandidateCount: 0,
+      normalizedNameCount: 1,
+      sharedNameCount: 0,
+      exclusiveNameCount: 1,
+    }],
+    rows: [],
+    sharedNameCount: 0,
+    exclusiveNameCount: 1,
+    conservativeVariantMatches: [{
+      variantName: "Board of Example",
+      matchKinds: ["acronym_parenthetical", "parenthetical_alias"],
+      sourceIds: ["dcgis.boards_commissions_councils", "open_dc.public_bodies"],
+      sourceTitles: ["DCGIS Fixture", "Open DC Fixture"],
+      names: [{
+        normalizedName: "Board of Example",
+        displayName: "Board of Example",
+        sourceId: "dcgis.boards_commissions_councils",
+        sourceTitle: "DCGIS Fixture",
+      }, {
+        normalizedName: "Board of Example (Advisory Board)",
+        displayName: "Board of Example (Advisory Board)",
+        sourceId: "open_dc.public_bodies",
+        sourceTitle: "Open DC Fixture",
+      }],
+    }],
+    conservativeVariantMatchCount: 1,
+  };
+  const deps: SourceCommandDeps = {
+    connectors: [],
+    getConnector: () => {
+      throw new Error("unused");
+    },
+    createConnectorContext: () => ({
+      fetcher: async () => {
+        throw new Error("unused");
+      },
+    }),
+    importConnectorResult: async () => {
+      throw new Error("unused");
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => comparison,
+    readSourceRows: async () => [],
+  };
+
+  const { result, lines } = await captureConsoleLogs(async () =>
+    await handleSourceCommand(["source", "compare", "public-bodies"], {}, deps)
+  );
+
+  assertEquals(result, true);
+  const output = lines.join("\n");
+  assertStringIncludes(output, "Public-body overlap comparison");
+  assertStringIncludes(output, "Shared exact names: 0");
+  assertStringIncludes(
+    output,
+    "Conservative variant matches (review leads, not exact overlaps): 1",
+  );
+  assertStringIncludes(
+    output,
+    "These rows are conservative name-similarity leads. They do not imply a canonical merge.",
+  );
+  assertStringIncludes(output, "- Board of Example [acronym_parenthetical, parenthetical_alias]");
+  assertStringIncludes(
+    output,
+    "  - Board of Example (dcgis.boards_commissions_councils)",
+  );
+  assertStringIncludes(
+    output,
+    "  - Board of Example (Advisory Board) (open_dc.public_bodies)",
+  );
+
+  const jsonCapture = await captureConsoleLogs(async () =>
+    await handleSourceCommand(["source", "compare", "public-bodies"], { json: true }, deps)
+  );
+  assertEquals(jsonCapture.result, true);
+  assertEquals(jsonCapture.lines.length, 1);
+  assertEquals(JSON.parse(jsonCapture.lines[0]), comparison);
 });

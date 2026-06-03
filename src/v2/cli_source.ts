@@ -188,6 +188,20 @@ export async function handleSourceCommand(
     for (const row of comparison.rows.filter((row) => row.sourceIds.length > 1)) {
       console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
     }
+    console.log(
+      `Conservative variant matches (review leads, not exact overlaps): ${comparison.conservativeVariantMatchCount}`,
+    );
+    if (comparison.conservativeVariantMatchCount > 0) {
+      console.log(
+        "These rows are conservative name-similarity leads. They do not imply a canonical merge.",
+      );
+    }
+    for (const match of comparison.conservativeVariantMatches) {
+      console.log(`- ${match.variantName} [${match.matchKinds.join(", ")}]`);
+      for (const name of match.names) {
+        console.log(`  - ${name.displayName} (${name.sourceId})`);
+      }
+    }
     return true;
   }
   if (args[1] === "list") {

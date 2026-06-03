@@ -1,4 +1,4 @@
-import { nowIso } from "../domain.ts";
+import { normalizeName, nowIso } from "../domain.ts";
 import { getConnector } from "../connectors.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -45,11 +45,41 @@ export interface PublicBodyComparisonRow {
   sourceTitles: string[];
 }
 
+export type PublicBodyVariantMatchKind =
+  | "acronym_parenthetical"
+  | "parenthetical_alias";
+
+export interface PublicBodyVariantMatchName {
+  normalizedName: string;
+  displayName: string;
+  sourceId: string;
+  sourceTitle: string;
+}
+
+export interface PublicBodyVariantMatch {
+  variantName: string;
+  matchKinds: PublicBodyVariantMatchKind[];
+  sourceIds: string[];
+  sourceTitles: string[];
+  names: PublicBodyVariantMatchName[];
+}
+
 export interface PublicBodyComparisonReport {
   sourceSummaries: PublicBodyComparisonSourceSummary[];
   rows: PublicBodyComparisonRow[];
   sharedNameCount: number;
   exclusiveNameCount: number;
+  conservativeVariantMatches: PublicBodyVariantMatch[];
+  conservativeVariantMatchCount: number;
+}
+
+interface PublicBodyComparisonCandidateRow {
+  normalizedName: string;
+  displayName: string;
+  sourceId: string;
+  sourceTitle: string;
+  kind: string;
+  rawKind?: string | null;
 }
 
 export function upsertSource(
@@ -160,14 +190,7 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     "oanc.anc_profiles",
   ] as const;
   const sourceRows = sourceIds.map((sourceId) => sourceSummaryOrConfigured(store, sourceId));
-  const rows = queryAll<{
-    normalizedName: string;
-    displayName: string;
-    sourceId: string;
-    sourceTitle: string;
-    kind: string;
-    rawKind?: string | null;
-  }>(
+  const rows = queryAll<PublicBodyComparisonCandidateRow>(
     store.db,
     `select
        entity_candidates.normalized_name as normalizedName,
@@ -185,27 +208,8 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
   ).filter((row) =>
     isPublicBodyComparisonCandidate(row.sourceId, row.kind, row.rawKind ?? undefined)
   );
-  const grouped = new Map<string, {
-    normalizedName: string;
-    displayName: string;
-    sources: Map<string, string>;
-  }>();
-  for (const row of rows) {
-    const group = grouped.get(row.normalizedName) ?? {
-      normalizedName: row.normalizedName,
-      displayName: row.displayName,
-      sources: new Map<string, string>(),
-    };
-    if (!grouped.has(row.normalizedName)) grouped.set(row.normalizedName, group);
-    group.sources.set(row.sourceId, row.sourceTitle);
-    if (!group.displayName) group.displayName = row.displayName;
-  }
-  const groupedRows = [...grouped.values()].map((group) => ({
-    normalizedName: group.normalizedName,
-    displayName: group.displayName,
-    sourceIds: [...group.sources.keys()].sort(),
-    sourceTitles: [...group.sources.values()].sort(),
-  })).sort((a, b) => a.normalizedName.localeCompare(b.normalizedName));
+  const groupedRows = buildExactPublicBodyComparisonRows(rows);
+  const conservativeVariantMatches = buildConservativeVariantMatches(rows);
   const normalizedNameCountBySource = new Map<string, number>();
   const sharedNameCountBySource = new Map<string, number>();
   for (const row of groupedRows) {
@@ -231,7 +235,164 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     rows: groupedRows,
     sharedNameCount: groupedRows.filter((row) => row.sourceIds.length > 1).length,
     exclusiveNameCount: groupedRows.filter((row) => row.sourceIds.length === 1).length,
+    conservativeVariantMatches,
+    conservativeVariantMatchCount: conservativeVariantMatches.length,
   };
+}
+
+function buildExactPublicBodyComparisonRows(
+  rows: PublicBodyComparisonCandidateRow[],
+): PublicBodyComparisonRow[] {
+  const grouped = new Map<string, {
+    normalizedName: string;
+    displayName: string;
+    sources: Map<string, string>;
+  }>();
+  for (const row of rows) {
+    const group = grouped.get(row.normalizedName) ?? {
+      normalizedName: row.normalizedName,
+      displayName: row.displayName,
+      sources: new Map<string, string>(),
+    };
+    if (!grouped.has(row.normalizedName)) grouped.set(row.normalizedName, group);
+    group.sources.set(row.sourceId, row.sourceTitle);
+    if (!group.displayName) group.displayName = row.displayName;
+  }
+  return [...grouped.values()].map((group) => ({
+    normalizedName: group.normalizedName,
+    displayName: group.displayName,
+    sourceIds: [...group.sources.keys()].sort(),
+    sourceTitles: [...group.sources.values()].sort(),
+  })).sort((a, b) => a.normalizedName.localeCompare(b.normalizedName));
+}
+
+function buildConservativeVariantMatches(
+  rows: PublicBodyComparisonCandidateRow[],
+): PublicBodyVariantMatch[] {
+  const grouped = new Map<string, {
+    variantName: string;
+    matchKinds: Set<PublicBodyVariantMatchKind>;
+    names: Map<string, PublicBodyVariantMatchName>;
+    normalizedNames: Set<string>;
+    sourceTitles: Map<string, string>;
+  }>();
+  for (const row of rows) {
+    const entry: PublicBodyVariantMatchName = {
+      normalizedName: row.normalizedName,
+      displayName: row.displayName,
+      sourceId: row.sourceId,
+      sourceTitle: row.sourceTitle,
+    };
+    for (const key of comparisonKeysForVariantMatching(row)) {
+      const groupKey = normalizedComparisonKey(key.variantName);
+      if (!groupKey) continue;
+      const group = grouped.get(groupKey) ?? {
+        variantName: key.variantName,
+        matchKinds: new Set<PublicBodyVariantMatchKind>(),
+        names: new Map<string, PublicBodyVariantMatchName>(),
+        normalizedNames: new Set<string>(),
+        sourceTitles: new Map<string, string>(),
+      };
+      if (!grouped.has(groupKey)) grouped.set(groupKey, group);
+      if (key.matchKind) group.matchKinds.add(key.matchKind);
+      group.names.set(`${row.sourceId}:${normalizedComparisonKey(row.normalizedName)}`, entry);
+      group.normalizedNames.add(normalizedComparisonKey(row.normalizedName));
+      group.sourceTitles.set(row.sourceId, row.sourceTitle);
+    }
+  }
+  return [...grouped.values()]
+    .filter((group) =>
+      group.matchKinds.size > 0 && group.sourceTitles.size > 1 && group.normalizedNames.size > 1
+    )
+    .map((group) => ({
+      variantName: group.variantName,
+      matchKinds: [...group.matchKinds].sort(compareVariantMatchKinds),
+      sourceIds: [...group.sourceTitles.keys()].sort(),
+      sourceTitles: [...group.sourceTitles.values()].sort(),
+      names: [...group.names.values()].sort((a, b) =>
+        compareVariantMatchNames(a, b, group.variantName)
+      ),
+    }))
+    .sort((a, b) => a.variantName.localeCompare(b.variantName));
+}
+
+function comparisonKeysForVariantMatching(
+  row: PublicBodyComparisonCandidateRow,
+): Array<{ variantName: string; matchKind?: PublicBodyVariantMatchKind }> {
+  const keys: Array<{ variantName: string; matchKind?: PublicBodyVariantMatchKind }> = [{
+    variantName: row.displayName,
+  }];
+  for (const key of conservativeVariantKeys(row.displayName)) {
+    if (
+      !keys.some((candidate) =>
+        normalizedComparisonKey(candidate.variantName) ===
+          normalizedComparisonKey(key.variantName) &&
+        candidate.matchKind === key.matchKind
+      )
+    ) {
+      keys.push(key);
+    }
+  }
+  return keys;
+}
+
+function conservativeVariantKeys(
+  displayName: string,
+): Array<{ variantName: string; matchKind: PublicBodyVariantMatchKind }> {
+  const normalized = normalizeName(displayName);
+  const variants: Array<{ variantName: string; matchKind: PublicBodyVariantMatchKind }> = [];
+  const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
+  if (parentheticalMatch?.[1]) {
+    const variantName = normalizeName(parentheticalMatch[1]);
+    if (variantName && variantName !== normalized) {
+      variants.push({
+        variantName,
+        matchKind: isAcronymLike(parentheticalMatch[2])
+          ? "acronym_parenthetical"
+          : "parenthetical_alias",
+      });
+    }
+  }
+  return variants.filter((variant, index, all) =>
+    all.findIndex((candidate) =>
+      normalizedComparisonKey(candidate.variantName) ===
+        normalizedComparisonKey(variant.variantName) &&
+      candidate.matchKind === variant.matchKind
+    ) === index
+  );
+}
+
+function isAcronymLike(value: string): boolean {
+  const normalized = normalizeName(value);
+  return /^[A-Z0-9][A-Z0-9/&.\-\s]{1,11}$/.test(normalized);
+}
+
+function normalizedComparisonKey(value: string): string {
+  return normalizeName(value).toLowerCase();
+}
+
+function compareVariantMatchKinds(
+  a: PublicBodyVariantMatchKind,
+  b: PublicBodyVariantMatchKind,
+): number {
+  const order: PublicBodyVariantMatchKind[] = [
+    "acronym_parenthetical",
+    "parenthetical_alias",
+  ];
+  return order.indexOf(a) - order.indexOf(b);
+}
+
+function compareVariantMatchNames(
+  a: PublicBodyVariantMatchName,
+  b: PublicBodyVariantMatchName,
+  variantName: string,
+): number {
+  const variantKey = normalizedComparisonKey(variantName);
+  const aIsExact = normalizedComparisonKey(a.displayName) === variantKey ? 0 : 1;
+  const bIsExact = normalizedComparisonKey(b.displayName) === variantKey ? 0 : 1;
+  return aIsExact - bIsExact ||
+    a.sourceId.localeCompare(b.sourceId) ||
+    a.displayName.localeCompare(b.displayName);
 }
 
 function isPublicBodyComparisonCandidate(
