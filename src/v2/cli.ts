@@ -1,5 +1,6 @@
 import { join } from "@std/path";
 import { handleAuditCommand } from "./cli_audit.ts";
+import { handleReviewCommand } from "./cli_review.ts";
 import { handleSourceCommand } from "./cli_source.ts";
 import { buildV2Release } from "./release.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
@@ -9,16 +10,8 @@ import {
   type ReleaseManifest,
   renderReleaseInspection,
 } from "./status.ts";
-import {
-  renderEntityView,
-  renderReviewItemSummary,
-  runBatchAcceptSafe,
-  runBatchDefer,
-  runBatchDeferDefault,
-  runInteractiveReview,
-} from "./workbench/review_cli.ts";
+import { renderEntityView } from "./workbench/review_cli.ts";
 import { Workbench } from "./workbench.ts";
-import type { ReviewItemFilters } from "./workbench/review.ts";
 
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
@@ -67,10 +60,14 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       })),
   });
   if (auditHandled) return true;
-  if (args[0] === "review" && isHelp(args[1])) {
-    printReviewHelp();
-    return true;
-  }
+  const reviewHandled = await handleReviewCommand(
+    args,
+    { json: args.includes("--json"), resolutionsDir },
+    {
+      withWorkbench: async (action) => await withWorkbench(dbPath, action),
+    },
+  );
+  if (reviewHandled) return true;
   if (args[0] === "entity" && isHelp(args[1])) {
     printEntityHelp();
     return true;
@@ -85,59 +82,6 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     });
     console.log(`Initialized v2 workbench: ${dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
-    return true;
-  }
-  if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runInteractiveReview(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "list") {
-    const items = await withWorkbench(
-      dbPath,
-      (workbench) => workbench.listReviewItems(readReviewFilters(args)),
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify({ count: items.length, items }, null, 2));
-      return true;
-    }
-    console.log(`Review items: ${items.length}`);
-    for (const item of items) {
-      console.log(renderReviewItemSummary(item));
-      console.log("");
-    }
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "accept-safe") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchAcceptSafe(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "defer") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchDefer(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (args[0] === "review" && args[1] === "batch" && args[2] === "defer-default") {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runBatchDeferDefault(workbench, readReviewFilters(args), resolutionsDir);
-    });
-    return true;
-  }
-  if (
-    args[0] === "review" && args[1] &&
-    ["entities", "relationships", "legal", "sources"].includes(args[1])
-  ) {
-    await withWorkbench(dbPath, async (workbench) => {
-      await runInteractiveReview(
-        workbench,
-        { ...readReviewFilters(args), mode: args[1] },
-        resolutionsDir,
-      );
-    });
     return true;
   }
   if (args[0] === "entity" && args[1] === "search" && args[2]) {
@@ -243,32 +187,6 @@ function readNumberFlag(args: string[], flag: string): number | undefined {
   return value ? Number(value) : undefined;
 }
 
-function readReviewFilters(args: string[]): ReviewItemFilters {
-  const modeFlag = readFlag(args, "--mode");
-  const statusFlag = readFlag(args, "--status");
-  const typeFlag = readFlag(args, "--type");
-  const subjectPrefix = readFlag(args, "--subject-prefix");
-  const relationshipType = readFlag(args, "--relationship-type");
-  const rawValue = readFlag(args, "--raw-value");
-  const rawValueContains = readFlag(args, "--raw-value-contains");
-  const refType = readFlag(args, "--ref-type");
-  const limit = readNumberFlag(args, "--limit");
-  const positionalMode = ["entities", "relationships", "legal", "sources"].includes(args[1])
-    ? args[1]
-    : undefined;
-  return {
-    mode: modeFlag ?? positionalMode,
-    status: statusFlag as ReviewItemFilters["status"] | undefined,
-    type: typeFlag as ReviewItemFilters["type"] | undefined,
-    subjectPrefix: subjectPrefix ?? undefined,
-    relationshipType: relationshipType ?? undefined,
-    rawValue: rawValue ?? undefined,
-    rawValueContains: rawValueContains ?? undefined,
-    refType: refType ?? undefined,
-    limit,
-  };
-}
-
 function readFreeTextArgument(args: string[], startIndex: number): string {
   const values: string[] = [];
   for (let index = startIndex; index < args.length; index += 1) {
@@ -312,22 +230,6 @@ Defaults:
   source artifacts: data/v2_artifacts
   resolutions: resolutions/
   release output: releases/latest
-`);
-}
-
-function printReviewHelp(): void {
-  console.log(`dc review
-
-Usage:
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-
-Interactive actions:
-  Enter runs the default action for the current item.
-  a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
 `);
 }
 
