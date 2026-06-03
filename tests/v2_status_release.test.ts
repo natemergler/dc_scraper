@@ -822,6 +822,13 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "dc.board_accountancy",
     "legal.open_dc.public_bodies.board_accountancy_authority",
   ]);
+  workbench.db.prepare(
+    "insert into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values(?, ?, ?)",
+  ).run([
+    "relationship_legal_ref.board_accountancy.part_of.authority",
+    "dc.board_accountancy:part_of:dc.council",
+    "legal.open_dc.public_bodies.board_accountancy_authority",
+  ]);
   const outDir = join(dir, "release");
   const staleFile = join(outDir, "stale-extra-report.csv");
   await ensureDir(outDir);
@@ -829,6 +836,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
   const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
+  const relationshipLegalRefsCsv = await Deno.readTextFile(
+    join(outDir, "relationship_legal_refs.csv"),
+  );
   const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
   const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -860,6 +870,8 @@ Deno.test("release builder creates focused v2 package with stable files and no r
       "legal_refs.csv",
       "legal_refs.json",
       "manifest.json",
+      "relationship_legal_refs.csv",
+      "relationship_legal_refs.json",
       "relationships.csv",
       "relationships.json",
       "sources.csv",
@@ -878,6 +890,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(entityLegalRefsCsv, "dc.board_accountancy");
   assertEquals(entityLegalRefsCsv.split("\n").length > 1, true);
+  assertStringIncludes(
+    relationshipLegalRefsCsv,
+    "relationship_id,from_entity_id,from_entity_name,relationship_type,to_entity_id,to_entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
+  );
+  assertStringIncludes(relationshipLegalRefsCsv, "dc.board_accountancy:part_of:dc.council");
   assert(!legalRefsCsv.includes("not-for-release@example.com"));
   assert(!manifestText.includes("not-for-release@example.com"));
   assert(!manifestText.includes("202-555-0100"));
@@ -888,9 +905,14 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
   assertStringIncludes(
     readme,
+    "`relationship_legal_refs.*`: relationship-linked legal reference attachments",
+  );
+  assertStringIncludes(
+    readme,
     "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
+  assertStringIncludes(readme, "relationship legal refs: total=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(
@@ -905,6 +927,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "entity_legal_refs",
     "incoming_relationships",
     "legal_refs",
+    "relationship_legal_refs",
     "relationships",
     "sources",
   ]);
@@ -925,7 +948,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Files: 15");
+  assertStringIncludes(inspectText, "Files: 17");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -950,7 +973,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   };
   assertEquals(inspectJsonOutput.code, 0);
   assertEquals(inspectJson.outDir, outDir);
-  assertEquals(inspectJson.fileCount, 15);
+  assertEquals(inspectJson.fileCount, 17);
   assertEquals(inspectJson.releaseSummary.source_count, 1);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);

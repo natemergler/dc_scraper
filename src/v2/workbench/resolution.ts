@@ -853,6 +853,11 @@ function acceptRelationshipCandidate(
       [relationshipId, fromEntityId, relationshipType, toEntityId, eventId, nowIso()],
     );
   }
+  run(
+    store.db,
+    "update relationship_legal_refs set relationship_id = ? where relationship_id = ?",
+    [relationshipId, relationshipCandidateId],
+  );
   setRelationshipCandidateStatus(store, relationshipCandidateId, "accepted");
   resolveReviewBySubject(store, relationshipCandidateId);
 }
