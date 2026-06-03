@@ -277,6 +277,8 @@ export function canBatchAcceptReviewItem(
   filters: ReviewItemFilters = {},
 ): boolean {
   if (item.status !== "open") return false;
+  if (item.details.stalePriorDecision === true) return false;
+  if (item.details.replayConflict === true) return false;
   if (item.itemType === "relationship_candidate") {
     return canBatchAcceptRelationshipItem(store, item, filters);
   }

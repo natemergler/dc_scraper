@@ -2,6 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { canBatchAcceptReviewItem } from "../src/v2/workbench/review.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticEntitySourceResult,
@@ -525,6 +526,7 @@ Deno.test("missing resolved merge target returns unchanged entity refetch to rev
       name: "Example Body",
       kind: "board",
       observedName: "Example Body",
+      confidence: 0.99,
     }),
     dataDir,
   );
@@ -536,6 +538,12 @@ Deno.test("missing resolved merge target returns unchanged entity refetch to rev
     mode: "entities",
     status: "open",
   }).find((item) => item.subjectId === secondCandidateId);
+  const conflictItemCanBatchAccept = conflictItem
+    ? canBatchAcceptReviewItem(workbench, conflictItem, {
+      mode: "entities",
+      subjectPrefix: "candidate.test.signature.entities",
+    })
+    : undefined;
   workbench.close();
 
   assertEquals(secondCandidate.reviewStatus, "pending");
@@ -543,6 +551,7 @@ Deno.test("missing resolved merge target returns unchanged entity refetch to rev
   assertEquals(conflictItem.details.priorDecisionState, "merged");
   assertEquals(conflictItem.details.priorResolvedEntityId, "dc.existing_board");
   assertEquals(conflictItem.details.replayConflict, true);
+  assertEquals(conflictItemCanBatchAccept, false);
   assertStringIncludes(
     conflictItem.reason,
     "prior merged decision could not be replayed because resolved entity dc.existing_board is missing",

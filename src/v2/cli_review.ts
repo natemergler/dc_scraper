@@ -1,6 +1,10 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
-import { listReviewPackets, renderReviewPacketSummary } from "./workbench/review_packets.ts";
+import {
+  listReviewPackets,
+  renderReviewPacketSummary,
+  type ReviewPacketCommandContext,
+} from "./workbench/review_packets.ts";
 import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
@@ -13,6 +17,7 @@ import type { Workbench } from "./workbench.ts";
 export interface ReviewCommandOptions {
   json?: boolean;
   resolutionsDir: string;
+  nextCommandContext?: ReviewPacketCommandContext;
 }
 
 export interface ReviewCommandDeps {
@@ -65,7 +70,9 @@ export async function handleReviewCommand(
       return true;
     }
     const packets = await deps.withReadonlyWorkbench((workbench) =>
-      listReviewPackets(workbench, readReviewFilters(args))
+      listReviewPackets(workbench, readReviewFilters(args), {
+        commandContext: options.nextCommandContext,
+      })
     );
     if (options.json) {
       console.log(JSON.stringify({ count: packets.length, packets }, null, 2));
