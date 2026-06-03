@@ -2658,7 +2658,13 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(output.code, 0);
   const text = new TextDecoder().decode(output.stdout);
   assertStringIncludes(text, "Review items:");
-  assertStringIncludes(text, "entity_candidate");
+  assertStringIncludes(text, "[open] Review List Entity");
+  assertStringIncludes(text, "entity candidate | board | default accept");
+  assertStringIncludes(text, "source: test.review_list.entities / Custom entity row");
+  assertStringIncludes(
+    text,
+    "ids: subject=candidate.test.review_list.entities.example",
+  );
   assert(!text.includes("source_status"));
   const jsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
