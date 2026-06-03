@@ -13,6 +13,7 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     (await buildReleaseInspection(outDir, {
       files: [],
       release_summary: {
+        source_count: 1,
         open_review_item_count: 0,
         deferred_review_item_count: 0,
         stale_review_item_count: 0,
@@ -27,6 +28,7 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     (await buildReleaseInspection(outDir, {
       files: [],
       release_summary: {
+        source_count: 1,
         open_review_item_count: 2,
         deferred_review_item_count: 0,
         stale_review_item_count: 0,
@@ -41,6 +43,7 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     (await buildReleaseInspection(outDir, {
       files: [],
       release_summary: {
+        source_count: 1,
         open_review_item_count: 0,
         deferred_review_item_count: 0,
         stale_review_item_count: 1,
@@ -51,6 +54,25 @@ Deno.test("release inspection readiness summarizes unresolved work severity", as
     })).readiness,
     "not-ready",
   );
+});
+
+Deno.test("release inspection treats zero-source packages as not-ready", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 0,
+      open_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.packageIntegrity, "ok");
+  assertEquals(inspection.readiness, "not-ready");
 });
 
 Deno.test("release inspection treats missing file manifest as not-ready", async () => {

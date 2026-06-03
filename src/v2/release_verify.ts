@@ -114,6 +114,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   const relationshipLegalRefProvenance = validateRelationshipLegalRefProvenance(workbench);
   const relationshipLegalRefProvenanceProblems = relationshipLegalRefProvenance.problems;
   const reasons: string[] = [];
+  if (status.sources.fetched === 0) reasons.push("no sources fetched");
   if (status.sources.failed > 0) reasons.push(`failed sources: ${status.sources.failed}`);
   if (status.review.open > 0) reasons.push(`open review items: ${status.review.open}`);
   if (status.review.deferred > 0) reasons.push(`deferred review items: ${status.review.deferred}`);
@@ -176,6 +177,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   return {
     ready: reasons.length === 0,
     readiness: classifyReleaseReadiness({
+      sourceCount: status.sources.fetched,
       failedSourceCount: status.sources.failed,
       openReviewItemCount: status.review.open,
       deferredReviewItemCount: status.review.deferred,

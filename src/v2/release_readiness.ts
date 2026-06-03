@@ -1,6 +1,7 @@
 export type ReleaseReadiness = "usable" | "usable-with-warnings" | "not-ready";
 
 export interface ReleaseReadinessInput {
+  sourceCount?: number;
   failedSourceCount?: number;
   openReviewItemCount?: number;
   deferredReviewItemCount?: number;
@@ -12,6 +13,7 @@ export interface ReleaseReadinessInput {
 
 export function classifyReleaseReadiness(input: ReleaseReadinessInput): ReleaseReadiness {
   if (
+    input.sourceCount === 0 ||
     hasCount(input.failedSourceCount) ||
     hasCount(input.staleReviewItemCount) ||
     hasCount(input.blockedReconciliationCount) ||
