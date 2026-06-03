@@ -2369,7 +2369,7 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
   );
 });
 
-Deno.test("public body comparison report surfaces exact overlaps across the three source lanes", async () => {
+Deno.test("public body comparison report stays on public-body candidates and includes ANC overlap", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -2393,6 +2393,12 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
           return quickbaseFixture;
         case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
           return quickbaseAppointmentsCsvFixture;
+        case "https://oanc.dc.gov/anc-profile-listing":
+          return ancListingFixture;
+        case "https://oanc.dc.gov/anc-profile/anc-6c":
+          return ancProfile6cFixture;
+        case "https://oanc.dc.gov/anc-profile/anc-34g":
+          return ancProfile34gFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -2415,8 +2421,12 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
     await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    await getConnector("oanc.anc_profiles").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
   const report = workbench.comparePublicBodies();
-  assert(report.sharedNameCount >= 2);
+  assert(report.sharedNameCount >= 3);
   assert(
     report.rows.some((row) =>
       row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
@@ -2428,10 +2438,31 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
     ),
   );
   assert(
+    report.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Advisory Neighborhood Commissions")
+    ),
+  );
+  assert(
+    !report.rows.some((row) => row.displayName === "Active / filled seat"),
+  );
+  assert(
+    !report.rows.some((row) => row.displayName === "Jane Doe"),
+  );
+  assert(
     report.sourceSummaries.some((source) =>
       source.sourceId === "dcgis.boards_commissions_councils" && source.sharedNameCount >= 1
     ),
   );
+  assert(
+    report.sourceSummaries.some((source) =>
+      source.sourceId === "oanc.anc_profiles" && source.sharedNameCount >= 1
+    ),
+  );
+  const quickbaseSummary = report.sourceSummaries.find((source) =>
+    source.sourceId === "mota.quickbase"
+  );
+  assert(quickbaseSummary);
+  assertEquals(quickbaseSummary.normalizedNameCount, 5);
   workbench.close();
   const compareOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2453,8 +2484,25 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
   assertEquals(compareOutput.code, 0);
   const compareJson = JSON.parse(new TextDecoder().decode(compareOutput.stdout)) as {
     sharedNameCount: number;
+    rows: Array<{ displayName: string; sourceIds: string[] }>;
+    sourceSummaries: Array<{ sourceId: string; normalizedNameCount: number }>;
   };
-  assert(compareJson.sharedNameCount >= 2);
+  assert(compareJson.sharedNameCount >= 3);
+  assert(
+    compareJson.rows.some((row) =>
+      row.displayName === "Advisory Neighborhood Commissions" &&
+      row.sourceIds.includes("dcgis.boards_commissions_councils") &&
+      row.sourceIds.includes("oanc.anc_profiles")
+    ),
+  );
+  assert(
+    !compareJson.rows.some((row) => row.displayName === "John Smith"),
+  );
+  assertEquals(
+    compareJson.sourceSummaries.find((row) => row.sourceId === "mota.quickbase")
+      ?.normalizedNameCount,
+    5,
+  );
 });
 
 Deno.test("public body comparison report stays usable when Quickbase is unfetched", async () => {
