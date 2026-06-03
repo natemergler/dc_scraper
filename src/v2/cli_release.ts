@@ -1,4 +1,5 @@
 import { join } from "@std/path";
+import { dcCommand } from "./command_prefix.ts";
 import { buildV2Release } from "./release.ts";
 import { buildReleaseInspection, type ReleaseManifest, renderReleaseInspection } from "./status.ts";
 import type { Workbench } from "./workbench.ts";
@@ -53,16 +54,16 @@ export async function handleReleaseCommand(
 }
 
 export function printReleaseHelp(): void {
-  console.log(`dc release
+  console.log(`${dcCommand("release")}
 
 Workflow:
-  1. Build the current release package with \`dc release build\`
-  2. Inspect the built package with \`dc release inspect\`
-  3. Use \`dc release inspect --json\` for scriptable release summary checks
+  1. Build the current release package with \`${dcCommand("release build")}\`
+  2. Inspect the built package with \`${dcCommand("release inspect")}\`
+  3. Use \`${dcCommand("release inspect --json")}\` for scriptable release summary checks
 
 Usage:
-  dc release build [--db <path>] [--out <dir>]
-  dc release inspect [--out <dir>] [--json]
+  ${dcCommand("release build")} [--db <path>] [--out <dir>]
+  ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Release files:
   README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*

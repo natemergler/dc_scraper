@@ -1,3 +1,4 @@
+import { dcCommand } from "./command_prefix.ts";
 import type { WorkbenchMeta } from "./domain.ts";
 import {
   renderWorkbenchDoctor,
@@ -51,19 +52,19 @@ export async function handleAuditCommand(
 }
 
 export function printAuditHelp(): void {
-  console.log(`dc audit
+  console.log(`${dcCommand("audit")}
 
 Workflow:
-  1. Run \`dc audit\` for the human blocker view
-  2. Use \`dc audit --json\` or \`dc status --json\` for scriptable status
-  3. Inspect the blocked source with \`dc source inspect <source-id>\`
+  1. Run \`${dcCommand("audit")}\` for the human blocker view
+  2. Use \`${dcCommand("audit --json")}\` or \`${dcCommand("status --json")}\` for scriptable status
+  3. Inspect the blocked source with \`${dcCommand("source inspect <source-id>")}\`
 
 Usage:
-  dc audit [--db <path>] [--json]
-  dc audit status [--db <path>] [--json]
-  dc audit doctor [--db <path>] [--json]
-  dc status [--db <path>] [--json]
-  dc doctor [--db <path>] [--json]
+  ${dcCommand("audit")} [--db <path>] [--json]
+  ${dcCommand("audit status")} [--db <path>] [--json]
+  ${dcCommand("audit doctor")} [--db <path>] [--json]
+  ${dcCommand("status")} [--db <path>] [--json]
+  ${dcCommand("doctor")} [--db <path>] [--json]
 `);
 }
 

@@ -404,7 +404,7 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "Review stopped. 2 item(s) remain. Resume with dc review entities.",
+    "Review stopped. 2 item(s) remain. Resume with deno task dc -- review entities.",
   );
 
   const reopened = new Workbench(dbPath);
