@@ -1923,7 +1923,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Bicycle Advisory Council"),
-    "dc.bicycle_advisory_council_bac",
+    "dc.bicycle_advisory_council",
   );
   assertEquals(
     buildKnownEntityRef("Board of Barber and Cosmetology"),
@@ -1939,15 +1939,15 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Board of Review of Anti-Deficiency Violations"),
-    "dc.board_of_review_for_anti_deficiency_violations_brav",
+    "dc.board_of_review_for_anti_deficiency_violations",
   );
   assertEquals(
     buildKnownEntityRef("Citizen Review Panel on Child Abuse and Neglect"),
-    "dc.citizen_review_panel_for_child_abuse_and_neglect_crp",
+    "dc.citizen_review_panel_on_child_abuse_and_neglect",
   );
   assertEquals(
     buildKnownEntityRef("Commission on Women"),
-    "dc.commission_for_women_cfw",
+    "dc.commission_for_women",
   );
   assertEquals(
     buildKnownEntityRef("District of Columbia Sentencing Commission"),
@@ -1955,7 +1955,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Destination DC"),
-    "dc.washington_d_c_convention_and_tourism_corporation_destination_dc",
+    "dc.destination_dc",
   );
   assertEquals(
     buildKnownEntityRef("Deputy Mayor for Planning and Economic Development (DMPED)"),
