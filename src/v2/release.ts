@@ -435,6 +435,8 @@ Civic role relationship types used by the workbench: holds, represents, member_o
 
 Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.
 
+Public appointment observations may appear as \`appointee_observation\` entities, with \`holds\` and \`has_status\` facts kept separate from seat structure.
+
 ## Release summary
 
 - entities by review_status: ${entityStatus}
