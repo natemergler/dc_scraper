@@ -501,6 +501,107 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   );
 });
 
+Deno.test("status points to doctor when blocked reconciliation is the only remaining work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_health', 'Committee on Health', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.blocked.only_remaining",
+      sourceItemKey: "blocked-only-row",
+      fromEntityRef:
+        "dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue:
+        "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+    nextCommand: string;
+  };
+  assertEquals(status.nextCommand, "dc doctor");
+});
+
+Deno.test("doctor surfaces first blocked raw value and a concrete source inspection command", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_health', 'Committee on Health', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.blocked.doctor",
+      sourceItemKey: "blocked-doctor-row",
+      fromEntityRef:
+        "dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue:
+        "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const doctorOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "doctor",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(doctorOutput.code, 0);
+  const doctorText = new TextDecoder().decode(doctorOutput.stdout);
+  assertStringIncludes(doctorText, "First blocked: relationship.test.blocked.doctor");
+  assertStringIncludes(
+    doctorText,
+    "Blocked raw value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertStringIncludes(doctorText, "Blocked detail:");
+  assertStringIncludes(
+    doctorText,
+    "Blockers: dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health (missing)",
+  );
+  assertStringIncludes(doctorText, "Inspect source: dc source inspect council.committees");
+});
+
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

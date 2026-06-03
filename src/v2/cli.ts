@@ -6,6 +6,7 @@ import {
   buildWorkbenchStatus,
   type ReleaseManifest,
   renderReleaseInspection,
+  renderWorkbenchDoctor,
   renderWorkbenchStatus,
 } from "./status.ts";
 import {
@@ -90,6 +91,23 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
     }
     console.log(renderWorkbenchStatus(status));
+    return true;
+  }
+  if (args[0] === "workbench" && args[1] === "doctor") {
+    const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
+      meta,
+      status: buildWorkbenchStatus(workbench),
+    }));
+    if (args.includes("--json")) {
+      console.log(JSON.stringify({ ...meta, ...status }, null, 2));
+      return true;
+    }
+    console.log(`DB: ${meta.dbPath}`);
+    console.log(`Schema version: ${meta.schemaVersion}`);
+    for (const migration of meta.migrations) {
+      console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
+    }
+    console.log(renderWorkbenchDoctor(status));
     return true;
   }
   if (args[0] === "source" && args[1] === "fetch" && args[2]) {
