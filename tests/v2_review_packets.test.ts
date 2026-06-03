@@ -1,10 +1,138 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Workbench } from "../src/v2/workbench.ts";
+import { reviewPacketCommand } from "../src/v2/workbench/review_packets.ts";
 import {
+  syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
   syntheticRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
+
+Deno.test("review packet command can split explicit-safe and high-confidence entity batches", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.explicit_entities",
+      candidateId: "candidate.test.packet.explicit_entities.one",
+      sourceItemKey: "explicit-entity-row",
+      proposedEntityId: "dc.packet_explicit_entity",
+      name: "Packet Explicit Entity",
+      kind: "board",
+      observedName: "Packet Explicit Entity",
+    }),
+    dataDir,
+  );
+  workbench.db.prepare(
+    "update review_items set details_json = ? where subject_id = ?",
+  ).run(
+    JSON.stringify({
+      name: "Packet Explicit Entity",
+      kind: "board",
+      safeToAutoAccept: true,
+    }),
+    "candidate.test.packet.explicit_entities.one",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.high_confidence_entities",
+      candidateId: "candidate.test.packet.high_confidence_entities.one",
+      sourceItemKey: "high-confidence-entity-row",
+      proposedEntityId: "dc.packet_high_confidence_entity",
+      name: "Packet High Confidence Entity",
+      kind: "board",
+      observedName: "Packet High Confidence Entity",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  assertEquals(
+    reviewPacketCommand(
+      workbench,
+      { mode: "entities", status: "open" },
+      "accept-safe",
+      { itemFilter: (item) => item.details.safeToAutoAccept === true },
+    ),
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.explicit_entities",
+  );
+  assertEquals(
+    reviewPacketCommand(
+      workbench,
+      { mode: "entities", status: "open" },
+      "accept-safe",
+      { itemFilter: (item) => item.details.safeToAutoAccept !== true },
+    ),
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.high_confidence_entities",
+  );
+  workbench.close();
+});
+
+Deno.test("review packet command refuses filtered entity batches that would accept another safe class", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.mixed_entities",
+      candidateId: "candidate.test.packet.mixed_entities.explicit",
+      sourceItemKey: "mixed-explicit-entity-row",
+      proposedEntityId: "dc.packet_mixed_explicit_entity",
+      name: "Packet Mixed Explicit Entity",
+      kind: "board",
+      observedName: "Packet Mixed Explicit Entity",
+    }),
+    dataDir,
+  );
+  workbench.db.prepare(
+    "update review_items set details_json = ? where subject_id = ?",
+  ).run(
+    JSON.stringify({
+      name: "Packet Mixed Explicit Entity",
+      kind: "board",
+      safeToAutoAccept: true,
+    }),
+    "candidate.test.packet.mixed_entities.explicit",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.mixed_entities",
+      candidateId: "candidate.test.packet.mixed_entities.high_confidence",
+      sourceItemKey: "mixed-high-confidence-entity-row",
+      proposedEntityId: "dc.packet_mixed_high_confidence_entity",
+      name: "Packet Mixed High Confidence Entity",
+      kind: "board",
+      observedName: "Packet Mixed High Confidence Entity",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  assertEquals(
+    reviewPacketCommand(
+      workbench,
+      { mode: "entities", status: "open" },
+      "accept-safe",
+      { itemFilter: (item) => item.details.safeToAutoAccept === true },
+    ),
+    undefined,
+  );
+  assertEquals(
+    reviewPacketCommand(
+      workbench,
+      { mode: "entities", status: "open" },
+      "accept-safe",
+      { itemFilter: (item) => item.details.safeToAutoAccept !== true },
+    ),
+    undefined,
+  );
+  workbench.close();
+});
 
 Deno.test("review packets groups related relationship work conservatively", async () => {
   const dir = await Deno.makeTempDir();

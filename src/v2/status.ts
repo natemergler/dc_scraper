@@ -2,7 +2,6 @@ import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
-import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 import { reviewPacketCommand } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
@@ -80,10 +79,8 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
   const operatorPlan = buildOperatorPlan({
-    workbench,
-    canBatchAcceptReviewItem: (item, filters) => canBatchAcceptReviewItem(workbench, item, filters),
-    suggestReviewPacketCommand: (filters, action) =>
-      reviewPacketCommand(workbench, filters, action),
+    suggestReviewPacketCommand: (filters, action, options) =>
+      reviewPacketCommand(workbench, filters, action, options),
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
     openReviewItemCount: openReview,

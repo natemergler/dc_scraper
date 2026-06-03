@@ -36,9 +36,17 @@ export interface ReviewPacketListOptions {
   commandSubjectScope?: "packet" | "source";
 }
 
+export interface ReviewPacketCommandOptions extends ReviewPacketListOptions {
+  itemFilter?: (item: ReviewItemRecord) => boolean;
+}
+
 interface ReviewPacketEntry {
   packet: ReviewPacketRecord;
   nextAction?: ReviewPacketCommandAction;
+}
+
+interface ReviewPacketEntryOptions extends ReviewPacketListOptions {
+  itemFilter?: (item: ReviewItemRecord) => boolean;
 }
 
 export function listReviewPackets(
@@ -57,7 +65,7 @@ export function reviewPacketCommand(
   },
   filters: ReviewItemFilters,
   action: ReviewPacketBatchCommandAction,
-  options: ReviewPacketListOptions = {},
+  options: ReviewPacketCommandOptions = {},
 ): string | undefined {
   return listReviewPacketEntries(store, filters, {
     ...options,
@@ -72,12 +80,13 @@ function listReviewPacketEntries(
     listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
   },
   filters?: string | ReviewItemFilters,
-  options: ReviewPacketListOptions = {},
+  options: ReviewPacketEntryOptions = {},
 ): ReviewPacketEntry[] {
   const { itemFilters, packetLimit, originalFilters } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
   for (const item of store.listReviewItems(itemFilters)) {
+    if (options.itemFilter && !options.itemFilter(item)) continue;
     const sourceId = reviewSubjectSourceId(store, item);
     const key = reviewPacketKey(item, sourceId);
     const existing = packets.get(key);
@@ -117,6 +126,7 @@ function listReviewPacketEntries(
       originalFilters,
       options.commandContext,
       options.commandSubjectScope ?? "packet",
+      options.itemFilter,
     );
     return {
       packet: {
@@ -183,13 +193,16 @@ function packetListFilters(filters?: string | ReviewItemFilters): {
 }
 
 function reviewPacketNextCommand(
-  store: Pick<WorkbenchStore, "db">,
+  store: Pick<WorkbenchStore, "db"> & {
+    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+  },
   packet: ReviewPacketRecord,
   items: ReviewItemRecord[],
   subjectPrefix: string | undefined,
   originalFilters: ReviewItemFilters | undefined,
   commandContext: ReviewPacketCommandContext | undefined,
   commandSubjectScope: NonNullable<ReviewPacketListOptions["commandSubjectScope"]>,
+  itemFilter: ((item: ReviewItemRecord) => boolean) | undefined,
 ): { command: string; action: ReviewPacketCommandAction } | undefined {
   const mode = reviewPacketMode(packet.itemType);
   if (!mode) return undefined;
@@ -234,7 +247,8 @@ function reviewPacketNextCommand(
     commandSubjectPrefix &&
     requestedSubjectPrefixCanScopeBatch &&
     isOpenPacketScope(batchScopedFilters) &&
-    openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters))
+    openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters)) &&
+    acceptedBatchScopeMatchesItemFilter(store, batchScopedFilters, itemFilter)
   ) {
     return {
       command: reviewBatchCommand("accept-safe", batchScopedFilters, commandContext),
@@ -267,6 +281,19 @@ function reviewPacketNextCommand(
     ),
     action: "list",
   };
+}
+
+function acceptedBatchScopeMatchesItemFilter(
+  store: Pick<WorkbenchStore, "db"> & {
+    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+  },
+  filters: ReviewItemFilters,
+  itemFilter: ((item: ReviewItemRecord) => boolean) | undefined,
+): boolean {
+  if (!itemFilter) return true;
+  return store.listReviewItems(filters).every((item) =>
+    !canBatchAcceptReviewItem(store, item, filters) || itemFilter(item)
+  );
 }
 
 function sourceSubjectPrefixForPacket(
