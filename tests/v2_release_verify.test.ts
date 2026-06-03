@@ -225,6 +225,27 @@ Deno.test("release verify rejects private dataset and legal ref row URLs", async
   );
 });
 
+Deno.test("release verify text reports dataset and legal ref provenance problems", async () => {
+  const { dbPath, workbench } = await sourceBackedInventoryWorkbench();
+  workbench.db.prepare(
+    "delete from dataset_evidence where dataset_id = ?",
+  ).run("dataset.test.release.verify.inventory");
+  workbench.db.prepare(
+    "update legal_ref_evidence set artifact_path = 'missing/legal-ref.json' where legal_ref_id = ?",
+  ).run("legal.test.release.verify.inventory");
+  workbench.close();
+
+  const output = await runReleaseVerifyText(dbPath);
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 1);
+  assertStringIncludes(stdout, "Dataset row provenance checked: 1 dataset row.");
+  assertStringIncludes(stdout, "Legal ref row provenance checked: 1 legal ref row.");
+  assertStringIncludes(stdout, "Dataset row provenance problems:");
+  assertStringIncludes(stdout, "Legal ref row provenance problems:");
+  assertStringIncludes(stdout, "missing dataset evidence");
+  assertStringIncludes(stdout, "evidence artifact_path does not resolve to a source artifact");
+});
+
 Deno.test("release verify accepts camelCase relationship decision payloads", async () => {
   const { dbPath, workbench } = await readyRelationshipWorkbench();
   workbench.db.prepare(

@@ -164,12 +164,12 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
     }.`,
   );
   lines.push(
-    `Dataset rows checked: ${result.datasetProvenanceCheckedCount} source-backed dataset row${
+    `Dataset row provenance checked: ${result.datasetProvenanceCheckedCount} dataset row${
       result.datasetProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
   lines.push(
-    `Legal ref rows checked: ${result.legalRefProvenanceCheckedCount} source-backed legal ref row${
+    `Legal ref row provenance checked: ${result.legalRefProvenanceCheckedCount} legal ref row${
       result.legalRefProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
