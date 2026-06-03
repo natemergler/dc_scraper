@@ -1,11 +1,11 @@
 import { join } from "@std/path";
 import { handleAuditCommand } from "./cli_audit.ts";
+import { handleEntityCommand } from "./cli_entity.ts";
 import { handleReleaseCommand } from "./cli_release.ts";
 import { handleReviewCommand } from "./cli_review.ts";
 import { handleSourceCommand } from "./cli_source.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
 import { buildWorkbenchStatus } from "./status.ts";
-import { renderEntityView } from "./workbench/review_cli.ts";
 import { Workbench } from "./workbench.ts";
 
 export async function handleV2Command(args: string[]): Promise<boolean> {
@@ -72,40 +72,23 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     },
   );
   if (releaseHandled) return true;
-  if (args[0] === "entity" && isHelp(args[1])) {
-    printEntityHelp();
-    return true;
-  }
+  const entityHandled = await handleEntityCommand(
+    args,
+    { json: args.includes("--json") },
+    {
+      searchEntities: async (query) =>
+        await withWorkbench(dbPath, (workbench) => workbench.searchEntities(query)),
+      entityView: async (entityId) =>
+        await withWorkbench(dbPath, (workbench) => workbench.entityView(entityId)),
+    },
+  );
+  if (entityHandled) return true;
   if (args[0] === "workbench" && args[1] === "init") {
     const meta = await withWorkbench(dbPath, (_workbench, meta) => meta, {
       refreshDerivedState: false,
     });
     console.log(`Initialized v2 workbench: ${dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
-    return true;
-  }
-  if (args[0] === "entity" && args[1] === "search" && args[2]) {
-    const rows = await withWorkbench(
-      dbPath,
-      (workbench) => workbench.searchEntities(readFreeTextArgument(args, 2)),
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(rows, null, 2));
-      return true;
-    }
-    for (const row of rows) {
-      const placeholderTag = row.isPlaceholder ? " placeholder" : "";
-      console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}${placeholderTag}`);
-    }
-    return true;
-  }
-  if (args[0] === "entity" && args[1] === "show" && args[2]) {
-    const view = await withWorkbench(dbPath, (workbench) => workbench.entityView(args[2]));
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(view, null, 2));
-      return true;
-    }
-    console.log(renderEntityView(view));
     return true;
   }
   return false;
@@ -159,22 +142,9 @@ function readFlag(args: string[], flag: string): string | undefined {
   return args[index + 1];
 }
 
-function isHelp(value: string | undefined): boolean {
-  return value === "help" || value === "--help" || value === "-h";
-}
-
 function readNumberFlag(args: string[], flag: string): number | undefined {
   const value = readFlag(args, flag);
   return value ? Number(value) : undefined;
-}
-
-function readFreeTextArgument(args: string[], startIndex: number): string {
-  const values: string[] = [];
-  for (let index = startIndex; index < args.length; index += 1) {
-    if (args[index].startsWith("--")) break;
-    values.push(args[index]);
-  }
-  return values.join(" ");
 }
 
 export function printHelp(): void {
@@ -211,14 +181,5 @@ Defaults:
   source artifacts: data/v2_artifacts
   resolutions: resolutions/
   release output: releases/latest
-`);
-}
-
-function printEntityHelp(): void {
-  console.log(`dc entity
-
-Usage:
-  dc entity search <query> [--db <path>] [--json]
-  dc entity show <entity-id> [--db <path>] [--json]
 `);
 }
