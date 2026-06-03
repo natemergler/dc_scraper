@@ -192,31 +192,70 @@ function buildSeededRelationshipEndpointCandidates(
   );
   const seededCandidates: EntityCandidateInput[] = [];
   for (const relationshipCandidate of relationshipCandidates) {
-    const seededCandidate = seededRelationshipEndpointCandidate(sourceId, relationshipCandidate);
-    if (!seededCandidate) continue;
-    if (existingEntityIds.has(seededCandidate.proposedEntityId)) continue;
-    if (endpointAlreadyKnown(store, seededCandidate.proposedEntityId)) continue;
-    seededCandidates.push(seededCandidate);
-    existingEntityIds.add(seededCandidate.proposedEntityId);
+    for (
+      const seededCandidate of seededRelationshipEndpointCandidatesForRelationship(
+        sourceId,
+        relationshipCandidate,
+      )
+    ) {
+      if (existingEntityIds.has(seededCandidate.proposedEntityId)) continue;
+      if (endpointAlreadyKnown(store, seededCandidate.proposedEntityId)) continue;
+      seededCandidates.push(seededCandidate);
+      existingEntityIds.add(seededCandidate.proposedEntityId);
+    }
   }
   return seededCandidates;
 }
 
-function seededRelationshipEndpointCandidate(
+function seededRelationshipEndpointCandidatesForRelationship(
   sourceId: string,
   relationshipCandidate: RelationshipCandidateInput,
-): EntityCandidateInput | undefined {
-  if (relationshipCandidate.toEntityRef.startsWith("legal.")) return undefined;
+): EntityCandidateInput[] {
   const observedName = normalizeName(relationshipCandidate.rawValue ?? "");
-  if (!observedName || !isSeedableEndpointName(observedName)) return undefined;
-  if (buildEntityId(observedName) !== relationshipCandidate.toEntityRef) return undefined;
+  if (!observedName || !isSeedableEndpointName(observedName)) return [];
+  const candidates: EntityCandidateInput[] = [];
+  if (
+    !relationshipCandidate.toEntityRef.startsWith("legal.") &&
+    buildEntityId(observedName) === relationshipCandidate.toEntityRef
+  ) {
+    candidates.push(
+      buildSeededRelationshipEndpointCandidate(
+        sourceId,
+        relationshipCandidate,
+        observedName,
+        relationshipCandidate.toEntityRef,
+        "to-endpoint",
+      ),
+    );
+  }
+  if (shouldSeedFromRelationshipEndpoint(sourceId, relationshipCandidate, observedName)) {
+    candidates.push(
+      buildSeededRelationshipEndpointCandidate(
+        sourceId,
+        relationshipCandidate,
+        observedName,
+        relationshipCandidate.fromEntityRef,
+        "from-endpoint",
+      ),
+    );
+  }
+  return candidates;
+}
+
+function buildSeededRelationshipEndpointCandidate(
+  sourceId: string,
+  relationshipCandidate: RelationshipCandidateInput,
+  observedName: string,
+  proposedEntityId: string,
+  suffix: string,
+): EntityCandidateInput {
   return {
     candidateId: buildCandidateId(
       sourceId,
-      `${relationshipCandidate.relationshipCandidateId}.endpoint`,
+      `${relationshipCandidate.relationshipCandidateId}.${suffix}`,
     ),
     sourceItemKey: relationshipCandidate.sourceItemKey,
-    proposedEntityId: relationshipCandidate.toEntityRef,
+    proposedEntityId,
     name: observedName,
     kind: detectEntityKind(undefined, observedName),
     evidence: relationshipCandidate.evidence.map((evidence) => ({
@@ -224,6 +263,17 @@ function seededRelationshipEndpointCandidate(
       observedValue: observedName,
     })),
   };
+}
+
+function shouldSeedFromRelationshipEndpoint(
+  sourceId: string,
+  relationshipCandidate: RelationshipCandidateInput,
+  observedName: string,
+): boolean {
+  return sourceId === "council.committees" &&
+    relationshipCandidate.relationshipType === "overseen_by" &&
+    buildEntityId(observedName) === relationshipCandidate.fromEntityRef &&
+    !isGroupedCommitteeOversightTarget(observedName);
 }
 
 function seededRelationshipEndpointReviewItem(
@@ -251,6 +301,10 @@ function isSeedableEndpointName(value: string): boolean {
     normalized !== "n/a" &&
     normalized !== "na" &&
     normalized !== "none";
+}
+
+function isGroupedCommitteeOversightTarget(value: string): boolean {
+  return /including|jointly|^all of |excluding/i.test(value);
 }
 
 function endpointAlreadyKnown(
