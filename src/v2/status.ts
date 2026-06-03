@@ -1,7 +1,7 @@
 import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
+import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
-import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
 export interface ReleaseManifest {
   generated_at?: string;
@@ -91,6 +91,7 @@ export interface WorkbenchStatusSnapshot {
     relationships: number;
   };
   nextCommand: string;
+  unresolvedStateNote: string;
 }
 
 export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
@@ -106,12 +107,15 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const reconciliation = workbench.reconciliationSummary();
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
-  const next = nextCommand({
+  const operatorPlan = buildOperatorPlan({
     workbench,
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
-    openReview,
-    blockedReconciliation: reconciliation.blockedCount,
+    openReviewItemCount: openReview,
+    deferredReviewItemCount: deferredReview,
+    staleReviewItemCount: staleReview.count,
+    blockedReconciliationCount: reconciliation.blockedCount,
+    placeholderEntityCount: placeholders.count,
   });
   return {
     sources: {
@@ -142,7 +146,8 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       entities,
       relationships,
     },
-    nextCommand: next,
+    nextCommand: operatorPlan.nextCommand,
+    unresolvedStateNote: operatorPlan.unresolvedStateNote,
   };
 }
 
@@ -212,6 +217,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       ]
       : []),
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
+    `Readiness: ${status.unresolvedStateNote}`,
     `Next: ${status.nextCommand}`,
   ].join("\n");
 }
@@ -239,201 +245,8 @@ export function renderWorkbenchDoctor(status: WorkbenchStatusSnapshot): string {
   return lines.join("\n");
 }
 
-function nextCommand(options: {
-  workbench: Workbench;
-  fetchedSources: number;
-  failedSourceId?: string;
-  openReview: number;
-  blockedReconciliation: number;
-}): string {
-  if (options.failedSourceId) return dcCommand(`source inspect ${options.failedSourceId}`);
-  const suggestedReviewCommand = suggestScopedReviewCommand(options.workbench);
-  if (suggestedReviewCommand) return suggestedReviewCommand;
-  if (options.openReview > 0) return dcCommand("review");
-  if (options.blockedReconciliation > 0) return dcCommand("audit");
-  if (options.fetchedSources < connectors.length) return dcCommand("source list");
-  return dcCommand("release build");
-}
-
 function blockedInspectionCommand(sourceId: string): string {
   return dcCommand(`source inspect ${sourceId}`);
-}
-
-interface SuggestedCommand {
-  command: string;
-  count: number;
-}
-
-function suggestScopedReviewCommand(workbench: Workbench): string | undefined {
-  return suggestExplicitSafeEntityBatch(workbench)?.command ??
-    suggestSafeRelationshipBatch(workbench)?.command ??
-    suggestDeferDefaultRelationshipBatch(workbench)?.command ??
-    suggestDeferDefaultLegalBatch(workbench)?.command ??
-    suggestHighConfidenceEntityBatch(workbench)?.command;
-}
-
-function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const reviewDebt = workbench.reviewDebtSummary();
-  let best: SuggestedCommand | undefined;
-  for (const source of reviewDebt.bySource) {
-    if (source.openCount === 0) continue;
-    const filters = {
-      mode: "entities",
-      status: "open",
-      subjectPrefix: `candidate.${source.sourceId}`,
-    } as const;
-    const items = workbench.listReviewItems(filters);
-    const safeCount = items.filter((item) =>
-      item.details.safeToAutoAccept === true &&
-      canBatchAcceptReviewItem(workbench, item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
-      ),
-      count: safeCount,
-    };
-    if (!best || candidate.count > best.count) best = candidate;
-  }
-  return best;
-}
-
-function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
-  const grouped = new Map<
-    string,
-    { sourceId: string; relationshipType: string; items: typeof items }
-  >();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "relationship");
-    const relationshipType = detailString(item.details, "relationshipType");
-    if (!sourceId || !relationshipType) continue;
-    const key = `${sourceId}:${relationshipType}`;
-    const group = grouped.get(key) ?? { sourceId, relationshipType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
-  let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
-    const filters = {
-      mode: "relationships",
-      status: "open",
-      subjectPrefix: `relationship.${group.sourceId}`,
-      relationshipType: group.relationshipType,
-    } as const;
-    const safeCount = group.items.filter((item) =>
-      canBatchAcceptReviewItem(workbench, item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
-      ),
-      count: safeCount,
-    };
-    if (!best || candidate.count > best.count) best = candidate;
-  }
-  return best;
-}
-
-function suggestDeferDefaultRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
-  const grouped = new Map<
-    string,
-    { sourceId: string; relationshipType: string; items: typeof items }
-  >();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "relationship");
-    const relationshipType = detailString(item.details, "relationshipType");
-    if (!sourceId || !relationshipType) continue;
-    const key = `${sourceId}:${relationshipType}`;
-    const group = grouped.get(key) ?? { sourceId, relationshipType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
-  let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
-    if (group.items.some((item) => item.defaultAction !== "defer")) continue;
-    const candidate = {
-      command: dcCommand(
-        `review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
-      ),
-      count: group.items.length,
-    };
-    if (!best || candidate.count > best.count) best = candidate;
-  }
-  return best;
-}
-
-function suggestDeferDefaultLegalBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "legal", status: "open" });
-  const grouped = new Map<string, { sourceId: string; refType: string; items: typeof items }>();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "legal");
-    const refType = detailString(item.details, "refType");
-    if (!sourceId || !refType) continue;
-    const key = `${sourceId}:${refType}`;
-    const group = grouped.get(key) ?? { sourceId, refType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
-  let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
-    if (group.items.some((item) => item.defaultAction !== "defer")) continue;
-    const candidate = {
-      command: dcCommand(
-        `review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.refType}`,
-      ),
-      count: group.items.length,
-    };
-    if (!best || candidate.count > best.count) best = candidate;
-  }
-  return best;
-}
-
-function suggestHighConfidenceEntityBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const reviewDebt = workbench.reviewDebtSummary();
-  let best: SuggestedCommand | undefined;
-  for (const source of reviewDebt.bySource) {
-    if (source.openCount === 0) continue;
-    const filters = {
-      mode: "entities",
-      status: "open",
-      subjectPrefix: `candidate.${source.sourceId}`,
-    } as const;
-    const items = workbench.listReviewItems(filters);
-    const safeCount = items.filter((item) =>
-      item.details.safeToAutoAccept !== true &&
-      canBatchAcceptReviewItem(workbench, item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
-      ),
-      count: safeCount,
-    };
-    if (!best || candidate.count > best.count) best = candidate;
-  }
-  return best;
-}
-
-function sourceIdForReviewSubject(
-  subjectId: string,
-  kind: "candidate" | "relationship" | "legal",
-): string | undefined {
-  const prefix = `${kind}.`;
-  return connectors.find((connector) => subjectId.startsWith(`${prefix}${connector.sourceId}.`))
-    ?.sourceId;
-}
-
-function detailString(details: Record<string, unknown>, key: string): string | undefined {
-  const value = details[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 export function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): string {

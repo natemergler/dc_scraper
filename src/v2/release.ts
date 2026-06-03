@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256Hex } from "./domain.ts";
+import { unresolvedStateNote } from "./operator_plan.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -507,7 +508,7 @@ function buildReleaseSummary(
       count: row.count,
     })),
     placeholder_entity_count: placeholderEntityCount.count,
-    review_status_note: buildReviewStatusNote({
+    review_status_note: releaseReviewStatusNote({
       openReviewItemCount,
       deferredReviewItemCount,
       staleReviewItemCount: staleReview.count,
@@ -523,23 +524,8 @@ function buildReleaseSummary(
   };
 }
 
-function buildReviewStatusNote(counts: {
-  openReviewItemCount: number;
-  deferredReviewItemCount: number;
-  staleReviewItemCount: number;
-  blockedReconciliationCount: number;
-  placeholderEntityCount: number;
-}): string {
-  if (
-    counts.openReviewItemCount === 0 &&
-    counts.deferredReviewItemCount === 0 &&
-    counts.staleReviewItemCount === 0 &&
-    counts.blockedReconciliationCount === 0 &&
-    counts.placeholderEntityCount === 0
-  ) {
-    return "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present at release build time.";
-  }
-  return `Release built with unresolved workbench state: open review=${counts.openReviewItemCount}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
+function releaseReviewStatusNote(counts: Parameters<typeof unresolvedStateNote>[0]): string {
+  return `${unresolvedStateNote(counts)} Release generated from accepted materialized facts only.`;
 }
 
 function countByReviewStatus<T>(
