@@ -501,7 +501,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   );
 });
 
-Deno.test("status points to doctor when blocked reconciliation is the only remaining work", async () => {
+Deno.test("status points to audit when blocked reconciliation is the only remaining work", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -545,10 +545,10 @@ Deno.test("status points to doctor when blocked reconciliation is the only remai
   const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
     nextCommand: string;
   };
-  assertEquals(status.nextCommand, "dc doctor");
+  assertEquals(status.nextCommand, "dc audit");
 });
 
-Deno.test("doctor surfaces first blocked raw value and a concrete source inspection command", async () => {
+Deno.test("audit surfaces first blocked raw value and doctor remains a compatibility alias", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -572,6 +572,75 @@ Deno.test("doctor surfaces first blocked raw value and a concrete source inspect
     dataDir,
   );
   workbench.close();
+
+  const auditOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(auditOutput.code, 0);
+  const auditText = new TextDecoder().decode(auditOutput.stdout);
+  assertStringIncludes(
+    auditText,
+    "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
+  );
+  assertStringIncludes(auditText, "Blocked detail:");
+  assertStringIncludes(
+    auditText,
+    "Value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertStringIncludes(
+    auditText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
+  );
+  assertStringIncludes(
+    auditText,
+    "Subject id: relationship.test.blocked.doctor",
+  );
+  assertStringIncludes(auditText, "Inspect source: dc source inspect council.committees");
+
+  const auditJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(auditJsonOutput.code, 0);
+  const auditJson = JSON.parse(new TextDecoder().decode(auditJsonOutput.stdout)) as {
+    reconciliation: {
+      blocked: number;
+      firstBlocked?: {
+        sourceId: string;
+        rawValue?: string | null;
+      };
+    };
+    nextCommand: string;
+  };
+  assertEquals(auditJson.reconciliation.blocked, 1);
+  assertEquals(auditJson.reconciliation.firstBlocked?.sourceId, "council.committees");
+  assertEquals(
+    auditJson.reconciliation.firstBlocked?.rawValue,
+    "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertEquals(auditJson.nextCommand, "dc audit");
 
   const doctorOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
