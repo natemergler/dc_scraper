@@ -27,9 +27,18 @@ export interface ReviewPacketRecord {
 }
 
 export type ReviewPacketCommandContext = ReviewCommandContext;
+export type ReviewPacketBatchCommandAction = "accept-safe" | "defer-default";
+
+type ReviewPacketCommandAction = ReviewPacketBatchCommandAction | "list";
 
 export interface ReviewPacketListOptions {
   commandContext?: ReviewPacketCommandContext;
+  commandSubjectScope?: "packet" | "source";
+}
+
+interface ReviewPacketEntry {
+  packet: ReviewPacketRecord;
+  nextAction?: ReviewPacketCommandAction;
 }
 
 export function listReviewPackets(
@@ -39,6 +48,32 @@ export function listReviewPackets(
   filters?: string | ReviewItemFilters,
   options: ReviewPacketListOptions = {},
 ): ReviewPacketRecord[] {
+  return listReviewPacketEntries(store, filters, options).map((entry) => entry.packet);
+}
+
+export function reviewPacketCommand(
+  store: Pick<WorkbenchStore, "db"> & {
+    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+  },
+  filters: ReviewItemFilters,
+  action: ReviewPacketBatchCommandAction,
+  options: ReviewPacketListOptions = {},
+): string | undefined {
+  return listReviewPacketEntries(store, filters, {
+    ...options,
+    commandSubjectScope: options.commandSubjectScope ?? "source",
+  })
+    .find((entry) => entry.nextAction === action)
+    ?.packet.nextCommand;
+}
+
+function listReviewPacketEntries(
+  store: Pick<WorkbenchStore, "db"> & {
+    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+  },
+  filters?: string | ReviewItemFilters,
+  options: ReviewPacketListOptions = {},
+): ReviewPacketEntry[] {
   const { itemFilters, packetLimit, originalFilters } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
@@ -74,23 +109,28 @@ export function listReviewPackets(
   const sortedPackets = [...packets.entries()].map(([key, packet]) => {
     const items = packetItems.get(key) ?? [];
     const subjectPrefix = commonSubjectPrefix(items.map((item) => item.subjectId));
-    return {
-      ...packet,
+    const next = reviewPacketNextCommand(
+      store,
+      packet,
+      items,
       subjectPrefix,
-      nextCommand: reviewPacketNextCommand(
-        store,
-        packet,
-        items,
+      originalFilters,
+      options.commandContext,
+      options.commandSubjectScope ?? "packet",
+    );
+    return {
+      packet: {
+        ...packet,
         subjectPrefix,
-        originalFilters,
-        options.commandContext,
-      ),
+        nextCommand: next?.command,
+      },
+      nextAction: next?.action,
     };
   }).sort((left, right) =>
-    right.count - left.count ||
-    left.sourceId.localeCompare(right.sourceId) ||
-    left.itemType.localeCompare(right.itemType) ||
-    left.reason.localeCompare(right.reason)
+    right.packet.count - left.packet.count ||
+    left.packet.sourceId.localeCompare(right.packet.sourceId) ||
+    left.packet.itemType.localeCompare(right.packet.itemType) ||
+    left.packet.reason.localeCompare(right.packet.reason)
   );
   return packetLimit === undefined ? sortedPackets : sortedPackets.slice(0, packetLimit);
 }
@@ -149,11 +189,19 @@ function reviewPacketNextCommand(
   subjectPrefix: string | undefined,
   originalFilters: ReviewItemFilters | undefined,
   commandContext: ReviewPacketCommandContext | undefined,
-): string | undefined {
+  commandSubjectScope: NonNullable<ReviewPacketListOptions["commandSubjectScope"]>,
+): { command: string; action: ReviewPacketCommandAction } | undefined {
   const mode = reviewPacketMode(packet.itemType);
   if (!mode) return undefined;
+  const sourceSubjectPrefix = sourceSubjectPrefixForPacket(
+    packet,
+    mode,
+    originalFilters,
+    commandSubjectScope,
+  );
   const commandSubjectPrefix = reviewPacketCommandSubjectPrefix(
-    subjectPrefix,
+    sourceSubjectPrefix ? undefined : subjectPrefix,
+    sourceSubjectPrefix,
     originalFilters?.subjectPrefix,
     items,
   );
@@ -188,7 +236,10 @@ function reviewPacketNextCommand(
     isOpenPacketScope(batchScopedFilters) &&
     openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters))
   ) {
-    return reviewBatchCommand("accept-safe", batchScopedFilters, commandContext);
+    return {
+      command: reviewBatchCommand("accept-safe", batchScopedFilters, commandContext),
+      action: "accept-safe",
+    };
   }
   if (
     openItems.length > 0 &&
@@ -198,18 +249,37 @@ function reviewPacketNextCommand(
     isOpenPacketScope(batchScopedFilters) &&
     hasBatchNarrowing(batchScopedFilters)
   ) {
-    return reviewBatchCommand("defer-default", batchScopedFilters, commandContext);
+    return {
+      command: reviewBatchCommand("defer-default", batchScopedFilters, commandContext),
+      action: "defer-default",
+    };
   }
-  return dcCommand(
-    [
-      "review list",
-      ...listFilterArgs,
-      "--limit",
-      "10",
-      ...reviewContextArgs(commandContext, "read"),
-    ]
-      .join(" "),
-  );
+  return {
+    command: dcCommand(
+      [
+        "review list",
+        ...listFilterArgs,
+        "--limit",
+        "10",
+        ...reviewContextArgs(commandContext, "read"),
+      ]
+        .join(" "),
+    ),
+    action: "list",
+  };
+}
+
+function sourceSubjectPrefixForPacket(
+  packet: ReviewPacketRecord,
+  mode: string,
+  originalFilters: ReviewItemFilters | undefined,
+  commandSubjectScope: NonNullable<ReviewPacketListOptions["commandSubjectScope"]>,
+): string | undefined {
+  if (commandSubjectScope !== "source" || originalFilters?.subjectPrefix) return undefined;
+  if (mode === "entities") return `candidate.${packet.sourceId}`;
+  if (mode === "relationships") return `relationship.${packet.sourceId}`;
+  if (mode === "legal") return `legal.${packet.sourceId}`;
+  return undefined;
 }
 
 function reviewPacketMode(itemType: ReviewItemRecord["itemType"]): string | undefined {
@@ -259,11 +329,13 @@ function hasBatchNarrowing(filters: ReviewItemFilters): boolean {
 
 function reviewPacketCommandSubjectPrefix(
   packetPrefix: string | undefined,
+  sourcePrefix: string | undefined,
   requestedPrefix: string | undefined,
   items: ReviewItemRecord[],
 ): string | undefined {
   const candidates: string[] = [];
   if (packetPrefix) candidates.push(packetPrefix);
+  if (sourcePrefix) candidates.push(sourcePrefix);
   if (requestedPrefix) candidates.push(requestedPrefix);
   return candidates
     .filter((prefix) => items.every((item) => item.subjectId.startsWith(prefix)))

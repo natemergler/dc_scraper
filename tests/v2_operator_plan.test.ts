@@ -2,6 +2,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
   buildOperatorPlan,
   type OperatorPlanWorkbench,
+  type ReviewPacketCommandSuggester,
   unresolvedStateNote,
 } from "../src/v2/operator_plan.ts";
 import { connectors } from "../src/v2/connectors.ts";
@@ -41,6 +42,7 @@ Deno.test("operator plan sends source failures to source inspection before revie
   const plan = buildOperatorPlan({
     workbench: fakeWorkbench([safeEntityReviewItem("candidate.council.committees.safe")]),
     canBatchAcceptReviewItem: batchAcceptsSafeDetails,
+    suggestReviewPacketCommand: noPacketCommand,
     fetchedSources: connectors.length - 1,
     failedSourceId: "council.committees",
     openReviewItemCount: 1,
@@ -61,6 +63,7 @@ Deno.test("operator plan suggests the largest explicit safe entity batch before 
       safeEntityReviewItem("candidate.council.committees.two"),
     ]),
     canBatchAcceptReviewItem: batchAcceptsSafeDetails,
+    suggestReviewPacketCommand: noPacketCommand,
     fetchedSources: connectors.length,
     openReviewItemCount: 3,
     deferredReviewItemCount: 0,
@@ -84,6 +87,10 @@ Deno.test("operator plan suggests the largest safe relationship batch before def
       deferRelationshipReviewItem("relationship.council.committees.two", "overseen_by"),
     ]),
     canBatchAcceptReviewItem: acceptsDefaultAcceptRelationship,
+    suggestReviewPacketCommand: packetCommand({
+      "relationships:accept-safe":
+        "deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type administered_by",
+    }),
     fetchedSources: connectors.length,
     openReviewItemCount: 4,
     deferredReviewItemCount: 0,
@@ -105,6 +112,10 @@ Deno.test("operator plan suggests scoped default-defer relationship batches befo
       deferRelationshipReviewItem("relationship.council.committees.two", "overseen_by"),
     ]),
     canBatchAcceptReviewItem: () => false,
+    suggestReviewPacketCommand: packetCommand({
+      "relationships:defer-default":
+        "deno task dc -- review batch defer-default --mode relationships --subject-prefix relationship.council.committees --relationship-type overseen_by",
+    }),
     fetchedSources: connectors.length,
     openReviewItemCount: 2,
     deferredReviewItemCount: 0,
@@ -126,6 +137,10 @@ Deno.test("operator plan suggests scoped default-defer legal refs before generic
       deferLegalReviewItem("legal.open_dc.public_bodies.two", "statute"),
     ]),
     canBatchAcceptReviewItem: () => false,
+    suggestReviewPacketCommand: packetCommand({
+      "legal:defer-default":
+        "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.open_dc.public_bodies --ref-type statute",
+    }),
     fetchedSources: connectors.length,
     openReviewItemCount: 2,
     deferredReviewItemCount: 0,
@@ -147,6 +162,10 @@ Deno.test("operator plan quotes shell-sensitive review batch filter values", () 
       deferLegalReviewItem("legal.open_dc.public_bodies.two", "Mayor's Order"),
     ]),
     canBatchAcceptReviewItem: () => false,
+    suggestReviewPacketCommand: packetCommand({
+      "legal:defer-default":
+        "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.open_dc.public_bodies --ref-type 'Mayor'\\''s Order'",
+    }),
     fetchedSources: connectors.length,
     openReviewItemCount: 2,
     deferredReviewItemCount: 0,
@@ -166,6 +185,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([genericReviewItem("source_status.open")]),
       canBatchAcceptReviewItem: () => false,
+      suggestReviewPacketCommand: noPacketCommand,
       fetchedSources: connectors.length,
       openReviewItemCount: 1,
       deferredReviewItemCount: 0,
@@ -180,6 +200,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
+      suggestReviewPacketCommand: noPacketCommand,
       fetchedSources: connectors.length,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
@@ -194,6 +215,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
+      suggestReviewPacketCommand: noPacketCommand,
       fetchedSources: connectors.length - 1,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
@@ -208,6 +230,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
+      suggestReviewPacketCommand: noPacketCommand,
       fetchedSources: connectors.length,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
@@ -240,6 +263,12 @@ function fakeWorkbench(items: ReviewItemRecord[]): OperatorPlanWorkbench {
       return items.filter((item) => matchesFilters(item, filters));
     },
   };
+}
+
+const noPacketCommand: ReviewPacketCommandSuggester = () => undefined;
+
+function packetCommand(commands: Record<string, string>): ReviewPacketCommandSuggester {
+  return (filters, action) => commands[`${filters.mode}:${action}`];
 }
 
 function matchesFilters(item: ReviewItemRecord, filters?: ReviewItemFilters): boolean {
