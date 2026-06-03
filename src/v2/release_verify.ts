@@ -545,6 +545,14 @@ function validateRelationshipProvenance(
     candidateToEntityId?: string | null;
   }>;
   const problems: ReleaseRelationshipProvenanceProblem[] = [];
+  const evidenceRowsByRelationshipCandidateId = sourceBackedEvidenceRowsByRowId(
+    workbench,
+    "relationship_candidate_evidence",
+    "relationship_candidate_id",
+    relationships
+      .map((relationship) => relationship.subjectId)
+      .filter((subjectId): subjectId is string => typeof subjectId === "string"),
+  );
 
   for (const relationship of relationships) {
     const addProblem = (message: string) => {
@@ -610,29 +618,8 @@ function validateRelationshipProvenance(
       );
     }
 
-    const evidenceRows = workbench.db.prepare(
-      `select relationship_candidate_evidence.evidence_id as evidenceId,
-              relationship_candidate_evidence.field_path as fieldPath,
-              relationship_candidate_evidence.artifact_path as artifactPath,
-              relationship_candidate_evidence.source_id as evidenceSourceId,
-              relationship_candidate_evidence.source_item_id as evidenceSourceItemId,
-              source_items.source_id as sourceItemSourceId,
-              source_runs.source_id as artifactRunSourceId,
-              source_artifacts.fetched_url as fetchedUrl,
-              source_artifacts.content_hash as contentHash
-       from relationship_candidate_evidence
-       left join source_items
-         on source_items.source_item_id = relationship_candidate_evidence.source_item_id
-       left join source_artifacts
-         on source_artifacts.run_id = source_items.run_id
-        and source_artifacts.path = relationship_candidate_evidence.artifact_path
-       left join source_runs
-         on source_runs.run_id = source_artifacts.run_id
-       where relationship_candidate_evidence.relationship_candidate_id = ?
-       order by relationship_candidate_evidence.evidence_id`,
-    ).all(relationship.subjectId) as SourceBackedEvidenceRow[];
     validateSourceBackedEvidenceRows(
-      evidenceRows,
+      evidenceRowsByRelationshipCandidateId.get(relationship.subjectId) ?? [],
       relationship.candidateSourceItemId ?? "",
       "relationship candidate",
       "missing relationship candidate evidence",
@@ -877,8 +864,12 @@ interface SourceBackedEvidenceRowWithRowId extends SourceBackedEvidenceRow {
 
 function sourceBackedEvidenceRows(
   workbench: Workbench,
-  evidenceTable: "entity_candidate_evidence" | "dataset_evidence" | "legal_ref_evidence",
-  rowIdColumn: "candidate_id" | "dataset_id" | "legal_ref_id",
+  evidenceTable:
+    | "entity_candidate_evidence"
+    | "relationship_candidate_evidence"
+    | "dataset_evidence"
+    | "legal_ref_evidence",
+  rowIdColumn: "candidate_id" | "relationship_candidate_id" | "dataset_id" | "legal_ref_id",
   rowId: string,
 ): SourceBackedEvidenceRow[] {
   return sourceBackedEvidenceRowsByRowId(workbench, evidenceTable, rowIdColumn, [rowId])
@@ -887,8 +878,12 @@ function sourceBackedEvidenceRows(
 
 function sourceBackedEvidenceRowsByRowId(
   workbench: Workbench,
-  evidenceTable: "entity_candidate_evidence" | "dataset_evidence" | "legal_ref_evidence",
-  rowIdColumn: "candidate_id" | "dataset_id" | "legal_ref_id",
+  evidenceTable:
+    | "entity_candidate_evidence"
+    | "relationship_candidate_evidence"
+    | "dataset_evidence"
+    | "legal_ref_evidence",
+  rowIdColumn: "candidate_id" | "relationship_candidate_id" | "dataset_id" | "legal_ref_id",
   rowIds: string[],
 ): Map<string, SourceBackedEvidenceRow[]> {
   const rowsByRowId = new Map<string, SourceBackedEvidenceRow[]>(
