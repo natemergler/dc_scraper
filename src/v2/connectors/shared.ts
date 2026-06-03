@@ -7,6 +7,7 @@ import {
   normalizeName,
   type SourceDefinition,
 } from "../domain.ts";
+export { toPublicHttpUrl } from "../url_safety.ts";
 
 export type { ConnectorResult } from "../domain.ts";
 
@@ -117,23 +118,6 @@ export function isScopedCouncilOversightTarget(rawValue: string): boolean {
   return /\bincluding\b|\bjointly\b|^all of\b|\bexcluding\b/i.test(normalizeName(rawValue));
 }
 
-export function toPublicHttpUrl(
-  baseUrl: string,
-  maybeRelative: string | undefined,
-): string | undefined {
-  const raw = maybeRelative?.trim();
-  if (!raw || looksLikeLocalPath(raw)) return undefined;
-  let url: URL;
-  try {
-    url = new URL(raw, baseUrl);
-  } catch {
-    return undefined;
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
-  const href = url.toString();
-  return looksLikeLocalPath(href) ? undefined : href;
-}
-
 export function extractFirstUrl(input: string): string | undefined {
   return input.match(/https?:\/\/\S+/)?.[0];
 }
@@ -143,28 +127,6 @@ export function maybeString(value: unknown): string | undefined {
     ? normalizeName(decodeHtmlEntities(value))
     : String(value ?? "").trim();
   return text ? text : undefined;
-}
-
-function looksLikeLocalPath(value: string): boolean {
-  const decoded = repeatedlyDecodeURIComponent(value).replaceAll("\\", "/");
-  return /(^|\/)file:/i.test(decoded) ||
-    /^[a-z]:\//i.test(decoded) ||
-    /(^|\/)Users\/[^/]+/i.test(decoded) ||
-    /(^|\/)home\/[^/]+/i.test(decoded);
-}
-
-function repeatedlyDecodeURIComponent(value: string): string {
-  let decoded = value;
-  for (let index = 0; index < 3; index += 1) {
-    try {
-      const next = decodeURIComponent(decoded);
-      if (next === decoded) break;
-      decoded = next;
-    } catch {
-      break;
-    }
-  }
-  return decoded;
 }
 
 function entityAliasKey(name: string): string {
