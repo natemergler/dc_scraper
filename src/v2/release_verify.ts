@@ -9,6 +9,12 @@ export interface ReleaseArtifactProblem {
   message: string;
 }
 
+export interface ReleaseEntityProvenanceProblem {
+  entityId: string;
+  candidateId: string;
+  message: string;
+}
+
 export interface ReleaseRelationshipProvenanceProblem {
   relationshipId: string;
   fromEntityId: string;
@@ -46,6 +52,8 @@ export interface ReleaseVerificationResult {
   readiness: ReleaseReadiness;
   reasons: string[];
   sourceArtifactProblems: ReleaseArtifactProblem[];
+  entityProvenanceCheckedCount: number;
+  entityProvenanceProblems: ReleaseEntityProvenanceProblem[];
   relationshipProvenanceCheckedCount: number;
   relationshipProvenanceProblems: ReleaseRelationshipProvenanceProblem[];
   datasetProvenanceCheckedCount: number;
@@ -63,6 +71,11 @@ export interface ReleaseVerificationResult {
 interface ReleaseRelationshipProvenanceCheck {
   checkedCount: number;
   problems: ReleaseRelationshipProvenanceProblem[];
+}
+
+interface ReleaseEntityProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseEntityProvenanceProblem[];
 }
 
 interface ReleaseDatasetProvenanceCheck {
@@ -88,6 +101,8 @@ interface ReleaseRelationshipLegalRefProvenanceCheck {
 export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificationResult {
   const status = buildWorkbenchStatus(workbench);
   const sourceArtifactProblems = validateSourceArtifacts(workbench.sourceArtifacts());
+  const entityProvenance = validateEntityProvenance(workbench);
+  const entityProvenanceProblems = entityProvenance.problems;
   const relationshipProvenance = validateRelationshipProvenance(workbench);
   const relationshipProvenanceProblems = relationshipProvenance.problems;
   const datasetProvenance = validateDatasetProvenance(workbench);
@@ -113,6 +128,13 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
     reasons.push(
       `source artifact provenance: ${sourceArtifactProblems.length} problem${
         sourceArtifactProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
+  if (entityProvenanceProblems.length > 0) {
+    reasons.push(
+      `entity row provenance: ${entityProvenanceProblems.length} problem${
+        entityProvenanceProblems.length === 1 ? "" : "s"
       }`,
     );
   }
@@ -161,6 +183,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       blockedReconciliationCount: status.reconciliation.blocked,
       placeholderEntityCount: status.placeholders.count,
       blockingProblemCount: sourceArtifactProblems.length +
+        entityProvenanceProblems.length +
         relationshipProvenanceProblems.length +
         datasetProvenanceProblems.length +
         legalRefProvenanceProblems.length +
@@ -169,6 +192,8 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
     }),
     reasons,
     sourceArtifactProblems,
+    entityProvenanceCheckedCount: entityProvenance.checkedCount,
+    entityProvenanceProblems,
     relationshipProvenanceCheckedCount: relationshipProvenance.checkedCount,
     relationshipProvenanceProblems,
     datasetProvenanceCheckedCount: datasetProvenance.checkedCount,
@@ -211,6 +236,11 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
     }
   }
   lines.push(
+    `Entity rows checked: ${result.entityProvenanceCheckedCount} accepted entity row${
+      result.entityProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
+  lines.push(
     `Relationship rows checked: ${result.relationshipProvenanceCheckedCount} accepted relationship row${
       result.relationshipProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
@@ -235,6 +265,19 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       result.relationshipLegalRefProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
+  if (result.entityProvenanceProblems.length > 0) {
+    const problems = result.entityProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Entity row provenance problems${
+        truncationNote(problems.length, result.entityProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(
+        `- ${problem.entityId} ${problem.candidateId}: ${problem.message}`,
+      );
+    }
+  }
   if (result.relationshipProvenanceProblems.length > 0) {
     const problems = result.relationshipProvenanceProblems.slice(0, 5);
     lines.push(
@@ -353,6 +396,102 @@ function problemForArtifact(
     artifactKind: artifact.artifact_kind || "unknown",
     message,
   };
+}
+
+function validateEntityProvenance(workbench: Workbench): ReleaseEntityProvenanceCheck {
+  const entities = workbench.db.prepare(
+    `select entity_id as entityId,
+            name,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where review_status = 'accepted'
+     order by entity_id`,
+  ).all() as Array<{
+    entityId: string;
+    name: string;
+    officialUrl?: string | null;
+    mergedCandidateIds: string;
+  }>;
+  const problems: ReleaseEntityProvenanceProblem[] = [];
+
+  for (const entity of entities) {
+    const addProblem = (candidateId: string, message: string) => {
+      problems.push({
+        entityId: entity.entityId,
+        candidateId,
+        message,
+      });
+    };
+    if (!entity.name) addProblem("unknown", "missing entity label");
+    if (entity.officialUrl && !isPublicHttpUrl(entity.officialUrl)) {
+      addProblem("unknown", "official_url is not a public http/https URL");
+    }
+
+    const candidateIds = parseStringArray(entity.mergedCandidateIds);
+    if (!candidateIds) {
+      addProblem("unknown", "merged_candidate_ids is not a JSON string array");
+      continue;
+    }
+    if (candidateIds.length === 0) {
+      addProblem("unknown", "missing accepted entity candidate reference");
+      continue;
+    }
+
+    for (const candidateId of candidateIds) {
+      const candidate = workbench.db.prepare(
+        `select entity_candidates.candidate_id as candidateId,
+                entity_candidates.source_item_id as sourceItemId,
+                entity_candidates.review_status as reviewStatus,
+                source_items.source_item_id as resolvedSourceItemId,
+                sources.base_url as sourceBaseUrl
+         from entity_candidates
+         left join source_items
+           on source_items.source_item_id = entity_candidates.source_item_id
+         left join sources
+           on sources.source_id = source_items.source_id
+         where entity_candidates.candidate_id = ?`,
+      ).get(candidateId) as {
+        candidateId: string;
+        sourceItemId: string;
+        reviewStatus: string;
+        resolvedSourceItemId?: string | null;
+        sourceBaseUrl?: string | null;
+      } | undefined;
+      if (!candidate) {
+        addProblem(
+          candidateId,
+          "merged_candidate_ids entry does not resolve to an entity candidate",
+        );
+        continue;
+      }
+      if (candidate.reviewStatus !== "accepted") {
+        addProblem(candidateId, "entity candidate row is not accepted");
+      }
+      if (!candidate.resolvedSourceItemId) {
+        addProblem(candidateId, "candidate source_item_id does not resolve to a source item");
+      }
+      if (candidate.sourceBaseUrl && !isPublicHttpUrl(candidate.sourceBaseUrl)) {
+        addProblem(candidateId, "source base_url is not a public http/https URL");
+      }
+
+      const evidenceRows = sourceBackedEvidenceRows(
+        workbench,
+        "entity_candidate_evidence",
+        "candidate_id",
+        candidateId,
+      );
+      validateSourceBackedEvidenceRows(
+        evidenceRows,
+        candidate.sourceItemId,
+        "entity candidate source_item_id",
+        "missing entity candidate evidence",
+        (message) => addProblem(candidateId, message),
+      );
+    }
+  }
+
+  return { checkedCount: entities.length, problems };
 }
 
 function validateRelationshipProvenance(
@@ -731,8 +870,8 @@ interface SourceBackedEvidenceRow {
 
 function sourceBackedEvidenceRows(
   workbench: Workbench,
-  evidenceTable: "dataset_evidence" | "legal_ref_evidence",
-  rowIdColumn: "dataset_id" | "legal_ref_id",
+  evidenceTable: "entity_candidate_evidence" | "dataset_evidence" | "legal_ref_evidence",
+  rowIdColumn: "candidate_id" | "dataset_id" | "legal_ref_id",
   rowId: string,
 ): SourceBackedEvidenceRow[] {
   return workbench.db.prepare(
@@ -806,6 +945,18 @@ function parseJsonObject(value: string | null | undefined): Record<string, unkno
       : {};
   } catch {
     return {};
+  }
+}
+
+function parseStringArray(value: string | null | undefined): string[] | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string")
+      ? parsed
+      : undefined;
+  } catch {
+    return undefined;
   }
 }
 
