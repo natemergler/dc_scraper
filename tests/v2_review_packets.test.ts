@@ -24,7 +24,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.target_agency",
       relationshipType: "overseen_by",
-      rawValue: "Committee on Health",
+      rawValue: "Committee on Health's Work",
     }),
     dataDir,
   );
@@ -111,7 +111,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     "--mode",
     "relationships",
     "--raw-value-contains",
-    "Committee on Health",
+    "Committee on Health's Work",
     "--db",
     dbPath,
     "--resolutions-dir",
@@ -136,7 +136,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   );
   assertEquals(
     narrowedBody.packets[0].nextCommand,
-    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees.review_packet_one --relationship-type overseen_by --raw-value-contains 'Committee on Health' --db ${
+    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees.review_packet_one --relationship-type overseen_by --raw-value-contains 'Committee on Health'\\''s Work' --db ${
       quoteShellPath(dbPath)
     } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
   );
