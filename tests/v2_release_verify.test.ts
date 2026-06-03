@@ -99,6 +99,34 @@ Deno.test("release verify accepts source-backed relationship rows", async () => 
   assertEquals(body.relationshipProvenanceProblems, []);
 });
 
+Deno.test("release verify accepts camelCase relationship decision payloads", async () => {
+  const { dbPath, workbench } = await readyRelationshipWorkbench();
+  workbench.db.prepare(
+    "update resolution_events set payload_json = ? where subject_id = ?",
+  ).run([
+    JSON.stringify({
+      resolvedFromEntityId: "dc.source_board",
+      resolvedRelationshipType: "governed_by",
+      resolvedToEntityId: "dc.target_agency",
+    }),
+    "relationship.test.release.verify.source_governed_by_target",
+  ]);
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    relationshipProvenanceCheckedCount: number;
+    relationshipProvenanceProblems: Array<{ relationshipId: string; message: string }>;
+  };
+  assertEquals(result.code, 0);
+  assertEquals(body.ready, true);
+  assertEquals(body.reasons, []);
+  assertEquals(body.relationshipProvenanceCheckedCount, 1);
+  assertEquals(body.relationshipProvenanceProblems, []);
+});
+
 Deno.test("release verify fails fast on unresolved work and bad artifact provenance", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -167,6 +195,21 @@ Deno.test("release verify reports accepted relationships without source evidence
   );
 });
 
+Deno.test("release verify text reports relationship provenance problems", async () => {
+  const { dbPath, workbench } = await readyRelationshipWorkbench();
+  workbench.db.prepare(
+    "delete from relationship_candidate_evidence where relationship_candidate_id = ?",
+  ).run("relationship.test.release.verify.source_governed_by_target");
+  workbench.close();
+
+  const output = await runReleaseVerifyText(dbPath);
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 1);
+  assertStringIncludes(stdout, "Relationship rows checked: 1 accepted relationship row.");
+  assertStringIncludes(stdout, "Relationship row provenance problems:");
+  assertStringIncludes(stdout, "missing relationship candidate evidence");
+});
+
 Deno.test("release verify follows relationship evidence artifact paths", async () => {
   const { dbPath, workbench } = await readyRelationshipWorkbench();
   workbench.db.prepare(
@@ -218,25 +261,33 @@ Deno.test("release verify reports relationship rows that drift from accepted dec
 });
 
 Deno.test("release verify rejects private relationship evidence URLs", async () => {
-  const { dbPath, workbench } = await readyRelationshipWorkbench();
-  workbench.db.prepare("update source_artifacts set fetched_url = 'http://localhost/source.json'")
-    .run();
-  workbench.close();
+  for (
+    const fetchedUrl of [
+      "http://localhost/source.json",
+      "http://intranet/source.json",
+      "http://host.docker.internal/source.json",
+      "http://[::ffff:127.0.0.1]/source.json",
+    ]
+  ) {
+    const { dbPath, workbench } = await readyRelationshipWorkbench();
+    workbench.db.prepare("update source_artifacts set fetched_url = ?").run(fetchedUrl);
+    workbench.close();
 
-  const result = await runReleaseVerifyJson(dbPath);
-  const body = result.body as {
-    ready: boolean;
-    sourceArtifactProblems: Array<{ message: string }>;
-    relationshipProvenanceProblems: Array<{ relationshipId: string; message: string }>;
-  };
-  assertEquals(result.code, 1);
-  assertEquals(body.ready, false);
-  assertEquals(body.sourceArtifactProblems.length > 0, true);
-  assertEquals(body.relationshipProvenanceProblems.length, 1);
-  assertStringIncludes(
-    body.relationshipProvenanceProblems[0].message,
-    "fetched_url is not a public http/https URL",
-  );
+    const result = await runReleaseVerifyJson(dbPath);
+    const body = result.body as {
+      ready: boolean;
+      sourceArtifactProblems: Array<{ message: string }>;
+      relationshipProvenanceProblems: Array<{ relationshipId: string; message: string }>;
+    };
+    assertEquals(result.code, 1, fetchedUrl);
+    assertEquals(body.ready, false, fetchedUrl);
+    assertEquals(body.sourceArtifactProblems.length > 0, true, fetchedUrl);
+    assertEquals(body.relationshipProvenanceProblems.length, 1, fetchedUrl);
+    assertStringIncludes(
+      body.relationshipProvenanceProblems[0].message,
+      "fetched_url is not a public http/https URL",
+    );
+  }
 });
 
 async function runReleaseVerifyJson(dbPath: string): Promise<{
@@ -264,6 +315,24 @@ async function runReleaseVerifyJson(dbPath: string): Promise<{
     code: output.code,
     body: JSON.parse(new TextDecoder().decode(output.stdout)),
   };
+}
+
+function runReleaseVerifyText(dbPath: string): Promise<Deno.CommandOutput> {
+  return new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "verify",
+      "--db",
+      dbPath,
+    ],
+  }).output();
 }
 
 async function readyRelationshipWorkbench(): Promise<{
