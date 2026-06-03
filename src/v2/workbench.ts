@@ -31,6 +31,7 @@ import {
   reconcileRelationshipCandidates,
   reconciliationSummary as readReconciliationSummary,
 } from "./workbench/reconciliation.ts";
+import { buildUnresolvedWorkGraph } from "./workbench/unresolved_work.ts";
 import {
   listReviewItems as readReviewQueue,
   reviewDebtSummary as readReviewDebtSummary,
@@ -209,5 +210,9 @@ export class Workbench implements WorkbenchStore {
 
   reconciliationSummary(): ReturnType<typeof readReconciliationSummary> {
     return readReconciliationSummary(this);
+  }
+
+  unresolvedWorkGraph(): ReturnType<typeof buildUnresolvedWorkGraph> {
+    return buildUnresolvedWorkGraph(this);
   }
 }
