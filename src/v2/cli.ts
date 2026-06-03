@@ -71,7 +71,9 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "workbench" && args[1] === "init") {
-    const meta = await withWorkbench(dbPath, (_workbench, meta) => meta);
+    const meta = await withWorkbench(dbPath, (_workbench, meta) => meta, {
+      refreshDerivedState: false,
+    });
     console.log(`Initialized v2 workbench: ${dbPath}`);
     console.log(`Schema version: ${meta.schemaVersion}`);
     return true;
@@ -113,9 +115,13 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args[0] === "source" && args[1] === "fetch" && args[2]) {
     const connector = getConnector(args[2]);
     const result = await connector.run(createConnectorContext({ limit }));
-    await withWorkbench(dbPath, async (workbench) => {
-      await workbench.importConnectorResult(result, dataDir);
-    });
+    await withWorkbench(
+      dbPath,
+      async (workbench) => {
+        await workbench.importConnectorResult(result, dataDir);
+      },
+      { refreshDerivedState: false },
+    );
     const statuses = result.endpointResults.map((item) =>
       `${item.endpoint.endpointId}:${item.status}`
     ).join(", ");
@@ -127,6 +133,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const summary = await withWorkbench(
       dbPath,
       (workbench) => sourceSummaryOrConfigured(workbench, args[2]),
+      { refreshDerivedState: false },
     );
     if (args.includes("--json")) {
       console.log(JSON.stringify(summary, null, 2));
@@ -142,7 +149,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "source" && args[1] === "compare" && args[2] === "public-bodies") {
-    const comparison = await withWorkbench(dbPath, (workbench) => workbench.comparePublicBodies());
+    const comparison = await withWorkbench(
+      dbPath,
+      (workbench) => workbench.comparePublicBodies(),
+      { refreshDerivedState: false },
+    );
     if (args.includes("--json")) {
       console.log(JSON.stringify(comparison, null, 2));
       return true;
@@ -163,6 +174,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const rowsBySourceId = await withWorkbench(
       dbPath,
       (workbench) => new Map(workbench.listSources().map((row) => [row.sourceId, row])),
+      { refreshDerivedState: false },
     );
     const sourceRows = connectors.map((connector) => {
       const row = rowsBySourceId.get(connector.sourceId);
@@ -288,10 +300,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
 async function withWorkbench<T>(
   dbPath: string,
   action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+  options?: { refreshDerivedState?: boolean },
 ): Promise<T> {
   const workbench = new Workbench(dbPath);
   try {
-    const meta = workbench.init();
+    const meta = workbench.init(options);
     return await action(workbench, meta);
   } finally {
     workbench.close();
