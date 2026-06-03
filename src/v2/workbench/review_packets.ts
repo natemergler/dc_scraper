@@ -1,6 +1,7 @@
+import { dcCommand } from "../command_prefix.ts";
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import { queryOne } from "./db.ts";
-import type { ReviewItemFilters } from "./review.ts";
+import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface ReviewPacketRecord {
@@ -14,7 +15,18 @@ export interface ReviewPacketRecord {
   deferredCount: number;
   relationshipType?: string;
   refType?: string;
+  subjectPrefix?: string;
+  nextCommand?: string;
   reviewItemIds: string[];
+}
+
+export interface ReviewPacketCommandContext {
+  dbPath?: string;
+  resolutionsDir?: string;
+}
+
+export interface ReviewPacketListOptions {
+  commandContext?: ReviewPacketCommandContext;
 }
 
 export function listReviewPackets(
@@ -22,9 +34,12 @@ export function listReviewPackets(
     listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
   },
   filters?: string | ReviewItemFilters,
+  options: ReviewPacketListOptions = {},
 ): ReviewPacketRecord[] {
+  const { itemFilters, packetLimit, originalFilters } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
-  for (const item of store.listReviewItems(filters)) {
+  const packetItems = new Map<string, ReviewItemRecord[]>();
+  for (const item of store.listReviewItems(itemFilters)) {
     const sourceId = reviewPacketSourceId(store, item);
     const key = reviewPacketKey(item, sourceId);
     const existing = packets.get(key);
@@ -33,6 +48,7 @@ export function listReviewPackets(
       existing.reviewItemIds.push(item.reviewItemId);
       if (item.status === "open") existing.openCount += 1;
       if (item.status === "deferred") existing.deferredCount += 1;
+      packetItems.get(key)?.push(item);
       continue;
     }
     packets.set(key, {
@@ -50,13 +66,30 @@ export function listReviewPackets(
       refType: typeof item.details.refType === "string" ? item.details.refType : undefined,
       reviewItemIds: [item.reviewItemId],
     });
+    packetItems.set(key, [item]);
   }
-  return [...packets.values()].sort((left, right) =>
+  const sortedPackets = [...packets.entries()].map(([key, packet]) => {
+    const items = packetItems.get(key) ?? [];
+    const subjectPrefix = commonSubjectPrefix(items.map((item) => item.subjectId));
+    return {
+      ...packet,
+      subjectPrefix,
+      nextCommand: reviewPacketNextCommand(
+        store,
+        packet,
+        items,
+        subjectPrefix,
+        originalFilters,
+        options.commandContext,
+      ),
+    };
+  }).sort((left, right) =>
     right.count - left.count ||
     left.sourceId.localeCompare(right.sourceId) ||
     left.itemType.localeCompare(right.itemType) ||
     left.reason.localeCompare(right.reason)
   );
+  return packetLimit === undefined ? sortedPackets : sortedPackets.slice(0, packetLimit);
 }
 
 export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
@@ -67,6 +100,8 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     `status: open=${packet.openCount}, deferred=${packet.deferredCount}`,
     packet.relationshipType ? `relationship_type: ${packet.relationshipType}` : undefined,
     packet.refType ? `ref_type: ${packet.refType}` : undefined,
+    packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
+    packet.nextCommand ? `next: ${packet.nextCommand}` : undefined,
     `packet_id: ${packet.packetId}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
 }
@@ -89,6 +124,220 @@ function reviewPacketKey(item: ReviewItemRecord, sourceId: string): string {
     typeof item.details.relationshipType === "string" ? item.details.relationshipType : "",
     typeof item.details.refType === "string" ? item.details.refType : "",
   ].join("|");
+}
+
+function packetListFilters(filters?: string | ReviewItemFilters): {
+  itemFilters?: string | ReviewItemFilters;
+  packetLimit?: number;
+  originalFilters?: ReviewItemFilters;
+} {
+  if (typeof filters === "string") {
+    return { itemFilters: filters, originalFilters: { mode: filters } };
+  }
+  if (!filters) return {};
+  const { limit, ...itemFilters } = filters;
+  return { itemFilters, packetLimit: limit, originalFilters: filters };
+}
+
+function reviewPacketNextCommand(
+  store: Pick<WorkbenchStore, "db">,
+  packet: ReviewPacketRecord,
+  items: ReviewItemRecord[],
+  subjectPrefix: string | undefined,
+  originalFilters: ReviewItemFilters | undefined,
+  commandContext: ReviewPacketCommandContext | undefined,
+): string | undefined {
+  const mode = reviewPacketMode(packet.itemType);
+  if (!mode) return undefined;
+  const commandSubjectPrefix = reviewPacketCommandSubjectPrefix(
+    subjectPrefix,
+    originalFilters?.subjectPrefix,
+    items,
+  );
+  const requestedSubjectPrefixCanScopeBatch = reviewPacketRequestedPrefixCanScopeBatch(
+    originalFilters?.subjectPrefix,
+    items,
+  );
+  const batchScopedFilters = reviewPacketFilters(
+    packet,
+    mode,
+    commandSubjectPrefix,
+    originalFilters,
+  );
+  const listScopedFilters = reviewPacketFilters(
+    packet,
+    mode,
+    requestedSubjectPrefixCanScopeBatch
+      ? commandSubjectPrefix
+      : originalFilters?.subjectPrefix ?? commandSubjectPrefix,
+    originalFilters,
+  );
+  const batchFilterArgs = reviewPacketFilterArgs(batchScopedFilters, { includeType: false });
+  const listFilterArgs = reviewPacketFilterArgs(listScopedFilters, { includeType: true });
+  const openItems = items.filter((item) => item.status === "open");
+  if (
+    openItems.length > 0 &&
+    packet.defaultAction === "accept" &&
+    commandSubjectPrefix &&
+    requestedSubjectPrefixCanScopeBatch &&
+    isOpenPacketScope(batchScopedFilters) &&
+    openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters))
+  ) {
+    return dcCommand(
+      [
+        "review batch accept-safe",
+        ...batchFilterArgs,
+        ...reviewPacketContextArgs(commandContext, "write"),
+      ]
+        .join(" "),
+    );
+  }
+  if (
+    openItems.length > 0 &&
+    packet.defaultAction === "defer" &&
+    commandSubjectPrefix &&
+    requestedSubjectPrefixCanScopeBatch &&
+    isOpenPacketScope(batchScopedFilters) &&
+    hasBatchNarrowing(batchScopedFilters)
+  ) {
+    return dcCommand(
+      [
+        "review batch defer-default",
+        ...batchFilterArgs,
+        ...reviewPacketContextArgs(commandContext, "write"),
+      ].join(" "),
+    );
+  }
+  return dcCommand(
+    [
+      "review list",
+      ...listFilterArgs,
+      "--limit",
+      "10",
+      ...reviewPacketContextArgs(commandContext, "read"),
+    ]
+      .join(" "),
+  );
+}
+
+function reviewPacketMode(itemType: ReviewItemRecord["itemType"]): string | undefined {
+  if (itemType === "entity_candidate" || itemType === "placeholder_entity") return "entities";
+  if (itemType === "relationship_candidate") return "relationships";
+  if (itemType === "legal_ref") return "legal";
+  if (itemType === "source_status") return "sources";
+  return undefined;
+}
+
+function reviewPacketFilters(
+  packet: ReviewPacketRecord,
+  mode: string,
+  subjectPrefix: string | undefined,
+  originalFilters: ReviewItemFilters | undefined,
+): ReviewItemFilters {
+  return {
+    mode,
+    status: reviewPacketCommandStatus(packet, originalFilters?.status),
+    type: packet.itemType,
+    subjectPrefix,
+    relationshipType: originalFilters?.relationshipType ?? packet.relationshipType,
+    rawValue: originalFilters?.rawValue,
+    rawValueContains: originalFilters?.rawValueContains,
+    refType: originalFilters?.refType ?? packet.refType,
+  };
+}
+
+function reviewPacketFilterArgs(
+  filters: ReviewItemFilters,
+  options: { includeType: boolean },
+): string[] {
+  return [
+    "--mode",
+    filters.mode ? quoteShellArg(filters.mode) : undefined,
+    filters.status && filters.status !== "open" ? "--status" : undefined,
+    filters.status && filters.status !== "open" ? quoteShellArg(filters.status) : undefined,
+    options.includeType ? "--type" : undefined,
+    options.includeType && filters.type ? quoteShellArg(filters.type) : undefined,
+    filters.subjectPrefix ? "--subject-prefix" : undefined,
+    filters.subjectPrefix ? quoteShellArg(filters.subjectPrefix) : undefined,
+    filters.relationshipType ? "--relationship-type" : undefined,
+    filters.relationshipType ? quoteShellArg(filters.relationshipType) : undefined,
+    filters.rawValue ? "--raw-value" : undefined,
+    filters.rawValue ? quoteShellArg(filters.rawValue) : undefined,
+    filters.rawValueContains ? "--raw-value-contains" : undefined,
+    filters.rawValueContains ? quoteShellArg(filters.rawValueContains) : undefined,
+    filters.refType ? "--ref-type" : undefined,
+    filters.refType ? quoteShellArg(filters.refType) : undefined,
+  ].filter((value): value is string => Boolean(value));
+}
+
+function reviewPacketCommandStatus(
+  packet: ReviewPacketRecord,
+  requestedStatus: ReviewItemFilters["status"] | undefined,
+): ReviewItemFilters["status"] | undefined {
+  if (requestedStatus === "resolved" || requestedStatus === "all") return requestedStatus;
+  if (requestedStatus === "deferred") return "deferred";
+  if (packet.openCount > 0) return "open";
+  if (packet.deferredCount > 0) return "deferred";
+  return requestedStatus;
+}
+
+function isOpenPacketScope(filters: ReviewItemFilters): boolean {
+  return filters.status === undefined || filters.status === "open";
+}
+
+function hasBatchNarrowing(filters: ReviewItemFilters): boolean {
+  return Boolean(filters.subjectPrefix && (filters.relationshipType || filters.refType));
+}
+
+function reviewPacketCommandSubjectPrefix(
+  packetPrefix: string | undefined,
+  requestedPrefix: string | undefined,
+  items: ReviewItemRecord[],
+): string | undefined {
+  const candidates: string[] = [];
+  if (packetPrefix) candidates.push(packetPrefix);
+  if (requestedPrefix) candidates.push(requestedPrefix);
+  return candidates
+    .filter((prefix) => items.every((item) => item.subjectId.startsWith(prefix)))
+    .sort((left, right) => right.length - left.length)[0];
+}
+
+function reviewPacketRequestedPrefixCanScopeBatch(
+  requestedPrefix: string | undefined,
+  items: ReviewItemRecord[],
+): boolean {
+  return !requestedPrefix || items.every((item) => item.subjectId.startsWith(requestedPrefix));
+}
+
+function reviewPacketContextArgs(
+  context: ReviewPacketCommandContext | undefined,
+  mode: "read" | "write",
+): string[] {
+  return [
+    context?.dbPath ? "--db" : undefined,
+    context?.dbPath ? quoteShellArg(context.dbPath) : undefined,
+    mode === "write" && context?.resolutionsDir ? "--resolutions-dir" : undefined,
+    mode === "write" && context?.resolutionsDir ? quoteShellArg(context.resolutionsDir) : undefined,
+  ].filter((value): value is string => Boolean(value));
+}
+
+function quoteShellArg(value: string): string {
+  return /^[A-Za-z0-9._:-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function commonSubjectPrefix(subjectIds: string[]): string | undefined {
+  if (subjectIds.length === 0) return undefined;
+  const splitIds = subjectIds.map((subjectId) => subjectId.split("."));
+  const commonParts: string[] = [];
+  for (let index = 0; index < splitIds[0].length; index += 1) {
+    const value = splitIds[0][index];
+    if (splitIds.every((parts) => parts[index] === value)) {
+      commonParts.push(value);
+      continue;
+    }
+    break;
+  }
+  return commonParts.length >= 2 ? commonParts.join(".") : undefined;
 }
 
 function reviewPacketSourceId(

@@ -2,6 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { canBatchAcceptReviewItem } from "../src/v2/workbench/review.ts";
 import {
   syntheticCustomRelationshipSourceResult,
   syntheticLegalRefSourceResult,
@@ -281,12 +282,20 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
     item.subjectId ===
       "relationship.test.signature.relationships.source_board_governed_by_target_agency_v2"
   );
+  const staleItemCanBatchAccept = staleItem
+    ? canBatchAcceptReviewItem(workbench, staleItem, {
+      mode: "relationships",
+      relationshipType: "governed_by",
+      subjectPrefix: "relationship.test.signature.relationships",
+    })
+    : undefined;
   workbench.close();
 
   assertEquals(secondCandidate.reviewStatus, "pending");
   assert(staleItem);
   assertEquals(staleItem.details.priorDecisionState, "accepted");
   assertEquals(staleItem.details.stalePriorDecision, true);
+  assertEquals(staleItemCanBatchAccept, false);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 

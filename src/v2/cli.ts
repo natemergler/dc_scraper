@@ -14,10 +14,12 @@ import { Workbench } from "./workbench.ts";
 
 export async function handleV2Command(args: string[]): Promise<boolean> {
   if (args.length === 0) return false;
-  const dbPath = readFlag(args, "--db") ?? join(Deno.cwd(), "data", "workbench.sqlite");
+  const explicitDbPath = readFlag(args, "--db");
+  const explicitResolutionsDir = readFlag(args, "--resolutions-dir");
+  const dbPath = explicitDbPath ?? join(Deno.cwd(), "data", "workbench.sqlite");
   const dataDir = readFlag(args, "--data-dir") ?? join(Deno.cwd(), "data", "v2_artifacts");
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
-  const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
+  const resolutionsDir = explicitResolutionsDir ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
   const sourceProfile = readFlag(args, "--source-profile") as
     | "structure"
@@ -77,7 +79,14 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (auditHandled) return true;
   const reviewHandled = await handleReviewCommand(
     args,
-    { json: args.includes("--json"), resolutionsDir },
+    {
+      json: args.includes("--json"),
+      resolutionsDir,
+      nextCommandContext: {
+        dbPath: explicitDbPath,
+        resolutionsDir: explicitResolutionsDir,
+      },
+    },
     {
       withWorkbench: async (action) => await withWorkbench(dbPath, action),
       withReadonlyWorkbench: async (action) =>
