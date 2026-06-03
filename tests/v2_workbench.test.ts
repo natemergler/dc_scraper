@@ -400,6 +400,24 @@ Deno.test("CLI command errors print a concise message", async () => {
 });
 
 Deno.test("focused CLI help exits zero and does not run commands", async () => {
+  const topLevelHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "--help",
+    ],
+  }).output();
+  const topLevelText = new TextDecoder().decode(topLevelHelp.stdout);
+  assertEquals(topLevelHelp.code, 0);
+  assertStringIncludes(topLevelText, "Workflow:");
+  assertStringIncludes(topLevelText, "dc source fetch --all");
+  assertStringIncludes(topLevelText, "dc review | dc review list --mode entities");
+
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -415,8 +433,10 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const sourceText = new TextDecoder().decode(sourceHelp.stdout);
   assertEquals(sourceHelp.code, 0);
+  assertStringIncludes(sourceText, "Workflow:");
   assertStringIncludes(sourceText, "dc source list");
   assertStringIncludes(sourceText, "dc source fetch <source-id>");
+  assertStringIncludes(sourceText, "dc source fetch --all");
   assertStringIncludes(sourceText, "dc source inspect <source-id>");
 
   const reviewHelp = await new Deno.Command(Deno.execPath(), {
@@ -515,7 +535,8 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   const fetchText = new TextDecoder().decode(fetchOutput.stdout);
   assertEquals(fetchOutput.code, 0);
   assertStringIncludes(fetchText, "dc source fetch <source-id>");
-  assertStringIncludes(fetchText, "Tip: run `dc source fetch dcgis.agencies`");
+  assertStringIncludes(fetchText, "dc source fetch --all");
+  assertStringIncludes(fetchText, "Tip: run `dc source fetch --all`");
   assertStringIncludes(fetchText, "dc source list");
 });
 
