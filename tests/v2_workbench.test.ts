@@ -1478,6 +1478,105 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
   assert(compareJson.sharedNameCount >= 2);
 });
 
+Deno.test("public body comparison report stays usable when Quickbase is unfetched", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
+  );
+  const report = workbench.comparePublicBodies();
+  const quickbaseSummary = report.sourceSummaries.find((source) =>
+    source.sourceId === "mota.quickbase"
+  );
+  assert(quickbaseSummary);
+  assertEquals(quickbaseSummary.latestStatus, "unfetched");
+  assertEquals(quickbaseSummary.normalizedNameCount, 0);
+  assertEquals(quickbaseSummary.sharedNameCount, 0);
+  assertEquals(quickbaseSummary.exclusiveNameCount, 0);
+  assert(
+    report.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
+    ),
+  );
+  workbench.close();
+
+  const compareOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+      "public-bodies",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(compareOutput.code, 0);
+  const compareJson = JSON.parse(new TextDecoder().decode(compareOutput.stdout)) as {
+    sourceSummaries: Array<{
+      sourceId: string;
+      latestStatus?: string;
+      normalizedNameCount: number;
+      sharedNameCount: number;
+      exclusiveNameCount: number;
+    }>;
+    rows: Array<{ sourceIds: string[]; displayName: string }>;
+  };
+  const quickbaseJson = compareJson.sourceSummaries.find((source) =>
+    source.sourceId === "mota.quickbase"
+  );
+  assert(quickbaseJson);
+  assertEquals(quickbaseJson.latestStatus, "unfetched");
+  assertEquals(quickbaseJson.normalizedNameCount, 0);
+  assertEquals(quickbaseJson.sharedNameCount, 0);
+  assertEquals(quickbaseJson.exclusiveNameCount, 0);
+  assert(
+    compareJson.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
+    ),
+  );
+});
+
 Deno.test("relationship acceptance rejects blocked endpoints instead of creating placeholders", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
