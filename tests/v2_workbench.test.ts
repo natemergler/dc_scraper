@@ -2605,6 +2605,204 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
   assert(blockedRelationships.count > 0);
 });
 
+Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and the unblocked oversight relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_the_judiciary_and_public_safety', 'Committee on the Judiciary and Public Safety', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.batch_seeded_oversight",
+      sourceItemKey: "batch-seeded-oversight-row",
+      fromEntityRef: "dc.child_support_guideline_commission",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Child Support Guideline Commission",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.council.committees.relationship_council_committees_batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopenedAfterEntityBatch = new Workbench(dbPath);
+  reopenedAfterEntityBatch.init();
+  const seededEntity = reopenedAfterEntityBatch.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const reviewReadyOversight = reopenedAfterEntityBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterEntityBatch.close();
+  assertEquals(seededEntity?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(reviewReadyOversight.length, 1);
+  assertEquals(reviewReadyOversight[0]?.defaultAction, "accept");
+
+  const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees.batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(relationshipBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopenedAfterRelationshipBatch = new Workbench(dbPath);
+  reopenedAfterRelationshipBatch.init();
+  const acceptedRelationship = reopenedAfterRelationshipBatch.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingOversight = reopenedAfterRelationshipBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterRelationshipBatch.close();
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(remainingOversight.length, 0);
+});
+
+Deno.test("batch accept-safe skips non-committee seeded endpoint candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.seeded.batch",
+      relationshipCandidateId: "relationship.test.seeded.batch.direct_endpoint",
+      sourceItemKey: "direct-endpoint-row",
+      fromEntityRef: "dc.parent_entity",
+      toEntityRef: "dc.batch_safe_unknown_board",
+      relationshipType: "part_of",
+      rawValue: "Batch Safe Unknown Board",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.test.seeded.batch.relationship_test_seeded_batch_direct_endpoint",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
+  assertStringIncludes(batchText, "Skipped 1 item(s) that were not safe to auto-accept.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const candidateStatus = reopened.db.prepare(
+    `select review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.test.seeded.batch.relationship_test_seeded_batch_direct_endpoint_to_endpoint'`,
+  ).get() as { reviewStatus: string } | undefined;
+  const canonicalEntity = reopened.db.prepare(
+    `select entity_id as entityId
+     from canonical_entities
+     where entity_id = 'dc.batch_safe_unknown_board'`,
+  ).get() as { entityId: string } | undefined;
+  reopened.close();
+  assertEquals(candidateStatus?.reviewStatus, "pending");
+  assertEquals(canonicalEntity, undefined);
+});
+
 Deno.test("batch accept-safe accepts filtered relationships only when endpoints are accepted", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
