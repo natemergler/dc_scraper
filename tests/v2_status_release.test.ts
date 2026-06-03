@@ -616,7 +616,7 @@ Deno.test("status points to audit when blocked reconciliation is the only remain
   assertEquals(status.nextCommand, "deno task dc -- audit");
 });
 
-Deno.test("audit surfaces first blocked raw value and doctor remains a compatibility alias", async () => {
+Deno.test("audit surfaces first blocked raw value and old doctor aliases are unavailable", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -628,8 +628,8 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
       sourceId: "council.committees",
-      relationshipCandidateId: "relationship.test.blocked.doctor",
-      sourceItemKey: "blocked-doctor-row",
+      relationshipCandidateId: "relationship.test.blocked.audit",
+      sourceItemKey: "blocked-audit-row",
       fromEntityRef:
         "dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health",
       toEntityRef: "dc.committee_on_health",
@@ -672,7 +672,7 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
   );
   assertStringIncludes(
     auditText,
-    "Subject id: relationship.test.blocked.doctor",
+    "Subject id: relationship.test.blocked.audit",
   );
   assertStringIncludes(
     auditText,
@@ -727,32 +727,31 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
       dbPath,
     ],
   }).output();
-  assertEquals(doctorOutput.code, 0);
-  const doctorText = new TextDecoder().decode(doctorOutput.stdout);
+  assertEquals(doctorOutput.code, 2);
   assertStringIncludes(
-    doctorText,
-    "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
+    new TextDecoder().decode(doctorOutput.stderr),
+    "Unknown command: doctor",
   );
+
+  const auditDoctorOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "doctor",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(auditDoctorOutput.code, 2);
   assertStringIncludes(
-    doctorText,
-    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
-  );
-  assertStringIncludes(
-    doctorText,
-    "Subject id: relationship.test.blocked.doctor",
-  );
-  assertStringIncludes(doctorText, "Blocked detail:");
-  assertStringIncludes(
-    doctorText,
-    "Value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
-  );
-  assertStringIncludes(
-    doctorText,
-    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
-  );
-  assertStringIncludes(
-    doctorText,
-    "Inspect source: deno task dc -- source inspect council.committees",
+    new TextDecoder().decode(auditDoctorOutput.stderr),
+    "Unknown command: audit doctor",
   );
 });
 
