@@ -5,13 +5,14 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
+import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
 import { buildEntityId, parseLegalReference } from "../src/v2/domain.ts";
-import { Workbench } from "../src/v2/workbench.ts";
+import { DEFAULT_SQLITE_BUSY_TIMEOUT_MS, Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
   admin311WrongLayerFixture,
@@ -57,10 +58,14 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
       (row) => (row as { name: string }).name,
     ),
   );
+  const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
+  const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
   assertEquals(first.schemaVersion, 11);
   assertEquals(second.schemaVersion, 11);
   assertEquals(second.migrations.length, 11);
+  assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
+  assertEquals(journalMode, "wal");
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -372,6 +377,76 @@ drop table reconciliation_blockers;
       migration.name === "v2_remove_relationship_review_templates"
     ),
   );
+});
+
+Deno.test("read-only inspection commands stay usable during an exclusive writer transaction", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.locking.entities",
+      candidateId: "candidate.test.locking.entity",
+      sourceItemKey: "locking-row",
+      proposedEntityId: buildEntityId("Locking Example"),
+      name: "Locking Example",
+      kind: "agency",
+      observedName: "Locking Example",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const locker = new Database(dbPath);
+  locker.exec("begin exclusive");
+  try {
+    const statusOutput = await new Deno.Command(Deno.execPath(), {
+      cwd: Deno.cwd(),
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-ffi",
+        "scripts/dc.ts",
+        "status",
+        "--db",
+        dbPath,
+      ],
+    }).output();
+    assertEquals(statusOutput.code, 0);
+    const statusText = new TextDecoder().decode(statusOutput.stdout);
+    assertStringIncludes(statusText, "Review: 1 open, 0 deferred");
+
+    const reviewListOutput = await new Deno.Command(Deno.execPath(), {
+      cwd: Deno.cwd(),
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-ffi",
+        "scripts/dc.ts",
+        "review",
+        "list",
+        "--db",
+        dbPath,
+        "--mode",
+        "entities",
+        "--json",
+      ],
+    }).output();
+    assertEquals(reviewListOutput.code, 0);
+    const reviewListJson = JSON.parse(
+      new TextDecoder().decode(reviewListOutput.stdout),
+    ) as { count: number };
+    assertEquals(reviewListJson.count, 1);
+  } finally {
+    locker.exec("rollback");
+    locker.close();
+  }
 });
 
 Deno.test("CLI command errors print a concise message", async () => {

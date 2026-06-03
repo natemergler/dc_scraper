@@ -82,7 +82,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
       meta,
       status: buildWorkbenchStatus(workbench),
-    }));
+    }), { readonly: true, fallbackToWritable: true });
     if (args.includes("--json")) {
       console.log(JSON.stringify({ ...meta, ...status }, null, 2));
       return true;
@@ -99,7 +99,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const { meta, status } = await withWorkbench(dbPath, (workbench, meta) => ({
       meta,
       status: buildWorkbenchStatus(workbench),
-    }));
+    }), { readonly: true, fallbackToWritable: true });
     if (args.includes("--json")) {
       console.log(JSON.stringify({ ...meta, ...status }, null, 2));
       return true;
@@ -208,6 +208,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const items = await withWorkbench(
       dbPath,
       (workbench) => workbench.listReviewItems(readReviewFilters(args)),
+      { readonly: true, fallbackToWritable: true },
     );
     if (args.includes("--json")) {
       console.log(JSON.stringify({ count: items.length, items }, null, 2));
@@ -255,6 +256,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const rows = await withWorkbench(
       dbPath,
       (workbench) => workbench.searchEntities(readFreeTextArgument(args, 2)),
+      { readonly: true, fallbackToWritable: true },
     );
     if (args.includes("--json")) {
       console.log(JSON.stringify(rows, null, 2));
@@ -267,7 +269,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "entity" && args[1] === "show" && args[2]) {
-    const view = await withWorkbench(dbPath, (workbench) => workbench.entityView(args[2]));
+    const view = await withWorkbench(
+      dbPath,
+      (workbench) => workbench.entityView(args[2]),
+      { readonly: true, fallbackToWritable: true },
+    );
     if (args.includes("--json")) {
       console.log(JSON.stringify(view, null, 2));
       return true;
@@ -279,6 +285,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     const result = await withWorkbench(
       dbPath,
       async (workbench) => await buildV2Release(workbench, outDir),
+      { readonly: true, fallbackToWritable: true },
     );
     console.log(`Built v2 release ${result.outDir}`);
     return true;
@@ -300,15 +307,55 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
 async function withWorkbench<T>(
   dbPath: string,
   action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
-  options?: { refreshDerivedState?: boolean },
+  options?: {
+    refreshDerivedState?: boolean;
+    readonly?: boolean;
+    fallbackToWritable?: boolean;
+  },
 ): Promise<T> {
-  const workbench = new Workbench(dbPath);
+  if (options?.readonly) {
+    try {
+      return await withOpenedWorkbench(dbPath, action, {
+        readonly: true,
+        initialize: false,
+      });
+    } catch (error) {
+      if (!options.fallbackToWritable || !shouldFallbackToWritableWorkbench(error)) throw error;
+    }
+  }
+  return await withOpenedWorkbench(dbPath, action, {
+    readonly: false,
+    initialize: true,
+    refreshDerivedState: options?.refreshDerivedState,
+  });
+}
+
+async function withOpenedWorkbench<T>(
+  dbPath: string,
+  action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+  options: {
+    readonly: boolean;
+    initialize: boolean;
+    refreshDerivedState?: boolean;
+  },
+): Promise<T> {
+  const workbench = new Workbench(dbPath, { readonly: options.readonly });
   try {
-    const meta = workbench.init(options);
+    const meta = options.initialize
+      ? workbench.init({
+        refreshDerivedState: options.refreshDerivedState,
+      })
+      : workbench.meta();
     return await action(workbench, meta);
   } finally {
     workbench.close();
   }
+}
+
+function shouldFallbackToWritableWorkbench(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("unable to open database file") ||
+    error.message.includes("no such table:");
 }
 
 function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
