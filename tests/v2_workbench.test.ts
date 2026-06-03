@@ -878,6 +878,8 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   assertStringIncludes(sourceText, "Available sources:");
   assertStringIncludes(sourceText, "dcgis.agencies");
   assertStringIncludes(sourceText, "Tip: run `deno task dc -- source list`");
+  assertStringIncludes(sourceText, "to fetch every configured source into this workbench");
+  assert(!sourceText.includes("full smoke"));
 
   const compareOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -918,6 +920,8 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   assertStringIncludes(fetchText, "deno task dc -- source fetch <source-id>");
   assertStringIncludes(fetchText, "deno task dc -- source fetch --all");
   assertStringIncludes(fetchText, "Tip: run `deno task dc -- source fetch --all`");
+  assertStringIncludes(fetchText, "to fetch every configured source into this workbench");
+  assert(!fetchText.includes("full smoke"));
   assertStringIncludes(fetchText, "deno task dc -- source list");
 
   const listHelpOutput = await new Deno.Command(Deno.execPath(), {
