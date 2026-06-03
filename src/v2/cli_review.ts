@@ -40,16 +40,20 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const items = await deps.withReadonlyWorkbench((workbench) =>
-      workbench.listReviewItems(readReviewFilters(args))
-    );
+    const { items, summaries } = await deps.withReadonlyWorkbench((workbench) => {
+      const items = workbench.listReviewItems(readReviewFilters(args));
+      return {
+        items,
+        summaries: items.map((item) => renderReviewItemSummary(workbench, item)),
+      };
+    });
     if (options.json) {
       console.log(JSON.stringify({ count: items.length, items }, null, 2));
       return true;
     }
     console.log(`Review items: ${items.length}`);
-    for (const item of items) {
-      console.log(renderReviewItemSummary(item));
+    for (const summary of summaries) {
+      console.log(summary);
       console.log("");
     }
     return true;
