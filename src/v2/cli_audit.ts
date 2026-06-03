@@ -1,7 +1,7 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { WorkbenchMeta } from "./domain.ts";
 import {
-  renderWorkbenchDoctor,
+  renderWorkbenchAudit,
   renderWorkbenchStatus,
   type WorkbenchStatusSnapshot,
 } from "./status.ts";
@@ -72,7 +72,7 @@ async function renderAuditSnapshot(
   for (const migration of meta.migrations) {
     console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
   }
-  console.log(mode === "status" ? renderWorkbenchStatus(status) : renderWorkbenchDoctor(status));
+  console.log(mode === "status" ? renderWorkbenchStatus(status) : renderWorkbenchAudit(status));
 }
 
 function isHelp(value: string | undefined): boolean {

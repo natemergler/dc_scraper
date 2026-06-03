@@ -247,7 +247,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
   ].join("\n");
 }
 
-export function renderWorkbenchDoctor(status: WorkbenchStatusSnapshot): string {
+export function renderWorkbenchAudit(status: WorkbenchStatusSnapshot): string {
   const lines = [renderWorkbenchStatus(status)];
   if (status.reconciliation.firstBlocked) {
     lines.push(
