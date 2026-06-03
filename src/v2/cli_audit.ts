@@ -28,6 +28,10 @@ export async function handleAuditCommand(
       return true;
     }
     if (args[1] === "status" || args[1] === "doctor") {
+      if (hasHelpFlag(args, 2)) {
+        printAuditHelp();
+        return true;
+      }
       await renderAuditSnapshot(args[1], options, deps);
       return true;
     }
@@ -35,6 +39,10 @@ export async function handleAuditCommand(
   }
 
   if (args[0] === "workbench" && (args[1] === "status" || args[1] === "doctor")) {
+    if (hasHelpFlag(args, 2)) {
+      printAuditHelp();
+      return true;
+    }
     await renderAuditSnapshot(args[1], options, deps);
     return true;
   }
@@ -79,4 +87,8 @@ async function renderAuditSnapshot(
 
 function isHelp(value: string | undefined): boolean {
   return value === "help" || value === "--help" || value === "-h";
+}
+
+function hasHelpFlag(args: string[], start: number): boolean {
+  return args.slice(start).some((value) => isHelp(value));
 }
