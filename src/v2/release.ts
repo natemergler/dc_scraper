@@ -8,6 +8,7 @@ import { unresolvedStateNote } from "./operator_plan.ts";
 import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
+import { containsLocalPath } from "./url_safety.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -235,27 +236,6 @@ function assertNoContactInfo(name: string, content: string): void {
   if (containsLocalPath(content)) {
     throw new Error(`Release output contains local path-shaped info in ${name}`);
   }
-}
-
-function containsLocalPath(content: string): boolean {
-  const decoded = repeatedlyDecodeURIComponent(content).replaceAll("\\", "/");
-  return /\bfile:/i.test(decoded) ||
-    /\b[a-z]:\/Users\//i.test(decoded) ||
-    /(^|[^a-z])\/(?:tmp|var\/home|home)\/[^"',\s]+/i.test(decoded);
-}
-
-function repeatedlyDecodeURIComponent(value: string): string {
-  let decoded = value;
-  for (let index = 0; index < 3; index += 1) {
-    try {
-      const next = decodeURIComponent(decoded);
-      if (next === decoded) break;
-      decoded = next;
-    } catch {
-      break;
-    }
-  }
-  return decoded;
 }
 
 async function buildReleaseSqlite(
