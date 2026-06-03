@@ -1,4 +1,9 @@
-import { buildEntityId, type ReviewItemType, type ReviewStatus } from "../domain.ts";
+import {
+  buildEntityId,
+  type ReviewItemRecord,
+  type ReviewItemType,
+  type ReviewStatus,
+} from "../domain.ts";
 import { queryAll } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -69,6 +74,8 @@ export interface UnresolvedReconciliationSummary {
     }>;
   };
 }
+
+type DecisionImpactInput = Pick<ReviewItemRecord, "reviewItemId" | "itemType" | "subjectId">;
 
 interface DecisionRow {
   reviewItemId: string;
@@ -196,6 +203,48 @@ export function summarizeUnresolvedReconciliation(
       }
       : undefined,
   };
+}
+
+export function downstreamBlockedCountByReviewItem(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: readonly DecisionImpactInput[],
+): Map<string, number> {
+  const impacts = new Map(decisions.map((decision) => [decision.reviewItemId, 0]));
+  if (decisions.length === 0) return impacts;
+  const decisionsByEndpoint = decisionReviewItemsByEndpoint(store, decisions);
+  const endpointIds = [...decisionsByEndpoint.keys()];
+  if (endpointIds.length === 0) return impacts;
+
+  const blockedSubjectsByReviewItemId = new Map<string, Set<string>>();
+  for (const endpointChunk of chunks(endpointIds, 500)) {
+    const placeholders = endpointChunk.map(() => "?").join(", ");
+    const rows = queryAll<{ blockerId: string; subjectId: string }>(
+      store.db,
+      `select reconciliation_blockers.blocker_id as blockerId,
+              reconciliation_blockers.subject_id as subjectId
+       from reconciliation_blockers
+       join reconciliation_items
+         on reconciliation_items.subject_type = reconciliation_blockers.subject_type
+        and reconciliation_items.subject_id = reconciliation_blockers.subject_id
+       where reconciliation_blockers.subject_type = 'relationship_candidate'
+         and reconciliation_items.state = 'blocked'
+         and reconciliation_blockers.blocker_id in (${placeholders})`,
+      endpointChunk,
+    );
+    for (const row of rows) {
+      for (const reviewItemId of decisionsByEndpoint.get(row.blockerId) ?? []) {
+        const blockedSubjects = blockedSubjectsByReviewItemId.get(reviewItemId) ??
+          new Set<string>();
+        blockedSubjects.add(row.subjectId);
+        blockedSubjectsByReviewItemId.set(reviewItemId, blockedSubjects);
+      }
+    }
+  }
+
+  for (const [reviewItemId, blockedSubjects] of blockedSubjectsByReviewItemId.entries()) {
+    impacts.set(reviewItemId, blockedSubjects.size);
+  }
+  return impacts;
 }
 
 function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisionNode[] {
@@ -327,6 +376,21 @@ function decisionsByBlockerEndpoint(
   return result;
 }
 
+function decisionReviewItemsByEndpoint(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: readonly DecisionImpactInput[],
+): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  for (const decision of decisions) {
+    if (decision.itemType === "placeholder_entity") {
+      addReviewItemByEndpoint(result, decision.subjectId, decision.reviewItemId);
+    }
+  }
+  addEntityCandidateReviewItemsByEndpoint(store, decisions, result);
+  addLegalRefReviewItemsByEndpoint(store, decisions, result);
+  return result;
+}
+
 function addEntityCandidateDecisionsByEndpoint(
   store: Pick<WorkbenchStore, "db">,
   decisions: UnresolvedDecisionNode[],
@@ -351,6 +415,35 @@ function addEntityCandidateDecisionsByEndpoint(
     const decision = decisionsBySubject.get(row.candidateId);
     if (!decision) continue;
     addDecisionByEndpoint(result, row.proposedEntityId, decision);
+  }
+}
+
+function addEntityCandidateReviewItemsByEndpoint(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: readonly DecisionImpactInput[],
+  result: Map<string, string[]>,
+): void {
+  const entityDecisionIds = decisions
+    .filter((decision) => decision.itemType === "entity_candidate")
+    .map((decision) => decision.subjectId);
+  if (entityDecisionIds.length === 0) return;
+
+  const placeholders = entityDecisionIds.map(() => "?").join(", ");
+  const rows = queryAll<{ candidateId: string; proposedEntityId: string }>(
+    store.db,
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId
+     from entity_candidates
+     where candidate_id in (${placeholders})`,
+    entityDecisionIds,
+  );
+  const reviewItemIdBySubject = new Map(
+    decisions.map((decision) => [decision.subjectId, decision.reviewItemId]),
+  );
+  for (const row of rows) {
+    const reviewItemId = reviewItemIdBySubject.get(row.candidateId);
+    if (!reviewItemId) continue;
+    addReviewItemByEndpoint(result, row.proposedEntityId, reviewItemId);
   }
 }
 
@@ -386,6 +479,40 @@ function addLegalRefDecisionsByEndpoint(
   }
 }
 
+function addLegalRefReviewItemsByEndpoint(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: readonly DecisionImpactInput[],
+  result: Map<string, string[]>,
+): void {
+  const legalDecisionIds = decisions
+    .filter((decision) => decision.itemType === "legal_ref")
+    .map((decision) => decision.subjectId);
+  if (legalDecisionIds.length === 0) return;
+
+  const placeholders = legalDecisionIds.map(() => "?").join(", ");
+  const rows = queryAll<LegalDecisionEndpointRow>(
+    store.db,
+    `select legal_ref_id as legalRefId,
+            citation_text as citationText,
+            normalized_citation as normalizedCitation
+     from legal_refs
+     where legal_ref_id in (${placeholders})`,
+    legalDecisionIds,
+  );
+  const reviewItemIdBySubject = new Map(
+    decisions.map((decision) => [decision.subjectId, decision.reviewItemId]),
+  );
+  for (const row of rows) {
+    const reviewItemId = reviewItemIdBySubject.get(row.legalRefId);
+    if (!reviewItemId) continue;
+    addReviewItemByEndpoint(
+      result,
+      buildEntityId(row.normalizedCitation ?? row.citationText, "legal"),
+      reviewItemId,
+    );
+  }
+}
+
 function addDecisionByEndpoint(
   decisionsByEndpoint: Map<string, UnresolvedDecisionNode[]>,
   endpointId: string,
@@ -394,6 +521,16 @@ function addDecisionByEndpoint(
   const existing = decisionsByEndpoint.get(endpointId) ?? [];
   existing.push(decision);
   decisionsByEndpoint.set(endpointId, existing);
+}
+
+function addReviewItemByEndpoint(
+  reviewItemsByEndpoint: Map<string, string[]>,
+  endpointId: string,
+  reviewItemId: string,
+): void {
+  const existing = reviewItemsByEndpoint.get(endpointId) ?? [];
+  existing.push(reviewItemId);
+  reviewItemsByEndpoint.set(endpointId, existing);
 }
 
 function decisionNodeId(reviewItemId: string): string {
@@ -436,4 +573,12 @@ function countByMappedKey<T, K extends string>(
 
 function parseDetails(detailsJson: string): Record<string, unknown> {
   return JSON.parse(detailsJson) as Record<string, unknown>;
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
 }

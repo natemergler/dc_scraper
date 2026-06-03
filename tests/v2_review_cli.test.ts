@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import {
@@ -648,6 +649,178 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
   assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
   assertStringIncludes(stdout, "Review: Unblocking Agency");
   assertEquals(stdout.includes("Review: Low Impact Board"), false);
+});
+
+Deno.test("interactive review --status deferred does not treat deferred items as actionable impact", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.deferred_priority",
+      candidateId: "candidate.test.review_cli.deferred_priority.target",
+      sourceItemKey: "deferred-priority-target-row",
+      proposedEntityId: "dc.deferred_priority_target",
+      name: "Deferred Priority Target",
+      kind: "agency",
+      observedName: "Deferred Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.deferred_priority",
+      relationshipCandidateId: "relationship.test.review_cli.deferred_priority.blocked",
+      sourceItemKey: "deferred-priority-blocked-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.deferred_priority_target",
+      relationshipType: "overseen_by",
+      rawValue: "Deferred Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(
+        "candidate.test.review_cli.deferred_priority.target",
+        "entity-review",
+      ),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--status",
+      "deferred",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Review: Deferred Priority Target");
+  assertEquals(stdout.includes("Decision impact:"), false);
+});
+
+Deno.test("interactive review --status all still prioritizes open unblocking work ahead of deferred items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.deferred_priority",
+      candidateId: "candidate.aaa.deferred_priority.only",
+      sourceItemKey: "aaa-deferred-priority-row",
+      proposedEntityId: "dc.aaa_deferred_priority",
+      name: "Deferred First Alphabetically",
+      kind: "board",
+      observedName: "Deferred First Alphabetically",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId("candidate.aaa.deferred_priority.only", "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "zzz.open_priority",
+      candidateId: "candidate.zzz.open_priority.target",
+      sourceItemKey: "zzz-open-priority-target-row",
+      proposedEntityId: "dc.zzz_open_priority_target",
+      name: "Open Priority Target",
+      kind: "agency",
+      observedName: "Open Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "zzz.open_priority",
+      relationshipCandidateId: "relationship.zzz.open_priority.blocked",
+      sourceItemKey: "zzz-open-priority-blocked-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.zzz_open_priority_target",
+      relationshipType: "overseen_by",
+      rawValue: "Open Priority Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--status",
+      "all",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
+  assertStringIncludes(stdout, "Review: Open Priority Target");
+  assertEquals(stdout.includes("Review: Deferred First Alphabetically"), false);
 });
 
 Deno.test("interactive review stays inside the current packet until it clears", async () => {

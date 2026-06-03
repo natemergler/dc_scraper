@@ -16,7 +16,10 @@ import {
   reviewSubject,
 } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
-import type { UnresolvedDecisionNode } from "./unresolved_work.ts";
+import {
+  downstreamBlockedCountByReviewItem,
+  type UnresolvedDecisionNode,
+} from "./unresolved_work.ts";
 
 interface ReviewSubjectContext {
   title: string;
@@ -34,7 +37,7 @@ interface RelationshipEndpointContext {
 export async function runInteractiveReview(
   workbench: Pick<
     Workbench,
-    "db" | "listReviewItems" | "appendResolutionEvent" | "unresolvedWorkGraph"
+    "db" | "listReviewItems" | "appendResolutionEvent"
   >,
   filters: ReviewItemFilters,
   resolutionsDir: string,
@@ -104,14 +107,32 @@ interface InteractiveReviewSnapshot {
 }
 
 function buildInteractiveReviewSnapshot(
-  workbench: Pick<Workbench, "db" | "listReviewItems" | "unresolvedWorkGraph">,
+  workbench: Pick<Workbench, "db" | "listReviewItems">,
   filters: ReviewItemFilters,
 ): InteractiveReviewSnapshot {
   const items = workbench.listReviewItems({ ...filters, limit: undefined });
   const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
   const packets = reviewPacketsFromItems(workbench, items);
-  const decisions = workbench.unresolvedWorkGraph().decisions.filter((candidate) =>
-    itemsByReviewItemId.has(candidate.reviewItemId)
+  const decisions = items.filter(isActionableInteractiveDecisionItem).map((item) => ({
+    nodeId: `decision.${item.reviewItemId}`,
+    reviewItemId: item.reviewItemId,
+    itemType: item.itemType,
+    subjectId: item.subjectId,
+    sourceId: "unknown",
+    reason: item.reason,
+    defaultAction: item.defaultAction,
+    status: item.status,
+    details: item.details,
+    downstreamBlockedCount: 0,
+    blockedSubjectIds: [],
+  } satisfies UnresolvedDecisionNode));
+  const downstreamBlockedCount = downstreamBlockedCountByReviewItem(workbench, items);
+  for (const decision of decisions) {
+    decision.downstreamBlockedCount = downstreamBlockedCount.get(decision.reviewItemId) ?? 0;
+  }
+  decisions.sort((left, right) =>
+    right.downstreamBlockedCount - left.downstreamBlockedCount ||
+    left.reviewItemId.localeCompare(right.reviewItemId)
   );
   const decisionsByReviewItemId = new Map(
     decisions.map((decision) => [decision.reviewItemId, decision]),
@@ -123,6 +144,10 @@ function buildInteractiveReviewSnapshot(
     decisions,
     decisionsByReviewItemId,
   };
+}
+
+function isActionableInteractiveDecisionItem(item: ReviewItemRecord): boolean {
+  return item.status === "open" && item.itemType !== "source_status";
 }
 
 function nextInteractiveReviewSelection(

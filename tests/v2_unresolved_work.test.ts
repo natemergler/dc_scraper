@@ -2,7 +2,10 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import { summarizeUnresolvedReconciliation } from "../src/v2/workbench/unresolved_work.ts";
+import {
+  downstreamBlockedCountByReviewItem,
+  summarizeUnresolvedReconciliation,
+} from "../src/v2/workbench/unresolved_work.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -304,6 +307,123 @@ Deno.test("unresolved work graph links placeholder review items to placeholder b
   assertEquals(diagnostic.blockers[0].blockerState, "placeholder");
   assertEquals(diagnostic.blockers[0].hasActionablePrerequisite, true);
   assertEquals(diagnostic.blockers[0].actionableDecisionIds, [placeholderDecision.nodeId]);
+  workbench.close();
+});
+
+Deno.test("downstream blocked count helper matches actionable unresolved graph decisions", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.placeholder_target', 'Placeholder Target', 'placeholder', 'placeholder', '[]', 1, 'fixture placeholder', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values('review.placeholder.target', 'placeholder_entity', 'dc.placeholder_target', 'Resolve placeholder endpoint', 'defer', 'open', '{}', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.mixed_relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.pending_dependency",
+      sourceItemKey: "mixed-relationship-pending-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.mixed_entities",
+      candidateId: "candidate.test.unresolved_work.pending_target",
+      sourceItemKey: "mixed-entity-pending-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.mixed_relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.placeholder_dependency",
+      sourceItemKey: "mixed-relationship-placeholder-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.placeholder_target",
+      relationshipType: "governed_by",
+      rawValue: "Placeholder Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.mixed_relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.legal_dependency",
+      sourceItemKey: "mixed-relationship-legal-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "legal.d_c_code_3_1202_03",
+      relationshipType: "authorized_by",
+      rawValue: "D.C. Code § 3-1202.03",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.unresolved_work.mixed_authority",
+      "D.C. Code § 3-1202.03",
+      "https://code.dccouncil.us/us/dc/council/code/sections/3-1202.03",
+    ),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.mixed_entities",
+      candidateId: "candidate.test.unresolved_work.unrelated",
+      sourceItemKey: "mixed-entity-unrelated-row",
+      proposedEntityId: "dc.unrelated",
+      name: "Unrelated",
+      kind: "agency",
+      observedName: "Unrelated",
+    }),
+    dataDir,
+  );
+
+  const items = workbench.listReviewItems({ status: "open" });
+  const impacts = downstreamBlockedCountByReviewItem(workbench, items);
+  const graph = workbench.unresolvedWorkGraph();
+
+  for (const decision of graph.decisions) {
+    assertEquals(
+      impacts.get(decision.reviewItemId),
+      decision.downstreamBlockedCount,
+      `impact mismatch for ${decision.reviewItemId}`,
+    );
+  }
+
+  const decisionsBySubject = new Map(
+    graph.decisions.map((decision) => [decision.subjectId, decision]),
+  );
+  assertEquals(
+    impacts.get(
+      decisionsBySubject.get("candidate.test.unresolved_work.pending_target")!.reviewItemId,
+    ),
+    1,
+  );
+  assertEquals(impacts.get(decisionsBySubject.get("dc.placeholder_target")!.reviewItemId), 1);
+  assertEquals(
+    impacts.get(decisionsBySubject.get("legal.test.unresolved_work.mixed_authority")!.reviewItemId),
+    1,
+  );
+  assertEquals(
+    impacts.get(decisionsBySubject.get("candidate.test.unresolved_work.unrelated")!.reviewItemId),
+    0,
+  );
   workbench.close();
 });
 
