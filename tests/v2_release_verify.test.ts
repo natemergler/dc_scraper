@@ -2,6 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { ConnectorResult } from "../src/v2/domain.ts";
 import { buildV2Release } from "../src/v2/release.ts";
+import { verifyWorkbenchRelease } from "../src/v2/release_verify.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   syntheticCustomEntitySourceResult,
@@ -189,6 +190,17 @@ Deno.test("release verify accepts source-backed dataset and legal ref rows", asy
   assertEquals(body.datasetProvenanceProblems, []);
   assertEquals(body.legalRefProvenanceCheckedCount, 1);
   assertEquals(body.legalRefProvenanceProblems, []);
+});
+
+Deno.test("release verify batches inventory evidence lookup across rows", async () => {
+  const { workbench } = await sourceBackedInventoryWorkbench();
+  duplicateInventoryRows(workbench, 3);
+
+  const prepares = countInventoryEvidencePrepares(workbench);
+  workbench.close();
+
+  assertEquals(prepares.datasetEvidence, 1);
+  assertEquals(prepares.legalRefEvidence, 1);
 });
 
 Deno.test("release verify accepts source-backed legal attachment rows", async () => {
@@ -797,6 +809,88 @@ function runReleaseVerifyText(dbPath: string): Promise<Deno.CommandOutput> {
       dbPath,
     ],
   }).output();
+}
+
+function duplicateInventoryRows(workbench: Workbench, totalRows: number): void {
+  for (let index = 2; index <= totalRows; index += 1) {
+    const suffix = String(index);
+    workbench.db.prepare(
+      `insert into datasets(
+         dataset_id, source_item_id, name, category, owner_name, access_method, artifact_depth,
+         official_url, review_status
+       )
+       select ?, source_item_id, name || ' ' || ?, category, owner_name, access_method,
+              artifact_depth, official_url, review_status
+       from datasets
+       where dataset_id = ?`,
+    ).run(
+      `dataset.test.release.verify.inventory.${suffix}`,
+      suffix,
+      "dataset.test.release.verify.inventory",
+    );
+    workbench.db.prepare(
+      `insert into dataset_evidence(
+         evidence_id, dataset_id, source_id, source_item_id, field_path, observed_value,
+         artifact_path
+       )
+       select ?, ?, source_id, source_item_id, field_path, observed_value, artifact_path
+       from dataset_evidence
+       where dataset_id = ?`,
+    ).run(
+      `evidence.dataset.test.release.verify.inventory.${suffix}`,
+      `dataset.test.release.verify.inventory.${suffix}`,
+      "dataset.test.release.verify.inventory",
+    );
+    workbench.db.prepare(
+      `insert into legal_refs(
+         legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url,
+         review_status
+       )
+       select ?, source_item_id, ref_type, citation_text, normalized_citation, url, review_status
+       from legal_refs
+       where legal_ref_id = ?`,
+    ).run(
+      `legal.test.release.verify.inventory.${suffix}`,
+      "legal.test.release.verify.inventory",
+    );
+    workbench.db.prepare(
+      `insert into legal_ref_evidence(
+         evidence_id, legal_ref_id, source_id, source_item_id, field_path, observed_value,
+         artifact_path
+       )
+       select ?, ?, source_id, source_item_id, field_path, observed_value, artifact_path
+       from legal_ref_evidence
+       where legal_ref_id = ?`,
+    ).run(
+      `evidence.legal.test.release.verify.inventory.${suffix}`,
+      `legal.test.release.verify.inventory.${suffix}`,
+      "legal.test.release.verify.inventory",
+    );
+  }
+}
+
+function countInventoryEvidencePrepares(workbench: Workbench): {
+  datasetEvidence: number;
+  legalRefEvidence: number;
+} {
+  const originalPrepare = workbench.db.prepare.bind(workbench.db);
+  const prepareOwner = workbench.db as unknown as {
+    prepare(sql: string): ReturnType<typeof workbench.db.prepare>;
+  };
+  let datasetEvidence = 0;
+  let legalRefEvidence = 0;
+  prepareOwner.prepare = (sql: string) => {
+    const normalizedSql = sql.replaceAll(/\s+/g, " ");
+    if (normalizedSql.includes("from dataset_evidence")) datasetEvidence += 1;
+    if (normalizedSql.includes("from legal_ref_evidence")) legalRefEvidence += 1;
+    return originalPrepare(sql);
+  };
+  try {
+    verifyWorkbenchRelease(workbench);
+  } finally {
+    prepareOwner.prepare = originalPrepare;
+  }
+  return { datasetEvidence, legalRefEvidence };
 }
 
 async function readyEntityWorkbench(): Promise<{
