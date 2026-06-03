@@ -1,4 +1,5 @@
 import { buildWorkbenchStatus } from "./status.ts";
+import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
 import type { Workbench } from "./workbench.ts";
 
 export interface ReleaseArtifactProblem {
@@ -18,7 +19,7 @@ export interface ReleaseRelationshipProvenanceProblem {
 
 export interface ReleaseVerificationResult {
   ready: boolean;
-  readiness: "usable" | "usable-with-warnings" | "not-ready";
+  readiness: ReleaseReadiness;
   reasons: string[];
   sourceArtifactProblems: ReleaseArtifactProblem[];
   relationshipProvenanceCheckedCount: number;
@@ -64,16 +65,15 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   }
   return {
     ready: reasons.length === 0,
-    readiness: sourceArtifactProblems.length > 0 ||
-        relationshipProvenanceProblems.length > 0 ||
-        status.sources.failed > 0 ||
-        status.staleReview.count > 0 ||
-        status.reconciliation.blocked > 0 ||
-        status.placeholders.count > 0
-      ? "not-ready"
-      : status.review.open > 0 || status.review.deferred > 0
-      ? "usable-with-warnings"
-      : "usable",
+    readiness: classifyReleaseReadiness({
+      failedSourceCount: status.sources.failed,
+      openReviewItemCount: status.review.open,
+      deferredReviewItemCount: status.review.deferred,
+      staleReviewItemCount: status.staleReview.count,
+      blockedReconciliationCount: status.reconciliation.blocked,
+      placeholderEntityCount: status.placeholders.count,
+      blockingProblemCount: sourceArtifactProblems.length + relationshipProvenanceProblems.length,
+    }),
     reasons,
     sourceArtifactProblems,
     relationshipProvenanceCheckedCount: relationshipProvenance.checkedCount,

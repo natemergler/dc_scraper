@@ -79,6 +79,36 @@ Deno.test("release verify exits zero for a ready workbench", async () => {
   assertEquals(body.readiness, "usable");
 });
 
+Deno.test("release verify treats unresolved review as usable with warnings", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.release.verify.warning", "Warning Board"),
+    dataDir,
+  );
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    readiness: string;
+    sourceArtifactProblems: unknown[];
+    relationshipProvenanceCheckedCount: number;
+    relationshipProvenanceProblems: unknown[];
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.readiness, "usable-with-warnings");
+  assertEquals(body.reasons, ["open review items: 1"]);
+  assertEquals(body.sourceArtifactProblems, []);
+  assertEquals(body.relationshipProvenanceCheckedCount, 0);
+  assertEquals(body.relationshipProvenanceProblems, []);
+});
+
 Deno.test("release verify accepts source-backed relationship rows", async () => {
   const { dbPath, workbench } = await readyRelationshipWorkbench();
   workbench.db.prepare("update source_artifacts set fetched_url = 'https://fda.gov/source.json'")

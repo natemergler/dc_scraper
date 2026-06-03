@@ -2,6 +2,7 @@ import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
 import { sha256BytesHex } from "./domain.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
+import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
 import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
@@ -62,7 +63,7 @@ export interface ReleaseInspection {
   expectedFileCount: number;
   packageIntegrity: "ok" | "problem" | "unknown";
   packageProblems: ReleasePackageProblem[];
-  readiness: "usable" | "usable-with-warnings" | "not-ready";
+  readiness: ReleaseReadiness;
   releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
 }
 
@@ -371,9 +372,15 @@ export async function buildReleaseInspection(
     expectedFileCount: packageInspection.expectedFileCount,
     packageIntegrity: packageInspection.packageIntegrity,
     packageProblems: packageInspection.packageProblems,
-    readiness: packageInspection.packageIntegrity === "ok"
-      ? releaseReadiness(releaseSummary)
-      : "not-ready",
+    readiness: classifyReleaseReadiness({
+      failedSourceCount: releaseSummary.failed_source_count,
+      openReviewItemCount: releaseSummary.open_review_item_count,
+      deferredReviewItemCount: releaseSummary.deferred_review_item_count,
+      staleReviewItemCount: releaseSummary.stale_review_item_count,
+      blockedReconciliationCount: releaseSummary.blocked_reconciliation_count,
+      placeholderEntityCount: releaseSummary.placeholder_entity_count,
+      blockingProblemCount: packageInspection.packageIntegrity === "ok" ? 0 : 1,
+    }),
     releaseSummary,
   };
 }
@@ -467,23 +474,6 @@ function unexpectedEntryProblem(entry: ReleaseDirectoryEntry): ReleasePackagePro
 
 async function releaseFileSha256(outDir: string, fileName: string): Promise<string> {
   return `sha256:${await sha256BytesHex(await Deno.readFile(`${outDir}/${fileName}`))}`;
-}
-
-function releaseReadiness(
-  summary: NonNullable<ReleaseManifest["release_summary"]>,
-): "usable" | "usable-with-warnings" | "not-ready" {
-  if (
-    (summary.failed_source_count ?? 0) > 0 ||
-    (summary.stale_review_item_count ?? 0) > 0 ||
-    (summary.blocked_reconciliation_count ?? 0) > 0 ||
-    (summary.placeholder_entity_count ?? 0) > 0
-  ) {
-    return "not-ready";
-  }
-  if ((summary.open_review_item_count ?? 0) > 0 || (summary.deferred_review_item_count ?? 0) > 0) {
-    return "usable-with-warnings";
-  }
-  return "usable";
 }
 
 function renderPackageProblems(problems: ReleasePackageProblem[]): string[] {
