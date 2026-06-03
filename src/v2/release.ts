@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256Hex } from "./domain.ts";
+import { unresolvedStateNote } from "./operator_plan.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -479,6 +480,8 @@ function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
   const reviewByType =
     summary.review_items_by_type.map((item) => `${item.item_type}=${item.count}`).join(", ") ||
     "none";
+  const reviewDebtByType = renderReviewDebt(summary.review_debt_by_type, "item_type");
+  const reviewDebtBySource = renderReviewDebt(summary.review_debt_by_source, "source_id");
   return `# DCGov v2 Release
 
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
@@ -505,12 +508,19 @@ Public appointment observations may appear as \`appointee_observation\` entities
 - relationships by review_status: ${relationshipStatus}
 - review items by status: ${reviewByStatus}
 - review items by type: ${reviewByType}
+- review debt by type: ${reviewDebtByType}
+- review debt by source: ${reviewDebtBySource}
+- stale review: ${summary.stale_review_item_count} (${
+    renderStaleByPriorDecision(summary.stale_review_by_prior_decision_state)
+  })
 - sources: total=${summary.source_count}, failed=${summary.failed_source_count}
 - datasets: total=${summary.dataset_count}
 - legal refs by type: ${legalByType}
 - legal refs by review_status: ${legalByStatus}
 - entity legal refs: total=${summary.entity_legal_refs_count}
 - relationship legal refs: total=${summary.relationship_legal_refs_count}
+- review status note: ${summary.review_status_note}
+- blocked by source: ${renderBlockedBySource(summary.blocked_reconciliation_by_source)}
 
 Relationship coverage note: accepted relationships may represent only a partial reviewed slice of discovered relationship candidates.
 `;
@@ -532,11 +542,50 @@ function buildReleaseSummary(
   const reviewByType = workbench.db.prepare(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
+  const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
+  const reviewDebt = workbench.reviewDebtSummary();
+  const reconciliation = workbench.reconciliationSummary();
+  const staleReview = workbench.staleReviewSummary();
+  const placeholderEntityCount = workbench.db.prepare(
+    "select count(*) as count from canonical_entities where is_placeholder = 1",
+  ).get() as { count: number };
+  const openReviewItemCount = reviewStatusCounts.get("open") ?? 0;
+  const deferredReviewItemCount = reviewStatusCounts.get("deferred") ?? 0;
   return {
     entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
     review_items_by_status: reviewByStatus,
     review_items_by_type: reviewByType,
+    review_debt_by_type: reviewDebt.byType.map((row) => ({
+      item_type: row.itemType,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
+    review_debt_by_source: reviewDebt.bySource.map((row) => ({
+      source_id: row.sourceId,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
+    open_review_item_count: openReviewItemCount,
+    deferred_review_item_count: deferredReviewItemCount,
+    stale_review_item_count: staleReview.count,
+    stale_review_by_prior_decision_state: staleReview.byPriorDecisionState.map((row) => ({
+      prior_decision_state: row.priorDecisionState,
+      count: row.count,
+    })),
+    blocked_reconciliation_count: reconciliation.blockedCount,
+    blocked_reconciliation_by_source: reconciliation.blockedBySource.map((row) => ({
+      source_id: row.sourceId,
+      count: row.count,
+    })),
+    placeholder_entity_count: placeholderEntityCount.count,
+    review_status_note: releaseReviewStatusNote({
+      openReviewItemCount,
+      deferredReviewItemCount,
+      staleReviewItemCount: staleReview.count,
+      blockedReconciliationCount: reconciliation.blockedCount,
+      placeholderEntityCount: placeholderEntityCount.count,
+    }),
     source_count: sources.length,
     failed_source_count: sources.filter((row) => row.latest_status === "failed").length,
     dataset_count: datasets.length,
@@ -545,6 +594,10 @@ function buildReleaseSummary(
     entity_legal_refs_count: entityLegalRefs.length,
     relationship_legal_refs_count: relationshipLegalRefs.length,
   };
+}
+
+function releaseReviewStatusNote(counts: Parameters<typeof unresolvedStateNote>[0]): string {
+  return `${unresolvedStateNote(counts)} Release generated from accepted materialized facts only.`;
 }
 
 function countByReviewStatus<T>(
@@ -579,8 +632,26 @@ function countByRefType<T>(
   }));
 }
 
+function renderReviewDebt<T extends string>(
+  rows: Array<Record<T, string> & { open_count: number; deferred_count: number }>,
+  nameKey: T,
+): string {
+  return rows.map((row) => `${row[nameKey]}(open=${row.open_count},deferred=${row.deferred_count})`)
+    .join(", ") || "none";
+}
+
 function renderStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
   return rows.map((row) => `${row.review_status}=${row.count}`).join(", ") || "none";
+}
+
+function renderBlockedBySource(rows: Array<{ source_id: string; count: number }>): string {
+  return rows.map((row) => `${row.source_id}=${row.count}`).join(", ") || "none";
+}
+
+function renderStaleByPriorDecision(
+  rows: Array<{ prior_decision_state: string; count: number }> | undefined,
+): string {
+  return rows?.map((row) => `${row.prior_decision_state}=${row.count}`).join(", ") || "none";
 }
 
 function toCsv<T extends Record<string, string | number | null | undefined>>(
