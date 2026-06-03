@@ -1,3 +1,4 @@
+import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
 import {
   renderReviewItemSummary,
@@ -77,20 +78,34 @@ export async function handleReviewCommand(
 }
 
 export function printReviewHelp(): void {
-  console.log(`dc review
+  console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`dc review\` for the next open item
-  2. Browse a queue slice with \`dc review list --mode relationships --limit 5\`
-  3. Run \`dc status\` for the next suggested scoped batch command
-  4. Apply a scoped batch like \`dc review batch accept-safe --mode entities --subject-prefix candidate.council.committees\`
+  1. Run \`${dcCommand("review")}\` for the next open item
+  2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  3. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
+  4. Apply a scoped batch like \`${
+    dcCommand(
+      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+    )
+  }\`
 
 Usage:
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  dc review batch accept-safe --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review")
+  } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
+  ${
+    dcCommand("review list")
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  ${
+    dcCommand("review batch accept-safe")
+  } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer-default")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
   Enter runs the default action for the current item.
@@ -99,17 +114,31 @@ Interactive actions:
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {
-  console.log(`dc review batch
+  console.log(`${dcCommand("review batch")}
 
 Workflow:
-  1. Run \`dc status\` for the next suggested scoped batch command
-  2. Accept safe work with \`dc review batch accept-safe --mode entities --subject-prefix candidate.council.committees\`
-  3. Defer default-defer relationships with \`dc review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of\`
+  1. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
+  2. Accept safe work with \`${
+    dcCommand(
+      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+    )
+  }\`
+  3. Defer default-defer relationships with \`${
+    dcCommand(
+      "review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+    )
+  }\`
 
 Usage:
-  dc review batch accept-safe --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch accept-safe")
+  } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer-default")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 `);
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);
@@ -153,7 +182,7 @@ async function handleReviewBatchCommand(
   if (args[2] === "accept-safe") {
     if (hasHelpFlag(args, 3) || !filters.mode) {
       printReviewBatchHelp([
-        "run `dc status` for the next suggested scoped batch command",
+        `run \`${dcCommand("status")}\` for the next suggested scoped batch command`,
       ]);
       return true;
     }

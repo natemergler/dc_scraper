@@ -185,7 +185,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
-  assertStringIncludes(statusText, "Next: dc source list");
+  assertStringIncludes(statusText, "Next: deno task dc -- source list");
 
   const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -214,7 +214,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
-  assertEquals(jsonStatus.nextCommand, "dc source list");
+  assertEquals(jsonStatus.nextCommand, "deno task dc -- source list");
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -415,9 +415,12 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const topLevelText = new TextDecoder().decode(topLevelHelp.stdout);
   assertEquals(topLevelHelp.code, 0);
   assertStringIncludes(topLevelText, "Workflow:");
-  assertStringIncludes(topLevelText, "dc source fetch --all");
-  assertStringIncludes(topLevelText, "dc audit");
-  assertStringIncludes(topLevelText, "dc review | dc review list --mode entities");
+  assertStringIncludes(topLevelText, "deno task dc -- source fetch --all");
+  assertStringIncludes(topLevelText, "deno task dc -- audit");
+  assertStringIncludes(
+    topLevelText,
+    "deno task dc -- review | deno task dc -- review list --mode entities",
+  );
 
   const auditHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -435,8 +438,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const auditText = new TextDecoder().decode(auditHelp.stdout);
   assertEquals(auditHelp.code, 0);
   assertStringIncludes(auditText, "Usage:");
-  assertStringIncludes(auditText, "dc audit [--db <path>] [--json]");
-  assertStringIncludes(auditText, "dc audit doctor [--db <path>] [--json]");
+  assertStringIncludes(auditText, "deno task dc -- audit [--db <path>] [--json]");
+  assertStringIncludes(auditText, "deno task dc -- audit doctor [--db <path>] [--json]");
   assert(!auditText.includes("DB: "));
 
   const auditStatusHelp = await new Deno.Command(Deno.execPath(), {
@@ -455,7 +458,10 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const auditStatusHelpText = new TextDecoder().decode(auditStatusHelp.stdout);
   assertEquals(auditStatusHelp.code, 0);
-  assertStringIncludes(auditStatusHelpText, "dc audit status [--db <path>] [--json]");
+  assertStringIncludes(
+    auditStatusHelpText,
+    "deno task dc -- audit status [--db <path>] [--json]",
+  );
   assert(!auditStatusHelpText.includes("DB: "));
 
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
@@ -474,10 +480,10 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const sourceText = new TextDecoder().decode(sourceHelp.stdout);
   assertEquals(sourceHelp.code, 0);
   assertStringIncludes(sourceText, "Workflow:");
-  assertStringIncludes(sourceText, "dc source list");
-  assertStringIncludes(sourceText, "dc source fetch <source-id>");
-  assertStringIncludes(sourceText, "dc source fetch --all");
-  assertStringIncludes(sourceText, "dc source inspect <source-id>");
+  assertStringIncludes(sourceText, "deno task dc -- source list");
+  assertStringIncludes(sourceText, "deno task dc -- source fetch <source-id>");
+  assertStringIncludes(sourceText, "deno task dc -- source fetch --all");
+  assertStringIncludes(sourceText, "deno task dc -- source inspect <source-id>");
 
   const workbenchHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -494,9 +500,9 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const workbenchHelpText = new TextDecoder().decode(workbenchHelp.stdout);
   assertEquals(workbenchHelp.code, 0);
-  assertStringIncludes(workbenchHelpText, "dc workbench");
-  assertStringIncludes(workbenchHelpText, "dc init [--db <path>]");
-  assertStringIncludes(workbenchHelpText, "dc status [--db <path>] [--json]");
+  assertStringIncludes(workbenchHelpText, "deno task dc -- workbench");
+  assertStringIncludes(workbenchHelpText, "deno task dc -- init [--db <path>]");
+  assertStringIncludes(workbenchHelpText, "deno task dc -- status [--db <path>] [--json]");
 
   const initHelpDb = join(await Deno.makeTempDir(), "workbench.sqlite");
   const initHelp = await new Deno.Command(Deno.execPath(), {
@@ -516,7 +522,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const initHelpText = new TextDecoder().decode(initHelp.stdout);
   assertEquals(initHelp.code, 0);
-  assertStringIncludes(initHelpText, "dc workbench");
+  assertStringIncludes(initHelpText, "deno task dc -- workbench");
   assert(!initHelpText.includes("Initialized v2 workbench"));
 
   const reviewHelp = await new Deno.Command(Deno.execPath(), {
@@ -536,8 +542,11 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(reviewHelp.code, 0);
   assertStringIncludes(reviewText, "Workflow:");
   assertStringIncludes(reviewText, "Usage:");
-  assertStringIncludes(reviewText, "dc review [entities|relationships|legal|sources]");
-  assertStringIncludes(reviewText, "dc review list");
+  assertStringIncludes(
+    reviewText,
+    "deno task dc -- review [entities|relationships|legal|sources]",
+  );
+  assertStringIncludes(reviewText, "deno task dc -- review list");
   assert(!reviewText.includes("No review items remain."));
 
   const reviewModeHelp = await new Deno.Command(Deno.execPath(), {
@@ -556,8 +565,11 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const reviewModeText = new TextDecoder().decode(reviewModeHelp.stdout);
   assertEquals(reviewModeHelp.code, 0);
-  assertStringIncludes(reviewModeText, "dc review [entities|relationships|legal|sources]");
-  assertStringIncludes(reviewModeText, "dc review batch accept-safe");
+  assertStringIncludes(
+    reviewModeText,
+    "deno task dc -- review [entities|relationships|legal|sources]",
+  );
+  assertStringIncludes(reviewModeText, "deno task dc -- review batch accept-safe");
   assert(!reviewModeText.includes("No review items remain."));
 
   const reviewBatchHelp = await new Deno.Command(Deno.execPath(), {
@@ -577,8 +589,14 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const reviewBatchText = new TextDecoder().decode(reviewBatchHelp.stdout);
   assertEquals(reviewBatchHelp.code, 0);
   assertStringIncludes(reviewBatchText, "Workflow:");
-  assertStringIncludes(reviewBatchText, "dc review batch accept-safe --mode entities");
-  assertStringIncludes(reviewBatchText, "dc review batch defer-default --mode relationships");
+  assertStringIncludes(
+    reviewBatchText,
+    "deno task dc -- review batch accept-safe --mode entities",
+  );
+  assertStringIncludes(
+    reviewBatchText,
+    "deno task dc -- review batch defer-default --mode relationships",
+  );
 
   const entityHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -596,8 +614,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const entityText = new TextDecoder().decode(entityHelp.stdout);
   assertEquals(entityHelp.code, 0);
   assertStringIncludes(entityText, "Workflow:");
-  assertStringIncludes(entityText, "dc entity search <query>");
-  assertStringIncludes(entityText, "dc entity show <entity-id>");
+  assertStringIncludes(entityText, "deno task dc -- entity search <query>");
+  assertStringIncludes(entityText, "deno task dc -- entity show <entity-id>");
 
   const entityBare = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -613,8 +631,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const entityBareText = new TextDecoder().decode(entityBare.stdout);
   assertEquals(entityBare.code, 0);
-  assertStringIncludes(entityBareText, "dc entity");
-  assertStringIncludes(entityBareText, "dc entity search <query>");
+  assertStringIncludes(entityBareText, "deno task dc -- entity");
+  assertStringIncludes(entityBareText, "deno task dc -- entity search <query>");
 
   const entitySearchHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -632,7 +650,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const entitySearchHelpText = new TextDecoder().decode(entitySearchHelp.stdout);
   assertEquals(entitySearchHelp.code, 0);
-  assertStringIncludes(entitySearchHelpText, "dc entity search <query>");
+  assertStringIncludes(entitySearchHelpText, "deno task dc -- entity search <query>");
   assert(!entitySearchHelpText.includes("[]"));
 
   const entityShowHelp = await new Deno.Command(Deno.execPath(), {
@@ -651,7 +669,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const entityShowHelpText = new TextDecoder().decode(entityShowHelp.stdout);
   assertEquals(entityShowHelp.code, 0);
-  assertStringIncludes(entityShowHelpText, "dc entity show <entity-id>");
+  assertStringIncludes(entityShowHelpText, "deno task dc -- entity show <entity-id>");
 
   const releaseHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -671,8 +689,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(releaseHelp.code, 0);
   assertStringIncludes(releaseText, "Workflow:");
   assertStringIncludes(releaseText, "Usage:");
-  assertStringIncludes(releaseText, "dc release build");
-  assertStringIncludes(releaseText, "dc release inspect");
+  assertStringIncludes(releaseText, "deno task dc -- release build");
+  assertStringIncludes(releaseText, "deno task dc -- release inspect");
   assertEquals(releaseError, "");
 
   const releaseBare = await new Deno.Command(Deno.execPath(), {
@@ -689,8 +707,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const releaseBareText = new TextDecoder().decode(releaseBare.stdout);
   assertEquals(releaseBare.code, 0);
-  assertStringIncludes(releaseBareText, "dc release");
-  assertStringIncludes(releaseBareText, "dc release build");
+  assertStringIncludes(releaseBareText, "deno task dc -- release");
+  assertStringIncludes(releaseBareText, "deno task dc -- release build");
 
   const releaseBuildHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -708,8 +726,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const releaseBuildHelpText = new TextDecoder().decode(releaseBuildHelp.stdout);
   assertEquals(releaseBuildHelp.code, 0);
-  assertStringIncludes(releaseBuildHelpText, "dc release build");
-  assertStringIncludes(releaseBuildHelpText, "dc release inspect");
+  assertStringIncludes(releaseBuildHelpText, "deno task dc -- release build");
+  assertStringIncludes(releaseBuildHelpText, "deno task dc -- release inspect");
   assert(!releaseBuildHelpText.includes("Built v2 release"));
 
   const releaseInspectHelp = await new Deno.Command(Deno.execPath(), {
@@ -728,7 +746,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const releaseInspectHelpText = new TextDecoder().decode(releaseInspectHelp.stdout);
   assertEquals(releaseInspectHelp.code, 0);
-  assertStringIncludes(releaseInspectHelpText, "dc release inspect");
+  assertStringIncludes(releaseInspectHelpText, "deno task dc -- release inspect");
   assert(!releaseInspectHelpText.includes("Release: "));
 });
 
@@ -747,10 +765,10 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   }).output();
   const sourceText = new TextDecoder().decode(sourceOutput.stdout);
   assertEquals(sourceOutput.code, 0);
-  assertStringIncludes(sourceText, "dc source");
+  assertStringIncludes(sourceText, "deno task dc -- source");
   assertStringIncludes(sourceText, "Available sources:");
   assertStringIncludes(sourceText, "dcgis.agencies");
-  assertStringIncludes(sourceText, "Tip: run `dc source list`");
+  assertStringIncludes(sourceText, "Tip: run `deno task dc -- source list`");
 
   const compareOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -767,8 +785,11 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   }).output();
   const compareText = new TextDecoder().decode(compareOutput.stdout);
   assertEquals(compareOutput.code, 0);
-  assertStringIncludes(compareText, "dc source compare public-bodies");
-  assertStringIncludes(compareText, "Tip: run `dc source compare public-bodies`");
+  assertStringIncludes(compareText, "deno task dc -- source compare public-bodies");
+  assertStringIncludes(
+    compareText,
+    "Tip: run `deno task dc -- source compare public-bodies`",
+  );
 
   const fetchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -785,10 +806,10 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   }).output();
   const fetchText = new TextDecoder().decode(fetchOutput.stdout);
   assertEquals(fetchOutput.code, 0);
-  assertStringIncludes(fetchText, "dc source fetch <source-id>");
-  assertStringIncludes(fetchText, "dc source fetch --all");
-  assertStringIncludes(fetchText, "Tip: run `dc source fetch --all`");
-  assertStringIncludes(fetchText, "dc source list");
+  assertStringIncludes(fetchText, "deno task dc -- source fetch <source-id>");
+  assertStringIncludes(fetchText, "deno task dc -- source fetch --all");
+  assertStringIncludes(fetchText, "Tip: run `deno task dc -- source fetch --all`");
+  assertStringIncludes(fetchText, "deno task dc -- source list");
 
   const listHelpOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -806,7 +827,7 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   }).output();
   const listHelpText = new TextDecoder().decode(listHelpOutput.stdout);
   assertEquals(listHelpOutput.code, 0);
-  assertStringIncludes(listHelpText, "dc source list");
+  assertStringIncludes(listHelpText, "deno task dc -- source list");
   assert(!listHelpText.includes("unfetched"));
 });
 
@@ -826,9 +847,12 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   }).output();
   const batchText = new TextDecoder().decode(batchOutput.stdout);
   assertEquals(batchOutput.code, 0);
-  assertStringIncludes(batchText, "dc review batch");
-  assertStringIncludes(batchText, "dc status");
-  assertStringIncludes(batchText, "dc review batch accept-safe --mode entities");
+  assertStringIncludes(batchText, "deno task dc -- review batch");
+  assertStringIncludes(batchText, "deno task dc -- status");
+  assertStringIncludes(
+    batchText,
+    "deno task dc -- review batch accept-safe --mode entities",
+  );
 
   const batchFlagOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -847,8 +871,8 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   }).output();
   const batchFlagText = new TextDecoder().decode(batchFlagOutput.stdout);
   assertEquals(batchFlagOutput.code, 0);
-  assertStringIncludes(batchFlagText, "dc review batch");
-  assertStringIncludes(batchFlagText, "dc status");
+  assertStringIncludes(batchFlagText, "deno task dc -- review batch");
+  assertStringIncludes(batchFlagText, "deno task dc -- status");
 
   const acceptSafeOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -866,9 +890,9 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   }).output();
   const acceptSafeText = new TextDecoder().decode(acceptSafeOutput.stdout);
   assertEquals(acceptSafeOutput.code, 0);
-  assertStringIncludes(acceptSafeText, "dc review batch accept-safe");
+  assertStringIncludes(acceptSafeText, "deno task dc -- review batch accept-safe");
   assertStringIncludes(acceptSafeText, "--mode entities");
-  assertStringIncludes(acceptSafeText, "Tip: run `dc status`");
+  assertStringIncludes(acceptSafeText, "Tip: run `deno task dc -- status`");
 });
 
 Deno.test("entity prefix commands guide the operator toward the next lookup action", async () => {
@@ -886,9 +910,9 @@ Deno.test("entity prefix commands guide the operator toward the next lookup acti
   }).output();
   const entityText = new TextDecoder().decode(entityOutput.stdout);
   assertEquals(entityOutput.code, 0);
-  assertStringIncludes(entityText, "dc entity");
-  assertStringIncludes(entityText, "dc entity search");
-  assertStringIncludes(entityText, "dc entity show");
+  assertStringIncludes(entityText, "deno task dc -- entity");
+  assertStringIncludes(entityText, "deno task dc -- entity search");
+  assertStringIncludes(entityText, "deno task dc -- entity show");
 
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -905,8 +929,8 @@ Deno.test("entity prefix commands guide the operator toward the next lookup acti
   }).output();
   const searchText = new TextDecoder().decode(searchOutput.stdout);
   assertEquals(searchOutput.code, 0);
-  assertStringIncludes(searchText, "dc entity search <query>");
-  assertStringIncludes(searchText, "Tip: run `dc entity search District`");
+  assertStringIncludes(searchText, "deno task dc -- entity search <query>");
+  assertStringIncludes(searchText, "Tip: run `deno task dc -- entity search District`");
 });
 
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
