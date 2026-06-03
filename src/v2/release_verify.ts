@@ -17,6 +17,16 @@ export interface ReleaseRelationshipProvenanceProblem {
   message: string;
 }
 
+export interface ReleaseDatasetProvenanceProblem {
+  datasetId: string;
+  message: string;
+}
+
+export interface ReleaseLegalRefProvenanceProblem {
+  legalRefId: string;
+  message: string;
+}
+
 export interface ReleaseVerificationResult {
   ready: boolean;
   readiness: ReleaseReadiness;
@@ -24,6 +34,10 @@ export interface ReleaseVerificationResult {
   sourceArtifactProblems: ReleaseArtifactProblem[];
   relationshipProvenanceCheckedCount: number;
   relationshipProvenanceProblems: ReleaseRelationshipProvenanceProblem[];
+  datasetProvenanceCheckedCount: number;
+  datasetProvenanceProblems: ReleaseDatasetProvenanceProblem[];
+  legalRefProvenanceCheckedCount: number;
+  legalRefProvenanceProblems: ReleaseLegalRefProvenanceProblem[];
   nextCommand: string;
   unresolvedStateNote: string;
 }
@@ -33,11 +47,25 @@ interface ReleaseRelationshipProvenanceCheck {
   problems: ReleaseRelationshipProvenanceProblem[];
 }
 
+interface ReleaseDatasetProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseDatasetProvenanceProblem[];
+}
+
+interface ReleaseLegalRefProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseLegalRefProvenanceProblem[];
+}
+
 export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificationResult {
   const status = buildWorkbenchStatus(workbench);
   const sourceArtifactProblems = validateSourceArtifacts(workbench.sourceArtifacts());
   const relationshipProvenance = validateRelationshipProvenance(workbench);
   const relationshipProvenanceProblems = relationshipProvenance.problems;
+  const datasetProvenance = validateDatasetProvenance(workbench);
+  const datasetProvenanceProblems = datasetProvenance.problems;
+  const legalRefProvenance = validateLegalRefProvenance(workbench);
+  const legalRefProvenanceProblems = legalRefProvenance.problems;
   const reasons: string[] = [];
   if (status.sources.failed > 0) reasons.push(`failed sources: ${status.sources.failed}`);
   if (status.review.open > 0) reasons.push(`open review items: ${status.review.open}`);
@@ -63,6 +91,20 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       }`,
     );
   }
+  if (datasetProvenanceProblems.length > 0) {
+    reasons.push(
+      `dataset row provenance: ${datasetProvenanceProblems.length} problem${
+        datasetProvenanceProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
+  if (legalRefProvenanceProblems.length > 0) {
+    reasons.push(
+      `legal ref row provenance: ${legalRefProvenanceProblems.length} problem${
+        legalRefProvenanceProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
   return {
     ready: reasons.length === 0,
     readiness: classifyReleaseReadiness({
@@ -72,12 +114,19 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       staleReviewItemCount: status.staleReview.count,
       blockedReconciliationCount: status.reconciliation.blocked,
       placeholderEntityCount: status.placeholders.count,
-      blockingProblemCount: sourceArtifactProblems.length + relationshipProvenanceProblems.length,
+      blockingProblemCount: sourceArtifactProblems.length +
+        relationshipProvenanceProblems.length +
+        datasetProvenanceProblems.length +
+        legalRefProvenanceProblems.length,
     }),
     reasons,
     sourceArtifactProblems,
     relationshipProvenanceCheckedCount: relationshipProvenance.checkedCount,
     relationshipProvenanceProblems,
+    datasetProvenanceCheckedCount: datasetProvenance.checkedCount,
+    datasetProvenanceProblems,
+    legalRefProvenanceCheckedCount: legalRefProvenance.checkedCount,
+    legalRefProvenanceProblems,
     nextCommand: status.nextCommand,
     unresolvedStateNote: status.unresolvedStateNote,
   };
@@ -114,6 +163,16 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       result.relationshipProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
+  lines.push(
+    `Dataset rows checked: ${result.datasetProvenanceCheckedCount} source-backed dataset row${
+      result.datasetProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
+  lines.push(
+    `Legal ref rows checked: ${result.legalRefProvenanceCheckedCount} source-backed legal ref row${
+      result.legalRefProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
   if (result.relationshipProvenanceProblems.length > 0) {
     const problems = result.relationshipProvenanceProblems.slice(0, 5);
     lines.push(
@@ -125,6 +184,28 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       lines.push(
         `- ${problem.relationshipId}: ${problem.message}`,
       );
+    }
+  }
+  if (result.datasetProvenanceProblems.length > 0) {
+    const problems = result.datasetProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Dataset row provenance problems${
+        truncationNote(problems.length, result.datasetProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(`- ${problem.datasetId}: ${problem.message}`);
+    }
+  }
+  if (result.legalRefProvenanceProblems.length > 0) {
+    const problems = result.legalRefProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Legal ref row provenance problems${
+        truncationNote(problems.length, result.legalRefProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(`- ${problem.legalRefId}: ${problem.message}`);
     }
   }
   lines.push(`Readiness note: ${result.unresolvedStateNote}`);
@@ -319,54 +400,197 @@ function validateRelationshipProvenance(
          on source_runs.run_id = source_artifacts.run_id
        where relationship_candidate_evidence.relationship_candidate_id = ?
        order by relationship_candidate_evidence.evidence_id`,
-    ).all(relationship.subjectId) as Array<{
-      evidenceId: string;
-      fieldPath: string;
-      artifactPath: string;
-      evidenceSourceId: string;
-      evidenceSourceItemId: string;
-      sourceItemSourceId?: string | null;
-      artifactRunSourceId?: string | null;
-      fetchedUrl?: string | null;
-      contentHash?: string | null;
-    }>;
-    if (evidenceRows.length === 0) {
-      addProblem("missing relationship candidate evidence");
-      continue;
-    }
-    for (const evidence of evidenceRows) {
-      const evidenceLabel = `${evidence.evidenceId} ${evidence.fieldPath}`;
-      if (evidence.evidenceSourceItemId !== relationship.candidateSourceItemId) {
-        addProblem(
-          `${evidenceLabel}: evidence source_item_id does not match relationship candidate`,
-        );
-      }
-      if (!evidence.sourceItemSourceId) {
-        addProblem(`${evidenceLabel}: evidence source_item_id does not resolve to a source item`);
-      } else if (evidence.sourceItemSourceId !== evidence.evidenceSourceId) {
-        addProblem(`${evidenceLabel}: evidence source_id does not match source item`);
-      }
-      if (!evidence.fetchedUrl) {
-        addProblem(
-          `${evidenceLabel}: evidence artifact_path does not resolve to a source artifact`,
-        );
-        continue;
-      }
-      if (
-        evidence.artifactRunSourceId && evidence.artifactRunSourceId !== evidence.evidenceSourceId
-      ) {
-        addProblem(`${evidenceLabel}: evidence artifact source does not match evidence source`);
-      }
-      if (!isPublicHttpUrl(evidence.fetchedUrl)) {
-        addProblem(`${evidenceLabel}: fetched_url is not a public http/https URL`);
-      }
-      if (!evidence.contentHash) {
-        addProblem(`${evidenceLabel}: missing source artifact content_hash`);
-      }
-    }
+    ).all(relationship.subjectId) as SourceBackedEvidenceRow[];
+    validateSourceBackedEvidenceRows(
+      evidenceRows,
+      relationship.candidateSourceItemId ?? "",
+      "relationship candidate",
+      "missing relationship candidate evidence",
+      addProblem,
+    );
   }
 
   return { checkedCount: relationships.length, problems };
+}
+
+function validateDatasetProvenance(workbench: Workbench): ReleaseDatasetProvenanceCheck {
+  const datasets = workbench.db.prepare(
+    `select datasets.dataset_id as datasetId,
+            datasets.source_item_id as sourceItemId,
+            datasets.official_url as officialUrl,
+            source_items.source_id as sourceItemSourceId,
+            sources.base_url as sourceBaseUrl
+     from datasets
+     left join source_items
+       on source_items.source_item_id = datasets.source_item_id
+     left join sources
+       on sources.source_id = source_items.source_id
+     order by datasets.dataset_id`,
+  ).all() as Array<{
+    datasetId: string;
+    sourceItemId: string;
+    officialUrl?: string | null;
+    sourceItemSourceId?: string | null;
+    sourceBaseUrl?: string | null;
+  }>;
+  const problems: ReleaseDatasetProvenanceProblem[] = [];
+  for (const dataset of datasets) {
+    const addProblem = (message: string) => {
+      problems.push({ datasetId: dataset.datasetId, message });
+    };
+    if (!dataset.sourceItemSourceId) addProblem("source_item_id does not resolve to a source item");
+    if (dataset.sourceBaseUrl && !isPublicHttpUrl(dataset.sourceBaseUrl)) {
+      addProblem("source base_url is not a public http/https URL");
+    }
+    if (dataset.officialUrl && !isPublicHttpUrl(dataset.officialUrl)) {
+      addProblem("official_url is not a public http/https URL");
+    }
+    const evidenceRows = sourceBackedEvidenceRows(
+      workbench,
+      "dataset_evidence",
+      "dataset_id",
+      dataset.datasetId,
+    );
+    validateSourceBackedEvidenceRows(
+      evidenceRows,
+      dataset.sourceItemId,
+      "row source_item_id",
+      "missing dataset evidence",
+      addProblem,
+    );
+  }
+  return { checkedCount: datasets.length, problems };
+}
+
+function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProvenanceCheck {
+  const legalRefs = workbench.db.prepare(
+    `select legal_refs.legal_ref_id as legalRefId,
+            legal_refs.source_item_id as sourceItemId,
+            legal_refs.url as url,
+            source_items.source_id as sourceItemSourceId,
+            sources.base_url as sourceBaseUrl
+     from legal_refs
+     left join source_items
+       on source_items.source_item_id = legal_refs.source_item_id
+     left join sources
+       on sources.source_id = source_items.source_id
+     order by legal_refs.legal_ref_id`,
+  ).all() as Array<{
+    legalRefId: string;
+    sourceItemId: string;
+    url?: string | null;
+    sourceItemSourceId?: string | null;
+    sourceBaseUrl?: string | null;
+  }>;
+  const problems: ReleaseLegalRefProvenanceProblem[] = [];
+  for (const legalRef of legalRefs) {
+    const addProblem = (message: string) => {
+      problems.push({ legalRefId: legalRef.legalRefId, message });
+    };
+    if (!legalRef.sourceItemSourceId) {
+      addProblem("source_item_id does not resolve to a source item");
+    }
+    if (legalRef.sourceBaseUrl && !isPublicHttpUrl(legalRef.sourceBaseUrl)) {
+      addProblem("source base_url is not a public http/https URL");
+    }
+    if (legalRef.url && !isPublicHttpUrl(legalRef.url)) {
+      addProblem("url is not a public http/https URL");
+    }
+    const evidenceRows = sourceBackedEvidenceRows(
+      workbench,
+      "legal_ref_evidence",
+      "legal_ref_id",
+      legalRef.legalRefId,
+    );
+    validateSourceBackedEvidenceRows(
+      evidenceRows,
+      legalRef.sourceItemId,
+      "row source_item_id",
+      "missing legal ref evidence",
+      addProblem,
+    );
+  }
+  return { checkedCount: legalRefs.length, problems };
+}
+
+interface SourceBackedEvidenceRow {
+  evidenceId: string;
+  fieldPath: string;
+  artifactPath: string;
+  evidenceSourceId: string;
+  evidenceSourceItemId: string;
+  sourceItemSourceId?: string | null;
+  artifactRunSourceId?: string | null;
+  fetchedUrl?: string | null;
+  contentHash?: string | null;
+}
+
+function sourceBackedEvidenceRows(
+  workbench: Workbench,
+  evidenceTable: "dataset_evidence" | "legal_ref_evidence",
+  rowIdColumn: "dataset_id" | "legal_ref_id",
+  rowId: string,
+): SourceBackedEvidenceRow[] {
+  return workbench.db.prepare(
+    `select ${evidenceTable}.evidence_id as evidenceId,
+            ${evidenceTable}.field_path as fieldPath,
+            ${evidenceTable}.artifact_path as artifactPath,
+            ${evidenceTable}.source_id as evidenceSourceId,
+            ${evidenceTable}.source_item_id as evidenceSourceItemId,
+            source_items.source_id as sourceItemSourceId,
+            source_runs.source_id as artifactRunSourceId,
+            source_artifacts.fetched_url as fetchedUrl,
+            source_artifacts.content_hash as contentHash
+     from ${evidenceTable}
+     left join source_items
+       on source_items.source_item_id = ${evidenceTable}.source_item_id
+     left join source_artifacts
+       on source_artifacts.run_id = source_items.run_id
+      and source_artifacts.path = ${evidenceTable}.artifact_path
+     left join source_runs
+       on source_runs.run_id = source_artifacts.run_id
+     where ${evidenceTable}.${rowIdColumn} = ?
+     order by ${evidenceTable}.evidence_id`,
+  ).all(rowId) as SourceBackedEvidenceRow[];
+}
+
+function validateSourceBackedEvidenceRows(
+  evidenceRows: SourceBackedEvidenceRow[],
+  rowSourceItemId: string,
+  rowSourceItemLabel: string,
+  missingEvidenceMessage: string,
+  addProblem: (message: string) => void,
+): void {
+  if (evidenceRows.length === 0) {
+    addProblem(missingEvidenceMessage);
+    return;
+  }
+  for (const evidence of evidenceRows) {
+    const evidenceLabel = `${evidence.evidenceId} ${evidence.fieldPath}`;
+    if (evidence.evidenceSourceItemId !== rowSourceItemId) {
+      addProblem(`${evidenceLabel}: evidence source_item_id does not match ${rowSourceItemLabel}`);
+    }
+    if (!evidence.sourceItemSourceId) {
+      addProblem(`${evidenceLabel}: evidence source_item_id does not resolve to a source item`);
+    } else if (evidence.sourceItemSourceId !== evidence.evidenceSourceId) {
+      addProblem(`${evidenceLabel}: evidence source_id does not match source item`);
+    }
+    if (!evidence.fetchedUrl) {
+      addProblem(`${evidenceLabel}: evidence artifact_path does not resolve to a source artifact`);
+      continue;
+    }
+    if (
+      evidence.artifactRunSourceId && evidence.artifactRunSourceId !== evidence.evidenceSourceId
+    ) {
+      addProblem(`${evidenceLabel}: evidence artifact source does not match evidence source`);
+    }
+    if (!isPublicHttpUrl(evidence.fetchedUrl)) {
+      addProblem(`${evidenceLabel}: fetched_url is not a public http/https URL`);
+    }
+    if (!evidence.contentHash) {
+      addProblem(`${evidenceLabel}: missing source artifact content_hash`);
+    }
+  }
 }
 
 function parseJsonObject(value: string | null | undefined): Record<string, unknown> {
