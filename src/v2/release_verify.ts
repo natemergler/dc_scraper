@@ -8,18 +8,35 @@ export interface ReleaseArtifactProblem {
   message: string;
 }
 
+export interface ReleaseRelationshipProvenanceProblem {
+  relationshipId: string;
+  fromEntityId: string;
+  relationshipType: string;
+  toEntityId: string;
+  message: string;
+}
+
 export interface ReleaseVerificationResult {
   ready: boolean;
   readiness: "usable" | "usable-with-warnings" | "not-ready";
   reasons: string[];
   sourceArtifactProblems: ReleaseArtifactProblem[];
+  relationshipProvenanceCheckedCount: number;
+  relationshipProvenanceProblems: ReleaseRelationshipProvenanceProblem[];
   nextCommand: string;
   unresolvedStateNote: string;
+}
+
+interface ReleaseRelationshipProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseRelationshipProvenanceProblem[];
 }
 
 export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificationResult {
   const status = buildWorkbenchStatus(workbench);
   const sourceArtifactProblems = validateSourceArtifacts(workbench.sourceArtifacts());
+  const relationshipProvenance = validateRelationshipProvenance(workbench);
+  const relationshipProvenanceProblems = relationshipProvenance.problems;
   const reasons: string[] = [];
   if (status.sources.failed > 0) reasons.push(`failed sources: ${status.sources.failed}`);
   if (status.review.open > 0) reasons.push(`open review items: ${status.review.open}`);
@@ -38,9 +55,17 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       }`,
     );
   }
+  if (relationshipProvenanceProblems.length > 0) {
+    reasons.push(
+      `relationship row provenance: ${relationshipProvenanceProblems.length} problem${
+        relationshipProvenanceProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
   return {
     ready: reasons.length === 0,
     readiness: sourceArtifactProblems.length > 0 ||
+        relationshipProvenanceProblems.length > 0 ||
         status.sources.failed > 0 ||
         status.staleReview.count > 0 ||
         status.reconciliation.blocked > 0 ||
@@ -51,6 +76,8 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       : "usable",
     reasons,
     sourceArtifactProblems,
+    relationshipProvenanceCheckedCount: relationshipProvenance.checkedCount,
+    relationshipProvenanceProblems,
     nextCommand: status.nextCommand,
     unresolvedStateNote: status.unresolvedStateNote,
   };
@@ -70,16 +97,43 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
     }
   }
   if (result.sourceArtifactProblems.length > 0) {
-    lines.push("Source artifact problems:");
-    for (const problem of result.sourceArtifactProblems.slice(0, 5)) {
+    const problems = result.sourceArtifactProblems.slice(0, 5);
+    lines.push(
+      `Source artifact problems${
+        truncationNote(problems.length, result.sourceArtifactProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
       lines.push(
         `- ${problem.sourceId} ${problem.endpointId} ${problem.artifactKind}: ${problem.message}`,
+      );
+    }
+  }
+  lines.push(
+    `Relationship rows checked: ${result.relationshipProvenanceCheckedCount} accepted relationship row${
+      result.relationshipProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
+  if (result.relationshipProvenanceProblems.length > 0) {
+    const problems = result.relationshipProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Relationship row provenance problems${
+        truncationNote(problems.length, result.relationshipProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(
+        `- ${problem.relationshipId}: ${problem.message}`,
       );
     }
   }
   lines.push(`Readiness note: ${result.unresolvedStateNote}`);
   lines.push(`Next: ${result.nextCommand}`);
   return lines.join("\n");
+}
+
+function truncationNote(shownCount: number, totalCount: number): string {
+  return totalCount > shownCount ? ` (showing first ${shownCount} of ${totalCount})` : "";
 }
 
 function validateSourceArtifacts(
@@ -132,7 +186,210 @@ function problemForArtifact(
   };
 }
 
-function isPublicHttpUrl(value: string | undefined): boolean {
+function validateRelationshipProvenance(
+  workbench: Workbench,
+): ReleaseRelationshipProvenanceCheck {
+  const relationships = workbench.db.prepare(
+    `select canonical_relationships.relationship_id as relationshipId,
+            canonical_relationships.from_entity_id as fromEntityId,
+            canonical_relationships.relationship_type as relationshipType,
+            canonical_relationships.to_entity_id as toEntityId,
+            canonical_relationships.source_event_id as sourceEventId,
+            from_entities.name as fromEntityName,
+            to_entities.name as toEntityName,
+            resolution_events.event_type as eventType,
+            resolution_events.subject_id as subjectId,
+            resolution_events.payload_json as payloadJson,
+            relationship_candidates.relationship_candidate_id as candidateId,
+            relationship_candidates.source_item_id as candidateSourceItemId,
+            relationship_candidates.from_entity_ref as candidateFromEntityId,
+            relationship_candidates.relationship_type as candidateRelationshipType,
+            relationship_candidates.to_entity_ref as candidateToEntityId
+     from canonical_relationships
+     left join canonical_entities as from_entities
+       on from_entities.entity_id = canonical_relationships.from_entity_id
+     left join canonical_entities as to_entities
+       on to_entities.entity_id = canonical_relationships.to_entity_id
+     left join resolution_events
+       on resolution_events.event_id = canonical_relationships.source_event_id
+     left join relationship_candidates
+       on relationship_candidates.relationship_candidate_id = resolution_events.subject_id
+     where canonical_relationships.review_status = 'accepted'
+     order by canonical_relationships.relationship_id`,
+  ).all() as Array<{
+    relationshipId: string;
+    fromEntityId: string;
+    relationshipType: string;
+    toEntityId: string;
+    sourceEventId: string;
+    fromEntityName?: string | null;
+    toEntityName?: string | null;
+    eventType?: string | null;
+    subjectId?: string | null;
+    payloadJson?: string | null;
+    candidateId?: string | null;
+    candidateSourceItemId?: string | null;
+    candidateFromEntityId?: string | null;
+    candidateRelationshipType?: string | null;
+    candidateToEntityId?: string | null;
+  }>;
+  const problems: ReleaseRelationshipProvenanceProblem[] = [];
+
+  for (const relationship of relationships) {
+    const addProblem = (message: string) => {
+      problems.push({
+        relationshipId: relationship.relationshipId,
+        fromEntityId: relationship.fromEntityId,
+        relationshipType: relationship.relationshipType,
+        toEntityId: relationship.toEntityId,
+        message,
+      });
+    };
+    if (!relationship.fromEntityName) addProblem("missing from_entity label");
+    if (!relationship.toEntityName) addProblem("missing to_entity label");
+    if (!relationship.eventType) {
+      addProblem("source_event_id does not resolve to a resolution event");
+      continue;
+    }
+    if (relationship.eventType !== "accept_relationship_candidate") {
+      addProblem("source_event_id is not an accept_relationship_candidate event");
+      continue;
+    }
+    if (!relationship.subjectId) {
+      addProblem("resolution event is missing subject_id");
+      continue;
+    }
+    if (!relationship.candidateId) {
+      addProblem("resolution event subject_id does not resolve to a relationship candidate");
+      continue;
+    }
+    const payload = parseJsonObject(relationship.payloadJson);
+    const expectedFromEntityId = payloadString(
+      payload,
+      "resolved_from_entity_id",
+      "resolvedFromEntityId",
+      "fromEntityId",
+    ) ?? relationship.candidateFromEntityId;
+    const expectedRelationshipType = payloadString(
+      payload,
+      "resolved_relationship_type",
+      "resolvedRelationshipType",
+      "relationshipType",
+    ) ?? relationship.candidateRelationshipType;
+    const expectedToEntityId = payloadString(
+      payload,
+      "resolved_to_entity_id",
+      "resolvedToEntityId",
+      "toEntityId",
+    ) ?? relationship.candidateToEntityId;
+    if (!expectedFromEntityId || !expectedRelationshipType || !expectedToEntityId) {
+      addProblem("accepted relationship decision is missing resolved endpoint/type fields");
+      continue;
+    }
+    const expectedRelationshipId =
+      `${expectedFromEntityId}:${expectedRelationshipType}:${expectedToEntityId}`;
+    if (
+      relationship.relationshipId !== expectedRelationshipId ||
+      relationship.fromEntityId !== expectedFromEntityId ||
+      relationship.relationshipType !== expectedRelationshipType ||
+      relationship.toEntityId !== expectedToEntityId
+    ) {
+      addProblem(
+        `canonical row does not match accepted relationship decision ${expectedRelationshipId}`,
+      );
+    }
+
+    const evidenceRows = workbench.db.prepare(
+      `select relationship_candidate_evidence.evidence_id as evidenceId,
+              relationship_candidate_evidence.field_path as fieldPath,
+              relationship_candidate_evidence.artifact_path as artifactPath,
+              relationship_candidate_evidence.source_id as evidenceSourceId,
+              relationship_candidate_evidence.source_item_id as evidenceSourceItemId,
+              source_items.source_id as sourceItemSourceId,
+              source_runs.source_id as artifactRunSourceId,
+              source_artifacts.fetched_url as fetchedUrl,
+              source_artifacts.content_hash as contentHash
+       from relationship_candidate_evidence
+       left join source_items
+         on source_items.source_item_id = relationship_candidate_evidence.source_item_id
+       left join source_artifacts
+         on source_artifacts.run_id = source_items.run_id
+        and source_artifacts.path = relationship_candidate_evidence.artifact_path
+       left join source_runs
+         on source_runs.run_id = source_artifacts.run_id
+       where relationship_candidate_evidence.relationship_candidate_id = ?
+       order by relationship_candidate_evidence.evidence_id`,
+    ).all(relationship.subjectId) as Array<{
+      evidenceId: string;
+      fieldPath: string;
+      artifactPath: string;
+      evidenceSourceId: string;
+      evidenceSourceItemId: string;
+      sourceItemSourceId?: string | null;
+      artifactRunSourceId?: string | null;
+      fetchedUrl?: string | null;
+      contentHash?: string | null;
+    }>;
+    if (evidenceRows.length === 0) {
+      addProblem("missing relationship candidate evidence");
+      continue;
+    }
+    for (const evidence of evidenceRows) {
+      const evidenceLabel = `${evidence.evidenceId} ${evidence.fieldPath}`;
+      if (evidence.evidenceSourceItemId !== relationship.candidateSourceItemId) {
+        addProblem(
+          `${evidenceLabel}: evidence source_item_id does not match relationship candidate`,
+        );
+      }
+      if (!evidence.sourceItemSourceId) {
+        addProblem(`${evidenceLabel}: evidence source_item_id does not resolve to a source item`);
+      } else if (evidence.sourceItemSourceId !== evidence.evidenceSourceId) {
+        addProblem(`${evidenceLabel}: evidence source_id does not match source item`);
+      }
+      if (!evidence.fetchedUrl) {
+        addProblem(
+          `${evidenceLabel}: evidence artifact_path does not resolve to a source artifact`,
+        );
+        continue;
+      }
+      if (
+        evidence.artifactRunSourceId && evidence.artifactRunSourceId !== evidence.evidenceSourceId
+      ) {
+        addProblem(`${evidenceLabel}: evidence artifact source does not match evidence source`);
+      }
+      if (!isPublicHttpUrl(evidence.fetchedUrl)) {
+        addProblem(`${evidenceLabel}: fetched_url is not a public http/https URL`);
+      }
+      if (!evidence.contentHash) {
+        addProblem(`${evidenceLabel}: missing source artifact content_hash`);
+      }
+    }
+  }
+
+  return { checkedCount: relationships.length, problems };
+}
+
+function parseJsonObject(value: string | null | undefined): Record<string, unknown> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function payloadString(payload: Record<string, unknown>, ...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return undefined;
+}
+
+function isPublicHttpUrl(value: string | null | undefined): boolean {
   if (!value) return false;
   const normalized = repeatedlyDecodeURIComponent(value).replaceAll("\\", "/");
   if (/^[a-z]:\//i.test(normalized) || normalized.startsWith("/") || /\bfile:/i.test(normalized)) {
@@ -140,10 +397,51 @@ function isPublicHttpUrl(value: string | undefined): boolean {
   }
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
+    return (url.protocol === "http:" || url.protocol === "https:") &&
+      isPublicHostname(url.hostname);
   } catch {
     return false;
   }
+}
+
+function isPublicHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host) return false;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
+    return false;
+  }
+  if (isPrivateIpv4Host(host)) return false;
+  if (isPrivateIpv6Host(host)) return false;
+  return true;
+}
+
+function isPrivateIpv4Host(host: string): boolean {
+  const match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!match) return false;
+  const parts = match.slice(1).map((part) => Number(part));
+  if (parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
+  const [a, b, c] = parts;
+  return a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 192 && b === 0 && c === 2) ||
+    (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a >= 224;
+}
+
+function isPrivateIpv6Host(host: string): boolean {
+  if (!host.includes(":")) return false;
+  return host === "::" ||
+    host === "::1" ||
+    host === "0:0:0:0:0:0:0:1" ||
+    host.startsWith("fe80:") ||
+    host.startsWith("fc") ||
+    host.startsWith("fd");
 }
 
 function repeatedlyDecodeURIComponent(value: string): string {

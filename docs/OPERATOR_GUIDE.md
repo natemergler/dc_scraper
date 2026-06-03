@@ -68,7 +68,8 @@ deno task dc -- release inspect
 
 - `dc status` answers "what is left?"
 - `dc audit` answers "what is blocked and why?"
-- `dc release verify` answers "is this workbench ready to hand off?"
+- `dc release verify` answers "is this workbench ready to hand off, and do accepted release rows
+  still trace to source-backed decisions?"
 
 If a command fails, keep the smallest real surface in mind: inspect one source, one review slice, or
 one release verification reason before widening again.

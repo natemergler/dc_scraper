@@ -61,7 +61,8 @@ Use:
 deno task dc -- release verify
 ```
 
-This checks unresolved release work and source-artifact provenance before a public handoff.
+This checks unresolved release work, source-artifact provenance, and accepted relationship-row
+provenance before a public handoff.
 
 ## Query Cookbook
 
