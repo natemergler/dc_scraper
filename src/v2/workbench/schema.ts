@@ -660,6 +660,132 @@ create index if not exists canonical_relationships_to_idx on canonical_relations
 `,
 }, {
   version: 7,
+  name: "v2_relationship_reconciliation_foundation",
+  sql: `
+create table relationship_review_templates (
+  review_item_id text primary key,
+  subject_id text not null unique references relationship_candidates(relationship_candidate_id),
+  reason text not null,
+  default_action text not null check (default_action in ('accept', 'reject', 'defer')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null
+);
+
+create table reconciliation_items (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  state text not null check (state in ('blocked', 'review_ready')),
+  reason text not null,
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id)
+);
+
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id, blocker_key)
+);
+
+create index if not exists relationship_review_templates_subject_idx
+  on relationship_review_templates(subject_id);
+create index if not exists reconciliation_items_state_idx
+  on reconciliation_items(state, subject_type, subject_id);
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+ `,
+}, {
+  version: 8,
+  name: "v2_remove_relationship_review_templates",
+  sql: `
+drop table if exists relationship_review_templates;
+`,
+}, {
+  version: 9,
+  name: "v2_stale_candidate_blocker_state",
+  sql: `
+alter table reconciliation_blockers rename to reconciliation_blockers_old;
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'stale_candidate', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id, blocker_key)
+);
+insert into reconciliation_blockers
+select subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+from reconciliation_blockers_old;
+drop table reconciliation_blockers_old;
+
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`,
+}, {
+  version: 10,
+  name: "v2_replay_conflict_blocker_state",
+  sql: `
+alter table reconciliation_blockers rename to reconciliation_blockers_old;
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null,
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'stale_candidate', 'replay_conflict', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key(subject_type, subject_id, blocker_key)
+);
+insert into reconciliation_blockers
+select subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+from reconciliation_blockers_old;
+drop table reconciliation_blockers_old;
+
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`,
+}, {
+  version: 11,
+  name: "v2_deferred_candidate_blocker_state",
+  sql: `
+alter table reconciliation_blockers rename to reconciliation_blockers_old;
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null,
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'deferred_candidate', 'placeholder', 'stale_candidate', 'replay_conflict', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key(subject_type, subject_id, blocker_key)
+);
+insert into reconciliation_blockers
+select subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+from reconciliation_blockers_old;
+drop table reconciliation_blockers_old;
+
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`,
+}, {
+  version: 12,
   name: "v2_public_body_seat_relationships",
   sql: `
 alter table relationship_candidates rename to relationship_candidates_old;
@@ -668,56 +794,6 @@ create table relationship_candidates (
   source_item_id text not null references source_items(source_item_id),
   from_entity_ref text not null,
   to_entity_ref text not null,
-  relationship_type text not null check (relationship_type in ('part_of', 'has_seat', 'governed_by', 'overseen_by', 'appointed_by', 'designated_by', 'authorized_by', 'published_by', 'holds', 'represents', 'member_of', 'chairs')),
-  raw_value text,
-  needs_review integer not null default 0 check (needs_review in (0, 1)),
-  review_status text not null default 'pending' check (review_status in ('pending', 'accepted', 'rejected'))
-);
-insert into relationship_candidates select relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status from relationship_candidates_old;
-drop table relationship_candidates_old;
-
-alter table relationship_candidate_evidence rename to relationship_candidate_evidence_old;
-create table relationship_candidate_evidence (
-  evidence_id text primary key,
-  relationship_candidate_id text not null references relationship_candidates(relationship_candidate_id),
-  source_id text not null references sources(source_id),
-  source_item_id text not null references source_items(source_item_id),
-  field_path text not null,
-  observed_value text not null,
-  artifact_path text not null
-);
-insert into relationship_candidate_evidence select evidence_id, relationship_candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path from relationship_candidate_evidence_old;
-drop table relationship_candidate_evidence_old;
-
-alter table canonical_relationships rename to canonical_relationships_old;
-create table canonical_relationships (
-  relationship_id text primary key,
-  from_entity_id text not null references canonical_entities(entity_id),
-  relationship_type text not null check (relationship_type in ('part_of', 'has_seat', 'governed_by', 'overseen_by', 'appointed_by', 'designated_by', 'authorized_by', 'published_by', 'holds', 'represents', 'member_of', 'chairs')),
-  to_entity_id text not null references canonical_entities(entity_id),
-  review_status text not null check (review_status in ('accepted', 'rejected')),
-  source_event_id text not null references resolution_events(event_id),
-  created_at text not null
-);
-insert into canonical_relationships select relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at from canonical_relationships_old;
-drop table canonical_relationships_old;
-
-create index if not exists relationship_candidates_review_idx on relationship_candidates(review_status, relationship_type);
-create index if not exists relationship_candidates_source_item_idx on relationship_candidates(source_item_id);
-create index if not exists relationship_candidate_evidence_candidate_idx on relationship_candidate_evidence(relationship_candidate_id);
-create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
-create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
-`,
-}, {
-  version: 8,
-  name: "v2_public_body_seat_status_relationships",
-  sql: `
-alter table relationship_candidates rename to relationship_candidates_old;
-create table relationship_candidates (
-  relationship_candidate_id text primary key,
-  source_item_id text not null references source_items(source_item_id),
-  from_entity_ref text not null,
-  to_entity_ref text not null,
   relationship_type text not null check (relationship_type in ('part_of', 'has_seat', 'has_status', 'governed_by', 'overseen_by', 'appointed_by', 'designated_by', 'authorized_by', 'published_by', 'holds', 'represents', 'member_of', 'chairs')),
   raw_value text,
   needs_review integer not null default 0 check (needs_review in (0, 1)),
@@ -752,13 +828,139 @@ create table canonical_relationships (
 insert into canonical_relationships select relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at from canonical_relationships_old;
 drop table canonical_relationships_old;
 
+alter table reconciliation_items rename to reconciliation_items_old;
+create table reconciliation_items (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  state text not null check (state in ('blocked', 'review_ready')),
+  reason text not null,
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id)
+);
+insert into reconciliation_items select subject_type, subject_id, state, reason, details_json, created_at, updated_at from reconciliation_items_old;
+drop table reconciliation_items_old;
+
+alter table reconciliation_blockers rename to reconciliation_blockers_old;
+create table reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null,
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'deferred_candidate', 'placeholder', 'stale_candidate', 'replay_conflict', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key(subject_type, subject_id, blocker_key)
+);
+insert into reconciliation_blockers
+select subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+from reconciliation_blockers_old;
+drop table reconciliation_blockers_old;
+
 create index if not exists relationship_candidates_review_idx on relationship_candidates(review_status, relationship_type);
 create index if not exists relationship_candidates_source_item_idx on relationship_candidates(source_item_id);
 create index if not exists relationship_candidate_evidence_candidate_idx on relationship_candidate_evidence(relationship_candidate_id);
 create index if not exists canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
 create index if not exists canonical_relationships_to_idx on canonical_relationships(to_entity_id, relationship_type);
+create index if not exists reconciliation_items_state_idx
+  on reconciliation_items(state, subject_type, subject_id);
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
 `,
 }];
+
+const reconciliationFoundationMigration = migrations.find((migration) => migration.version === 7);
+const removeRelationshipReviewTemplatesMigration = migrations.find((migration) =>
+  migration.version === 8
+);
+
+const reconciliationFoundationRepairSql = `
+create table if not exists reconciliation_items (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  state text not null check (state in ('blocked', 'review_ready')),
+  reason text not null,
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id)
+);
+
+create table if not exists reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id, blocker_key)
+);
+
+drop table if exists relationship_review_templates;
+
+create index if not exists reconciliation_items_state_idx
+  on reconciliation_items(state, subject_type, subject_id);
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`;
+
+function tableExists(store: WorkbenchStore, tableName: string): boolean {
+  return Boolean(
+    queryOne<{ name: string }>(
+      store.db,
+      "select name from sqlite_master where type = 'table' and name = ?",
+      [tableName],
+    ),
+  );
+}
+
+function repairLegacyReconciliationMigrationCollision(store: WorkbenchStore): void {
+  const migration7 = queryOne<SchemaMigrationRow>(
+    store.db,
+    "select version, name, applied_at as appliedAt from schema_migrations where version = 7",
+  );
+  const migration8 = queryOne<SchemaMigrationRow>(
+    store.db,
+    "select version, name, applied_at as appliedAt from schema_migrations where version = 8",
+  );
+  if (!migration7 && !migration8) return;
+
+  const expectedMigration7Name = reconciliationFoundationMigration?.name;
+  const expectedMigration8Name = removeRelationshipReviewTemplatesMigration?.name;
+  const namesMismatch =
+    (migration7 && expectedMigration7Name && migration7.name !== expectedMigration7Name) ||
+    (migration8 && expectedMigration8Name && migration8.name !== expectedMigration8Name);
+  const missingFoundationTables = !tableExists(store, "reconciliation_items") ||
+    !tableExists(store, "reconciliation_blockers");
+
+  if (!namesMismatch && !missingFoundationTables) return;
+
+  withTransaction(store.db, () => {
+    if (missingFoundationTables) {
+      store.db.exec(reconciliationFoundationRepairSql);
+    }
+    if (migration7 && expectedMigration7Name && migration7.name !== expectedMigration7Name) {
+      run(
+        store.db,
+        "update schema_migrations set name = ? where version = 7",
+        [expectedMigration7Name],
+      );
+    }
+    if (migration8 && expectedMigration8Name && migration8.name !== expectedMigration8Name) {
+      run(
+        store.db,
+        "update schema_migrations set name = ? where version = 8",
+        [expectedMigration8Name],
+      );
+    }
+  });
+}
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
   store.db.exec(`
@@ -768,6 +970,7 @@ create table if not exists schema_migrations (
   applied_at text not null
 );
 `);
+  repairLegacyReconciliationMigrationCollision(store);
   for (const migration of migrations) {
     const existing = queryOne<SchemaMigrationRow>(
       store.db,

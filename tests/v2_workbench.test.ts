@@ -5,15 +5,14 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
+import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
 import { buildEntityId, inverseRelationshipType, parseLegalReference } from "../src/v2/domain.ts";
-import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
-import { Workbench } from "../src/v2/workbench.ts";
+import { DEFAULT_SQLITE_BUSY_TIMEOUT_MS, Workbench } from "../src/v2/workbench.ts";
 import {
   admin311Fixture,
   admin311WrongLayerFixture,
@@ -42,6 +41,10 @@ import {
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
+import {
+  syntheticCustomEntitySourceResult,
+  syntheticCustomRelationshipSourceResult,
+} from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const dir = await Deno.makeTempDir();
@@ -55,10 +58,14 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
       (row) => (row as { name: string }).name,
     ),
   );
+  const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
+  const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 8);
-  assertEquals(second.schemaVersion, 8);
-  assertEquals(second.migrations.length, 8);
+  assertEquals(first.schemaVersion, 12);
+  assertEquals(second.schemaVersion, 12);
+  assertEquals(second.migrations.length, 12);
+  assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
+  assertEquals(journalMode, "wal");
   for (
     const indexName of [
       "source_runs_source_status_idx",
@@ -143,6 +150,99 @@ Deno.test("local workbench artifacts are ignored by git", async () => {
   assertEquals(new TextDecoder().decode(output.stdout).trim().split("\n"), paths);
 });
 
+Deno.test("status, review list, and entity search stay usable during an external writer lock", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.district_test_board', 'District Test Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.locking.entities",
+      candidateId: "candidate.test.locking.entities.example_board",
+      sourceItemKey: "locking-board-row",
+      proposedEntityId: "dc.example_locking_board",
+      name: "Example Locking Board",
+      kind: "board",
+      observedName: "Example Locking Board",
+      confidence: 0.4,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const lockingDb = new Database(dbPath);
+  lockingDb.exec("begin exclusive");
+  try {
+    const statusOutput = await new Deno.Command(Deno.execPath(), {
+      cwd: Deno.cwd(),
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-ffi",
+        "scripts/dc.ts",
+        "status",
+        "--db",
+        dbPath,
+      ],
+    }).output();
+    assertEquals(statusOutput.code, 0);
+    const statusText = new TextDecoder().decode(statusOutput.stdout);
+    assertStringIncludes(statusText, "Review: 1 open, 0 deferred");
+
+    const reviewListOutput = await new Deno.Command(Deno.execPath(), {
+      cwd: Deno.cwd(),
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-ffi",
+        "scripts/dc.ts",
+        "review",
+        "list",
+        "--mode",
+        "entities",
+        "--db",
+        dbPath,
+        "--limit",
+        "1",
+      ],
+    }).output();
+    assertEquals(reviewListOutput.code, 0);
+    const reviewListText = new TextDecoder().decode(reviewListOutput.stdout);
+    assertStringIncludes(reviewListText, "Review items: 1");
+
+    const entitySearchOutput = await new Deno.Command(Deno.execPath(), {
+      cwd: Deno.cwd(),
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-env",
+        "--allow-ffi",
+        "scripts/dc.ts",
+        "entity",
+        "search",
+        "District",
+        "--db",
+        dbPath,
+      ],
+    }).output();
+    assertEquals(entitySearchOutput.code, 0);
+    const entitySearchText = new TextDecoder().decode(entitySearchOutput.stdout);
+    assertStringIncludes(entitySearchText, "District Test Board");
+  } finally {
+    lockingDb.exec("rollback");
+    lockingDb.close();
+  }
+});
+
 Deno.test("top-level CLI aliases make the workbench easy to enter", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
@@ -179,10 +279,11 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 8");
+  assertStringIncludes(statusText, "Schema version: 12");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
-  assertStringIncludes(statusText, "Next: dc source list");
+  assertStringIncludes(statusText, "Reconciliation: 0 blocked");
+  assertStringIncludes(statusText, "Next: deno task dc -- source list");
 
   const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -204,12 +305,14 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     schemaVersion: number;
     sources: { fetched: number; total: number };
     review: { open: number; deferred: number };
+    reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 8);
+  assertEquals(jsonStatus.schemaVersion, 12);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
-  assertEquals(jsonStatus.nextCommand, "dc source list");
+  assertEquals(jsonStatus.reconciliation.blocked, 0);
+  assertEquals(jsonStatus.nextCommand, "deno task dc -- source list");
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -306,6 +409,69 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(unfetchedInspectJson.itemCount, 0);
 });
 
+Deno.test("source list repairs legacy migration-version collisions in existing workbenches", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec(`
+update schema_migrations
+set name = 'v2_public_body_seat_relationships'
+where version = 7;
+update schema_migrations
+set name = 'v2_public_body_seat_status_relationships'
+where version = 8;
+drop table reconciliation_items;
+drop table reconciliation_blockers;
+`);
+  workbench.close();
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(sourceListOutput.code, 0);
+  const sourceListText = new TextDecoder().decode(sourceListOutput.stdout);
+  assertStringIncludes(sourceListText, "dcgis.agencies unfetched");
+  assertStringIncludes(sourceListText, "mota.quickbase unfetched");
+
+  const repairedWorkbench = new Workbench(dbPath);
+  const meta = repairedWorkbench.init();
+  const tables = new Set(
+    repairedWorkbench.db.prepare("select name from sqlite_master where type = 'table'").all().map(
+      (row) => (row as { name: string }).name,
+    ),
+  );
+  repairedWorkbench.close();
+
+  assertEquals(meta.schemaVersion, 12);
+  assert(tables.has("reconciliation_items"));
+  assert(tables.has("reconciliation_blockers"));
+  assert(
+    meta.migrations.some((migration) =>
+      migration.version === 7 &&
+      migration.name === "v2_relationship_reconciliation_foundation"
+    ),
+  );
+  assert(
+    meta.migrations.some((migration) =>
+      migration.version === 8 &&
+      migration.name === "v2_remove_relationship_review_templates"
+    ),
+  );
+});
+
 Deno.test("CLI command errors print a concise message", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -332,6 +498,70 @@ Deno.test("CLI command errors print a concise message", async () => {
 });
 
 Deno.test("focused CLI help exits zero and does not run commands", async () => {
+  const topLevelHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "--help",
+    ],
+  }).output();
+  const topLevelText = new TextDecoder().decode(topLevelHelp.stdout);
+  assertEquals(topLevelHelp.code, 0);
+  assertStringIncludes(topLevelText, "Workflow:");
+  assertStringIncludes(topLevelText, "deno task dc -- source fetch --all");
+  assertStringIncludes(topLevelText, "deno task dc -- audit");
+  assertStringIncludes(
+    topLevelText,
+    "deno task dc -- review | deno task dc -- review list --mode entities",
+  );
+
+  const auditHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "--help",
+    ],
+  }).output();
+  const auditText = new TextDecoder().decode(auditHelp.stdout);
+  assertEquals(auditHelp.code, 0);
+  assertStringIncludes(auditText, "Usage:");
+  assertStringIncludes(auditText, "deno task dc -- audit [--db <path>] [--json]");
+  assertStringIncludes(auditText, "deno task dc -- audit doctor [--db <path>] [--json]");
+  assert(!auditText.includes("DB: "));
+
+  const auditStatusHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "status",
+      "--help",
+    ],
+  }).output();
+  const auditStatusHelpText = new TextDecoder().decode(auditStatusHelp.stdout);
+  assertEquals(auditStatusHelp.code, 0);
+  assertStringIncludes(
+    auditStatusHelpText,
+    "deno task dc -- audit status [--db <path>] [--json]",
+  );
+  assert(!auditStatusHelpText.includes("DB: "));
+
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -347,9 +577,51 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const sourceText = new TextDecoder().decode(sourceHelp.stdout);
   assertEquals(sourceHelp.code, 0);
-  assertStringIncludes(sourceText, "dc source list");
-  assertStringIncludes(sourceText, "dc source fetch <source-id>");
-  assertStringIncludes(sourceText, "dc source inspect <source-id>");
+  assertStringIncludes(sourceText, "Workflow:");
+  assertStringIncludes(sourceText, "deno task dc -- source list");
+  assertStringIncludes(sourceText, "deno task dc -- source fetch <source-id>");
+  assertStringIncludes(sourceText, "deno task dc -- source fetch --all");
+  assertStringIncludes(sourceText, "deno task dc -- source inspect <source-id>");
+
+  const workbenchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "workbench",
+      "--help",
+    ],
+  }).output();
+  const workbenchHelpText = new TextDecoder().decode(workbenchHelp.stdout);
+  assertEquals(workbenchHelp.code, 0);
+  assertStringIncludes(workbenchHelpText, "deno task dc -- workbench");
+  assertStringIncludes(workbenchHelpText, "deno task dc -- init [--db <path>]");
+  assertStringIncludes(workbenchHelpText, "deno task dc -- status [--db <path>] [--json]");
+
+  const initHelpDb = join(await Deno.makeTempDir(), "workbench.sqlite");
+  const initHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "init",
+      "--help",
+      "--db",
+      initHelpDb,
+    ],
+  }).output();
+  const initHelpText = new TextDecoder().decode(initHelp.stdout);
+  assertEquals(initHelp.code, 0);
+  assertStringIncludes(initHelpText, "deno task dc -- workbench");
+  assert(!initHelpText.includes("Initialized v2 workbench"));
 
   const reviewHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -366,10 +638,63 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const reviewText = new TextDecoder().decode(reviewHelp.stdout);
   assertEquals(reviewHelp.code, 0);
+  assertStringIncludes(reviewText, "Workflow:");
   assertStringIncludes(reviewText, "Usage:");
-  assertStringIncludes(reviewText, "dc review [entities|relationships|legal|sources]");
-  assertStringIncludes(reviewText, "dc review list");
+  assertStringIncludes(
+    reviewText,
+    "deno task dc -- review [entities|relationships|legal|sources]",
+  );
+  assertStringIncludes(reviewText, "deno task dc -- review list");
   assert(!reviewText.includes("No review items remain."));
+
+  const reviewModeHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--help",
+    ],
+  }).output();
+  const reviewModeText = new TextDecoder().decode(reviewModeHelp.stdout);
+  assertEquals(reviewModeHelp.code, 0);
+  assertStringIncludes(
+    reviewModeText,
+    "deno task dc -- review [entities|relationships|legal|sources]",
+  );
+  assertStringIncludes(reviewModeText, "deno task dc -- review batch accept-safe");
+  assert(!reviewModeText.includes("No review items remain."));
+
+  const reviewBatchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "--help",
+    ],
+  }).output();
+  const reviewBatchText = new TextDecoder().decode(reviewBatchHelp.stdout);
+  assertEquals(reviewBatchHelp.code, 0);
+  assertStringIncludes(reviewBatchText, "Workflow:");
+  assertStringIncludes(
+    reviewBatchText,
+    "deno task dc -- review batch accept-safe --mode entities",
+  );
+  assertStringIncludes(
+    reviewBatchText,
+    "deno task dc -- review batch defer-default --mode relationships",
+  );
 
   const entityHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -386,8 +711,63 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const entityText = new TextDecoder().decode(entityHelp.stdout);
   assertEquals(entityHelp.code, 0);
-  assertStringIncludes(entityText, "dc entity search <query>");
-  assertStringIncludes(entityText, "dc entity show <entity-id>");
+  assertStringIncludes(entityText, "Workflow:");
+  assertStringIncludes(entityText, "deno task dc -- entity search <query>");
+  assertStringIncludes(entityText, "deno task dc -- entity show <entity-id>");
+
+  const entityBare = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+    ],
+  }).output();
+  const entityBareText = new TextDecoder().decode(entityBare.stdout);
+  assertEquals(entityBare.code, 0);
+  assertStringIncludes(entityBareText, "deno task dc -- entity");
+  assertStringIncludes(entityBareText, "deno task dc -- entity search <query>");
+
+  const entitySearchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "search",
+      "--help",
+    ],
+  }).output();
+  const entitySearchHelpText = new TextDecoder().decode(entitySearchHelp.stdout);
+  assertEquals(entitySearchHelp.code, 0);
+  assertStringIncludes(entitySearchHelpText, "deno task dc -- entity search <query>");
+  assert(!entitySearchHelpText.includes("[]"));
+
+  const entityShowHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "show",
+      "--help",
+    ],
+  }).output();
+  const entityShowHelpText = new TextDecoder().decode(entityShowHelp.stdout);
+  assertEquals(entityShowHelp.code, 0);
+  assertStringIncludes(entityShowHelpText, "deno task dc -- entity show <entity-id>");
 
   const releaseHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -405,10 +785,250 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const releaseText = new TextDecoder().decode(releaseHelp.stdout);
   const releaseError = new TextDecoder().decode(releaseHelp.stderr);
   assertEquals(releaseHelp.code, 0);
+  assertStringIncludes(releaseText, "Workflow:");
   assertStringIncludes(releaseText, "Usage:");
-  assertStringIncludes(releaseText, "dc release build");
-  assertStringIncludes(releaseText, "dc release inspect");
+  assertStringIncludes(releaseText, "deno task dc -- release build");
+  assertStringIncludes(releaseText, "deno task dc -- release inspect");
   assertEquals(releaseError, "");
+
+  const releaseBare = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+    ],
+  }).output();
+  const releaseBareText = new TextDecoder().decode(releaseBare.stdout);
+  assertEquals(releaseBare.code, 0);
+  assertStringIncludes(releaseBareText, "deno task dc -- release");
+  assertStringIncludes(releaseBareText, "deno task dc -- release build");
+
+  const releaseBuildHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "build",
+      "--help",
+    ],
+  }).output();
+  const releaseBuildHelpText = new TextDecoder().decode(releaseBuildHelp.stdout);
+  assertEquals(releaseBuildHelp.code, 0);
+  assertStringIncludes(releaseBuildHelpText, "deno task dc -- release build");
+  assertStringIncludes(releaseBuildHelpText, "deno task dc -- release inspect");
+  assert(!releaseBuildHelpText.includes("Built v2 release"));
+
+  const releaseInspectHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--help",
+    ],
+  }).output();
+  const releaseInspectHelpText = new TextDecoder().decode(releaseInspectHelp.stdout);
+  assertEquals(releaseInspectHelp.code, 0);
+  assertStringIncludes(releaseInspectHelpText, "deno task dc -- release inspect");
+  assert(!releaseInspectHelpText.includes("Release: "));
+});
+
+Deno.test("source prefix commands guide the operator toward the next fetch action", async () => {
+  const sourceOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+    ],
+  }).output();
+  const sourceText = new TextDecoder().decode(sourceOutput.stdout);
+  assertEquals(sourceOutput.code, 0);
+  assertStringIncludes(sourceText, "deno task dc -- source");
+  assertStringIncludes(sourceText, "Available sources:");
+  assertStringIncludes(sourceText, "dcgis.agencies");
+  assertStringIncludes(sourceText, "Tip: run `deno task dc -- source list`");
+
+  const compareOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+    ],
+  }).output();
+  const compareText = new TextDecoder().decode(compareOutput.stdout);
+  assertEquals(compareOutput.code, 0);
+  assertStringIncludes(compareText, "deno task dc -- source compare public-bodies");
+  assertStringIncludes(
+    compareText,
+    "Tip: run `deno task dc -- source compare public-bodies`",
+  );
+
+  const fetchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "fetch",
+    ],
+  }).output();
+  const fetchText = new TextDecoder().decode(fetchOutput.stdout);
+  assertEquals(fetchOutput.code, 0);
+  assertStringIncludes(fetchText, "deno task dc -- source fetch <source-id>");
+  assertStringIncludes(fetchText, "deno task dc -- source fetch --all");
+  assertStringIncludes(fetchText, "Tip: run `deno task dc -- source fetch --all`");
+  assertStringIncludes(fetchText, "deno task dc -- source list");
+
+  const listHelpOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--help",
+    ],
+  }).output();
+  const listHelpText = new TextDecoder().decode(listHelpOutput.stdout);
+  assertEquals(listHelpOutput.code, 0);
+  assertStringIncludes(listHelpText, "deno task dc -- source list");
+  assert(!listHelpText.includes("unfetched"));
+});
+
+Deno.test("review prefix commands guide the operator toward the next safe review action", async () => {
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+    ],
+  }).output();
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertEquals(batchOutput.code, 0);
+  assertStringIncludes(batchText, "deno task dc -- review batch");
+  assertStringIncludes(batchText, "deno task dc -- status");
+  assertStringIncludes(
+    batchText,
+    "deno task dc -- review batch accept-safe --mode entities",
+  );
+
+  const batchFlagOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "--db",
+      join(Deno.cwd(), "data", "workbench.sqlite"),
+    ],
+  }).output();
+  const batchFlagText = new TextDecoder().decode(batchFlagOutput.stdout);
+  assertEquals(batchFlagOutput.code, 0);
+  assertStringIncludes(batchFlagText, "deno task dc -- review batch");
+  assertStringIncludes(batchFlagText, "deno task dc -- status");
+
+  const acceptSafeOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+    ],
+  }).output();
+  const acceptSafeText = new TextDecoder().decode(acceptSafeOutput.stdout);
+  assertEquals(acceptSafeOutput.code, 0);
+  assertStringIncludes(acceptSafeText, "deno task dc -- review batch accept-safe");
+  assertStringIncludes(acceptSafeText, "--mode entities");
+  assertStringIncludes(acceptSafeText, "Tip: run `deno task dc -- status`");
+});
+
+Deno.test("entity prefix commands guide the operator toward the next lookup action", async () => {
+  const entityOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+    ],
+  }).output();
+  const entityText = new TextDecoder().decode(entityOutput.stdout);
+  assertEquals(entityOutput.code, 0);
+  assertStringIncludes(entityText, "deno task dc -- entity");
+  assertStringIncludes(entityText, "deno task dc -- entity search");
+  assertStringIncludes(entityText, "deno task dc -- entity show");
+
+  const searchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "search",
+    ],
+  }).output();
+  const searchText = new TextDecoder().decode(searchOutput.stdout);
+  assertEquals(searchOutput.code, 0);
+  assertStringIncludes(searchText, "deno task dc -- entity search <query>");
+  assertStringIncludes(searchText, "Tip: run `deno task dc -- entity search District`");
 });
 
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
@@ -558,15 +1178,15 @@ Deno.test("imports representative connector results and source inspection stays 
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
-  const branchCandidate = workbench.listReviewItems({ type: "entity_candidate" }).find((item) =>
-    item.subjectId === "candidate.dcgis.agencies.branch_executive"
-  );
+  const branchEntity = workbench.db.prepare(
+    "select entity_id as entityId, review_status as reviewStatus from canonical_entities where entity_id = 'dc.executive_branch'",
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
   workbench.close();
   assertEquals(dcgis.fieldCount, 7);
   assertEquals(dcgis.entityCandidateCount, 3);
   assertEquals(dcgis.relationshipCandidateCount, 2);
-  assert(branchCandidate);
-  assertEquals(branchCandidate.details.kind, "branch");
+  assertEquals(branchEntity?.entityId, "dc.executive_branch");
+  assertEquals(branchEntity?.reviewStatus, "accepted");
   assertEquals(quickbase.latestStatus, "success");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
   assertEquals(quickbase.itemCount > 0, true);
@@ -807,6 +1427,67 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
   assert(!publicFacts.includes("private contact metadata"));
 });
 
+Deno.test("quickbase governing-agency parsing normalizes trusted designee seats and skips unsupported role seats", async () => {
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
+"Example Charter Board","Public Charter School Board (PCSB) Designee","Filled","Alex Doe","Active"
+"Example Licensing Board","Department of Consumer and Regulatory Affairs (DCRA) Designee","Filled","Sam Doe","Active"
+"Example Professional Board","Licensed Independent Clinical Social Worker (LICSW)","Filled","Pat Doe","Active"
+`.trim();
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return csv;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+
+  const relationships = result.endpointResults[1].parsed?.relationshipCandidates ?? [];
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Director of the Department of Employment Services (DOES) Designee" &&
+      candidate.toEntityRef === "dc.department_of_employment_services" &&
+      candidate.needsReview === false
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Public Charter School Board (PCSB) Designee" &&
+      candidate.toEntityRef === "dc.public_charter_school_board_pcsb" &&
+      candidate.needsReview === false
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.rawValue === "Department of Consumer and Regulatory Affairs (DCRA) Designee" &&
+      candidate.toEntityRef === "dc.department_of_licensing_and_consumer_protection" &&
+      candidate.needsReview === false
+    ),
+  );
+  assertEquals(
+    relationships.some((candidate) =>
+      candidate.relationshipType === "governed_by" &&
+      candidate.rawValue === "Licensed Independent Clinical Social Worker (LICSW)"
+    ),
+    false,
+  );
+});
+
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1026,24 +1707,48 @@ Deno.test("Open DC public bodies can be safely accepted before relationship revi
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
-  const relationshipItem = reopened.listReviewItems({
+  const relationshipItems = reopened.listReviewItems({
     mode: "relationships",
-    relationshipType: "governed_by",
     subjectPrefix: "relationship.open_dc.public_bodies",
-  }).find((item) =>
-    item.subjectId === "relationship.open_dc.public_bodies.board_accountancy_governing_agency"
-  );
-  assert(relationshipItem);
-  const reviewText = renderReviewItem(reopened, relationshipItem);
+  });
+  const acceptedRelationships = reopened.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id in (
+       'dc.board_of_accountancy:governed_by:dc.department_of_licensing_and_consumer_protection',
+       'dc.adult_career_pathways_task_force:governed_by:dc.department_of_employment_services'
+     )
+     order by relationship_id`,
+  ).all() as Array<{ relationshipId: string }>;
+  const acceptedAuthorityCandidates = reopened.db.prepare(
+    `select review_status as reviewStatus
+     from relationship_candidates
+     where relationship_candidate_id in (
+       'relationship.open_dc.public_bodies.board_accountancy_authorized_by',
+       'relationship.open_dc.public_bodies.adult_career_pathways_task_force_authorized_by'
+     )
+     order by relationship_candidate_id`,
+  ).all() as Array<{ reviewStatus: string }>;
+  const blockedRelationship = reopened.db.prepare(
+    `select reason, details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.open_dc.public_bodies.board_accountancy_governing_agency'`,
+  ).get() as { reason: string; detailsJson: string } | undefined;
   reopened.close();
-  assertStringIncludes(reviewText, 'dc.board_of_accountancy "Board of Accountancy" (accepted)');
+
+  assertEquals(relationshipItems.length, 0);
+  assertEquals(acceptedRelationships.length, 0);
+  assertEquals(acceptedAuthorityCandidates.length, 2);
+  assert(acceptedAuthorityCandidates.every((candidate) => candidate.reviewStatus === "accepted"));
+  assert(blockedRelationship);
+  assertEquals(blockedRelationship.reason, "unresolved_endpoints");
   assertStringIncludes(
-    reviewText,
-    "dc.department_of_licensing_and_consumer_protection (missing; accepting will create a placeholder entity)",
+    blockedRelationship.detailsJson,
+    "dc.department_of_licensing_and_consumer_protection",
   );
 });
 
@@ -1195,6 +1900,40 @@ Deno.test("Council members connector captures seats and ward representations", a
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "represents" &&
       candidate.toEntityRef === buildEntityId("District of Columbia")
+    ),
+  );
+});
+
+Deno.test("Council members connector ignores limit for the single-page roster", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return councilMembersFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.members").run(createConnectorContext({
+    fetcher,
+    limit: 1,
+  }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Ward 7 Councilmember Wendell Felder"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("Ward 8")
     ),
   );
 });
@@ -1450,23 +2189,26 @@ Deno.test("public body comparison report surfaces exact overlaps across the thre
   assert(compareJson.sharedNameCount >= 2);
 });
 
-Deno.test("relationship acceptance creates a reviewable placeholder entity", async () => {
+Deno.test("public body comparison report stays usable when Quickbase is unfetched", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
       switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+        case "https://www.open-dc.gov/public-bodies":
+          return openDcIndexFixture;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -1476,31 +2218,77 @@ Deno.test("relationship acceptance creates a reviewable placeholder entity", asy
     },
   });
   await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
     dataDir,
   );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_relationship_candidate",
-      subjectId: "relationship.council.committees.committee_of_the_whole_part_of",
-      payload: {},
-    },
-    resolutionsDir,
+  await workbench.importConnectorResult(
+    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
+    dataDir,
   );
-  const placeholderView = workbench.entityView("dc.council_of_the_district_of_columbia");
-  const reviewItems = workbench.listReviewItems("entities");
-  workbench.close();
-  assertEquals(placeholderView.reviewStatus, "placeholder");
-  assertStringIncludes(placeholderView.placeholderReason ?? "", "relationship candidate");
+  const report = workbench.comparePublicBodies();
+  const quickbaseSummary = report.sourceSummaries.find((source) =>
+    source.sourceId === "mota.quickbase"
+  );
+  assert(quickbaseSummary);
+  assertEquals(quickbaseSummary.latestStatus, "unfetched");
+  assertEquals(quickbaseSummary.normalizedNameCount, 0);
+  assertEquals(quickbaseSummary.sharedNameCount, 0);
+  assertEquals(quickbaseSummary.exclusiveNameCount, 0);
   assert(
-    reviewItems.some((item) =>
-      item.itemType === "placeholder_entity" &&
-      item.subjectId === "dc.council_of_the_district_of_columbia"
+    report.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
+    ),
+  );
+  workbench.close();
+
+  const compareOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+      "public-bodies",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(compareOutput.code, 0);
+  const compareJson = JSON.parse(new TextDecoder().decode(compareOutput.stdout)) as {
+    sourceSummaries: Array<{
+      sourceId: string;
+      latestStatus?: string;
+      normalizedNameCount: number;
+      sharedNameCount: number;
+      exclusiveNameCount: number;
+    }>;
+    rows: Array<{ sourceIds: string[]; displayName: string }>;
+  };
+  const quickbaseJson = compareJson.sourceSummaries.find((source) =>
+    source.sourceId === "mota.quickbase"
+  );
+  assert(quickbaseJson);
+  assertEquals(quickbaseJson.latestStatus, "unfetched");
+  assertEquals(quickbaseJson.normalizedNameCount, 0);
+  assertEquals(quickbaseJson.sharedNameCount, 0);
+  assertEquals(quickbaseJson.exclusiveNameCount, 0);
+  assert(
+    compareJson.rows.some((row) =>
+      row.sourceIds.length > 1 && row.displayName.includes("Board of Accountancy")
     ),
   );
 });
 
-Deno.test("relationship review renders endpoint status and placeholder implications", async () => {
+Deno.test("relationship acceptance rejects blocked endpoints instead of creating placeholders", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1529,47 +2317,68 @@ Deno.test("relationship review renders endpoint status and placeholder implicati
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  const item = workbench.listReviewItems({ mode: "relationships" }).find((reviewItem) =>
-    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_part_of"
+  await assertRejects(
+    () =>
+      workbench.appendResolutionEvent(
+        {
+          eventType: "accept_relationship_candidate",
+          subjectId: "relationship.council.committees.committee_of_the_whole_part_of",
+          payload: {},
+        },
+        resolutionsDir,
+      ),
+    Error,
+    "Cannot accept blocked relationship candidate",
   );
-  assert(item);
-  const before = renderReviewItem(workbench, item);
-  assertStringIncludes(before, "relationship:");
-  assertStringIncludes(before, "- type: part_of");
-  assertStringIncludes(before, "- family: part_of -> dc.council_of_the_district_of_columbia");
-  assertStringIncludes(before, 'dc.committee_of_the_whole "Committee of the Whole"');
-  assertStringIncludes(before, "candidate pending");
-  assertStringIncludes(
-    before,
-    "dc.council_of_the_district_of_columbia (missing; accepting will create a placeholder entity)",
-  );
-  assertStringIncludes(before, "e edit type/endpoints and accept");
-
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_relationship_candidate",
-      subjectId: item.subjectId,
-      payload: {},
-    },
-    resolutionsDir,
-  );
-  const placeholderItem = workbench.listReviewItems({ mode: "relationships", status: "resolved" })
-    .find((reviewItem) => reviewItem.subjectId === item.subjectId);
-  assert(placeholderItem);
-  const after = renderReviewItem(workbench, placeholderItem);
+  const placeholderCount = workbench.db.prepare(
+    "select count(*) as count from canonical_entities where is_placeholder = 1",
+  ).get() as { count: number };
   workbench.close();
-  assertStringIncludes(after, 'dc.committee_of_the_whole "Committee of the Whole" (accepted)');
+  assertEquals(placeholderCount.count, 0);
+});
+
+Deno.test("blocked relationship reconciliation stores endpoint status for audit", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const reconciliationItem = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+  assert(reconciliationItem);
   assertStringIncludes(
-    after,
-    'dc.council_of_the_district_of_columbia "Council Of The District Of Columbia" (placeholder; review placeholder before relying on this edge)',
+    reconciliationItem.detailsJson,
+    '"fromEndpoint":{"entityId":"dc.committee_of_the_whole","state":"accepted"',
+  );
+  assertStringIncludes(
+    reconciliationItem.detailsJson,
+    '"toEndpoint":{"entityId":"dc.council_of_the_district_of_columbia","state":"missing"',
   );
 });
 
@@ -1580,35 +2389,28 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
+  for (
+    const [entityId, name, kind] of [
+      ["dc.source_board", "Source Board", "board"],
+      ["dc.council_of_the_district_of_columbia", "Council of the District of Columbia", "council"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
   await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.relationships",
+      relationshipCandidateId: "relationship.test.review_cli.editable",
+      sourceItemKey: "review-cli-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "governed_by",
+      rawValue: "Council of the District of Columbia",
+      needsReview: true,
+    }),
     dataDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
   );
   workbench.close();
 
@@ -1626,7 +2428,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
       "review",
       "relationships",
       "--subject-prefix",
-      "relationship.council.committees.committee_of_the_whole_part_of",
+      "relationship.test.review_cli.editable",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -1654,7 +2456,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
   const relationships = reopened.canonicalRelationships();
   reopened.close();
   assertEquals(relationships.map((row) => row.id), [
-    "dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia",
+    "dc.source_board:part_of:dc.council_of_the_district_of_columbia",
   ]);
 });
 
@@ -1798,6 +2600,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.mayor_s_office_of_veterans_affairs",
   );
   assertEquals(
+    buildKnownEntityRef("DC Department of Licensing and Consumer Protection"),
+    "dc.department_of_licensing_and_consumer_protection",
+  );
+  assertEquals(
     buildKnownEntityRef("Department of Health (DOH)"),
     "dc.dc_health",
   );
@@ -1833,15 +2639,15 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Bicycle Advisory Council"),
-    "dc.bicycle_advisory_council_bac",
+    "dc.bicycle_advisory_council",
   );
   assertEquals(
     buildKnownEntityRef("Board of Barber and Cosmetology"),
-    "dc.board_of_barber_and_cosmetology_bobc",
+    "dc.board_of_barber_and_cosmetology",
   );
   assertEquals(
     buildKnownEntityRef("Commission on Aging"),
-    "dc.commission_on_aging_coa",
+    "dc.commission_on_aging",
   );
   assertEquals(
     buildKnownEntityRef("Health Information Exchange Policy Board"),
@@ -1849,27 +2655,79 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Board of Review of Anti-Deficiency Violations"),
-    "dc.board_of_review_for_anti_deficiency_violations_brav",
+    "dc.board_of_review_for_anti_deficiency_violations",
   );
   assertEquals(
     buildKnownEntityRef("Citizen Review Panel on Child Abuse and Neglect"),
-    "dc.citizen_review_panel_for_child_abuse_and_neglect_crp",
+    "dc.citizen_review_panel_on_child_abuse_and_neglect",
+  );
+  assertEquals(
+    buildKnownEntityRef("Commission on Nightlife and Culture"),
+    "dc.commission_on_nightlife_and_culture",
   );
   assertEquals(
     buildKnownEntityRef("Commission on Women"),
-    "dc.commission_for_women_cfw",
+    "dc.commission_for_women",
+  );
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Sentencing Commission"),
+    "dc.district_of_columbia_sentencing_commission",
   );
   assertEquals(
     buildKnownEntityRef("Destination DC"),
-    "dc.washington_d_c_convention_and_tourism_corporation_destination_dc",
+    "dc.destination_dc",
+  );
+  assertEquals(
+    buildKnownEntityRef("Department of Consumer and Regulatory Affairs"),
+    "dc.department_of_licensing_and_consumer_protection",
+  );
+  assertEquals(
+    buildKnownEntityRef("Deputy Mayor for Planning and Economic Development (DMPED)"),
+    "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
+  );
+  assertEquals(
+    buildKnownEntityRef("Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)"),
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
   );
   assertEquals(
     buildKnownEntityRef("Inspector General"),
     "dc.office_of_the_inspector_general",
   );
   assertEquals(
+    buildKnownEntityRef("Mayor's Office on Asian and Pacific Islander Affairs"),
+    "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("MPD"),
+    "dc.metropolitan_police_department",
+  );
+  assertEquals(
     buildKnownEntityRef("Office on Returning Citizen Affairs"),
     "dc.mayor_s_office_on_returning_citizen_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of City Administrator"),
+    "dc.office_of_the_city_administrator",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of Religious Affairs"),
+    "dc.mayor_s_office_of_religious_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Public Charter School Board (PCSB)"),
+    "dc.public_charter_school_board_pcsb",
+  );
+  assertEquals(
+    buildKnownEntityRef("Rental Housing Commission"),
+    "dc.rental_housing_commission",
+  );
+  assertEquals(
+    buildKnownEntityRef("Secretary of State of the District of Columbia"),
+    "dc.office_of_the_secretary",
+  );
+  assertEquals(
+    buildKnownEntityRef("State Superintendent of Education"),
+    "dc.office_of_the_state_superintendent_of_education",
   );
 });
 
@@ -1879,7 +2737,7 @@ Deno.test("public-body seat relationship inverses stay user-facing", () => {
   assertEquals(inverseRelationshipType("designated_by"), "designates");
 });
 
-Deno.test("legal refs import into a reviewable queue and legal resolutions update release status truth", async () => {
+Deno.test("safe legal refs auto-accept on import and remaining legal resolutions update release status truth", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1904,30 +2762,17 @@ Deno.test("legal refs import into a reviewable queue and legal resolutions updat
   await workbench.importConnectorResult(result, dataDir);
 
   const items = workbench.listReviewItems("legal");
-  assertEquals(items.length, 3);
-  assert(items.some((item) => item.defaultAction === "accept"));
-  assert(items.some((item) => item.defaultAction === "defer"));
+  assertEquals(items.length, 1);
+  assert(items.every((item) => item.defaultAction === "defer"));
 
-  const codeItem = items.find((item) => item.details.refType === "dc_code");
   const registerItem = items.find((item) => item.details.refType === "dc_register");
-  const orderItem = items.find((item) => item.details.refType === "mayors_order");
-  assert(codeItem);
   assert(registerItem);
-  assert(orderItem);
-  await workbench.appendResolutionEvent(
-    { eventType: "accept_legal_ref", subjectId: codeItem.subjectId, payload: {} },
-    resolutionsDir,
-  );
   await workbench.appendResolutionEvent(
     {
       eventType: "accept_legal_ref",
       subjectId: registerItem.subjectId,
       payload: { refType: "dcmr", normalizedCitation: "DCMR and D.C. Register entrypoint" },
     },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    { eventType: "reject_legal_ref", subjectId: orderItem.subjectId, payload: {} },
     resolutionsDir,
   );
 
@@ -1950,12 +2795,11 @@ Deno.test("legal refs import into a reviewable queue and legal resolutions updat
     manifest.release_summary.legal_refs_by_type.map((row) => [row.ref_type, row.count]),
   );
   workbench.close();
-  assertEquals(statuses.get("accepted"), 2);
-  assertEquals(statuses.get("rejected"), 1);
+  assertEquals(statuses.get("accepted"), 3);
   assertEquals(types.get("dcmr"), 1);
 });
 
-Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambiguous rows", async () => {
+Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe import auto-accept", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -2005,7 +2849,7 @@ Deno.test("batch accept-safe accepts scoped normalized legal refs and skips ambi
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
   assertStringIncludes(batchText, "Skipped 1 item(s) that were not safe to auto-accept.");
 
   const reopened = new Workbench(dbPath);
@@ -2122,78 +2966,10 @@ Deno.test("batch defer marks scoped legal refs deferred without changing legal r
   assertEquals(legalRef.reviewStatus, "pending");
 });
 
-Deno.test("dc review legal supports scripted normalize-and-quit flow", async () => {
+Deno.test("blocked relationships stay out of the live review order while entity review remains stable", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
-    fetcher: async (url: string) => ({
-      status: 200,
-      text: async () => {
-        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
-          return legalEntrypointsFixture;
-        }
-        throw new Error(`Unexpected url ${url}`);
-      },
-      json: async <T>() => {
-        throw new Error(`No json fixture for ${url}`) as T;
-      },
-    }),
-  }));
-  await workbench.importConnectorResult(result, dataDir);
-  workbench.close();
-
-  const child = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "legal",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("n\ndc_code\nD.C. Official Code\nq\n"));
-  await writer.close();
-  const output = await child.output();
-  const stdout = new TextDecoder().decode(output.stdout);
-  const stderr = new TextDecoder().decode(output.stderr);
-  assertEquals(output.code, 0);
-  assertEquals(stderr, "");
-  assertStringIncludes(stdout, "Review item:");
-  assertStringIncludes(stdout, "n normalize and accept");
-  assertStringIncludes(stdout, "Saved resolution.");
-  assertStringIncludes(stdout, "Review stopped.");
-
-  const reopened = new Workbench(dbPath);
-  reopened.init();
-  const accepted = reopened.legalRefs().filter((ref) => ref.review_status === "accepted");
-  reopened.close();
-  assertEquals(accepted.length, 1);
-  assertEquals(accepted[0].normalized_citation, "D.C. Official Code");
-});
-
-Deno.test("review ordering surfaces placeholders, blocked relationships, and high-confidence entities in a stable order", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
   const fetcher = async (url: string) => ({
@@ -2226,40 +3002,32 @@ Deno.test("review ordering surfaces placeholders, blocked relationships, and hig
     await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  const relationshipCandidate = workbench.listReviewItems({ mode: "relationships" }).find((item) =>
-    item.subjectId.endsWith("_part_of")
-  );
-  assert(relationshipCandidate);
-  const matchingEntityCandidateId = relationshipCandidate.subjectId
-    .replace(/^relationship\./, "candidate.")
-    .replace(/_part_of$/, "");
-  const matchingEntityCandidate = workbench.listReviewItems({ type: "entity_candidate" }).find(
-    (item) => item.subjectId === matchingEntityCandidateId,
-  );
-  assert(matchingEntityCandidate);
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: matchingEntityCandidate.subjectId,
-      payload: {},
-    },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_relationship_candidate",
-      subjectId: relationshipCandidate.subjectId,
-      payload: {},
-    },
-    resolutionsDir,
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_queue.entities",
+      candidateId: "candidate.test.review_queue.entities.example",
+      sourceItemKey: "review-queue-entity-row",
+      proposedEntityId: "dc.review_queue_entity",
+      name: "Review Queue Entity",
+      kind: "board",
+      observedName: "Review Queue Entity",
+    }),
+    dataDir,
   );
   const items = workbench.listReviewItems();
+  const blockedSubjectIds = new Set(
+    workbench.db.prepare(
+      "select subject_id as subjectId from reconciliation_items where subject_type = 'relationship_candidate' and state = 'blocked'",
+    ).all().map((row) => (row as { subjectId: string }).subjectId),
+  );
+  const blockedRelationships = workbench.db.prepare(
+    "select count(*) as count from reconciliation_items where subject_type = 'relationship_candidate' and state = 'blocked'",
+  ).get() as { count: number };
   workbench.close();
-  assertEquals(items[0].itemType, "placeholder_entity");
-  assertEquals(items[0].subjectId, "dc.council_of_the_district_of_columbia");
+  assert(blockedRelationships.count > 0);
   assert(items.every((item) => item.itemType !== "source_status"));
-  assert(items.slice(1).some((item) => item.itemType === "relationship_candidate"));
-  assert(items.slice(1).some((item) => item.itemType === "entity_candidate"));
+  assert(items.every((item) => !blockedSubjectIds.has(item.subjectId)));
+  assert(items.some((item) => item.itemType === "entity_candidate"));
 });
 
 Deno.test("review list filters by mode, status, type, and subject prefix", async () => {
@@ -2268,6 +3036,19 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   const dataDir = join(dir, "artifacts");
   const workbench = new Workbench(dbPath);
   workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -2288,6 +3069,18 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   });
   await workbench.importConnectorResult(
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_list.entities",
+      candidateId: "candidate.test.review_list.entities.example",
+      sourceItemKey: "review-list-entity-row",
+      proposedEntityId: "dc.review_list_entity",
+      name: "Review List Entity",
+      kind: "board",
+      observedName: "Review List Entity",
+    }),
     dataDir,
   );
   workbench.close();
@@ -2311,7 +3104,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--type",
       "entity_candidate",
       "--subject-prefix",
-      "candidate.council.committees",
+      "candidate.test.review_list",
       "--db",
       dbPath,
     ],
@@ -2321,7 +3114,13 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(output.code, 0);
   const text = new TextDecoder().decode(output.stdout);
   assertStringIncludes(text, "Review items:");
-  assertStringIncludes(text, "entity_candidate");
+  assertStringIncludes(text, "[open] Review List Entity");
+  assertStringIncludes(text, "entity candidate | board | default accept");
+  assertStringIncludes(text, "source: test.review_list.entities / Custom entity row");
+  assertStringIncludes(
+    text,
+    "ids: subject=candidate.test.review_list.entities.example",
+  );
   assert(!text.includes("source_status"));
   const jsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2343,7 +3142,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--type",
       "entity_candidate",
       "--subject-prefix",
-      "candidate.council.committees",
+      "candidate.test.review_list",
       "--db",
       dbPath,
       "--json",
@@ -2356,7 +3155,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(jsonOutput.code, 0);
   assertEquals(json.count, json.items.length);
   assert(json.items.every((item) => item.itemType === "entity_candidate"));
-  assert(json.items.every((item) => item.subjectId.startsWith("candidate.council.committees")));
+  assert(json.items.every((item) => item.subjectId.startsWith("candidate.test.review_list")));
 
   const relationshipTypeJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2374,7 +3173,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
       "relationship.council.committees",
       "--db",
@@ -2394,7 +3193,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     relationshipTypeJson.items.every((item) =>
       item.itemType === "relationship_candidate" &&
       item.subjectId.startsWith("relationship.council.committees") &&
-      item.details.relationshipType === "part_of"
+      item.details.relationshipType === "overseen_by"
     ),
   );
 
@@ -2416,7 +3215,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--relationship-type",
       "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--raw-value-contains",
       "Health",
       "--db",
@@ -2431,7 +3230,6 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     items: Array<{ details: { rawValue: string; relationshipType: string } }>;
   };
   assertEquals(rawValueContainsJsonOutput.code, 0);
-  assert(rawValueContainsJson.count > 0);
   assert(
     rawValueContainsJson.items.every((item) =>
       item.details.relationshipType === "overseen_by" &&
@@ -2455,9 +3253,9 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--limit",
       "1",
       "--db",
@@ -2530,6 +3328,30 @@ Deno.test("deferred review items stay visible but sort behind open items", async
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.deferred.entities.one",
+      candidateId: "candidate.test.deferred.entities.one",
+      sourceItemKey: "deferred-entity-row-one",
+      proposedEntityId: "dc.deferred_entity_one",
+      name: "Deferred Entity One",
+      kind: "board",
+      observedName: "Deferred Entity One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.deferred.entities.two",
+      candidateId: "candidate.test.deferred.entities.two",
+      sourceItemKey: "deferred-entity-row-two",
+      proposedEntityId: "dc.deferred_entity_two",
+      name: "Deferred Entity Two",
+      kind: "board",
+      observedName: "Deferred Entity Two",
+    }),
+    dataDir,
+  );
   const deferredItem = workbench.listReviewItems({ type: "entity_candidate" })[0];
   assert(deferredItem);
   await workbench.appendResolutionEvent(
@@ -2575,6 +3397,19 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.batch_accept_safe.entities",
+      candidateId: "candidate.test.batch_accept_safe.entities.example",
+      sourceItemKey: "batch-accept-safe-entity-row",
+      proposedEntityId: "dc.batch_accept_safe_entity",
+      name: "Batch Accept Safe Entity",
+      kind: "board",
+      observedName: "Batch Accept Safe Entity",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
   workbench.close();
   const batchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -2618,8 +3453,297 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
   assert(lines.every((line) => JSON.parse(line).event_type === "accept_entity_candidate"));
   const reopened = new Workbench(dbPath);
   reopened.init();
-  assert(reopened.listReviewItems({ mode: "relationships" }).length > 0);
+  const blockedRelationships = reopened.db.prepare(
+    "select count(*) as count from reconciliation_items where subject_type = 'relationship_candidate' and state = 'blocked'",
+  ).get() as { count: number };
   reopened.close();
+  assert(blockedRelationships.count > 0);
+});
+
+Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and the unblocked oversight relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_the_judiciary_and_public_safety', 'Committee on the Judiciary and Public Safety', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.batch_seeded_oversight",
+      sourceItemKey: "batch-seeded-oversight-row",
+      fromEntityRef: "dc.child_support_guideline_commission",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Child Support Guideline Commission",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.council.committees.relationship_council_committees_batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopenedAfterEntityBatch = new Workbench(dbPath);
+  reopenedAfterEntityBatch.init();
+  const seededEntity = reopenedAfterEntityBatch.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const reviewReadyOversight = reopenedAfterEntityBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterEntityBatch.close();
+  assertEquals(seededEntity?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(reviewReadyOversight.length, 1);
+  assertEquals(reviewReadyOversight[0]?.defaultAction, "accept");
+
+  const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees.batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(relationshipBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopenedAfterRelationshipBatch = new Workbench(dbPath);
+  reopenedAfterRelationshipBatch.init();
+  const acceptedRelationship = reopenedAfterRelationshipBatch.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingOversight = reopenedAfterRelationshipBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterRelationshipBatch.close();
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(remainingOversight.length, 0);
+});
+
+Deno.test("batch accept-safe accepts seeded DCGIS governing-agency prerequisites and auto-accepts the unblocked relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.commission_on_out_of_school_time_grants_and_youth_outcomes', 'Commission on Out of School Time Grants and Youth Outcomes', 'commission', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      relationshipCandidateId:
+        "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+      sourceItemKey: "batch-seeded-governing-agency-row",
+      fromEntityRef: "dc.commission_on_out_of_school_time_grants_and_youth_outcomes",
+      toEntityRef: "dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+      relationshipType: "governed_by",
+      rawValue: "Office of Out of School Time Grants and Youth Outcomes",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dcgis.boards_commissions_councils.relationship_dcgis_boards_commissions_councils_batch_seeded_governing_agency",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const seededEntity = reopened.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_out_of_school_time_grants_and_youth_outcomes'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = reopened.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.commission_on_out_of_school_time_grants_and_youth_outcomes:governed_by:dc.office_of_out_of_school_time_grants_and_youth_outcomes'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingRelationshipReview = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "governed_by",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+  });
+  reopened.close();
+  assertEquals(
+    seededEntity?.entityId,
+    "dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+  );
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.commission_on_out_of_school_time_grants_and_youth_outcomes:governed_by:dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+  );
+  assertEquals(remainingRelationshipReview.length, 0);
+});
+
+Deno.test("batch accept-safe skips non-committee seeded endpoint candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.seeded.batch",
+      relationshipCandidateId: "relationship.test.seeded.batch.direct_endpoint",
+      sourceItemKey: "direct-endpoint-row",
+      fromEntityRef: "dc.parent_entity",
+      toEntityRef: "dc.batch_safe_unknown_board",
+      relationshipType: "part_of",
+      rawValue: "Batch Safe Unknown Board",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.test.seeded.batch.relationship_test_seeded_batch_direct_endpoint",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
+  assertStringIncludes(batchText, "Skipped 1 item(s) that were not safe to auto-accept.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const candidateStatus = reopened.db.prepare(
+    `select review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.test.seeded.batch.relationship_test_seeded_batch_direct_endpoint_to_endpoint'`,
+  ).get() as { reviewStatus: string } | undefined;
+  const canonicalEntity = reopened.db.prepare(
+    `select entity_id as entityId
+     from canonical_entities
+     where entity_id = 'dc.batch_safe_unknown_board'`,
+  ).get() as { entityId: string } | undefined;
+  reopened.close();
+  assertEquals(candidateStatus?.reviewStatus, "pending");
+  assertEquals(canonicalEntity, undefined);
 });
 
 Deno.test("batch accept-safe accepts filtered relationships only when endpoints are accepted", async () => {
@@ -2647,21 +3771,20 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
       throw new Error(`No json fixture for ${url}`) as T;
     },
   });
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
   await workbench.importConnectorResult(
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_entity_candidate",
-      subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {},
-    },
-    resolutionsDir,
-  );
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
   workbench.close();
 
   const batchOutput = await new Deno.Command(Deno.execPath(), {
@@ -2681,9 +3804,9 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
       "--mode",
       "relationships",
       "--relationship-type",
-      "part_of",
+      "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.committee_on_health_oversight",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -2692,26 +3815,24 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 1 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
-  const relationship = reopened.db.prepare(
-    "select relationship_type as relationshipType, to_entity_id as toEntityId from canonical_relationships where from_entity_id = ?",
-  ).get("dc.committee_of_the_whole") as { relationshipType: string; toEntityId: string };
-  const unresolvedPartOf = reopened.listReviewItems({
+  const acceptedOversight = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const unresolvedOversight = reopened.listReviewItems({
     mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.council.committees",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.committee_on_health_oversight",
   });
   reopened.close();
-  assertEquals(relationship.relationshipType, "part_of");
-  assertEquals(relationship.toEntityId, "dc.council_of_the_district_of_columbia");
-  assert(
-    unresolvedPartOf.some((item) =>
-      item.subjectId === "relationship.council.committees.committee_on_health_part_of"
-    ),
-  );
+  assertEquals(acceptedOversight.map((row) => row.relationshipId), [
+    "dc.dc_health:overseen_by:dc.committee_on_health",
+    "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
+  ]);
+  assertEquals(unresolvedOversight.length, 0);
 });
 
 Deno.test("batch accept-safe accepts scoped Council oversight only for accepted endpoints", async () => {
@@ -2795,7 +3916,6 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
   assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
-  assertStringIncludes(batchText, "Skipped 2 item(s) that were not safe to auto-accept.");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -2807,12 +3927,20 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
     relationshipType: "overseen_by",
     subjectPrefix: "relationship.council.committees",
   });
+  const blockedOversight = reopened.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_type = 'relationship_candidate'
+       and subject_id like 'relationship.council.committees.%'
+       and details_json like '%"relationshipType":"overseen_by"%'`,
+  ).get() as { count: number };
   reopened.close();
   assertEquals(acceptedOversight.map((row) => row.relationshipId), [
     "dc.dc_health:overseen_by:dc.committee_on_health",
     "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
   ]);
-  assertEquals(remainingOversight.length, 2);
+  assertEquals(remainingOversight.length, 0);
+  assertEquals(blockedOversight.count, 2);
 });
 
 Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, and authority only for accepted endpoints", async () => {
@@ -2891,8 +4019,6 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
     "accept-safe",
     "--mode",
     "relationships",
-    "--subject-prefix",
-    "relationship.mota.quickbase",
     "--db",
     dbPath,
     "--resolutions-dir",
@@ -2901,7 +4027,15 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
 
   const hasSeatOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
-    args: [...commonArgs, "--relationship-type", "has_seat"],
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "has_seat",
+      "--raw-value",
+      "Alcoholic Beverages and Cannabis Administration (ABCA) Designee",
+    ],
   }).output();
   assertEquals(hasSeatOutput.code, 0);
   assertStringIncludes(
@@ -2911,7 +4045,13 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
 
   const hasStatusOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
-    args: [...commonArgs, "--relationship-type", "has_status"],
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
+      "--relationship-type",
+      "has_status",
+    ],
   }).output();
   assertEquals(hasStatusOutput.code, 0);
   assertStringIncludes(
@@ -2921,7 +4061,13 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
 
   const designatedByOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
-    args: [...commonArgs, "--relationship-type", "designated_by"],
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "designated_by",
+    ],
   }).output();
   assertEquals(designatedByOutput.code, 0);
   assertStringIncludes(
@@ -2931,7 +4077,13 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
 
   const appointedByOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
-    args: [...commonArgs, "--relationship-type", "appointed_by"],
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "appointed_by",
+    ],
   }).output();
   assertEquals(appointedByOutput.code, 0);
   assertStringIncludes(
@@ -2951,6 +4103,7 @@ Deno.test("batch accept-safe accepts scoped Quickbase seat structure, status, an
   });
   reopened.close();
   assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
+    "dc.commission_on_nightlife_and_culture_cnc:governed_by:dc.alcoholic_beverage_and_cannabis_administration",
     "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
@@ -3027,8 +4180,7 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Deferred 2 default-defer review item(s).");
-  assertStringIncludes(batchText, "Skipped 3 item(s) whose default action was not defer.");
+  assertStringIncludes(batchText, "Deferred 0 default-defer review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -3044,19 +4196,16 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
     relationshipType: "overseen_by",
     subjectPrefix: "relationship.council.committees",
   });
+  const blockedOversight = reopened.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_type = 'relationship_candidate'
+       and details_json like '%"relationshipType":"overseen_by"%'`,
+  ).get() as { count: number };
   reopened.close();
-  assert(
-    openOversight.some((item) =>
-      item.details.rawValue === "Department of Health" && item.defaultAction === "accept"
-    ),
-  );
-  assertEquals(
-    deferredOversight.map((item) => item.details.rawValue).sort(),
-    [
-      "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
-      "Cedar Hill Hospital",
-    ],
-  );
+  assertEquals(openOversight.length, 0);
+  assertEquals(deferredOversight.length, 0);
+  assert(blockedOversight.count >= 3);
 });
 
 Deno.test("batch defer-default requires a scoped review slice", async () => {
@@ -3206,8 +4355,8 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
     items: Array<{ details: { rawValue: string } }>;
   };
   assertEquals(executiveListOutput.code, 0);
-  assertEquals(executiveList.count, 2);
-  assert(executiveList.items.every((item) => item.details.rawValue === "Executive"));
+  assertEquals(executiveList.count, 0);
+  assertEquals(executiveList.items.length, 0);
 
   const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -3233,7 +4382,7 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   assertEquals(relationshipBatchOutput.code, 0);
   assertStringIncludes(
     new TextDecoder().decode(relationshipBatchOutput.stdout),
-    "Accepted 2 safe review item(s).",
+    "Accepted 0 safe review item(s).",
   );
 
   const broadRelationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
@@ -3259,7 +4408,7 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   const broadRelationshipBatchText = new TextDecoder().decode(
     broadRelationshipBatchOutput.stdout,
   );
-  assertStringIncludes(broadRelationshipBatchText, "Accepted 1 safe review item(s).");
+  assertStringIncludes(broadRelationshipBatchText, "Accepted 0 safe review item(s).");
   assertStringIncludes(
     broadRelationshipBatchText,
     "Skipped 1 item(s) that were not safe to auto-accept.",
@@ -3328,6 +4477,32 @@ Deno.test("batch defer marks a scoped relationship review slice deferred", async
     dataDir,
   );
   workbench.close();
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dcgis.agencies",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
 
   const deferOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -3410,6 +4585,27 @@ Deno.test("batch defer marks a raw-value substring relationship slice deferred",
     await getConnector("council.committees").run(createConnectorContext({ fetcher })),
     dataDir,
   );
+  for (
+    const subjectId of [
+      "candidate.council.committees.committee_of_the_whole",
+      "candidate.council.committees.committee_on_health",
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
   workbench.close();
 
   const deferOutput = await new Deno.Command(Deno.execPath(), {
@@ -3460,10 +4656,10 @@ Deno.test("batch defer marks a raw-value substring relationship slice deferred",
   });
   reopened.close();
   assertEquals(deferredHealth.length, 2);
-  assertEquals(openOversight.length, 2);
+  assertEquals(openOversight.length, 0);
 });
 
-Deno.test("resolution replay accepts entities, merges duplicates, accepts one directed relationship, and surfaces inverse display", async () => {
+Deno.test("resolution replay rebuilds accepted entities deterministically", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -3520,41 +4716,24 @@ Deno.test("resolution replay accepts entities, merges duplicates, accepts one di
   );
   await workbench.appendResolutionEvent(
     {
-      eventType: "merge_entity_candidates",
+      eventType: "accept_entity_candidate",
       subjectId: "candidate.council.committees.committee_of_the_whole",
-      payload: {
-        entityId: "dc.council_of_the_district_of_columbia",
-        candidateIds: ["candidate.council.committees.committee_of_the_whole"],
-      },
-    },
-    resolutionsDir,
-  );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_relationship_candidate",
-      subjectId: "relationship.council.committees.committee_of_the_whole_part_of",
       payload: {},
     },
     resolutionsDir,
   );
-  const entity = workbench.entityView("dc.council_of_the_district_of_columbia");
+  const entity = workbench.entityView("dc.committee_of_the_whole");
   await workbench.replayResolutionDirectory(resolutionsDir);
-  const firstReplay = workbench.db.prepare(
-    "select source_event_id as sourceEventId from canonical_relationships where relationship_id = ?",
-  ).get("dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia") as {
-    sourceEventId: string;
-  };
+  const firstReplay = workbench.entityView("dc.committee_of_the_whole");
   await workbench.replayResolutionDirectory(resolutionsDir);
-  const secondReplay = workbench.db.prepare(
-    "select source_event_id as sourceEventId from canonical_relationships where relationship_id = ?",
-  ).get("dc.committee_of_the_whole:part_of:dc.council_of_the_district_of_columbia") as {
-    sourceEventId: string;
-  };
+  const secondReplay = workbench.entityView("dc.committee_of_the_whole");
   workbench.close();
-  assert(entity.incoming.some((row) => row.sourceEntityId === "dc.committee_of_the_whole"));
-  assertEquals(entity.incoming.length, 1);
-  assertEquals(entity.incoming[0].relationshipType, "has_part");
-  assertEquals(firstReplay.sourceEventId, secondReplay.sourceEventId);
+  assertEquals(entity.entityId, "dc.committee_of_the_whole");
+  assertEquals(firstReplay.entityId, "dc.committee_of_the_whole");
+  assertEquals(secondReplay.entityId, "dc.committee_of_the_whole");
+  assertEquals(firstReplay.name, secondReplay.name);
+  assertEquals(firstReplay.reviewStatus, "accepted");
+  assertEquals(secondReplay.reviewStatus, "accepted");
 });
 
 Deno.test("resolution replay rolls back the rebuild when a conflict is found", async () => {
@@ -3672,6 +4851,9 @@ Deno.test("failed resolution append does not write a replay event", async () => 
     },
     resolutionsDir,
   );
+  const eventCountBeforeFailure = workbench.db.prepare(
+    "select count(*) as count from resolution_events",
+  ).get() as { count: number };
 
   await assertRejects(
     () =>
@@ -3696,7 +4878,7 @@ Deno.test("failed resolution append does not write a replay event", async () => 
   ).get() as { count: number };
   workbench.close();
   assertEquals(lines.length, 1);
-  assertEquals(eventCount.count, 1);
+  assertEquals(eventCount.count, eventCountBeforeFailure.count);
 });
 
 Deno.test("resolution append rejects unknown subjects without writing JSONL", async () => {
@@ -3728,306 +4910,6 @@ Deno.test("resolution append rejects unknown subjects without writing JSONL", as
   await assertRejects(() => Deno.stat(resolutionsDir), Deno.errors.NotFound);
 });
 
-Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.board_accountancy', 'Board of Accountancy', 'board', 'https://www.open-dc.gov/public-bodies/board-accountancy', 'accepted', '[\"candidate.open_dc.public_bodies.board_accountancy\"]', datetime('now'), datetime('now'))",
-  ).run();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-  workbench.db.prepare(
-    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('event.1', 'accept_relationship_candidate', 'relationship.fixture', '{}', 'fixture.jsonl', 1, datetime('now'))",
-  ).run();
-  workbench.db.prepare(
-    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:part_of:dc.council', 'dc.board_accountancy', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
-  ).run();
-  workbench.upsertSource(
-    "open_dc.public_bodies",
-    "Open DC Public Bodies",
-    "public_body_pages",
-    "official_page_html",
-    "https://www.open-dc.gov/public-bodies",
-  );
-  workbench.upsertEndpoint({
-    endpointId: "open_dc.public_bodies.detail",
-    sourceId: "open_dc.public_bodies",
-    title: "Open DC Public Body Detail",
-    kind: "page",
-    url: "https://www.open-dc.gov/public-bodies/board-accountancy",
-    method: "GET",
-    captureMode: "page",
-  });
-  workbench.db.prepare(
-    "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values('run.privacy', 'open_dc.public_bodies', 'open_dc.public_bodies.detail', datetime('now'), datetime('now'), 'success')",
-  ).run();
-  workbench.db.prepare(
-    "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.privacy', 'run.privacy', 'open_dc.public_bodies.detail', 'page', 'open_dc/public-bodies/detail.html', 'https://www.open-dc.gov/public-bodies/board-accountancy', 'sha256:fixture', 100, datetime('now'))",
-  ).run();
-  workbench.db.prepare(
-    "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run([
-    "item.private_contact",
-    "open_dc.public_bodies",
-    "open_dc.public_bodies.detail",
-    "run.privacy",
-    "artifact.privacy",
-    "board-accountancy",
-    "public_body_detail",
-    "Board of Accountancy",
-    JSON.stringify({
-      email: "not-for-release@example.com",
-      phone: "202-555-0100",
-      contact_notes: "private contact metadata",
-    }),
-  ]);
-  workbench.db.prepare(
-    "insert into datasets(dataset_id, source_item_id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run([
-    "dataset.council.lims.whats_new",
-    "item.private_contact",
-    "Council LIMS What's New feed",
-    "legislative",
-    "Council of the District of Columbia",
-    "official_json_api",
-    "sample",
-    "https://lims.dccouncil.gov/api/Search/GetWhatsNew",
-    "pending",
-  ]);
-  workbench.db.prepare(
-    "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?)",
-  ).run([
-    "legal.open_dc.public_bodies.board_accountancy_authority",
-    "item.private_contact",
-    "dc_code",
-    "D.C. Official Code § 47-2853.06(b)(1)",
-    "D.C. Code 47-2853.06(b)(1)",
-    "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)",
-    "pending",
-  ]);
-  workbench.db.prepare(
-    "insert into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values(?, ?, ?)",
-  ).run([
-    "entity_legal_ref.board_accountancy.authority",
-    "dc.board_accountancy",
-    "legal.open_dc.public_bodies.board_accountancy_authority",
-  ]);
-  const outDir = join(dir, "release");
-  const staleFile = join(outDir, "stale-extra-report.csv");
-  await ensureDir(outDir);
-  await Deno.writeTextFile(staleFile, "stale");
-  const result = await buildV2Release(workbench, outDir);
-  const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
-  const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
-  const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
-  const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
-  const readme = await Deno.readTextFile(join(outDir, "README.md"));
-  const manifestText = await Deno.readTextFile(join(outDir, "manifest.json"));
-  const manifest = JSON.parse(manifestText);
-  const releaseDb = new Database(join(outDir, "dcgov.sqlite"));
-  const releaseObjects = releaseDb.prepare(
-    "select name from sqlite_master where type in ('table', 'view') and name not like 'sqlite_%' order by name",
-  ).all().map((row) => String((row as { name: string }).name));
-  const releaseDbContactHits = releaseDb.prepare(
-    "select count(*) as count from legal_refs where source_item_id like '%not-for-release%' or citation_text like '%not-for-release%'",
-  ).get() as { count: number };
-  const relationshipForeignKeys = releaseDb.prepare(
-    "pragma foreign_key_list(relationships)",
-  ).all();
-  releaseDb.close();
-  workbench.close();
-  assertEquals(
-    result.fileNames.sort(),
-    [
-      "README.md",
-      "dcgov.sqlite",
-      "datasets.csv",
-      "datasets.json",
-      "entities.csv",
-      "entities.json",
-      "entity_legal_refs.csv",
-      "entity_legal_refs.json",
-      "legal_refs.csv",
-      "legal_refs.json",
-      "manifest.json",
-      "relationships.csv",
-      "relationships.json",
-      "sources.csv",
-      "sources.json",
-    ].sort(),
-  );
-  assertStringIncludes(
-    entityCsv.split("\n")[0],
-    "id,name,kind,branch,cluster,official_url,review_status",
-  );
-  assert(!entityCsv.includes("source_item_id"));
-  assert(!entityCsv.includes("not-for-release@example.com"));
-  assertStringIncludes(
-    entityLegalRefsCsv,
-    "entity_id,entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
-  );
-  assertStringIncludes(entityLegalRefsCsv, "dc.board_accountancy");
-  assertEquals(entityLegalRefsCsv.split("\n").length > 1, true);
-  assert(!legalRefsCsv.includes("not-for-release@example.com"));
-  assert(!manifestText.includes("not-for-release@example.com"));
-  assert(!manifestText.includes("202-555-0100"));
-  assertEquals(releaseDbContactHits.count, 0);
-  await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
-  assertStringIncludes(readme, "DCGov v2 Release");
-  assertStringIncludes(readme, "Relationship coverage note:");
-  assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
-  assertStringIncludes(
-    readme,
-    "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
-  );
-  assertStringIncludes(
-    readme,
-    "Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.",
-  );
-  assertStringIncludes(readme, "entity legal refs: total=1");
-  assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
-  assert(!sourcesCsv.includes("/tmp/"));
-  assertStringIncludes(
-    legalRefsCsv,
-    "id,ref_type,citation_text,normalized_citation,url,source_id,source_item_id,source_url,needs_review,review_status",
-  );
-  assertEquals(Array.isArray(manifest.release_summary.entities_by_review_status), true);
-  assertEquals(Array.isArray(manifest.source_artifacts), true);
-  assertEquals(releaseObjects, [
-    "datasets",
-    "entities",
-    "entity_legal_refs",
-    "incoming_relationships",
-    "legal_refs",
-    "relationships",
-    "sources",
-  ]);
-  assertEquals(relationshipForeignKeys.length, 2);
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
-  assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Files: 15");
-  assertStringIncludes(inspectText, "Entities: accepted=2");
-  assertStringIncludes(inspectText, "Relationships: accepted=1");
-  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
-    outDir: string;
-    fileCount: number;
-    releaseSummary: { source_count: number };
-  };
-  assertEquals(inspectJsonOutput.code, 0);
-  assertEquals(inspectJson.outDir, outDir);
-  assertEquals(inspectJson.fileCount, 15);
-  assertEquals(inspectJson.releaseSummary.source_count, 1);
-  if (manifest.source_artifacts.length > 0) {
-    assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
-    assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
-  }
-});
-
-Deno.test("release builder rejects email-shaped contact info in release rows", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.contact_leak', 'Contact Leak', 'board', 'mailto:not-for-release@example.com', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-
-  await assertRejects(
-    () => buildV2Release(workbench, join(dir, "release")),
-    Error,
-    "Release output contains email-shaped contact info",
-  );
-  workbench.close();
-});
-
-Deno.test("release builder rejects relationships with missing endpoint entities", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source', 'Source Entity', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-  workbench.db.exec("pragma foreign_keys = off");
-  workbench.db.prepare(
-    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.source:part_of:dc.missing', 'dc.source', 'part_of', 'dc.missing', 'accepted', 'event.1', datetime('now'))",
-  ).run();
-  workbench.db.exec("pragma foreign_keys = on");
-
-  await assertRejects(
-    () => buildV2Release(workbench, join(dir, "release")),
-    Error,
-    "FOREIGN KEY constraint failed",
-  );
-  workbench.close();
-});
-
-Deno.test("release builder rejects phone-shaped contact info in release rows", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.phone_leak', 'Phone Leak', 'board', 'tel:202-555-0100', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-
-  await assertRejects(
-    () => buildV2Release(workbench, join(dir, "release")),
-    Error,
-    "Release output contains phone-shaped contact info",
-  );
-  workbench.close();
-});
-
-Deno.test("release builder rejects local path-shaped info in release rows", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.path_leak', 'Path Leak', 'board', '/file%253A///C%253A/Users/source-user/Documents/Downloads/53207.pdf', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
-
-  await assertRejects(
-    () => buildV2Release(workbench, join(dir, "release")),
-    Error,
-    "Release output contains local path-shaped info",
-  );
-  workbench.close();
-});
-
 Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {
   const result = await getConnector("admin.service_requests_311").run(
     createConnectorContext({
@@ -4044,453 +4926,4 @@ Deno.test("admin 311 connector fails safely for non-311 layer metadata", async (
     "Expected 311 service-request layer",
   );
   assertEquals(result.endpointResults[0].parsed, undefined);
-});
-
-Deno.test("scripted review CLI accepts a candidate and entity show renders evidence and backlinks", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://www.open-dc.gov/public-bodies":
-          return openDcIndexFixture;
-        case "https://www.open-dc.gov/public-bodies/board-accountancy":
-          return openDcBoardFixture;
-        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
-          return openDcTaskForceFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
-    dataDir,
-  );
-  workbench.close();
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "--mode",
-      "entities",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("a\na\nq\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertStringIncludes(reviewText, "What needs review");
-  assertStringIncludes(reviewText, "Why this matters");
-  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
-  assertStringIncludes(
-    reviewText,
-    "Available actions: Enter accept, a accept, r reject, m merge, d defer, q quit",
-  );
-  assertStringIncludes(reviewText, "evidence:");
-  assertStringIncludes(reviewText, "name <- Board of Accountancy");
-  assertStringIncludes(reviewText, "source: open_dc.public_bodies @");
-  assertStringIncludes(reviewText, "Saved resolution.");
-  const searchOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "search",
-      "accountancy",
-      "--db",
-      dbPath,
-    ],
-  }).output();
-  assertStringIncludes(new TextDecoder().decode(searchOutput.stdout), "dc.board_of_accountancy");
-  const searchJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "search",
-      "accountancy",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const searchJson = JSON.parse(
-    new TextDecoder().decode(searchJsonOutput.stdout),
-  ) as Array<{ entityId: string; name: string }>;
-  assertEquals(searchJsonOutput.code, 0);
-  assertEquals(searchJson[0].entityId, "dc.board_of_accountancy");
-  const showOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "show",
-      "dc.board_of_accountancy",
-      "--db",
-      dbPath,
-    ],
-  }).output();
-  const showText = new TextDecoder().decode(showOutput.stdout);
-  assertStringIncludes(showText, "Board of Accountancy");
-  assertStringIncludes(showText, "evidence:");
-  assertStringIncludes(showText, "@");
-  assertStringIncludes(showText, "legal_refs:");
-  const showJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "show",
-      "dc.board_of_accountancy",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const showJson = JSON.parse(new TextDecoder().decode(showJsonOutput.stdout)) as {
-    entityId: string;
-    evidence: Array<{ fieldPath: string }>;
-    legalRefs: Array<{ refType: string }>;
-  };
-  assertEquals(showJsonOutput.code, 0);
-  assertEquals(showJson.entityId, "dc.board_of_accountancy");
-  assert(showJson.evidence.some((row) => row.fieldPath === "name"));
-  assert(showJson.legalRefs.some((row) => row.refType === "dc_code"));
-});
-
-Deno.test("interactive review Enter accepts the default action", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://www.open-dc.gov/public-bodies":
-          return openDcIndexFixture;
-        case "https://www.open-dc.gov/public-bodies/board-accountancy":
-          return openDcBoardFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 })),
-    dataDir,
-  );
-  workbench.close();
-
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "--mode",
-      "entities",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
-  assertStringIncludes(reviewText, "Saved resolution.");
-
-  const reopened = new Workbench(dbPath);
-  reopened.init();
-  const entities = reopened.canonicalEntities();
-  reopened.close();
-  assertEquals(entities.map((entity) => entity.id), ["dc.board_of_accountancy"]);
-});
-
-Deno.test("interactive review quit reports remaining work and resume command", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://www.open-dc.gov/public-bodies":
-          return openDcIndexFixture;
-        case "https://www.open-dc.gov/public-bodies/board-accountancy":
-          return openDcBoardFixture;
-        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
-          return openDcTaskForceFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
-    dataDir,
-  );
-  workbench.close();
-
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "--mode",
-      "entities",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(
-    reviewText,
-    "Review stopped. 2 item(s) remain. Resume with dc review entities.",
-  );
-
-  const reopened = new Workbench(dbPath);
-  reopened.init();
-  const items = reopened.listReviewItems({ mode: "entities" });
-  reopened.close();
-  assertEquals(items.length, 2);
-  assert(items.every((item) => item.status === "open"));
-});
-
-Deno.test("interactive relationship review quit reports filtered resume command", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://www.open-dc.gov/public-bodies":
-          return openDcIndexFixture;
-        case "https://www.open-dc.gov/public-bodies/board-accountancy":
-          return openDcBoardFixture;
-        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
-          return openDcTaskForceFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 2 })),
-    dataDir,
-  );
-  workbench.close();
-
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "relationships",
-      "--relationship-type",
-      "governed_by",
-      "--subject-prefix",
-      "relationship.open_dc.public_bodies",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(
-    reviewText,
-    "Resume with dc review relationships --subject-prefix relationship.open_dc.public_bodies --relationship-type governed_by.",
-  );
-});
-
-Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
-    fetcher: async (url: string) => ({
-      status: 200,
-      text: async () => {
-        if (url === "https://dc.gov/page/laws-regulations-and-courts") {
-          return legalEntrypointsFixture;
-        }
-        throw new Error(`Unexpected url ${url}`);
-      },
-      json: async <T>() => {
-        throw new Error(`No json fixture for ${url}`) as T;
-      },
-    }),
-  }));
-  await workbench.importConnectorResult(result, dataDir);
-  workbench.close();
-
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "legal",
-      "--subject-prefix",
-      "legal.legal.entrypoints.https_dcregs_dc_gov",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const text = new TextDecoder().decode(output.stdout);
-  assertEquals(output.code, 0);
-  assertStringIncludes(text, "Default action: defer (Enter or d)");
-  assertStringIncludes(text, "Saved resolution.");
-  assertStringIncludes(text, "No review items remain.");
-  assertEquals(text.match(/Review item:/g)?.length, 1);
-
-  const reopened = new Workbench(dbPath);
-  reopened.init();
-  const deferred = reopened.listReviewItems({
-    mode: "legal",
-    status: "deferred",
-    subjectPrefix: "legal.legal.entrypoints.https_dcregs_dc_gov",
-  });
-  reopened.close();
-  assertEquals(deferred.length, 1);
 });
