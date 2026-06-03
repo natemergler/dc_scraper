@@ -15,7 +15,8 @@ import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
-import { endpointStatus, reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { endpointStatus } from "./endpoint_status.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ResolutionRecord {
