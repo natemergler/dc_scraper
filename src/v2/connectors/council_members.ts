@@ -43,7 +43,7 @@ export const councilMembersConnector: SourceConnector = {
     };
     const response = await context.fetcher(councilMembersSource.baseUrl);
     const html = await response.text();
-    const sections = parseCouncilMemberBlocks(html).slice(0, context.limit ?? 8);
+    const sections = parseCouncilMemberBlocks(html);
     const items: SourceItemInput[] = [{
       itemKey: "council-members-page",
       itemType: "council_members_page",

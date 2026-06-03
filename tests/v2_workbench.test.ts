@@ -1862,6 +1862,40 @@ Deno.test("Council members connector captures seats and ward representations", a
   );
 });
 
+Deno.test("Council members connector ignores limit for the single-page roster", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return councilMembersFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("council.members").run(createConnectorContext({
+    fetcher,
+    limit: 1,
+  }));
+  const parsed = result.endpointResults[0].parsed;
+  assert(parsed);
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Ward 7 Councilmember Wendell Felder"
+    ),
+  );
+  assert(
+    parsed.relationshipCandidates?.some((candidate) =>
+      candidate.relationshipType === "represents" &&
+      candidate.toEntityRef === buildEntityId("Ward 8")
+    ),
+  );
+});
+
 Deno.test("Council ward parsing skips order inference when a ward label is absent", async () => {
   const fetcher = async (url: string) => ({
     status: 200,

@@ -1,6 +1,7 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -19,13 +20,6 @@ interface RelationshipReviewRow {
   rawValue?: string | null;
   sourceId: string;
   itemTitle: string;
-}
-
-interface EndpointStatus {
-  entityId: string;
-  status: string;
-  name?: string;
-  note?: string;
 }
 
 interface ReviewSubjectContext {
@@ -438,58 +432,21 @@ function relationshipReviewRow(
   );
 }
 
-function endpointStatus(store: Pick<WorkbenchStore, "db">, entityId: string): EndpointStatus {
-  const canonical = queryOne<{ name: string; reviewStatus: string; isPlaceholder: number }>(
-    store.db,
-    "select name, review_status as reviewStatus, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
-    [entityId],
-  );
-  if (canonical) {
-    return {
-      entityId,
-      name: canonical.name,
-      status: canonical.isPlaceholder ? "placeholder" : canonical.reviewStatus,
-      note: canonical.isPlaceholder ? "review placeholder before relying on this edge" : undefined,
-    };
-  }
-  const candidate = queryOne<{ candidateId: string; name: string; reviewStatus: string }>(
-    store.db,
-    `select candidate_id as candidateId,
-            name,
-            review_status as reviewStatus
-     from entity_candidates
-     where proposed_entity_id = ?
-     order by
-       case review_status when 'accepted' then 0 when 'pending' then 1 else 2 end,
-       coalesce(confidence, 0) desc,
-       candidate_id
-     limit 1`,
-    [entityId],
-  );
-  if (candidate) {
-    return {
-      entityId,
-      name: candidate.name,
-      status: `candidate ${candidate.reviewStatus}`,
-      note: candidate.reviewStatus === "pending"
-        ? `accept entity candidate ${candidate.candidateId} first when possible`
-        : undefined,
-    };
-  }
-  return {
-    entityId,
-    status: "missing",
-    note: "accepting will create a placeholder entity",
-  };
+function renderEndpointStatus(endpoint: EndpointStatus): string {
+  const name = endpoint.name ? ` ${JSON.stringify(endpoint.name)}` : "";
+  const note = endpointStatusNote(endpoint);
+  return `${endpoint.entityId}${name} (${endpoint.state}${note ? `; ${note}` : ""})`;
 }
 
-function renderEndpointStatus(endpoint: EndpointStatus): string {
-  const label = endpoint.name ?? endpoint.entityId;
-  const state = endpoint.status.startsWith("candidate ")
-    ? `${endpoint.status.slice("candidate ".length)} candidate`
-    : humanizeToken(endpoint.status);
-  const note = endpoint.note ? `; ${endpoint.note}` : "";
-  return `${label} (${state}; id ${endpoint.entityId}${note})`;
+function endpointStatusNote(endpoint: EndpointStatus): string | undefined {
+  if (endpoint.state === "placeholder") return "review placeholder before relying on this edge";
+  if (endpoint.state === "pending_candidate") return "accept an endpoint candidate first";
+  if (endpoint.state === "deferred_candidate") return "resume deferred endpoint review first";
+  if (endpoint.state === "stale_candidate") return "resolve changed prior endpoint decision first";
+  if (endpoint.state === "replay_conflict") return "fix endpoint replay conflict first";
+  if (endpoint.state === "rejected_candidate") return "prior endpoint candidate was rejected";
+  if (endpoint.state === "missing") return "endpoint has no source-backed candidate yet";
+  return undefined;
 }
 
 function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
