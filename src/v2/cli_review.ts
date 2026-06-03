@@ -101,7 +101,7 @@ export function printReviewHelp(): void {
   console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`${dcCommand("review")}\` for the highest-leverage open decision first
+  1. Run \`${dcCommand("review")}\` for the highest-leverage packet first
   2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
   3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
   4. Run \`${dcCommand("status")}\` for readiness and the next broad surface

@@ -48,9 +48,10 @@ deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
 
-`dc review` is the main human path. It now starts with the open decision that unblocks the most
-downstream work, then shows what the item is, why it is here, what the default action is, and the
-exact evidence behind that default. Quit is safe; rerun `dc review` to resume.
+`dc review` is the main human path. It now opens with a short inbox for the current slice, picks the
+packet containing the highest-leverage open decision, and stays inside that packet until it clears
+or you quit. It then shows what the current item is, why it is here, what the default action is, and
+the exact evidence behind that default. Quit is safe; rerun `dc review` to resume.
 
 ## Review And Smoke
 

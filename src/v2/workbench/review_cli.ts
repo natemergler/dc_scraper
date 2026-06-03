@@ -3,7 +3,11 @@ import { type Workbench } from "../workbench.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
-import { listReviewPackets, renderReviewPacketHeader } from "./review_packets.ts";
+import {
+  renderReviewPacketHeader,
+  type ReviewPacketRecord,
+  reviewPacketsFromItems,
+} from "./review_packets.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import {
   reviewEvidence,
@@ -39,16 +43,22 @@ export async function runInteractiveReview(
   const activeFilters: ReviewItemFilters = filters.status === undefined
     ? { ...filters, status: "open" }
     : filters;
+  let stickyPacketId: string | undefined;
+  let didShowInbox = false;
   while (true) {
-    const selection = nextInteractiveReviewSelection(workbench, activeFilters);
+    const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
+    const selection = nextInteractiveReviewSelection(snapshot, stickyPacketId);
     const item = selection?.item;
     if (!item) {
       console.log("No review items remain.");
       return;
     }
-    const packet = listReviewPackets(workbench, activeFilters).find((candidate) =>
-      candidate.reviewItemIds.includes(item.reviewItemId)
-    );
+    const packet = selection.packet;
+    if (!didShowInbox) {
+      console.log(renderReviewInbox(snapshot, packet));
+      console.log("");
+      didShowInbox = true;
+    }
     if (packet && packet.count > 1) {
       console.log(renderReviewPacketHeader(packet));
       console.log("");
@@ -60,9 +70,8 @@ export async function runInteractiveReview(
     console.log(renderReviewItem(workbench, item));
     const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);
     if (promptedAction === undefined || promptedAction === "q") {
-      const remainingCount = workbench.listReviewItems(activeFilters).length;
       console.log(
-        `Review stopped. ${remainingCount} item(s) remain. Resume with ${
+        `Review stopped. ${snapshot.items.length} item(s) remain. Resume with ${
           renderResumeCommand(filters)
         }.`,
       );
@@ -76,33 +85,133 @@ export async function runInteractiveReview(
     }
     await workbench.appendResolutionEvent(event, resolutionsDir);
     await Deno.stdout.write(encoder.encode("Saved resolution.\n"));
+    stickyPacketId = packet?.packetId;
   }
 }
 
 interface InteractiveReviewSelection {
+  packet?: ReviewPacketRecord;
   item: ReviewItemRecord;
   decision?: UnresolvedDecisionNode;
 }
 
-function nextInteractiveReviewSelection(
-  workbench: Pick<Workbench, "listReviewItems" | "unresolvedWorkGraph">,
+interface InteractiveReviewSnapshot {
+  items: ReviewItemRecord[];
+  itemsByReviewItemId: Map<string, ReviewItemRecord>;
+  packets: ReviewPacketRecord[];
+  decisions: UnresolvedDecisionNode[];
+  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>;
+}
+
+function buildInteractiveReviewSnapshot(
+  workbench: Pick<Workbench, "db" | "listReviewItems" | "unresolvedWorkGraph">,
   filters: ReviewItemFilters,
-): InteractiveReviewSelection | undefined {
-  const filteredItems = workbench.listReviewItems({ ...filters, limit: undefined });
-  const filteredItemsById = new Map(filteredItems.map((item) => [item.reviewItemId, item]));
-  const decision = workbench.unresolvedWorkGraph().decisions.find((candidate) =>
-    filteredItemsById.has(candidate.reviewItemId)
+): InteractiveReviewSnapshot {
+  const items = workbench.listReviewItems({ ...filters, limit: undefined });
+  const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
+  const packets = reviewPacketsFromItems(workbench, items);
+  const decisions = workbench.unresolvedWorkGraph().decisions.filter((candidate) =>
+    itemsByReviewItemId.has(candidate.reviewItemId)
   );
-  if (decision) {
-    return { item: filteredItemsById.get(decision.reviewItemId)!, decision };
+  const decisionsByReviewItemId = new Map(
+    decisions.map((decision) => [decision.reviewItemId, decision]),
+  );
+  return {
+    items,
+    itemsByReviewItemId,
+    packets,
+    decisions,
+    decisionsByReviewItemId,
+  };
+}
+
+function nextInteractiveReviewSelection(
+  snapshot: InteractiveReviewSnapshot,
+  stickyPacketId?: string,
+): InteractiveReviewSelection | undefined {
+  const packet = snapshot.packets.find((candidate) => candidate.packetId === stickyPacketId) ??
+    selectPriorityPacket(snapshot.packets, snapshot.decisionsByReviewItemId);
+  if (!packet) {
+    const decision = snapshot.decisions.at(0);
+    if (decision) {
+      return { item: snapshot.itemsByReviewItemId.get(decision.reviewItemId)!, decision };
+    }
+    const item = snapshot.items.at(0);
+    return item ? { item } : undefined;
   }
-  const item = filteredItems.at(0);
-  return item ? { item } : undefined;
+  const decision = packet.reviewItemIds
+    .map((reviewItemId) => snapshot.decisionsByReviewItemId.get(reviewItemId))
+    .filter((candidate): candidate is UnresolvedDecisionNode => Boolean(candidate))
+    .sort((left, right) =>
+      right.downstreamBlockedCount - left.downstreamBlockedCount ||
+      left.reviewItemId.localeCompare(right.reviewItemId)
+    )
+    .at(0);
+  const item = decision
+    ? snapshot.itemsByReviewItemId.get(decision.reviewItemId)
+    : packet.reviewItemIds
+      .map((reviewItemId) => snapshot.itemsByReviewItemId.get(reviewItemId))
+      .find((candidate): candidate is ReviewItemRecord => Boolean(candidate));
+  return item ? { packet, item, decision } : undefined;
 }
 
 function renderDecisionImpact(decision: UnresolvedDecisionNode): string {
   const noun = decision.downstreamBlockedCount === 1 ? "relationship" : "relationships";
   return `Decision impact: unblocks ${decision.downstreamBlockedCount} blocked ${noun}.`;
+}
+
+function selectPriorityPacket(
+  packets: ReviewPacketRecord[],
+  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
+): ReviewPacketRecord | undefined {
+  return [...packets].sort((left, right) =>
+    packetPriorityScore(right, decisionsByReviewItemId) -
+      packetPriorityScore(left, decisionsByReviewItemId) ||
+    right.openCount - left.openCount ||
+    right.count - left.count ||
+    left.sourceId.localeCompare(right.sourceId) ||
+    left.packetId.localeCompare(right.packetId)
+  ).at(0);
+}
+
+function packetPriorityScore(
+  packet: ReviewPacketRecord,
+  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
+): number {
+  return packet.reviewItemIds.reduce((max, reviewItemId) => {
+    const decision = decisionsByReviewItemId.get(reviewItemId);
+    return Math.max(max, decision?.downstreamBlockedCount ?? 0);
+  }, 0);
+}
+
+function renderReviewInbox(
+  snapshot: InteractiveReviewSnapshot,
+  currentPacket?: ReviewPacketRecord,
+): string {
+  const packets = snapshot.packets.slice(0, 5);
+  const topPacketIds = new Set(packets.map((packet) => packet.packetId));
+  const lines = [
+    "Review inbox",
+    `Open items in this slice: ${snapshot.items.length}`,
+  ];
+  if (packets.length > 0) {
+    lines.push("Top grouped slices:");
+    lines.push(...packets.map((packet) => renderInboxPacketLine(packet)));
+  }
+  if (currentPacket && !topPacketIds.has(currentPacket.packetId)) {
+    lines.push("Current packet:");
+    lines.push(renderInboxPacketLine(currentPacket));
+  }
+  return lines.join("\n");
+}
+
+function renderInboxPacketLine(packet: ReviewPacketRecord): string {
+  const scope = packet.relationshipType
+    ? `${packet.sourceId} ${packet.relationshipType}`
+    : packet.refType
+    ? `${packet.sourceId} ${packet.refType}`
+    : `${packet.sourceId} ${humanizeToken(packet.itemType)}`;
+  return `- [${packet.openCount} open] ${scope} - ${packet.reason}`;
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {

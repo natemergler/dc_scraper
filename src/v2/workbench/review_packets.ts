@@ -38,9 +38,17 @@ export function listReviewPackets(
   filters?: ReviewItemFilters,
 ): ReviewPacketRecord[] {
   const { itemFilters, packetLimit } = packetListFilters(filters);
+  const items = store.listReviewItems(itemFilters);
+  return reviewPacketsFromItems(store, items, { limit: packetLimit });
+}
+
+export function reviewPacketsFromItems(
+  store: Pick<WorkbenchStore, "db">,
+  items: ReviewItemRecord[],
+  options: { limit?: number } = {},
+): ReviewPacketRecord[] {
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
-  const items = store.listReviewItems(itemFilters);
   const sourceIds = reviewSubjectSourceIds(store, items);
   for (const item of items) {
     const sourceId = sourceIds.get(item.reviewItemId) ?? "unknown";
@@ -81,7 +89,7 @@ export function listReviewPackets(
     left.itemType.localeCompare(right.itemType) ||
     left.reason.localeCompare(right.reason)
   );
-  return packetLimit === undefined ? sortedPackets : sortedPackets.slice(0, packetLimit);
+  return options.limit === undefined ? sortedPackets : sortedPackets.slice(0, options.limit);
 }
 
 export function reviewPacketDebtSummary(

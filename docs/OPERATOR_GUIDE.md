@@ -46,9 +46,10 @@ deno task dc -- review batch accept-safe --mode entities --subject-prefix candid
 deno task dc -- audit
 ```
 
-`dc review` is the whole human decision layer, not just a conflict fixer. It starts with the open
-decision that unblocks the most downstream work, then lets you inspect evidence, accept, edit,
-reject, defer, or quit and resume deliberately.
+`dc review` is the whole human decision layer, not just a conflict fixer. It opens with a short
+inbox for the current slice, picks the packet containing the highest-leverage open decision, and
+stays inside that packet until it clears or you quit. From there you can inspect evidence, accept,
+edit, reject, defer, or quit and resume deliberately.
 
 ## Release
 
