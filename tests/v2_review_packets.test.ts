@@ -221,6 +221,95 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(segmentPrefixBody.packets[0].nextCommand?.includes("batch accept-safe"), false);
 });
 
+Deno.test("review packet limits apply after grouping related work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  seedAcceptedEntity(workbench, "dc.target_agency", "Target Agency", "agency");
+  seedAcceptedEntity(workbench, "dc.alt_agency", "Alt Agency", "agency");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.limit_group_a.one",
+      sourceItemKey: "review-packet-limit-row-one",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Alpha Committee",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.limit_group_a.two",
+      sourceItemKey: "review-packet-limit-row-two",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.alt_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Beta Committee",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_packets.group_b",
+      relationshipCandidateId: "relationship.test.review_packets.group_b.one",
+      sourceItemKey: "review-packet-limit-row-three",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Gamma Committee",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "relationships",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--limit",
+    "2",
+    "--json",
+  ]);
+
+  assertEquals(output.code, 0);
+  const body = JSON.parse(new TextDecoder().decode(output.stdout)) as {
+    count: number;
+    packets: Array<{
+      sourceId: string;
+      count: number;
+      nextCommand?: string;
+    }>;
+  };
+  assertEquals(body.count, 2);
+  assertEquals(body.packets.length, 2);
+  assertEquals(body.packets[0].sourceId, "council.committees");
+  assertEquals(body.packets[0].count, 2);
+  assertEquals(body.packets[1].sourceId, "test.review_packets.group_b");
+  assertEquals(body.packets[1].count, 1);
+  assertStringIncludes(body.packets[0].nextCommand ?? "", "review batch accept-safe");
+  assertStringIncludes(
+    body.packets[0].nextCommand ?? "",
+    "--subject-prefix relationship.council.committees.limit_group_a",
+  );
+  assertStringIncludes(body.packets[1].nextCommand ?? "", "review list");
+  assertStringIncludes(
+    body.packets[1].nextCommand ?? "",
+    "--subject-prefix relationship.test.review_packets.group_b",
+  );
+});
+
 Deno.test("review packet next list command preserves resolved status filters", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
