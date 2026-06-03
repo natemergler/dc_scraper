@@ -89,6 +89,25 @@ export function buildKnownEntityRef(name: string): string {
   return knownEntityRefs.get(entityAliasKey(name)) ?? buildEntityId(name);
 }
 
+export function buildKnownCouncilOversightEntityRef(rawValue: string): string {
+  const baseName = extractScopedCouncilOversightBaseName(rawValue);
+  return buildKnownEntityRef(baseName ?? rawValue);
+}
+
+export function extractScopedCouncilOversightBaseName(rawValue: string): string | undefined {
+  const normalized = normalizeName(rawValue);
+  if (!normalized || /^all of\b/i.test(normalized)) return undefined;
+  const parenthetical = normalized.match(/^(.+?)\s*\((including|excluding|jointly)\b/i);
+  if (parenthetical?.[1]) return parenthetical[1].trim();
+  const commaScoped = normalized.match(/^(.+?),\s*(including|excluding|jointly)\b/i);
+  if (commaScoped?.[1]) return commaScoped[1].trim();
+  return undefined;
+}
+
+export function isScopedCouncilOversightTarget(rawValue: string): boolean {
+  return /\bincluding\b|\bjointly\b|^all of\b|\bexcluding\b/i.test(normalizeName(rawValue));
+}
+
 export function toPublicHttpUrl(
   baseUrl: string,
   maybeRelative: string | undefined,
@@ -158,7 +177,7 @@ const knownEntityRefs = new Map<string, string>([
     "dc.citizen_review_panel_on_child_abuse_and_neglect",
   ],
   ["clemency board", "dc.clemency_board"],
-  ["commission on nightlife and culture", "dc.commission_on_nightlife_and_culture_cnc"],
+  ["commission on nightlife and culture", "dc.commission_on_nightlife_and_culture"],
   ["commission on poverty", "dc.commission_on_poverty"],
   ["commission on women", "dc.commission_for_women"],
   ["council", "dc.council_of_the_district_of_columbia"],

@@ -1,4 +1,5 @@
 import { buildReviewItemId } from "../domain.ts";
+import { isScopedCouncilOversightTarget } from "../connectors/shared.ts";
 
 export interface RelationshipReviewCandidate {
   relationshipCandidateId: string;
@@ -157,7 +158,5 @@ function reviewDefaultAction(
 function shouldDeferCouncilOversight(rawValue?: string | null): boolean {
   if (!rawValue) return false;
   return defaultDeferCouncilOversightTargets.has(rawValue) ||
-    rawValue.includes("including") ||
-    rawValue.includes("jointly") ||
-    rawValue.startsWith("All of ");
+    isScopedCouncilOversightTarget(rawValue);
 }

@@ -12,6 +12,10 @@ import {
   type RelationshipCandidateInput,
   type ReviewItemInput,
 } from "../domain.ts";
+import {
+  extractScopedCouncilOversightBaseName,
+  isScopedCouncilOversightTarget,
+} from "../connectors/shared.ts";
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
@@ -228,12 +232,17 @@ function seededRelationshipEndpointCandidatesForRelationship(
       ),
     );
   }
-  if (shouldSeedFromRelationshipEndpoint(sourceId, relationshipCandidate, observedName)) {
+  const seedableFromName = seedableFromRelationshipEndpointName(
+    sourceId,
+    relationshipCandidate,
+    observedName,
+  );
+  if (seedableFromName) {
     candidates.push(
       buildSeededRelationshipEndpointCandidate(
         sourceId,
         relationshipCandidate,
-        observedName,
+        seedableFromName,
         relationshipCandidate.fromEntityRef,
         "from-endpoint",
       ),
@@ -265,15 +274,31 @@ function buildSeededRelationshipEndpointCandidate(
   };
 }
 
-function shouldSeedFromRelationshipEndpoint(
+function seedableFromRelationshipEndpointName(
   sourceId: string,
   relationshipCandidate: RelationshipCandidateInput,
   observedName: string,
-): boolean {
-  return sourceId === "council.committees" &&
-    relationshipCandidate.relationshipType === "overseen_by" &&
+): string | undefined {
+  if (
+    sourceId !== "council.committees" ||
+    relationshipCandidate.relationshipType !== "overseen_by"
+  ) {
+    return undefined;
+  }
+  if (
     buildEntityId(observedName) === relationshipCandidate.fromEntityRef &&
-    !isGroupedCommitteeOversightTarget(observedName);
+    !isGroupedCommitteeOversightTarget(observedName)
+  ) {
+    return observedName;
+  }
+  const scopedBaseName = extractScopedCouncilOversightBaseName(observedName);
+  if (
+    scopedBaseName &&
+    buildEntityId(scopedBaseName) === relationshipCandidate.fromEntityRef
+  ) {
+    return scopedBaseName;
+  }
+  return undefined;
 }
 
 function seededRelationshipEndpointReviewItem(
@@ -323,7 +348,7 @@ function isSeedableEndpointName(value: string): boolean {
 }
 
 function isGroupedCommitteeOversightTarget(value: string): boolean {
-  return /including|jointly|^all of |excluding/i.test(value);
+  return isScopedCouncilOversightTarget(value);
 }
 
 function endpointAlreadyKnown(
