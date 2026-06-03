@@ -139,7 +139,7 @@ export async function runBatchAcceptSafe(
 }
 
 export async function runBatchDeferDefault(
-  workbench: Pick<Workbench, "listReviewItems" | "appendResolutionEvent">,
+  workbench: Pick<Workbench, "db" | "listReviewItems">,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {
@@ -151,9 +151,10 @@ export async function runBatchDeferDefault(
   const items = workbench.listReviewItems({ ...filters, status: "open" });
   const deferred = items.filter((item) => item.defaultAction === "defer");
   const skipped = items.length - deferred.length;
-  for (const item of deferred) {
-    await workbench.appendResolutionEvent(
-      { eventType: "defer_review_item", subjectId: item.reviewItemId, payload: {} },
+  if (deferred.length > 0) {
+    await appendResolutionEvents(
+      workbench,
+      deferred.map((item) => batchDeferEvent(item)),
       resolutionsDir,
     );
   }
@@ -180,6 +181,10 @@ function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
     return { eventType: "accept_legal_ref", subjectId: item.subjectId, payload: {} };
   }
   return { eventType: "accept_entity_candidate", subjectId: item.subjectId, payload: {} };
+}
+
+function batchDeferEvent(item: ReviewItemRecord): ResolutionEventInput {
+  return { eventType: "defer_review_item", subjectId: item.reviewItemId, payload: {} };
 }
 
 async function actionToEvent(
