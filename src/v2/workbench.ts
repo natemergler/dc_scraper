@@ -52,6 +52,10 @@ import {
 } from "./workbench/entity.ts";
 import type { WorkbenchStore } from "./workbench/store.ts";
 
+interface WorkbenchInitOptions {
+  refreshDerivedState?: boolean;
+}
+
 export class Workbench implements WorkbenchStore {
   readonly db: Database;
 
@@ -65,8 +69,9 @@ export class Workbench implements WorkbenchStore {
     this.db.close();
   }
 
-  init(): WorkbenchMeta {
+  init(options: WorkbenchInitOptions = {}): WorkbenchMeta {
     const meta = initWorkbench(this);
+    if (options.refreshDerivedState === false) return meta;
     autoAcceptSafeLegalRefs(this);
     autoPromoteSafeEntityCandidates(this);
     reconcileRelationshipCandidates(this);

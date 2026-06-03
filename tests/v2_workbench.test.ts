@@ -311,6 +311,69 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(unfetchedInspectJson.itemCount, 0);
 });
 
+Deno.test("source list repairs legacy migration-version collisions in existing workbenches", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec(`
+update schema_migrations
+set name = 'v2_public_body_seat_relationships'
+where version = 7;
+update schema_migrations
+set name = 'v2_public_body_seat_status_relationships'
+where version = 8;
+drop table reconciliation_items;
+drop table reconciliation_blockers;
+`);
+  workbench.close();
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(sourceListOutput.code, 0);
+  const sourceListText = new TextDecoder().decode(sourceListOutput.stdout);
+  assertStringIncludes(sourceListText, "dcgis.agencies unfetched");
+  assertStringIncludes(sourceListText, "mota.quickbase unfetched");
+
+  const repairedWorkbench = new Workbench(dbPath);
+  const meta = repairedWorkbench.init();
+  const tables = new Set(
+    repairedWorkbench.db.prepare("select name from sqlite_master where type = 'table'").all().map(
+      (row) => (row as { name: string }).name,
+    ),
+  );
+  repairedWorkbench.close();
+
+  assertEquals(meta.schemaVersion, 11);
+  assert(tables.has("reconciliation_items"));
+  assert(tables.has("reconciliation_blockers"));
+  assert(
+    meta.migrations.some((migration) =>
+      migration.version === 7 &&
+      migration.name === "v2_relationship_reconciliation_foundation"
+    ),
+  );
+  assert(
+    meta.migrations.some((migration) =>
+      migration.version === 8 &&
+      migration.name === "v2_remove_relationship_review_templates"
+    ),
+  );
+});
+
 Deno.test("CLI command errors print a concise message", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

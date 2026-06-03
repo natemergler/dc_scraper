@@ -786,6 +786,96 @@ create index if not exists reconciliation_blockers_subject_idx
 `,
 }];
 
+const reconciliationFoundationMigration = migrations.find((migration) => migration.version === 7);
+const removeRelationshipReviewTemplatesMigration = migrations.find((migration) =>
+  migration.version === 8
+);
+
+const reconciliationFoundationRepairSql = `
+create table if not exists reconciliation_items (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  state text not null check (state in ('blocked', 'review_ready')),
+  reason text not null,
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id)
+);
+
+create table if not exists reconciliation_blockers (
+  subject_type text not null check (subject_type in ('relationship_candidate')),
+  subject_id text not null references relationship_candidates(relationship_candidate_id),
+  blocker_key text not null,
+  blocker_type text not null check (blocker_type in ('endpoint')),
+  blocker_id text not null,
+  blocker_state text not null check (blocker_state in ('missing', 'pending_candidate', 'placeholder', 'rejected_candidate')),
+  details_json text not null check (json_valid(details_json)),
+  created_at text not null,
+  updated_at text not null,
+  primary key (subject_type, subject_id, blocker_key)
+);
+
+drop table if exists relationship_review_templates;
+
+create index if not exists reconciliation_items_state_idx
+  on reconciliation_items(state, subject_type, subject_id);
+create index if not exists reconciliation_blockers_subject_idx
+  on reconciliation_blockers(subject_type, subject_id);
+`;
+
+function tableExists(store: WorkbenchStore, tableName: string): boolean {
+  return Boolean(
+    queryOne<{ name: string }>(
+      store.db,
+      "select name from sqlite_master where type = 'table' and name = ?",
+      [tableName],
+    ),
+  );
+}
+
+function repairLegacyReconciliationMigrationCollision(store: WorkbenchStore): void {
+  const migration7 = queryOne<SchemaMigrationRow>(
+    store.db,
+    "select version, name, applied_at as appliedAt from schema_migrations where version = 7",
+  );
+  const migration8 = queryOne<SchemaMigrationRow>(
+    store.db,
+    "select version, name, applied_at as appliedAt from schema_migrations where version = 8",
+  );
+  if (!migration7 && !migration8) return;
+
+  const expectedMigration7Name = reconciliationFoundationMigration?.name;
+  const expectedMigration8Name = removeRelationshipReviewTemplatesMigration?.name;
+  const namesMismatch =
+    (migration7 && expectedMigration7Name && migration7.name !== expectedMigration7Name) ||
+    (migration8 && expectedMigration8Name && migration8.name !== expectedMigration8Name);
+  const missingFoundationTables = !tableExists(store, "reconciliation_items") ||
+    !tableExists(store, "reconciliation_blockers");
+
+  if (!namesMismatch && !missingFoundationTables) return;
+
+  withTransaction(store.db, () => {
+    if (missingFoundationTables) {
+      store.db.exec(reconciliationFoundationRepairSql);
+    }
+    if (migration7 && expectedMigration7Name && migration7.name !== expectedMigration7Name) {
+      run(
+        store.db,
+        "update schema_migrations set name = ? where version = 7",
+        [expectedMigration7Name],
+      );
+    }
+    if (migration8 && expectedMigration8Name && migration8.name !== expectedMigration8Name) {
+      run(
+        store.db,
+        "update schema_migrations set name = ? where version = 8",
+        [expectedMigration8Name],
+      );
+    }
+  });
+}
+
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
   store.db.exec(`
 create table if not exists schema_migrations (
@@ -794,6 +884,7 @@ create table if not exists schema_migrations (
   applied_at text not null
 );
 `);
+  repairLegacyReconciliationMigrationCollision(store);
   for (const migration of migrations) {
     const existing = queryOne<SchemaMigrationRow>(
       store.db,
