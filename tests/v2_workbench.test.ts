@@ -554,10 +554,67 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const releaseText = new TextDecoder().decode(releaseHelp.stdout);
   const releaseError = new TextDecoder().decode(releaseHelp.stderr);
   assertEquals(releaseHelp.code, 0);
+  assertStringIncludes(releaseText, "Workflow:");
   assertStringIncludes(releaseText, "Usage:");
   assertStringIncludes(releaseText, "dc release build");
   assertStringIncludes(releaseText, "dc release inspect");
   assertEquals(releaseError, "");
+
+  const releaseBare = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+    ],
+  }).output();
+  const releaseBareText = new TextDecoder().decode(releaseBare.stdout);
+  assertEquals(releaseBare.code, 0);
+  assertStringIncludes(releaseBareText, "dc release");
+  assertStringIncludes(releaseBareText, "dc release build");
+
+  const releaseBuildHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "build",
+      "--help",
+    ],
+  }).output();
+  const releaseBuildHelpText = new TextDecoder().decode(releaseBuildHelp.stdout);
+  assertEquals(releaseBuildHelp.code, 0);
+  assertStringIncludes(releaseBuildHelpText, "dc release build");
+  assertStringIncludes(releaseBuildHelpText, "dc release inspect");
+  assert(!releaseBuildHelpText.includes("Built v2 release"));
+
+  const releaseInspectHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--help",
+    ],
+  }).output();
+  const releaseInspectHelpText = new TextDecoder().decode(releaseInspectHelp.stdout);
+  assertEquals(releaseInspectHelp.code, 0);
+  assertStringIncludes(releaseInspectHelpText, "dc release inspect");
+  assert(!releaseInspectHelpText.includes("Release: "));
 });
 
 Deno.test("source prefix commands guide the operator toward the next fetch action", async () => {
