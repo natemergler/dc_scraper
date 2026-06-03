@@ -1,6 +1,7 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
 import { queryAll, run } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
+import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_ACCEPT_RULES = new Map<string, Set<RelationshipType>>([
@@ -93,7 +94,13 @@ function acceptRelationshipCandidateDirect(
   );
   const relationshipId =
     `${candidate.fromEntityRef}:${candidate.relationshipType}:${candidate.toEntityRef}`;
-  if (!isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef)) {
+  if (isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef)) {
+    run(
+      store.db,
+      "delete from relationship_legal_refs where relationship_id in (?, ?)",
+      [candidate.relationshipCandidateId, relationshipId],
+    );
+  } else {
     run(
       store.db,
       `insert or ignore into canonical_relationships(
@@ -119,11 +126,4 @@ function acceptRelationshipCandidateDirect(
     "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'relationship_candidate'",
     [nowIso(), candidate.relationshipCandidateId],
   );
-}
-
-function isLegalAuthorityRelationship(
-  relationshipType: RelationshipType,
-  toEntityRef: string,
-): boolean {
-  return relationshipType === "authorized_by" && toEntityRef.startsWith("legal.");
 }

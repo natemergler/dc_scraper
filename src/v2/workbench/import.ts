@@ -2,10 +2,11 @@ import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } f
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
-import { run, withTransaction } from "./db.ts";
+import { queryOne, run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import {
   buildEntityDecisionHint,
   buildLegalRefDecisionHint,
@@ -320,15 +321,23 @@ function importParsedOutput(
       );
     }
     if (legalRef.attachRelationshipRef) {
-      run(
-        store.db,
-        "insert or ignore into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values(?, ?, ?)",
-        [
-          `${legalRef.attachRelationshipRef}:${legalRef.legalRefId}`,
-          legalRef.attachRelationshipRef,
-          legalRef.legalRefId,
-        ],
-      );
+      if (isMaterializedRelationshipAttachment(store, legalRef.attachRelationshipRef)) {
+        run(
+          store.db,
+          "insert or ignore into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values(?, ?, ?)",
+          [
+            `${legalRef.attachRelationshipRef}:${legalRef.legalRefId}`,
+            legalRef.attachRelationshipRef,
+            legalRef.legalRefId,
+          ],
+        );
+      } else {
+        run(
+          store.db,
+          "delete from relationship_legal_refs where relationship_id = ? and legal_ref_id = ?",
+          [legalRef.attachRelationshipRef, legalRef.legalRefId],
+        );
+      }
     }
     const reviewItemId = buildReviewItemId(legalRef.legalRefId, "legal-ref");
     run(
@@ -412,6 +421,19 @@ function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
   if (legalRef.refType === "unknown") return "defer";
   if (legalRef.needsReview === true && !legalRef.normalizedCitation) return "defer";
   return "accept";
+}
+
+function isMaterializedRelationshipAttachment(
+  store: WorkbenchStore,
+  relationshipRef: string,
+): boolean {
+  const candidate = queryOne<{ relationshipType: string; toEntityRef: string }>(
+    store.db,
+    "select relationship_type as relationshipType, to_entity_ref as toEntityRef from relationship_candidates where relationship_candidate_id = ?",
+    [relationshipRef],
+  );
+  if (!candidate) return true;
+  return !isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef);
 }
 
 function legalReviewReason(legalRef: LegalRefInput): string {
