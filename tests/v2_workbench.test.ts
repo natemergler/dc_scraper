@@ -2832,6 +2832,94 @@ Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and 
   assertEquals(remainingOversight.length, 0);
 });
 
+Deno.test("batch accept-safe accepts seeded DCGIS governing-agency prerequisites and auto-accepts the unblocked relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.commission_on_out_of_school_time_grants_and_youth_outcomes', 'Commission on Out of School Time Grants and Youth Outcomes', 'commission', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      relationshipCandidateId:
+        "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+      sourceItemKey: "batch-seeded-governing-agency-row",
+      fromEntityRef: "dc.commission_on_out_of_school_time_grants_and_youth_outcomes",
+      toEntityRef: "dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+      relationshipType: "governed_by",
+      rawValue: "Office of Out of School Time Grants and Youth Outcomes",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dcgis.boards_commissions_councils.relationship_dcgis_boards_commissions_councils_batch_seeded_governing_agency",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 1 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const seededEntity = reopened.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_out_of_school_time_grants_and_youth_outcomes'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = reopened.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.commission_on_out_of_school_time_grants_and_youth_outcomes:governed_by:dc.office_of_out_of_school_time_grants_and_youth_outcomes'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingRelationshipReview = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "governed_by",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+  });
+  reopened.close();
+  assertEquals(
+    seededEntity?.entityId,
+    "dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+  );
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.commission_on_out_of_school_time_grants_and_youth_outcomes:governed_by:dc.office_of_out_of_school_time_grants_and_youth_outcomes",
+  );
+  assertEquals(remainingRelationshipReview.length, 0);
+});
+
 Deno.test("batch accept-safe skips non-committee seeded endpoint candidates", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
