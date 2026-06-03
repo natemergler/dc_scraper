@@ -4,9 +4,7 @@ import { Database } from "@db/sqlite";
 import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
-import { unresolvedStateNote } from "./operator_plan.ts";
-import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
-import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
+import { buildWorkbenchStatus } from "./status.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 import { containsLocalPath } from "./url_safety.ts";
 
@@ -565,52 +563,38 @@ function buildReleaseSummary(
   const reviewByType = workbench.db.prepare(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
-  const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
-  const reviewDebt = reviewPacketDebtSummary(workbench);
-  const reconciliation = summarizeUnresolvedReconciliation(workbench.unresolvedWorkGraph());
-  const staleReview = workbench.staleReviewSummary();
-  const placeholderEntityCount = workbench.db.prepare(
-    "select count(*) as count from canonical_entities where is_placeholder = 1",
-  ).get() as { count: number };
-  const openReviewItemCount = reviewStatusCounts.get("open") ?? 0;
-  const deferredReviewItemCount = reviewStatusCounts.get("deferred") ?? 0;
+  const status = buildWorkbenchStatus(workbench);
   return {
     entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
     review_items_by_status: reviewByStatus,
     review_items_by_type: reviewByType,
-    review_debt_by_type: reviewDebt.byType.map((row) => ({
+    review_debt_by_type: status.review.byType.map((row) => ({
       item_type: row.itemType,
       open_count: row.openCount,
       deferred_count: row.deferredCount,
     })),
-    review_debt_by_source: reviewDebt.bySource.map((row) => ({
+    review_debt_by_source: status.review.bySource.map((row) => ({
       source_id: row.sourceId,
       open_count: row.openCount,
       deferred_count: row.deferredCount,
     })),
-    open_review_item_count: openReviewItemCount,
-    deferred_review_item_count: deferredReviewItemCount,
-    stale_review_item_count: staleReview.count,
-    stale_review_by_prior_decision_state: staleReview.byPriorDecisionState.map((row) => ({
+    open_review_item_count: status.review.open,
+    deferred_review_item_count: status.review.deferred,
+    stale_review_item_count: status.staleReview.count,
+    stale_review_by_prior_decision_state: status.staleReview.byPriorDecisionState.map((row) => ({
       prior_decision_state: row.priorDecisionState,
       count: row.count,
     })),
-    blocked_reconciliation_count: reconciliation.blockedCount,
-    blocked_reconciliation_by_source: reconciliation.blockedBySource.map((row) => ({
+    blocked_reconciliation_count: status.reconciliation.blocked,
+    blocked_reconciliation_by_source: status.reconciliation.blockedBySource.map((row) => ({
       source_id: row.sourceId,
       count: row.count,
     })),
-    placeholder_entity_count: placeholderEntityCount.count,
-    review_status_note: releaseReviewStatusNote({
-      openReviewItemCount,
-      deferredReviewItemCount,
-      staleReviewItemCount: staleReview.count,
-      blockedReconciliationCount: reconciliation.blockedCount,
-      placeholderEntityCount: placeholderEntityCount.count,
-    }),
+    placeholder_entity_count: status.placeholders.count,
+    review_status_note: releaseReviewStatusNote(status.unresolvedStateNote),
     source_count: sources.length,
-    failed_source_count: sources.filter((row) => row.latest_status === "failed").length,
+    failed_source_count: status.sources.failed,
     dataset_count: datasets.length,
     legal_refs_by_type: countByRefType(legalRefs, (row) => row.ref_type),
     legal_refs_by_review_status: countByReviewStatus(legalRefs, (row) => row.review_status),
@@ -619,10 +603,8 @@ function buildReleaseSummary(
   };
 }
 
-function releaseReviewStatusNote(counts: Parameters<typeof unresolvedStateNote>[0]): string {
-  return `${
-    unresolvedStateNote(counts)
-  } Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
+function releaseReviewStatusNote(unresolvedNote: string): string {
+  return `${unresolvedNote} Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
 }
 
 function countByReviewStatus<T>(

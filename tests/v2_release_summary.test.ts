@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { buildV2Release } from "../src/v2/release.ts";
+import { buildWorkbenchStatus } from "../src/v2/status.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   councilCommitteeHealthDetailFixture,
@@ -52,6 +53,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
 
   const outDir = join(dir, "release");
   await buildV2Release(workbench, outDir);
+  const status = buildWorkbenchStatus(workbench);
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
     release_summary: {
       open_review_item_count: number;
@@ -59,12 +61,29 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
       blocked_reconciliation_count: number;
       placeholder_entity_count: number;
       blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
+      failed_source_count: number;
       review_status_note: string;
     };
   };
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   workbench.close();
 
+  assertEquals(manifest.release_summary.open_review_item_count, status.review.open);
+  assertEquals(manifest.release_summary.deferred_review_item_count, status.review.deferred);
+  assertEquals(
+    manifest.release_summary.blocked_reconciliation_count,
+    status.reconciliation.blocked,
+  );
+  assertEquals(manifest.release_summary.placeholder_entity_count, status.placeholders.count);
+  assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
+  assertEquals(
+    manifest.release_summary.blocked_reconciliation_by_source,
+    status.reconciliation.blockedBySource.map((row) => ({
+      source_id: row.sourceId,
+      count: row.count,
+    })),
+  );
+  assertEquals(manifest.release_summary.review_status_note, releaseStatusNote(status));
   assert(manifest.release_summary.blocked_reconciliation_count > 0);
   assertEquals(manifest.release_summary.placeholder_entity_count, 1);
   assert(
@@ -167,16 +186,28 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
   );
 
   await buildV2Release(workbench, outDir);
+  const status = buildWorkbenchStatus(workbench);
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
     release_summary: {
       stale_review_item_count: number;
       stale_review_by_prior_decision_state: Array<{ prior_decision_state: string; count: number }>;
+      failed_source_count: number;
       review_status_note: string;
     };
   };
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   workbench.close();
 
+  assertEquals(manifest.release_summary.stale_review_item_count, status.staleReview.count);
+  assertEquals(
+    manifest.release_summary.stale_review_by_prior_decision_state,
+    status.staleReview.byPriorDecisionState.map((row) => ({
+      prior_decision_state: row.priorDecisionState,
+      count: row.count,
+    })),
+  );
+  assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
+  assertEquals(manifest.release_summary.review_status_note, releaseStatusNote(status));
   assertEquals(manifest.release_summary.stale_review_item_count, 1);
   assert(
     manifest.release_summary.stale_review_by_prior_decision_state.some((row) =>
@@ -271,8 +302,12 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   );
 
   await buildV2Release(workbench, outDir);
+  const status = buildWorkbenchStatus(workbench);
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
     release_summary: {
+      open_review_item_count: number;
+      deferred_review_item_count: number;
+      failed_source_count: number;
       review_debt_by_type: Array<{
         item_type: string;
         open_count: number;
@@ -288,6 +323,25 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   workbench.close();
 
+  assertEquals(manifest.release_summary.open_review_item_count, status.review.open);
+  assertEquals(manifest.release_summary.deferred_review_item_count, status.review.deferred);
+  assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
+  assertEquals(
+    manifest.release_summary.review_debt_by_type,
+    status.review.byType.map((row) => ({
+      item_type: row.itemType,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
+  );
+  assertEquals(
+    manifest.release_summary.review_debt_by_source,
+    status.review.bySource.map((row) => ({
+      source_id: row.sourceId,
+      open_count: row.openCount,
+      deferred_count: row.deferredCount,
+    })),
+  );
   assert(
     manifest.release_summary.review_debt_by_type.some((row) =>
       row.item_type === "entity_candidate" && row.open_count === 1 && row.deferred_count === 0
@@ -393,3 +447,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
     ),
   );
 });
+
+function releaseStatusNote(status: ReturnType<typeof buildWorkbenchStatus>): string {
+  return `${status.unresolvedStateNote} Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
+}
