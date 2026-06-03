@@ -1,7 +1,7 @@
 import { dcCommand } from "../command_prefix.ts";
 import { type ReviewItemRecord, slugify } from "../domain.ts";
-import { queryOne } from "./db.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
+import { reviewSubjectSourceId } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface ReviewPacketRecord {
@@ -40,7 +40,7 @@ export function listReviewPackets(
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
   for (const item of store.listReviewItems(itemFilters)) {
-    const sourceId = reviewPacketSourceId(store, item);
+    const sourceId = reviewSubjectSourceId(store, item);
     const key = reviewPacketKey(item, sourceId);
     const existing = packets.get(key);
     if (existing) {
@@ -338,51 +338,4 @@ function commonSubjectPrefix(subjectIds: string[]): string | undefined {
     break;
   }
   return commonParts.length >= 2 ? commonParts.join(".") : undefined;
-}
-
-function reviewPacketSourceId(
-  store: Pick<WorkbenchStore, "db">,
-  item: ReviewItemRecord,
-): string {
-  if (item.itemType === "source_status") return item.subjectId;
-  if (item.itemType === "placeholder_entity") return "workbench";
-  if (item.itemType === "entity_candidate") {
-    return querySubjectSourceId(
-      store,
-      `select source_items.source_id as sourceId
-         from entity_candidates
-         join source_items on source_items.source_item_id = entity_candidates.source_item_id
-         where entity_candidates.candidate_id = ?`,
-      item.subjectId,
-    ) ?? "unknown";
-  }
-  if (item.itemType === "relationship_candidate") {
-    return querySubjectSourceId(
-      store,
-      `select source_items.source_id as sourceId
-         from relationship_candidates
-         join source_items on source_items.source_item_id = relationship_candidates.source_item_id
-         where relationship_candidates.relationship_candidate_id = ?`,
-      item.subjectId,
-    ) ?? "unknown";
-  }
-  if (item.itemType === "legal_ref") {
-    return querySubjectSourceId(
-      store,
-      `select source_items.source_id as sourceId
-         from legal_refs
-         join source_items on source_items.source_item_id = legal_refs.source_item_id
-         where legal_refs.legal_ref_id = ?`,
-      item.subjectId,
-    ) ?? "unknown";
-  }
-  return "unknown";
-}
-
-function querySubjectSourceId(
-  store: Pick<WorkbenchStore, "db">,
-  sql: string,
-  subjectId: string,
-): string | undefined {
-  return queryOne<{ sourceId: string }>(store.db, sql, [subjectId])?.sourceId;
 }

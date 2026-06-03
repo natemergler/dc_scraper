@@ -1,27 +1,16 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
-import { queryAll, queryOne } from "./db.ts";
 import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { listReviewPackets, renderReviewPacketHeader } from "./review_packets.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
+import {
+  reviewEvidence,
+  type ReviewEvidenceRow,
+  type ReviewSubject,
+  reviewSubject,
+} from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
-
-interface ReviewEvidenceRow {
-  fieldPath: string;
-  observedValue: string;
-  sourceId: string;
-  artifactPath: string;
-}
-
-interface RelationshipReviewRow {
-  relationshipType: string;
-  fromEntityRef: string;
-  toEntityRef: string;
-  rawValue?: string | null;
-  sourceId: string;
-  itemTitle: string;
-}
 
 interface ReviewSubjectContext {
   title: string;
@@ -111,7 +100,8 @@ export function renderReviewItem(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
 ): string {
-  const context = reviewSubjectContext(store, item);
+  const subject = reviewSubject(store, item);
+  const context = reviewSubjectContext(store, item, subject);
   return [
     `Review: ${context.title}`,
     [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
@@ -120,7 +110,7 @@ export function renderReviewItem(
     `default: ${renderDefaultAction(item)}`,
     `actions: ${availableActionLabels(item).join(", ")}`,
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
-    ...renderRelationshipBlock(store, item),
+    ...renderRelationshipBlock(store, item, subject),
     ...renderDetailsBlock(item.details, context.omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -130,7 +120,7 @@ export function renderReviewItemSummary(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
 ): string {
-  const context = reviewSubjectContext(store, item);
+  const context = reviewSubjectContext(store, item, reviewSubject(store, item));
   const details = compactDetails(item.details, context.omittedDetailKeys);
   return [
     `[${item.status}] ${context.title}`,
@@ -405,10 +395,11 @@ function renderDetailsBlock(
 function renderRelationshipBlock(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
 ): string[] {
   if (item.itemType !== "relationship_candidate") return [];
-  const relationship = relationshipReviewRow(store, item.subjectId);
-  if (!relationship) return [];
+  if (!subject || subject.itemType !== "relationship_candidate") return [];
+  const relationship = subject;
   const from = endpointStatus(store, relationship.fromEntityRef);
   const to = endpointStatus(store, relationship.toEntityRef);
   return [
@@ -416,28 +407,9 @@ function renderRelationshipBlock(
     `- type: ${relationship.relationshipType}`,
     `- from: ${renderEndpointStatus(from)}`,
     `- to: ${renderEndpointStatus(to)}`,
-    `- source: ${relationship.sourceId} / ${relationship.itemTitle}`,
+    `- source: ${relationship.source.sourceId} / ${relationship.source.itemTitle}`,
     relationship.rawValue ? `- raw value: ${relationship.rawValue}` : undefined,
   ].filter((line): line is string => Boolean(line));
-}
-
-function relationshipReviewRow(
-  store: Pick<WorkbenchStore, "db">,
-  relationshipCandidateId: string,
-): RelationshipReviewRow | undefined {
-  return queryOne<RelationshipReviewRow>(
-    store.db,
-    `select relationship_candidates.relationship_type as relationshipType,
-            relationship_candidates.from_entity_ref as fromEntityRef,
-            relationship_candidates.to_entity_ref as toEntityRef,
-            relationship_candidates.raw_value as rawValue,
-            source_items.source_id as sourceId,
-            source_items.title as itemTitle
-     from relationship_candidates
-     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
-     where relationship_candidates.relationship_candidate_id = ?`,
-    [relationshipCandidateId],
-  );
 }
 
 function renderEndpointStatus(endpoint: EndpointStatus): string {
@@ -468,52 +440,6 @@ function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
   ];
 }
 
-function reviewEvidence(
-  store: Pick<WorkbenchStore, "db">,
-  item: ReviewItemRecord,
-): ReviewEvidenceRow[] {
-  if (item.itemType === "entity_candidate") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from entity_candidate_evidence
-       where candidate_id = ?
-       order by field_path`,
-      [item.subjectId],
-    );
-  }
-  if (item.itemType === "relationship_candidate") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from relationship_candidate_evidence
-       where relationship_candidate_id = ?
-       order by field_path`,
-      [item.subjectId],
-    );
-  }
-  if (item.itemType === "legal_ref") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from legal_ref_evidence
-       where legal_ref_id = ?
-       order by field_path`,
-      [item.subjectId],
-    );
-  }
-  return [];
-}
-
 function compactDetails(details: Record<string, unknown>, omittedKeys: string[] = []): string {
   const omit = new Set(omittedKeys);
   const entries = Object.entries(details)
@@ -528,65 +454,36 @@ function compactDetails(details: Record<string, unknown>, omittedKeys: string[] 
 function reviewSubjectContext(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
 ): ReviewSubjectContext {
   if (item.itemType === "entity_candidate") {
-    const row = queryOne<{
-      name: string;
-      kind: string;
-      sourceId: string;
-      itemTitle: string;
-    }>(
-      store.db,
-      `select entity_candidates.name as name,
-              entity_candidates.kind as kind,
-              source_items.source_id as sourceId,
-              source_items.title as itemTitle
-       from entity_candidates
-       join source_items on source_items.source_item_id = entity_candidates.source_item_id
-       where entity_candidates.candidate_id = ?`,
-      [item.subjectId],
-    );
     return {
-      title: row?.name ?? item.subjectId,
-      infoLabel: row?.kind ? humanizeToken(row.kind) : undefined,
-      sourceLine: row ? `source: ${row.sourceId} / ${row.itemTitle}` : undefined,
+      title: subject?.itemType === "entity_candidate" ? subject.name : item.subjectId,
+      infoLabel: subject?.itemType === "entity_candidate"
+        ? humanizeToken(subject.entityKind)
+        : undefined,
+      sourceLine: subject?.itemType === "entity_candidate" ? sourceLine(subject.source) : undefined,
       omittedDetailKeys: ["name", "kind"],
     };
   }
   if (item.itemType === "relationship_candidate") {
-    const relationship = relationshipReviewRow(store, item.subjectId);
-    if (relationship) {
+    if (subject?.itemType === "relationship_candidate") {
+      const relationship = subject;
       const from = endpointStatus(store, relationship.fromEntityRef);
       const to = endpointStatus(store, relationship.toEntityRef);
       return {
         title: relationship.rawValue ?? `${endpointTitle(from)} -> ${endpointTitle(to)}`,
         infoLabel: humanizeToken(relationship.relationshipType),
-        sourceLine: `source: ${relationship.sourceId} / ${relationship.itemTitle}`,
+        sourceLine: sourceLine(relationship.source),
         omittedDetailKeys: [],
       };
     }
   }
   if (item.itemType === "legal_ref") {
-    const row = queryOne<{
-      citationText: string;
-      refType: string;
-      sourceId: string;
-      itemTitle: string;
-    }>(
-      store.db,
-      `select legal_refs.citation_text as citationText,
-              legal_refs.ref_type as refType,
-              source_items.source_id as sourceId,
-              source_items.title as itemTitle
-       from legal_refs
-       join source_items on source_items.source_item_id = legal_refs.source_item_id
-       where legal_refs.legal_ref_id = ?`,
-      [item.subjectId],
-    );
     return {
-      title: row?.citationText ?? item.subjectId,
-      infoLabel: row?.refType ? humanizeToken(row.refType) : undefined,
-      sourceLine: row ? `source: ${row.sourceId} / ${row.itemTitle}` : undefined,
+      title: subject?.itemType === "legal_ref" ? subject.citationText : item.subjectId,
+      infoLabel: subject?.itemType === "legal_ref" ? humanizeToken(subject.refType) : undefined,
+      sourceLine: subject?.itemType === "legal_ref" ? sourceLine(subject.source) : undefined,
       omittedDetailKeys: [],
     };
   }
@@ -598,6 +495,10 @@ function reviewSubjectContext(
 
 function endpointTitle(endpoint: EndpointStatus): string {
   return endpoint.name ?? endpoint.entityId;
+}
+
+function sourceLine(source: { sourceId: string; itemTitle: string }): string {
+  return `source: ${source.sourceId} / ${source.itemTitle}`;
 }
 
 function humanizeToken(value: string): string {
