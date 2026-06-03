@@ -30,8 +30,7 @@ export async function runInteractiveReview(
     ? { ...filters, status: "open" }
     : filters;
   while (true) {
-    const items = workbench.listReviewItems(activeFilters);
-    const item = items.at(0);
+    const item = workbench.listReviewItems({ ...activeFilters, limit: 1 }).at(0);
     if (!item) {
       console.log("No review items remain.");
       return;
@@ -46,8 +45,9 @@ export async function runInteractiveReview(
     console.log(renderReviewItem(workbench, item));
     const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);
     if (promptedAction === undefined || promptedAction === "q") {
+      const remainingCount = workbench.listReviewItems(activeFilters).length;
       console.log(
-        `Review stopped. ${items.length} item(s) remain. Resume with ${
+        `Review stopped. ${remainingCount} item(s) remain. Resume with ${
           renderResumeCommand(filters)
         }.`,
       );
