@@ -256,6 +256,7 @@ export function renderReleaseInspection(outDir: string, manifest: ReleaseManifes
     `Release: ${inspection.outDir}`,
     `Generated: ${inspection.generatedAt}`,
     `Files: ${inspection.fileCount}`,
+    `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
     `Review status: open=${summary.open_review_item_count ?? 0}, deferred=${
@@ -287,14 +288,34 @@ export function buildReleaseInspection(outDir: string, manifest: ReleaseManifest
   outDir: string;
   generatedAt: string;
   fileCount: number;
+  readiness: "usable" | "usable-with-warnings" | "not-ready";
   releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
 } {
+  const releaseSummary = manifest.release_summary ?? {};
   return {
     outDir,
     generatedAt: manifest.generated_at ?? "unknown",
     fileCount: (manifest.files?.length ?? 0) + 1,
-    releaseSummary: manifest.release_summary ?? {},
+    readiness: releaseReadiness(releaseSummary),
+    releaseSummary,
   };
+}
+
+function releaseReadiness(
+  summary: NonNullable<ReleaseManifest["release_summary"]>,
+): "usable" | "usable-with-warnings" | "not-ready" {
+  if (
+    (summary.failed_source_count ?? 0) > 0 ||
+    (summary.stale_review_item_count ?? 0) > 0 ||
+    (summary.blocked_reconciliation_count ?? 0) > 0 ||
+    (summary.placeholder_entity_count ?? 0) > 0
+  ) {
+    return "not-ready";
+  }
+  if ((summary.open_review_item_count ?? 0) > 0 || (summary.deferred_review_item_count ?? 0) > 0) {
+    return "usable-with-warnings";
+  }
+  return "usable";
 }
 
 function renderReviewStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
