@@ -296,17 +296,18 @@ Deno.test("Quickbase trusted governing-agency seat relationships auto-accept whe
     }:governed_by:dc.department_of_licensing_and_consumer_protection`,
     `${buildEntityId("Example Role Board")}:governed_by:dc.department_of_employment_services`,
   ) as Array<{ relationshipId: string }>;
-  const pendingRelationships = workbench.db.prepare(
-    "select count(*) as count from relationship_candidates where review_status = 'pending'",
+  const pendingGoverningRelationships = workbench.db.prepare(
+    "select count(*) as count from relationship_candidates where relationship_type = 'governed_by' and review_status = 'pending'",
   ).get() as { count: number };
   const reviewItems = workbench.listReviewItems({
     mode: "relationships",
     subjectPrefix: "relationship.mota.quickbase",
+    relationshipType: "governed_by",
   });
   workbench.close();
 
   assertEquals(relationships.length, 3);
-  assertEquals(pendingRelationships.count, 0);
+  assertEquals(pendingGoverningRelationships.count, 0);
   assertEquals(reviewItems.length, 0);
 });
 

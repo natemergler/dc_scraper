@@ -253,6 +253,7 @@ const knownEntityRefs = new Map<string, string>([
   ["inspector general", "dc.office_of_the_inspector_general"],
   ["mpd", "dc.metropolitan_police_department"],
   ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor", "dc.mayor"],
   ["mayor's office of veteran's affairs", "dc.mayor_s_office_of_veterans_affairs"],
   ["national capital planning commission", "dc.national_capital_planning_commission_ncpc"],
   [
