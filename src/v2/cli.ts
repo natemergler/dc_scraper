@@ -47,6 +47,12 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
         (workbench) => workbench.listSources(),
         { refreshDerivedState: false },
       ),
+    readWorkbenchStatus: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => buildWorkbenchStatus(workbench),
+        { readonly: true, fallbackToWritable: true },
+      ),
   });
   if (sourceHandled) return true;
   const auditHandled = await handleAuditCommand(args, { json: args.includes("--json") }, {

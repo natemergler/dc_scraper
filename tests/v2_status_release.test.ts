@@ -3,6 +3,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
+import { buildReleaseInspection } from "../src/v2/status.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -17,6 +18,48 @@ import {
   syntheticEntitySourceResult,
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
+
+Deno.test("release inspection readiness summarizes unresolved work severity", () => {
+  assertEquals(
+    buildReleaseInspection("/tmp/release", {
+      release_summary: {
+        open_review_item_count: 0,
+        deferred_review_item_count: 0,
+        stale_review_item_count: 0,
+        blocked_reconciliation_count: 0,
+        placeholder_entity_count: 0,
+        failed_source_count: 0,
+      },
+    }).readiness,
+    "usable",
+  );
+  assertEquals(
+    buildReleaseInspection("/tmp/release", {
+      release_summary: {
+        open_review_item_count: 2,
+        deferred_review_item_count: 0,
+        stale_review_item_count: 0,
+        blocked_reconciliation_count: 0,
+        placeholder_entity_count: 0,
+        failed_source_count: 0,
+      },
+    }).readiness,
+    "usable-with-warnings",
+  );
+  assertEquals(
+    buildReleaseInspection("/tmp/release", {
+      release_summary: {
+        open_review_item_count: 0,
+        deferred_review_item_count: 0,
+        stale_review_item_count: 1,
+        blocked_reconciliation_count: 0,
+        placeholder_entity_count: 0,
+        failed_source_count: 0,
+      },
+    }).readiness,
+    "not-ready",
+  );
+});
 
 Deno.test("status surfaces placeholder risk with readable reason", async () => {
   const dir = await Deno.makeTempDir();
@@ -248,6 +291,7 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   }).output();
   assertEquals(jsonStatusOutput.code, 0);
   const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+    unresolvedStateNote: string;
     review: {
       byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
       bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
@@ -275,6 +319,9 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
       row.deferredCount === 1
     ),
   );
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "open review=1");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");
 });
 
 Deno.test("status recommends the next scoped batch command as review debt narrows", async () => {
@@ -971,7 +1018,11 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   );
   assertStringIncludes(
     manifest.release_summary.review_status_note,
-    "Release built with unresolved workbench state:",
+    "Unresolved workbench state:",
+  );
+  assertStringIncludes(
+    manifest.release_summary.review_status_note,
+    "Release generated from accepted materialized facts only.",
   );
   assertStringIncludes(readme, "review status note:");
   assertStringIncludes(readme, "blocked by source: council.committees=");
@@ -992,6 +1043,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
+  assertStringIncludes(inspectText, "Release readiness: not-ready");
   assertStringIncludes(inspectText, "Review status: open=");
   assertStringIncludes(inspectText, "Blocked by source: council.committees=");
 
@@ -1011,6 +1063,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
     ],
   }).output();
   const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+    readiness: string;
     releaseSummary: {
       blocked_reconciliation_count: number;
       placeholder_entity_count: number;
@@ -1018,6 +1071,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
     };
   };
   assertEquals(inspectJsonOutput.code, 0);
+  assertEquals(inspectJson.readiness, "not-ready");
   assert(inspectJson.releaseSummary.blocked_reconciliation_count > 0);
   assertEquals(inspectJson.releaseSummary.placeholder_entity_count, 1);
   assert(

@@ -110,6 +110,12 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
       throw new Error("unused");
     },
     readSourceRows: async () => [],
+    readWorkbenchStatus: async () => ({
+      nextCommand:
+        "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.alpha.source",
+      unresolvedStateNote:
+        "Unresolved workbench state: open review=2, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+    }),
   };
 
   const { result, lines } = await captureConsoleLogs(async () =>
@@ -122,6 +128,14 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   assertStringIncludes(lines.join("\n"), "Fetched alpha.source");
   assertStringIncludes(lines.join("\n"), "Fetched beta.source");
   assertStringIncludes(lines.join("\n"), "Source fetch summary: 2/2 succeeded.");
+  assertStringIncludes(
+    lines.join("\n"),
+    "Readiness: Unresolved workbench state: open review=2, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+  );
+  assertStringIncludes(
+    lines.join("\n"),
+    "Next: deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.alpha.source",
+  );
 });
 
 Deno.test("source fetch --all continues through failures and throws a summary error", async () => {

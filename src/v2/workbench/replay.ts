@@ -8,7 +8,8 @@ import {
   slugify,
 } from "../domain.ts";
 import { queryOne, run } from "./db.ts";
-import { endpointStatus, reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { endpointStatus } from "./endpoint_status.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
