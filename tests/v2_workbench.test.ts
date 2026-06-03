@@ -547,7 +547,8 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(auditHelp.code, 0);
   assertStringIncludes(auditText, "Usage:");
   assertStringIncludes(auditText, "deno task dc -- audit [--db <path>] [--json]");
-  assertStringIncludes(auditText, "deno task dc -- audit doctor [--db <path>] [--json]");
+  assertStringIncludes(auditText, "deno task dc -- audit status [--db <path>] [--json]");
+  assert(!auditText.includes("doctor"));
   assert(!auditText.includes("DB: "));
 
   const auditStatusHelp = await new Deno.Command(Deno.execPath(), {

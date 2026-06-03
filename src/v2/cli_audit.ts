@@ -25,27 +25,18 @@ export async function handleAuditCommand(
       return true;
     }
     if (!args[1] || args[1].startsWith("--")) {
-      await renderAuditSnapshot("doctor", options, deps);
+      await renderAuditSnapshot("audit", options, deps);
       return true;
     }
-    if (args[1] === "status" || args[1] === "doctor") {
+    if (args[1] === "status") {
       if (hasHelpFlag(args, 2)) {
         printAuditHelp();
         return true;
       }
-      await renderAuditSnapshot(args[1], options, deps);
+      await renderAuditSnapshot("status", options, deps);
       return true;
     }
     return false;
-  }
-
-  if (args[0] === "workbench" && (args[1] === "status" || args[1] === "doctor")) {
-    if (hasHelpFlag(args, 2)) {
-      printAuditHelp();
-      return true;
-    }
-    await renderAuditSnapshot(args[1], options, deps);
-    return true;
   }
 
   return false;
@@ -62,14 +53,12 @@ Workflow:
 Usage:
   ${dcCommand("audit")} [--db <path>] [--json]
   ${dcCommand("audit status")} [--db <path>] [--json]
-  ${dcCommand("audit doctor")} [--db <path>] [--json]
   ${dcCommand("status")} [--db <path>] [--json]
-  ${dcCommand("doctor")} [--db <path>] [--json]
 `);
 }
 
 async function renderAuditSnapshot(
-  mode: "status" | "doctor",
+  mode: "status" | "audit",
   options: AuditCommandOptions,
   deps: AuditCommandDeps,
 ): Promise<void> {
