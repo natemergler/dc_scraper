@@ -95,8 +95,8 @@ of the full workbench database.
 
 - `deno task dc -- status` shows the current work queue and the next suggested command.
 - `deno task dc -- audit` shows blocked reconciliation details when status alone is not enough.
-- `deno task dc -- release verify` fails fast when release work is still unresolved or source
-  artifact provenance is not clean.
+- `deno task dc -- release verify` fails fast when release work is still unresolved, source artifact
+  provenance is not clean, or accepted relationship rows no longer trace to source-backed decisions.
 
 ## Current Docs
 

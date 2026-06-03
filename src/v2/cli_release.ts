@@ -78,7 +78,7 @@ export function printReleaseHelp(): void {
 
 Workflow:
   1. Build the current release package with \`${dcCommand("release build")}\`
-  2. Fail fast on unresolved readiness with \`${dcCommand("release verify")}\`
+  2. Fail fast on unresolved readiness and provenance with \`${dcCommand("release verify")}\`
   3. Inspect the built package with \`${dcCommand("release inspect")}\`
   4. Use \`${dcCommand("release inspect --json")}\` for scriptable release summary checks
 
