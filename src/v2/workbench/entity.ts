@@ -65,6 +65,17 @@ interface EntityLegalAttachmentRow extends Record<string, string | number | null
   review_status: string;
 }
 
+export interface PlaceholderSummary {
+  count: number;
+  byReason: Array<{ reason: string; count: number }>;
+  firstPlaceholder?: {
+    entityId: string;
+    name: string;
+    kind: string;
+    placeholderReason?: string | null;
+  };
+}
+
 export function searchEntities(store: WorkbenchStore, query: string): EntitySearchResult[] {
   return queryAll<EntitySearchResult>(
     store.db,
@@ -74,6 +85,43 @@ export function searchEntities(store: WorkbenchStore, query: string): EntitySear
      order by name`,
     [`%${query}%`, `%${query}%`],
   );
+}
+
+export function placeholderSummary(store: WorkbenchStore): PlaceholderSummary {
+  const count = queryOne<{ count: number }>(
+    store.db,
+    "select count(*) as count from canonical_entities where is_placeholder = 1",
+  )?.count ?? 0;
+  const byReason = queryAll<{ reason: string; count: number }>(
+    store.db,
+    `select coalesce(placeholder_reason, 'unspecified') as reason,
+            count(*) as count
+     from canonical_entities
+     where is_placeholder = 1
+     group by coalesce(placeholder_reason, 'unspecified')
+     order by count(*) desc, reason`,
+  );
+  const firstPlaceholder = queryOne<{
+    entityId: string;
+    name: string;
+    kind: string;
+    placeholderReason?: string | null;
+  }>(
+    store.db,
+    `select entity_id as entityId,
+            name,
+            kind,
+            placeholder_reason as placeholderReason
+     from canonical_entities
+     where is_placeholder = 1
+     order by updated_at, entity_id
+     limit 1`,
+  );
+  return {
+    count,
+    byReason,
+    firstPlaceholder: firstPlaceholder ?? undefined,
+  };
 }
 
 export function entityView(store: WorkbenchStore, entityId: string): EntityView {
