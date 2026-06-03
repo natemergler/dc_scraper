@@ -3,6 +3,7 @@ import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
+import { reviewPacketCommand } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
 export interface WorkbenchStatusSnapshot {
@@ -81,6 +82,8 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const operatorPlan = buildOperatorPlan({
     workbench,
     canBatchAcceptReviewItem: (item, filters) => canBatchAcceptReviewItem(workbench, item, filters),
+    suggestReviewPacketCommand: (filters, action) =>
+      reviewPacketCommand(workbench, filters, action),
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
     openReviewItemCount: openReview,

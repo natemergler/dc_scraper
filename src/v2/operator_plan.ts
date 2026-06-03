@@ -3,6 +3,7 @@ import { connectors } from "./connectors.ts";
 import type { ReviewItemRecord } from "./domain.ts";
 import { reviewBatchCommand } from "./workbench/review_command_args.ts";
 import type { ReviewDebtSummary, ReviewItemFilters } from "./workbench/review.ts";
+import type { ReviewPacketBatchCommandAction } from "./workbench/review_packets.ts";
 
 export interface WorkbenchUnresolvedCounts {
   openReviewItemCount: number;
@@ -15,6 +16,7 @@ export interface WorkbenchUnresolvedCounts {
 export interface OperatorPlanInput extends WorkbenchUnresolvedCounts {
   workbench: OperatorPlanWorkbench;
   canBatchAcceptReviewItem: BatchAcceptPredicate;
+  suggestReviewPacketCommand: ReviewPacketCommandSuggester;
   fetchedSources: number;
   failedSourceId?: string;
 }
@@ -28,6 +30,10 @@ export type BatchAcceptPredicate = (
   item: ReviewItemRecord,
   filters: ReviewItemFilters,
 ) => boolean;
+export type ReviewPacketCommandSuggester = (
+  filters: ReviewItemFilters,
+  action: ReviewPacketBatchCommandAction,
+) => string | undefined;
 
 export interface OperatorPlan {
   nextCommand: string;
@@ -71,9 +77,15 @@ interface SuggestedCommand {
 
 function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefined {
   return suggestExplicitSafeEntityBatch(input)?.command ??
-    suggestSafeRelationshipBatch(input)?.command ??
-    suggestDeferDefaultRelationshipBatch(input.workbench)?.command ??
-    suggestDeferDefaultLegalBatch(input.workbench)?.command ??
+    input.suggestReviewPacketCommand(
+      { mode: "relationships", status: "open" },
+      "accept-safe",
+    ) ??
+    input.suggestReviewPacketCommand(
+      { mode: "relationships", status: "open" },
+      "defer-default",
+    ) ??
+    input.suggestReviewPacketCommand({ mode: "legal", status: "open" }, "defer-default") ??
     suggestHighConfidenceEntityBatch(input)?.command;
 }
 
@@ -96,87 +108,6 @@ function suggestExplicitSafeEntityBatch(input: OperatorPlanInput): SuggestedComm
     const candidate = {
       command: reviewBatchCommand("accept-safe", filters),
       count: safeCount,
-    };
-    best = betterSuggestion(best, candidate);
-  }
-  return best;
-}
-
-function suggestSafeRelationshipBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
-  const items = input.workbench.listReviewItems({ mode: "relationships", status: "open" });
-  let best: SuggestedCommand | undefined;
-  for (
-    const group of groupedReviewSlices(
-      items,
-      "relationship",
-      "relationshipType",
-      "relationshipType",
-    )
-  ) {
-    const filters = {
-      mode: "relationships",
-      status: "open",
-      subjectPrefix: `relationship.${group.sourceId}`,
-      relationshipType: group.detailValue,
-    } as const;
-    const safeCount = group.items.filter((item) =>
-      input.canBatchAcceptReviewItem(item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: reviewBatchCommand("accept-safe", filters),
-      count: safeCount,
-    };
-    best = betterSuggestion(best, candidate);
-  }
-  return best;
-}
-
-function suggestDeferDefaultRelationshipBatch(
-  workbench: OperatorPlanWorkbench,
-): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
-  let best: SuggestedCommand | undefined;
-  for (
-    const group of groupedReviewSlices(
-      items,
-      "relationship",
-      "relationshipType",
-      "relationshipType",
-    )
-  ) {
-    if (group.items.some((item) => item.defaultAction !== "defer")) continue;
-    const filters = {
-      mode: "relationships",
-      status: "open",
-      subjectPrefix: `relationship.${group.sourceId}`,
-      relationshipType: group.detailValue,
-    } as const;
-    const candidate = {
-      command: reviewBatchCommand("defer-default", filters),
-      count: group.items.length,
-    };
-    best = betterSuggestion(best, candidate);
-  }
-  return best;
-}
-
-function suggestDeferDefaultLegalBatch(
-  workbench: OperatorPlanWorkbench,
-): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "legal", status: "open" });
-  let best: SuggestedCommand | undefined;
-  for (const group of groupedReviewSlices(items, "legal", "refType", "refType")) {
-    if (group.items.some((item) => item.defaultAction !== "defer")) continue;
-    const filters = {
-      mode: "legal",
-      status: "open",
-      subjectPrefix: `legal.${group.sourceId}`,
-      refType: group.detailValue,
-    } as const;
-    const candidate = {
-      command: reviewBatchCommand("defer-default", filters),
-      count: group.items.length,
     };
     best = betterSuggestion(best, candidate);
   }
@@ -208,48 +139,9 @@ function suggestHighConfidenceEntityBatch(input: OperatorPlanInput): SuggestedCo
   return best;
 }
 
-interface GroupedReviewSlice {
-  sourceId: string;
-  detailValue: string;
-  items: ReviewItemRecord[];
-}
-
-function groupedReviewSlices(
-  items: ReviewItemRecord[],
-  subjectKind: "relationship" | "legal",
-  detailKey: string,
-  groupLabel: string,
-): GroupedReviewSlice[] {
-  const grouped = new Map<string, GroupedReviewSlice>();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, subjectKind);
-    const detailValue = detailString(item.details, detailKey);
-    if (!sourceId || !detailValue) continue;
-    const key = `${sourceId}:${groupLabel}:${detailValue}`;
-    const group = grouped.get(key) ?? { sourceId, detailValue, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-  return Array.from(grouped.values());
-}
-
 function betterSuggestion(
   current: SuggestedCommand | undefined,
   candidate: SuggestedCommand,
 ): SuggestedCommand {
   return !current || candidate.count > current.count ? candidate : current;
-}
-
-function sourceIdForReviewSubject(
-  subjectId: string,
-  kind: "candidate" | "relationship" | "legal",
-): string | undefined {
-  const prefix = `${kind}.`;
-  return connectors.find((connector) => subjectId.startsWith(`${prefix}${connector.sourceId}.`))
-    ?.sourceId;
-}
-
-function detailString(details: Record<string, unknown>, key: string): string | undefined {
-  const value = details[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
