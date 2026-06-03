@@ -2,6 +2,7 @@ import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
+import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
 import { listReviewPackets, renderReviewPacketHeader } from "./review_packets.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import {
@@ -65,35 +66,10 @@ export async function runInteractiveReview(
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
   const parts = ["deno", "task", "dc", "--", "review"];
-  if (filters.mode && ["entities", "relationships", "legal", "sources"].includes(filters.mode)) {
-    parts.push(filters.mode);
-  }
-  if (filters.status && filters.status !== "open") {
-    parts.push("--status", quoteShellArg(filters.status));
-  }
-  if (filters.type) {
-    parts.push("--type", quoteShellArg(filters.type));
-  }
-  if (filters.subjectPrefix) {
-    parts.push("--subject-prefix", quoteShellArg(filters.subjectPrefix));
-  }
-  if (filters.relationshipType) {
-    parts.push("--relationship-type", quoteShellArg(filters.relationshipType));
-  }
-  if (filters.rawValue) {
-    parts.push("--raw-value", quoteShellArg(filters.rawValue));
-  }
-  if (filters.rawValueContains) {
-    parts.push("--raw-value-contains", quoteShellArg(filters.rawValueContains));
-  }
-  if (filters.refType) {
-    parts.push("--ref-type", quoteShellArg(filters.refType));
-  }
+  const mode = reviewModeSubcommand(filters.mode);
+  if (mode) parts.push(mode);
+  parts.push(...reviewFilterArgs(filters, { includeMode: false, includeType: true }));
   return parts.join(" ");
-}
-
-function quoteShellArg(value: string): string {
-  return /^[A-Za-z0-9._:-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 export function renderReviewItem(
