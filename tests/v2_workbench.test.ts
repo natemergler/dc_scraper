@@ -474,10 +474,51 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const reviewText = new TextDecoder().decode(reviewHelp.stdout);
   assertEquals(reviewHelp.code, 0);
+  assertStringIncludes(reviewText, "Workflow:");
   assertStringIncludes(reviewText, "Usage:");
   assertStringIncludes(reviewText, "dc review [entities|relationships|legal|sources]");
   assertStringIncludes(reviewText, "dc review list");
   assert(!reviewText.includes("No review items remain."));
+
+  const reviewModeHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--help",
+    ],
+  }).output();
+  const reviewModeText = new TextDecoder().decode(reviewModeHelp.stdout);
+  assertEquals(reviewModeHelp.code, 0);
+  assertStringIncludes(reviewModeText, "dc review [entities|relationships|legal|sources]");
+  assertStringIncludes(reviewModeText, "dc review batch accept-safe");
+  assert(!reviewModeText.includes("No review items remain."));
+
+  const reviewBatchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "--help",
+    ],
+  }).output();
+  const reviewBatchText = new TextDecoder().decode(reviewBatchHelp.stdout);
+  assertEquals(reviewBatchHelp.code, 0);
+  assertStringIncludes(reviewBatchText, "Workflow:");
+  assertStringIncludes(reviewBatchText, "dc review batch accept-safe --mode entities");
+  assertStringIncludes(reviewBatchText, "dc review batch defer-default --mode relationships");
 
   const entityHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -558,6 +599,67 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   assertStringIncludes(fetchText, "dc source fetch --all");
   assertStringIncludes(fetchText, "Tip: run `dc source fetch --all`");
   assertStringIncludes(fetchText, "dc source list");
+});
+
+Deno.test("review prefix commands guide the operator toward the next safe review action", async () => {
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+    ],
+  }).output();
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertEquals(batchOutput.code, 0);
+  assertStringIncludes(batchText, "dc review batch");
+  assertStringIncludes(batchText, "dc status");
+  assertStringIncludes(batchText, "dc review batch accept-safe --mode entities");
+
+  const batchFlagOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "--db",
+      join(Deno.cwd(), "data", "workbench.sqlite"),
+    ],
+  }).output();
+  const batchFlagText = new TextDecoder().decode(batchFlagOutput.stdout);
+  assertEquals(batchFlagOutput.code, 0);
+  assertStringIncludes(batchFlagText, "dc review batch");
+  assertStringIncludes(batchFlagText, "dc status");
+
+  const acceptSafeOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+    ],
+  }).output();
+  const acceptSafeText = new TextDecoder().decode(acceptSafeOutput.stdout);
+  assertEquals(acceptSafeOutput.code, 0);
+  assertStringIncludes(acceptSafeText, "dc review batch accept-safe");
+  assertStringIncludes(acceptSafeText, "--mode entities");
+  assertStringIncludes(acceptSafeText, "Tip: run `dc status`");
 });
 
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
