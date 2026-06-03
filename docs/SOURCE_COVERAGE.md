@@ -33,16 +33,16 @@ Enterprise Dataset Inventory table `5`, captured `2,633` current dataset invento
 catalog classification items, and built a clean release with `2,633` dataset rows and no entity,
 relationship, or legal-ref output for this source.
 
-Fresh June 2, 2026 `#66` legal-authority smoke on a new temp workbench fetched
-`open_dc.public_bodies` with the default bounded detail pass plus priority detail pages, accepted a
-single source-backed `authorized_by` relationship and its attached legal ref for Board of
-Accountancy, and built a clean release with `1` accepted relationship legal-ref attachment and no
-privacy hits.
+Fresh June 3, 2026 `#66` legal-authority smoke on a new temp workbench fetched
+`open_dc.public_bodies --limit 1`. The current first live page produced `4` accepted entities, `3`
+accepted legal refs, and `2` blocked `governed_by` reconciliation items waiting on missing
+endpoints; relationship legal-ref attachment migration is covered by fixture tests rather than the
+current first live page.
 
-Fresh June 2, 2026 `#67` courts smoke on a new temp workbench fetched `dccourts.structure`, accepted
+Fresh June 3, 2026 `#67` courts smoke on a new temp workbench fetched `dccourts.structure`, accepted
 the full shallow courts slice, and built a clean release with `12` accepted court or division
-entities and `11` accepted `part_of` relationships across the DC Courts root, Court of Appeals,
-Superior Court, and direct Superior Court divisions.
+entities, `11` accepted `part_of` relationships, and no unresolved work across the DC Courts root,
+Court of Appeals, Superior Court, and direct Superior Court divisions.
 
 | Source family                        | Tier | Access path                                                                                 | Capture depth                                  | Contributes                                                                                                                                              | Current review/release status                                                                                                                                                                                                                                                                                                                                                                                                                                                | Known gaps                                                                                                                                                                                                                                                                                                                        | Blocks credible release? | Next action                                                                                                                            |
 | ------------------------------------ | ---- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
