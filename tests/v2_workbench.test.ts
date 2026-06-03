@@ -27,10 +27,13 @@ import {
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
   councilMembersFixture,
+  dcCourtOfAppealsFixture,
+  dcCourtsHomeFixture,
   dcgisBoardsCommissionsCouncilsMetadataFixture,
   dcgisBoardsCommissionsCouncilsRowsFixture,
   dcgisMetadataFixture,
   dcgisRowsFixture,
+  dcSuperiorCourtFixture,
   enterpriseDatasetInventoryMetadataFixture,
   enterpriseDatasetInventoryRowsPageOneFixture,
   enterpriseDatasetInventoryRowsPageTwoFixture,
@@ -1166,6 +1169,9 @@ Deno.test("imports representative connector results and source inspection stays 
       "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json",
       JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture),
     ],
+    ["https://www.dccourts.gov/", dcCourtsHomeFixture],
+    ["https://www.dccourts.gov/court-of-appeals", dcCourtOfAppealsFixture],
+    ["https://www.dccourts.gov/superior-court", dcSuperiorCourtFixture],
   ]);
   const fetcher = async (url: string) => {
     const body = responses.get(url);
@@ -1187,6 +1193,7 @@ Deno.test("imports representative connector results and source inspection stays 
       "admin.service_requests_311",
       "admin.budget_sources",
       "admin.enterprise_dataset_inventory",
+      "dccourts.structure",
       "admin.permits_licenses",
       "admin.crime_public_safety",
       "admin.procurement_sources",
@@ -1201,6 +1208,7 @@ Deno.test("imports representative connector results and source inspection stays 
   const dcgis = workbench.sourceSummary("dcgis.agencies");
   const quickbase = workbench.sourceSummary("mota.quickbase");
   const enterpriseInventory = workbench.sourceSummary("admin.enterprise_dataset_inventory");
+  const courtsSummary = workbench.sourceSummary("dccourts.structure");
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
@@ -1220,6 +1228,9 @@ Deno.test("imports representative connector results and source inspection stays 
   assertEquals(quickbase.relationshipCandidateCount > 0, true);
   assertEquals(enterpriseInventory.itemCount, 10);
   assertEquals(enterpriseInventory.fieldCount, 9);
+  assertEquals(courtsSummary.itemCount, 3);
+  assertEquals(courtsSummary.entityCandidateCount, 12);
+  assertEquals(courtsSummary.relationshipCandidateCount, 11);
   assertEquals(hasRegisterRef, true);
   assertEquals(permitSummary.fieldCount > 0, true);
   assertEquals(categories.has("procurement"), true);
@@ -1761,6 +1772,74 @@ Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyo
     detail.relationshipCandidates?.some((candidate) =>
       candidate.rawValue === "Office of Human Rights" &&
       candidate.toEntityRef === "dc.office_of_human_rights"
+    ),
+  );
+});
+
+Deno.test("DC Courts connector captures the root courts structure and direct Superior Court divisions only", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.dccourts.gov/":
+          return dcCourtsHomeFixture;
+        case "https://www.dccourts.gov/court-of-appeals":
+          return dcCourtOfAppealsFixture;
+        case "https://www.dccourts.gov/superior-court":
+          return dcSuperiorCourtFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("dccourts.structure").run(createConnectorContext({ fetcher }));
+  const items = result.endpointResults.flatMap((endpoint) => endpoint.parsed?.items ?? []);
+  const entityCandidates = result.endpointResults.flatMap((endpoint) =>
+    endpoint.parsed?.entityCandidates ?? []
+  );
+  const relationshipCandidates = result.endpointResults.flatMap((endpoint) =>
+    endpoint.parsed?.relationshipCandidates ?? []
+  );
+  assertEquals(result.endpointResults.length, 3);
+  assertEquals(items.length, 3);
+  assertEquals(entityCandidates.length, 12);
+  assertEquals(relationshipCandidates.length, 11);
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "District of Columbia Courts" && candidate.kind === "court_system"
+    ),
+  );
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "Court of Appeals" && candidate.kind === "court"
+    ),
+  );
+  assert(
+    entityCandidates.some((candidate) =>
+      candidate.name === "Special Operations Division" && candidate.kind === "court_division"
+    ),
+  );
+  assert(
+    !entityCandidates.some((candidate) => candidate.name === "Crime Victims Compensation Program"),
+  );
+  assert(
+    !entityCandidates.some((candidate) => candidate.name === "Office of the Auditor-Master"),
+  );
+  assert(
+    relationshipCandidates.some((candidate) =>
+      candidate.relationshipType === "part_of" &&
+      candidate.fromEntityRef === buildEntityId("Court of Appeals") &&
+      candidate.toEntityRef === buildEntityId("District of Columbia Courts")
+    ),
+  );
+  assert(
+    relationshipCandidates.some((candidate) =>
+      candidate.relationshipType === "part_of" &&
+      candidate.fromEntityRef === buildEntityId("Tax Division") &&
+      candidate.toEntityRef === buildEntityId("Superior Court")
     ),
   );
 });
@@ -4369,6 +4448,113 @@ Deno.test("batch accept-safe accepts scoped Quickbase appointee observation rela
     "observation.council_of_the_district_of_columbia_row_3_john_smith:has_status:status.filled",
     "observation.council_of_the_district_of_columbia_row_3_john_smith:holds:dc.council_of_the_district_of_columbia_chairperson",
   ]);
+});
+
+Deno.test("batch accept-safe accepts scoped DC Courts structure relationships once endpoints are accepted", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.dccourts.gov/":
+          return dcCourtsHomeFixture;
+        case "https://www.dccourts.gov/court-of-appeals":
+          return dcCourtOfAppealsFixture;
+        case "https://www.dccourts.gov/superior-court":
+          return dcSuperiorCourtFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dccourts.structure").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const entityBatch = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dccourts.structure",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(entityBatch.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatch.stdout),
+    "Accepted 12 safe review item(s).",
+  );
+
+  const relationshipBatch = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--subject-prefix",
+      "relationship.dccourts.structure",
+      "--relationship-type",
+      "part_of",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(relationshipBatch.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatch.stdout),
+    "Accepted 11 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'part_of' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopened.close();
+  assertEquals(acceptedRelationships.length, 11);
+  assert(
+    acceptedRelationships.some((row) =>
+      row.relationshipId === "dc.court_of_appeals:part_of:dc.district_of_columbia_courts"
+    ),
+  );
 });
 
 Deno.test("batch defer-default defers only scoped default-defer relationship items", async () => {
