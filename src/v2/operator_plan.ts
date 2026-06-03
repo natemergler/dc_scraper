@@ -1,5 +1,6 @@
 import { dcCommand } from "./command_prefix.ts";
 import { connectors } from "./connectors.ts";
+import type { ReviewItemRecord } from "./domain.ts";
 import type { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
@@ -87,34 +88,27 @@ function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand 
       ),
       count: safeCount,
     };
-    if (!best || candidate.count > best.count) best = candidate;
+    best = betterSuggestion(best, candidate);
   }
   return best;
 }
 
 function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
   const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
-  const grouped = new Map<
-    string,
-    { sourceId: string; relationshipType: string; items: typeof items }
-  >();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "relationship");
-    const relationshipType = detailString(item.details, "relationshipType");
-    if (!sourceId || !relationshipType) continue;
-    const key = `${sourceId}:${relationshipType}`;
-    const group = grouped.get(key) ?? { sourceId, relationshipType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
   let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
+  for (
+    const group of groupedReviewSlices(
+      items,
+      "relationship",
+      "relationshipType",
+      "relationshipType",
+    )
+  ) {
     const filters = {
       mode: "relationships",
       status: "open",
       subjectPrefix: `relationship.${group.sourceId}`,
-      relationshipType: group.relationshipType,
+      relationshipType: group.detailValue,
     } as const;
     const safeCount = group.items.filter((item) =>
       canBatchAcceptReviewItem(workbench, item, filters)
@@ -122,68 +116,50 @@ function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | 
     if (safeCount === 0) continue;
     const candidate = {
       command: dcCommand(
-        `review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+        `review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.detailValue}`,
       ),
       count: safeCount,
     };
-    if (!best || candidate.count > best.count) best = candidate;
+    best = betterSuggestion(best, candidate);
   }
   return best;
 }
 
 function suggestDeferDefaultRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
   const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
-  const grouped = new Map<
-    string,
-    { sourceId: string; relationshipType: string; items: typeof items }
-  >();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "relationship");
-    const relationshipType = detailString(item.details, "relationshipType");
-    if (!sourceId || !relationshipType) continue;
-    const key = `${sourceId}:${relationshipType}`;
-    const group = grouped.get(key) ?? { sourceId, relationshipType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
   let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
+  for (
+    const group of groupedReviewSlices(
+      items,
+      "relationship",
+      "relationshipType",
+      "relationshipType",
+    )
+  ) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
     const candidate = {
       command: dcCommand(
-        `review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+        `review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.detailValue}`,
       ),
       count: group.items.length,
     };
-    if (!best || candidate.count > best.count) best = candidate;
+    best = betterSuggestion(best, candidate);
   }
   return best;
 }
 
 function suggestDeferDefaultLegalBatch(workbench: Workbench): SuggestedCommand | undefined {
   const items = workbench.listReviewItems({ mode: "legal", status: "open" });
-  const grouped = new Map<string, { sourceId: string; refType: string; items: typeof items }>();
-  for (const item of items) {
-    const sourceId = sourceIdForReviewSubject(item.subjectId, "legal");
-    const refType = detailString(item.details, "refType");
-    if (!sourceId || !refType) continue;
-    const key = `${sourceId}:${refType}`;
-    const group = grouped.get(key) ?? { sourceId, refType, items: [] };
-    group.items.push(item);
-    if (!grouped.has(key)) grouped.set(key, group);
-  }
-
   let best: SuggestedCommand | undefined;
-  for (const group of grouped.values()) {
+  for (const group of groupedReviewSlices(items, "legal", "refType", "refType")) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
     const candidate = {
       command: dcCommand(
-        `review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.refType}`,
+        `review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.detailValue}`,
       ),
       count: group.items.length,
     };
-    if (!best || candidate.count > best.count) best = candidate;
+    best = betterSuggestion(best, candidate);
   }
   return best;
 }
@@ -210,9 +186,41 @@ function suggestHighConfidenceEntityBatch(workbench: Workbench): SuggestedComman
       ),
       count: safeCount,
     };
-    if (!best || candidate.count > best.count) best = candidate;
+    best = betterSuggestion(best, candidate);
   }
   return best;
+}
+
+interface GroupedReviewSlice {
+  sourceId: string;
+  detailValue: string;
+  items: ReviewItemRecord[];
+}
+
+function groupedReviewSlices(
+  items: ReviewItemRecord[],
+  subjectKind: "relationship" | "legal",
+  detailKey: string,
+  groupLabel: string,
+): GroupedReviewSlice[] {
+  const grouped = new Map<string, GroupedReviewSlice>();
+  for (const item of items) {
+    const sourceId = sourceIdForReviewSubject(item.subjectId, subjectKind);
+    const detailValue = detailString(item.details, detailKey);
+    if (!sourceId || !detailValue) continue;
+    const key = `${sourceId}:${groupLabel}:${detailValue}`;
+    const group = grouped.get(key) ?? { sourceId, detailValue, items: [] };
+    group.items.push(item);
+    if (!grouped.has(key)) grouped.set(key, group);
+  }
+  return Array.from(grouped.values());
+}
+
+function betterSuggestion(
+  current: SuggestedCommand | undefined,
+  candidate: SuggestedCommand,
+): SuggestedCommand {
+  return !current || candidate.count > current.count ? candidate : current;
 }
 
 function sourceIdForReviewSubject(
