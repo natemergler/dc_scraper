@@ -249,7 +249,7 @@ function nextCommand(options: {
   const suggestedReviewCommand = suggestScopedReviewCommand(options.workbench);
   if (suggestedReviewCommand) return suggestedReviewCommand;
   if (options.openReview > 0) return "dc review";
-  if (options.blockedReconciliation > 0) return "dc doctor";
+  if (options.blockedReconciliation > 0) return "dc audit";
   if (options.fetchedSources < connectors.length) return "dc source list";
   return "dc release build";
 }
