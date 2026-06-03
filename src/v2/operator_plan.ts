@@ -1,9 +1,11 @@
 import { dcCommand } from "./command_prefix.ts";
 import { connectors } from "./connectors.ts";
 import type { ReviewItemRecord } from "./domain.ts";
-import { reviewBatchCommand } from "./workbench/review_command_args.ts";
-import type { ReviewDebtSummary, ReviewItemFilters } from "./workbench/review.ts";
-import type { ReviewPacketBatchCommandAction } from "./workbench/review_packets.ts";
+import type { ReviewItemFilters } from "./workbench/review.ts";
+import type {
+  ReviewPacketBatchCommandAction,
+  ReviewPacketCommandOptions,
+} from "./workbench/review_packets.ts";
 
 export interface WorkbenchUnresolvedCounts {
   openReviewItemCount: number;
@@ -14,25 +16,15 @@ export interface WorkbenchUnresolvedCounts {
 }
 
 export interface OperatorPlanInput extends WorkbenchUnresolvedCounts {
-  workbench: OperatorPlanWorkbench;
-  canBatchAcceptReviewItem: BatchAcceptPredicate;
   suggestReviewPacketCommand: ReviewPacketCommandSuggester;
   fetchedSources: number;
   failedSourceId?: string;
 }
 
-export interface OperatorPlanWorkbench {
-  reviewDebtSummary(): ReviewDebtSummary;
-  listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
-}
-
-export type BatchAcceptPredicate = (
-  item: ReviewItemRecord,
-  filters: ReviewItemFilters,
-) => boolean;
 export type ReviewPacketCommandSuggester = (
   filters: ReviewItemFilters,
   action: ReviewPacketBatchCommandAction,
+  options?: ReviewPacketCommandOptions,
 ) => string | undefined;
 
 export interface OperatorPlan {
@@ -70,13 +62,12 @@ function nextCommand(input: OperatorPlanInput): string {
   return dcCommand("release build");
 }
 
-interface SuggestedCommand {
-  command: string;
-  count: number;
-}
-
 function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefined {
-  return suggestExplicitSafeEntityBatch(input)?.command ??
+  return input.suggestReviewPacketCommand(
+    { mode: "entities", status: "open" },
+    "accept-safe",
+    { itemFilter: isExplicitSafeEntityReviewItem },
+  ) ??
     input.suggestReviewPacketCommand(
       { mode: "relationships", status: "open" },
       "accept-safe",
@@ -86,62 +77,17 @@ function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefine
       "defer-default",
     ) ??
     input.suggestReviewPacketCommand({ mode: "legal", status: "open" }, "defer-default") ??
-    suggestHighConfidenceEntityBatch(input)?.command;
+    input.suggestReviewPacketCommand(
+      { mode: "entities", status: "open" },
+      "accept-safe",
+      { itemFilter: isNonExplicitSafeEntityReviewItem },
+    );
 }
 
-function suggestExplicitSafeEntityBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
-  const reviewDebt = input.workbench.reviewDebtSummary();
-  let best: SuggestedCommand | undefined;
-  for (const source of reviewDebt.bySource) {
-    if (source.openCount === 0) continue;
-    const filters = {
-      mode: "entities",
-      status: "open",
-      subjectPrefix: `candidate.${source.sourceId}`,
-    } as const;
-    const items = input.workbench.listReviewItems(filters);
-    const safeCount = items.filter((item) =>
-      item.details.safeToAutoAccept === true &&
-      input.canBatchAcceptReviewItem(item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: reviewBatchCommand("accept-safe", filters),
-      count: safeCount,
-    };
-    best = betterSuggestion(best, candidate);
-  }
-  return best;
+function isExplicitSafeEntityReviewItem(item: ReviewItemRecord): boolean {
+  return item.itemType === "entity_candidate" && item.details.safeToAutoAccept === true;
 }
 
-function suggestHighConfidenceEntityBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
-  const reviewDebt = input.workbench.reviewDebtSummary();
-  let best: SuggestedCommand | undefined;
-  for (const source of reviewDebt.bySource) {
-    if (source.openCount === 0) continue;
-    const filters = {
-      mode: "entities",
-      status: "open",
-      subjectPrefix: `candidate.${source.sourceId}`,
-    } as const;
-    const items = input.workbench.listReviewItems(filters);
-    const safeCount = items.filter((item) =>
-      item.details.safeToAutoAccept !== true &&
-      input.canBatchAcceptReviewItem(item, filters)
-    ).length;
-    if (safeCount === 0) continue;
-    const candidate = {
-      command: reviewBatchCommand("accept-safe", filters),
-      count: safeCount,
-    };
-    best = betterSuggestion(best, candidate);
-  }
-  return best;
-}
-
-function betterSuggestion(
-  current: SuggestedCommand | undefined,
-  candidate: SuggestedCommand,
-): SuggestedCommand {
-  return !current || candidate.count > current.count ? candidate : current;
+function isNonExplicitSafeEntityReviewItem(item: ReviewItemRecord): boolean {
+  return item.itemType === "entity_candidate" && item.details.safeToAutoAccept !== true;
 }
