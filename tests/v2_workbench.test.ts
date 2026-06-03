@@ -3190,7 +3190,7 @@ Deno.test("safe legal refs auto-accept on import and remaining legal resolutions
   }));
   await workbench.importConnectorResult(result, dataDir);
 
-  const items = workbench.listReviewItems("legal");
+  const items = workbench.listReviewItems({ mode: "legal" });
   assertEquals(items.length, 1);
   assert(items.every((item) => item.defaultAction === "defer"));
 

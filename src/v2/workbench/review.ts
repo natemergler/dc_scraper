@@ -38,9 +38,8 @@ export interface StaleReviewSummary {
 
 export function listReviewItems(
   store: WorkbenchStore,
-  modeOrFilters?: string | ReviewItemFilters,
+  filters: ReviewItemFilters = {},
 ): ReviewItemRecord[] {
-  const filters = normalizeReviewItemFilters(modeOrFilters);
   const where: string[] = [];
   const params: unknown[] = [];
   if (filters.status === "all") {
@@ -317,15 +316,6 @@ function canBatchAcceptLegalItem(
   );
   if (!legalRef || legalRef.reviewStatus !== "pending") return false;
   return legalRef.refType !== "unknown" && Boolean(legalRef.normalizedCitation);
-}
-
-function normalizeReviewItemFilters(
-  modeOrFilters?: string | ReviewItemFilters,
-): ReviewItemFilters {
-  if (typeof modeOrFilters === "string") {
-    return { mode: modeOrFilters };
-  }
-  return modeOrFilters ?? {};
 }
 
 function escapeSqlLike(value: string): string {
