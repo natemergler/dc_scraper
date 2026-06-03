@@ -1,3 +1,4 @@
+import { dcCommand } from "./command_prefix.ts";
 import type { ConnectorContext, SourceConnector } from "./connectors/shared.ts";
 import type { ConnectorResult } from "./domain.ts";
 import type {
@@ -38,7 +39,9 @@ export async function handleSourceCommand(
   if (!args[1]) {
     printSourceHelp({
       tips: [
-        "run `dc source list` to see fetch status, `dc source fetch --all` for a full smoke, or `dc source fetch dcgis.agencies` to start smaller",
+        `run \`${dcCommand("source list")}\` to see fetch status, \`${
+          dcCommand("source fetch --all")
+        }\` for a full smoke, or \`${dcCommand("source fetch dcgis.agencies")}\` to start smaller`,
       ],
       showAvailableSources: true,
       connectors: deps.connectors,
@@ -54,7 +57,9 @@ export async function handleSourceCommand(
     if (!sourceIds) {
       printSourceHelp({
         tips: [
-          "run `dc source fetch --all` for a full smoke or `dc source fetch dcgis.agencies` for a single source",
+          `run \`${dcCommand("source fetch --all")}\` for a full smoke or \`${
+            dcCommand("source fetch dcgis.agencies")
+          }\` for a single source`,
         ],
         showAvailableSources: true,
         connectors: deps.connectors,
@@ -95,7 +100,9 @@ export async function handleSourceCommand(
     if (!sourceId) {
       printSourceHelp({
         tips: [
-          "run `dc source inspect dcgis.agencies` after a fetch or `dc source list` to browse ids",
+          `run \`${dcCommand("source inspect dcgis.agencies")}\` after a fetch or \`${
+            dcCommand("source list")
+          }\` to browse ids`,
         ],
         connectors: deps.connectors,
       });
@@ -119,7 +126,9 @@ export async function handleSourceCommand(
     if (!args[2] || args[2].startsWith("--") || isHelp(args[2])) {
       printSourceHelp({
         tips: [
-          "run `dc source compare public-bodies` after fetching overlapping public-body lanes",
+          `run \`${
+            dcCommand("source compare public-bodies")
+          }\` after fetching overlapping public-body lanes`,
         ],
         connectors: deps.connectors,
       });
@@ -130,7 +139,9 @@ export async function handleSourceCommand(
     if (hasHelpFlag(args, 3)) {
       printSourceHelp({
         tips: [
-          "run `dc source compare public-bodies` after fetching overlapping public-body lanes",
+          `run \`${
+            dcCommand("source compare public-bodies")
+          }\` after fetching overlapping public-body lanes`,
         ],
         connectors: deps.connectors,
       });
@@ -226,20 +237,22 @@ export function printSourceHelp(
     connectors?: SourceConnector[];
   } = {},
 ): void {
-  console.log(`dc source
+  console.log(`${dcCommand("source")}
 
 Workflow:
-  1. Browse configured sources with \`dc source list\`
-  2. Fetch everything with \`dc source fetch --all\` or fetch one source with \`dc source fetch dcgis.agencies\`
-  3. Inspect one source with \`dc source inspect dcgis.agencies\`
-  4. Compare overlapping public-body lanes with \`dc source compare public-bodies\`
+  1. Browse configured sources with \`${dcCommand("source list")}\`
+  2. Fetch everything with \`${dcCommand("source fetch --all")}\` or fetch one source with \`${
+    dcCommand("source fetch dcgis.agencies")
+  }\`
+  3. Inspect one source with \`${dcCommand("source inspect dcgis.agencies")}\`
+  4. Compare overlapping public-body lanes with \`${dcCommand("source compare public-bodies")}\`
 
 Usage:
-  dc source list [--db <path>] [--json]
-  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
-  dc source fetch --all [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
-  dc source inspect <source-id> [--db <path>] [--json]
-  dc source compare public-bodies [--db <path>] [--json]
+  ${dcCommand("source list")} [--db <path>] [--json]
+  ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
+  ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
+  ${dcCommand("source inspect <source-id>")} [--db <path>] [--json]
+  ${dcCommand("source compare public-bodies")} [--db <path>] [--json]
 `);
   if (options.showAvailableSources) {
     console.log("Available sources:");

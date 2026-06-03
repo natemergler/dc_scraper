@@ -1,4 +1,5 @@
 import { connectors } from "./connectors.ts";
+import { dcCommand } from "./command_prefix.ts";
 import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
@@ -245,17 +246,17 @@ function nextCommand(options: {
   openReview: number;
   blockedReconciliation: number;
 }): string {
-  if (options.failedSourceId) return `dc source inspect ${options.failedSourceId}`;
+  if (options.failedSourceId) return dcCommand(`source inspect ${options.failedSourceId}`);
   const suggestedReviewCommand = suggestScopedReviewCommand(options.workbench);
   if (suggestedReviewCommand) return suggestedReviewCommand;
-  if (options.openReview > 0) return "dc review";
-  if (options.blockedReconciliation > 0) return "dc audit";
-  if (options.fetchedSources < connectors.length) return "dc source list";
-  return "dc release build";
+  if (options.openReview > 0) return dcCommand("review");
+  if (options.blockedReconciliation > 0) return dcCommand("audit");
+  if (options.fetchedSources < connectors.length) return dcCommand("source list");
+  return dcCommand("release build");
 }
 
 function blockedInspectionCommand(sourceId: string): string {
-  return `dc source inspect ${sourceId}`;
+  return dcCommand(`source inspect ${sourceId}`);
 }
 
 interface SuggestedCommand {
@@ -288,8 +289,9 @@ function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand 
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command:
-        `dc review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
+      command: dcCommand(
+        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
+      ),
       count: safeCount,
     };
     if (!best || candidate.count > best.count) best = candidate;
@@ -326,8 +328,9 @@ function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | 
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command:
-        `dc review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+      command: dcCommand(
+        `review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+      ),
       count: safeCount,
     };
     if (!best || candidate.count > best.count) best = candidate;
@@ -355,8 +358,9 @@ function suggestDeferDefaultRelationshipBatch(workbench: Workbench): SuggestedCo
   for (const group of grouped.values()) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
     const candidate = {
-      command:
-        `dc review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+      command: dcCommand(
+        `review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.relationshipType}`,
+      ),
       count: group.items.length,
     };
     if (!best || candidate.count > best.count) best = candidate;
@@ -381,8 +385,9 @@ function suggestDeferDefaultLegalBatch(workbench: Workbench): SuggestedCommand |
   for (const group of grouped.values()) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
     const candidate = {
-      command:
-        `dc review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.refType}`,
+      command: dcCommand(
+        `review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.refType}`,
+      ),
       count: group.items.length,
     };
     if (!best || candidate.count > best.count) best = candidate;
@@ -407,8 +412,9 @@ function suggestHighConfidenceEntityBatch(workbench: Workbench): SuggestedComman
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command:
-        `dc review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
+      command: dcCommand(
+        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
+      ),
       count: safeCount,
     };
     if (!best || candidate.count > best.count) best = candidate;
