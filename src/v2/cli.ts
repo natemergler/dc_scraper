@@ -51,10 +51,14 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (sourceHandled) return true;
   const auditHandled = await handleAuditCommand(args, { json: args.includes("--json") }, {
     readWorkbenchStatus: async () =>
-      await withWorkbench(dbPath, (workbench, meta) => ({
-        meta,
-        status: buildWorkbenchStatus(workbench),
-      })),
+      await withWorkbench(
+        dbPath,
+        (workbench, meta) => ({
+          meta,
+          status: buildWorkbenchStatus(workbench),
+        }),
+        { readonly: true, fallbackToWritable: true },
+      ),
   });
   if (auditHandled) return true;
   const reviewHandled = await handleReviewCommand(
@@ -62,6 +66,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     { json: args.includes("--json"), resolutionsDir },
     {
       withWorkbench: async (action) => await withWorkbench(dbPath, action),
+      withReadonlyWorkbench: async (action) =>
+        await withWorkbench(dbPath, action, {
+          readonly: true,
+          fallbackToWritable: true,
+        }),
     },
   );
   if (reviewHandled) return true;
@@ -69,7 +78,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     args,
     { json: args.includes("--json"), outDir },
     {
-      withWorkbench: async (action) => await withWorkbench(dbPath, action),
+      withWorkbench: async (action) =>
+        await withWorkbench(dbPath, action, {
+          readonly: true,
+          fallbackToWritable: true,
+        }),
       readFile: async (path) => await Deno.readTextFile(path),
     },
   );
@@ -79,9 +92,17 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     { json: args.includes("--json") },
     {
       searchEntities: async (query) =>
-        await withWorkbench(dbPath, (workbench) => workbench.searchEntities(query)),
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.searchEntities(query),
+          { readonly: true, fallbackToWritable: true },
+        ),
       entityView: async (entityId) =>
-        await withWorkbench(dbPath, (workbench) => workbench.entityView(entityId)),
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.entityView(entityId),
+          { readonly: true, fallbackToWritable: true },
+        ),
     },
   );
   if (entityHandled) return true;
@@ -98,15 +119,55 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
 async function withWorkbench<T>(
   dbPath: string,
   action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
-  options?: { refreshDerivedState?: boolean },
+  options?: {
+    refreshDerivedState?: boolean;
+    readonly?: boolean;
+    fallbackToWritable?: boolean;
+  },
 ): Promise<T> {
-  const workbench = new Workbench(dbPath);
+  if (options?.readonly) {
+    try {
+      return await withOpenedWorkbench(dbPath, action, {
+        readonly: true,
+        initialize: false,
+      });
+    } catch (error) {
+      if (!options.fallbackToWritable || !shouldFallbackToWritableWorkbench(error)) throw error;
+    }
+  }
+  return await withOpenedWorkbench(dbPath, action, {
+    readonly: false,
+    initialize: true,
+    refreshDerivedState: options?.refreshDerivedState,
+  });
+}
+
+async function withOpenedWorkbench<T>(
+  dbPath: string,
+  action: (workbench: Workbench, meta: ReturnType<Workbench["init"]>) => T | Promise<T>,
+  options: {
+    readonly: boolean;
+    initialize: boolean;
+    refreshDerivedState?: boolean;
+  },
+): Promise<T> {
+  const workbench = new Workbench(dbPath, { readonly: options.readonly });
   try {
-    const meta = workbench.init(options);
+    const meta = options.initialize
+      ? workbench.init({
+        refreshDerivedState: options.refreshDerivedState,
+      })
+      : workbench.meta();
     return await action(workbench, meta);
   } finally {
     workbench.close();
   }
+}
+
+function shouldFallbackToWritableWorkbench(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("unable to open database file") ||
+    error.message.includes("no such table:");
 }
 
 function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
