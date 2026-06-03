@@ -3,7 +3,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
-import { nowIso, sha256Hex, type SmokeProfile } from "./domain.ts";
+import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
 import { unresolvedStateNote } from "./operator_plan.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 
@@ -697,9 +697,5 @@ function escapeCsv(value: unknown): string {
 }
 
 async function fileSha(path: string): Promise<string> {
-  const content = await Deno.readTextFile(path).catch(async () => {
-    const bytes = await Deno.readFile(path);
-    return new TextDecoder().decode(bytes);
-  });
-  return `sha256:${await sha256Hex(content)}`;
+  return `sha256:${await sha256BytesHex(await Deno.readFile(path))}`;
 }

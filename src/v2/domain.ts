@@ -421,8 +421,12 @@ export function nowIso(): string {
 }
 
 export async function sha256Hex(content: string): Promise<string> {
-  const bytes = new TextEncoder().encode(content);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return sha256BytesHex(new TextEncoder().encode(content));
+}
+
+export async function sha256BytesHex(bytes: Uint8Array): Promise<string> {
+  const stableBytes = new Uint8Array(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", stableBytes.buffer);
   return Array.from(new Uint8Array(digest))
     .map((value) => value.toString(16).padStart(2, "0"))
     .join("");

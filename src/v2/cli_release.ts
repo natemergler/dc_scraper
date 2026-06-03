@@ -64,10 +64,10 @@ export async function handleReleaseCommand(
       await deps.readFile(join(options.outDir, "manifest.json")),
     ) as ReleaseManifest;
     if (options.json) {
-      console.log(JSON.stringify(buildReleaseInspection(options.outDir, manifest), null, 2));
+      console.log(JSON.stringify(await buildReleaseInspection(options.outDir, manifest), null, 2));
       return true;
     }
-    console.log(renderReleaseInspection(options.outDir, manifest));
+    console.log(await renderReleaseInspection(options.outDir, manifest));
     return true;
   }
   return false;

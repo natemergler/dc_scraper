@@ -1,5 +1,6 @@
 import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
+import { sha256BytesHex } from "./domain.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
@@ -39,6 +40,24 @@ export interface ReleaseManifest {
     failed_source_count?: number;
     dataset_count?: number;
   };
+}
+
+export interface ReleasePackageProblem {
+  fileName: string;
+  problem: "missing file" | "sha256 mismatch" | "unexpected file" | "unreadable file";
+  expectedSha256?: string;
+  actualSha256?: string;
+}
+
+export interface ReleaseInspection {
+  outDir: string;
+  generatedAt: string;
+  fileCount: number;
+  expectedFileCount: number;
+  packageIntegrity: "ok" | "problem" | "unknown";
+  packageProblems: ReleasePackageProblem[];
+  readiness: "usable" | "usable-with-warnings" | "not-ready";
+  releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
 }
 
 export interface WorkbenchStatusSnapshot {
@@ -287,8 +306,11 @@ function renderBlockedDependency(
     : blocker.blockerState.replaceAll("_", " ");
   return `${label} (${state}; id ${blocker.blockerId})`;
 }
-export function renderReleaseInspection(outDir: string, manifest: ReleaseManifest): string {
-  const inspection = buildReleaseInspection(outDir, manifest);
+export async function renderReleaseInspection(
+  outDir: string,
+  manifest: ReleaseManifest,
+): Promise<string> {
+  const inspection = await buildReleaseInspection(outDir, manifest);
   const summary = inspection.releaseSummary;
   return [
     `Release: ${inspection.outDir}`,
@@ -299,6 +321,9 @@ export function renderReleaseInspection(outDir: string, manifest: ReleaseManifes
     `Source profile: ${manifest.source_profile ?? "custom"}`,
     `Generated: ${inspection.generatedAt}`,
     `Files: ${inspection.fileCount}`,
+    `Expected files: ${inspection.expectedFileCount}`,
+    `Package integrity: ${inspection.packageIntegrity}`,
+    ...renderPackageProblems(inspection.packageProblems),
     `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
@@ -327,21 +352,95 @@ export function renderReleaseInspection(outDir: string, manifest: ReleaseManifes
   ].join("\n");
 }
 
-export function buildReleaseInspection(outDir: string, manifest: ReleaseManifest): {
-  outDir: string;
-  generatedAt: string;
-  fileCount: number;
-  readiness: "usable" | "usable-with-warnings" | "not-ready";
-  releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
-} {
+export async function buildReleaseInspection(
+  outDir: string,
+  manifest: ReleaseManifest,
+): Promise<ReleaseInspection> {
   const releaseSummary = manifest.release_summary ?? {};
+  const packageInspection = await inspectReleasePackage(outDir, manifest);
   return {
     outDir,
     generatedAt: manifest.generated_at ?? "unknown",
-    fileCount: (manifest.files?.length ?? 0) + 1,
-    readiness: releaseReadiness(releaseSummary),
+    fileCount: packageInspection.fileCount,
+    expectedFileCount: packageInspection.expectedFileCount,
+    packageIntegrity: packageInspection.packageIntegrity,
+    packageProblems: packageInspection.packageProblems,
+    readiness: packageInspection.packageIntegrity === "problem"
+      ? "not-ready"
+      : releaseReadiness(releaseSummary),
     releaseSummary,
   };
+}
+
+async function inspectReleasePackage(
+  outDir: string,
+  manifest: ReleaseManifest,
+): Promise<{
+  fileCount: number;
+  expectedFileCount: number;
+  packageIntegrity: "ok" | "problem" | "unknown";
+  packageProblems: ReleasePackageProblem[];
+}> {
+  const expectedFiles = new Map((manifest.files ?? []).map((file) => [file.name, file.sha256]));
+  const expectedFileCount = expectedFiles.size + 1;
+  if (!manifest.files) {
+    return {
+      fileCount: expectedFileCount,
+      expectedFileCount,
+      packageIntegrity: "unknown",
+      packageProblems: [],
+    };
+  }
+  const actualFiles = await listReleaseFiles(outDir);
+  const actualFileNames = new Set(actualFiles);
+  const packageProblems: ReleasePackageProblem[] = [];
+  for (const [fileName, expectedSha256] of expectedFiles) {
+    if (!actualFileNames.has(fileName)) {
+      packageProblems.push({ fileName, problem: "missing file", expectedSha256 });
+      continue;
+    }
+    if (!expectedSha256) continue;
+    try {
+      const actualSha256 = await releaseFileSha256(outDir, fileName);
+      if (actualSha256 !== expectedSha256) {
+        packageProblems.push({
+          fileName,
+          problem: "sha256 mismatch",
+          expectedSha256,
+          actualSha256,
+        });
+      }
+    } catch {
+      packageProblems.push({ fileName, problem: "unreadable file", expectedSha256 });
+    }
+  }
+  for (const fileName of actualFiles) {
+    if (fileName === "manifest.json") continue;
+    if (!expectedFiles.has(fileName)) {
+      packageProblems.push({ fileName, problem: "unexpected file" });
+    }
+  }
+  packageProblems.sort((left, right) =>
+    left.fileName.localeCompare(right.fileName) || left.problem.localeCompare(right.problem)
+  );
+  return {
+    fileCount: actualFiles.length,
+    expectedFileCount,
+    packageIntegrity: packageProblems.length === 0 ? "ok" : "problem",
+    packageProblems,
+  };
+}
+
+async function listReleaseFiles(outDir: string): Promise<string[]> {
+  const files: string[] = [];
+  for await (const entry of Deno.readDir(outDir)) {
+    if (entry.isFile) files.push(entry.name);
+  }
+  return files.sort((left, right) => left.localeCompare(right));
+}
+
+async function releaseFileSha256(outDir: string, fileName: string): Promise<string> {
+  return `sha256:${await sha256BytesHex(await Deno.readFile(`${outDir}/${fileName}`))}`;
 }
 
 function releaseReadiness(
@@ -359,6 +458,20 @@ function releaseReadiness(
     return "usable-with-warnings";
   }
   return "usable";
+}
+
+function renderPackageProblems(problems: ReleasePackageProblem[]): string[] {
+  if (problems.length === 0) return [];
+  return [
+    "Package problems:",
+    ...problems.slice(0, 10).map((problem) =>
+      `- ${problem.fileName}: ${problem.problem}${
+        problem.expectedSha256 && problem.actualSha256
+          ? ` (expected ${problem.expectedSha256}, got ${problem.actualSha256})`
+          : ""
+      }`
+    ),
+  ];
 }
 
 function renderReviewStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
