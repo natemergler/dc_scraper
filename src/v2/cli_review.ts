@@ -1,5 +1,6 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
+import { reviewContextArgs, reviewFilterArgs } from "./workbench/review_command_args.ts";
 import {
   listReviewPackets,
   renderReviewPacketSummary,
@@ -11,6 +12,11 @@ import {
   runBatchDeferDefault,
   runInteractiveReview,
 } from "./workbench/review_cli.ts";
+import type {
+  UnresolvedDecisionNode,
+  UnresolvedDiagnosticNode,
+  UnresolvedWorkGraph,
+} from "./workbench/unresolved_work.ts";
 import type { Workbench } from "./workbench.ts";
 
 export interface ReviewCommandOptions {
@@ -23,6 +29,9 @@ export interface ReviewCommandDeps {
   withWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
   withReadonlyWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
 }
+
+const DEFAULT_REVIEW_DECISION_LIMIT = 10;
+const DISPLAY_TEXT_MAX_LENGTH = 120;
 
 export async function handleReviewCommand(
   args: string[],
@@ -61,6 +70,22 @@ export async function handleReviewCommand(
       console.log(summary);
       console.log("");
     }
+    return true;
+  }
+  if (args[1] === "decisions") {
+    if (hasHelpFlag(args, 2)) {
+      printReviewHelp();
+      return true;
+    }
+    const limit = readReviewDecisionLimit(args);
+    const view = await deps.withReadonlyWorkbench((workbench) =>
+      reviewDecisionView(workbench.unresolvedWorkGraph(), options.nextCommandContext, limit)
+    );
+    if (options.json) {
+      console.log(JSON.stringify(view, null, 2));
+      return true;
+    }
+    console.log(renderReviewDecisionView(view));
     return true;
   }
   if (args[1] === "packets") {
@@ -110,9 +135,10 @@ export function printReviewHelp(): void {
 Workflow:
   1. Run \`${dcCommand("review")}\` for the next open item
   2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
-  4. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
-  5. Apply a scoped batch like \`${
+  3. See dependency-ordered decisions with \`${dcCommand("review decisions")}\`
+  4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
+  5. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
+  6. Apply a scoped batch like \`${
     dcCommand(
       "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
     )
@@ -125,6 +151,7 @@ Usage:
   ${
     dcCommand("review list")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  ${dcCommand("review decisions")} [--limit <n>] [--db <path>] [--resolutions-dir <path>] [--json]
   ${
     dcCommand("review packets")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
@@ -139,6 +166,130 @@ Interactive actions:
   Enter runs the default action for the current item.
   a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
 `);
+}
+
+interface ReviewDecisionView {
+  count: number;
+  totalDecisionCount: number;
+  totalDiagnosticCount: number;
+  limit: number;
+  decisions: ReviewDecisionRecord[];
+  diagnostics: UnresolvedDiagnosticNode[];
+  edges: UnresolvedWorkGraph["edges"];
+}
+
+interface ReviewDecisionRecord extends UnresolvedDecisionNode {
+  label: string;
+  nextCommand?: string;
+}
+
+function reviewDecisionView(
+  graph: UnresolvedWorkGraph,
+  commandContext: ReviewPacketCommandContext | undefined,
+  limit: number,
+): ReviewDecisionView {
+  const decisions = graph.decisions.slice(0, limit).map((decision) => ({
+    ...decision,
+    label: reviewDecisionLabel(decision),
+    nextCommand: reviewDecisionNextCommand(decision, commandContext),
+  }));
+  const diagnostics = graph.diagnostics.slice(0, limit);
+  const visibleNodeIds = new Set([
+    ...decisions.map((decision) => decision.nodeId),
+    ...diagnostics.map((diagnostic) => diagnostic.nodeId),
+  ]);
+  return {
+    count: decisions.length,
+    totalDecisionCount: graph.decisions.length,
+    totalDiagnosticCount: graph.diagnostics.length,
+    limit,
+    decisions,
+    diagnostics,
+    edges: graph.edges.filter((edge) =>
+      visibleNodeIds.has(edge.fromNodeId) && visibleNodeIds.has(edge.toNodeId)
+    ),
+  };
+}
+
+function renderReviewDecisionView(view: ReviewDecisionView): string {
+  const lines = [`Review decisions: ${view.count} of ${view.totalDecisionCount}`];
+  for (const decision of view.decisions) {
+    lines.push(
+      `[blocks ${decision.downstreamBlockedCount}] ${decision.label}`,
+      `type: ${displayText(decision.itemType)}`,
+      `source: ${displayText(decision.sourceId)}`,
+      `default: ${displayText(decision.defaultAction)}`,
+      `reason: ${displayText(decision.reason)}`,
+      `subject: ${displayText(decision.subjectId)}`,
+    );
+    if (decision.nextCommand) lines.push(`next: ${displayLine(decision.nextCommand)}`);
+    lines.push("");
+  }
+  lines.push(`Blocked diagnostics: ${view.diagnostics.length} of ${view.totalDiagnosticCount}`);
+  for (const diagnostic of view.diagnostics) {
+    lines.push(
+      `- ${displayText(diagnostic.subjectId)} (${displayText(diagnostic.reason)}; source=${
+        displayText(diagnostic.sourceId)
+      })`,
+    );
+    for (const blocker of diagnostic.blockers) {
+      lines.push(
+        `  blocker: ${displayText(blocker.blockerLabel)} (${
+          displayText(blocker.blockerState)
+        }; actionable=${blocker.hasActionablePrerequisite ? "yes" : "no"})`,
+      );
+    }
+  }
+  return lines.join("\n");
+}
+
+function reviewDecisionLabel(decision: UnresolvedDecisionNode): string {
+  for (const key of ["name", "title", "normalizedCitation", "citationText", "rawValue"]) {
+    const value = decision.details[key];
+    if (typeof value !== "string") continue;
+    const label = displayText(value);
+    if (label) return label;
+  }
+  return displayText(decision.subjectId);
+}
+
+function reviewDecisionNextCommand(
+  decision: UnresolvedDecisionNode,
+  commandContext: ReviewPacketCommandContext | undefined,
+): string | undefined {
+  const mode = reviewDecisionMode(decision.itemType);
+  if (!mode) return undefined;
+  return dcCommand(
+    [
+      `review ${mode}`,
+      ...reviewFilterArgs({ subjectPrefix: decision.subjectId }, {
+        includeMode: false,
+        includeType: false,
+      }),
+      ...reviewContextArgs(commandContext, "write"),
+    ].join(" "),
+  );
+}
+
+function reviewDecisionMode(itemType: UnresolvedDecisionNode["itemType"]): string | undefined {
+  if (itemType === "entity_candidate" || itemType === "placeholder_entity") return "entities";
+  if (itemType === "relationship_candidate") return "relationships";
+  if (itemType === "legal_ref") return "legal";
+  return undefined;
+}
+
+function displayText(value: string): string {
+  const oneLine = displayLine(value);
+  if (oneLine.length <= DISPLAY_TEXT_MAX_LENGTH) return oneLine;
+  return `${oneLine.slice(0, DISPLAY_TEXT_MAX_LENGTH - 3).trimEnd()}...`;
+}
+
+function displayLine(value: string): string {
+  const oneLine = Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? " " : character;
+  }).join("").replace(/\s+/g, " ").trim();
+  return oneLine;
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {
@@ -168,6 +319,12 @@ Usage:
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);
   }
+}
+
+function readReviewDecisionLimit(args: string[]): number {
+  const limit = readNumberFlag(args, "--limit");
+  if (limit === undefined || !Number.isFinite(limit)) return DEFAULT_REVIEW_DECISION_LIMIT;
+  return Math.max(0, Math.floor(limit));
 }
 
 function readReviewFilters(args: string[]): ReviewItemFilters {

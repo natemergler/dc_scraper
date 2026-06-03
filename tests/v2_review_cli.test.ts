@@ -592,6 +592,192 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   assertEquals(deferred.length, 1);
 });
 
+Deno.test("review decisions exposes dependency-ordered unresolved work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_decisions.relationships",
+      relationshipCandidateId: "relationship.test.review_decisions.blocked",
+      sourceItemKey: "review-decisions-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_decisions.entities",
+      candidateId: "candidate.test.review_decisions.pending_target",
+      sourceItemKey: "review-decisions-entity-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const jsonOutput = await runDc([
+    "review",
+    "decisions",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--json",
+  ]);
+  assertCommandSucceeded(jsonOutput);
+  const body = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+    count: number;
+    totalDecisionCount: number;
+    totalDiagnosticCount: number;
+    limit: number;
+    decisions: Array<{ subjectId: string; downstreamBlockedCount: number; nextCommand: string }>;
+    diagnostics: Array<{
+      subjectId: string;
+      blockers: Array<{ actionableDecisionIds: string[] }>;
+    }>;
+  };
+  assertEquals(body.count, 2);
+  assertEquals(body.totalDecisionCount, 2);
+  assertEquals(body.totalDiagnosticCount, 1);
+  assertEquals(body.limit, 10);
+  assertEquals(body.decisions[0].subjectId, "candidate.test.review_decisions.pending_target");
+  assertEquals(body.decisions[0].downstreamBlockedCount, 1);
+  assertStringIncludes(body.decisions[0].nextCommand, "review entities");
+  assertStringIncludes(
+    body.decisions[0].nextCommand,
+    "--subject-prefix candidate.test.review_decisions.pending_target",
+  );
+  assertStringIncludes(body.decisions[0].nextCommand, "--db");
+  assertStringIncludes(body.decisions[0].nextCommand, dbPath);
+  assertStringIncludes(body.decisions[0].nextCommand, "--resolutions-dir");
+  assertStringIncludes(body.decisions[0].nextCommand, resolutionsDir);
+  assertEquals(body.diagnostics[0].subjectId, "relationship.test.review_decisions.blocked");
+  assert(body.diagnostics[0].blockers[0].actionableDecisionIds.length > 0);
+
+  const limitedOutput = await runDc([
+    "review",
+    "decisions",
+    "--limit",
+    "1",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--json",
+  ]);
+  assertCommandSucceeded(limitedOutput);
+  const limited = JSON.parse(new TextDecoder().decode(limitedOutput.stdout)) as {
+    count: number;
+    totalDecisionCount: number;
+    totalDiagnosticCount: number;
+    limit: number;
+    decisions: unknown[];
+    diagnostics: unknown[];
+  };
+  assertEquals(limited.count, 1);
+  assertEquals(limited.totalDecisionCount, 2);
+  assertEquals(limited.totalDiagnosticCount, 1);
+  assertEquals(limited.limit, 1);
+  assertEquals(limited.decisions.length, 1);
+  assertEquals(limited.diagnostics.length, 1);
+
+  const textOutput = await runDc([
+    "review",
+    "decisions",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
+  assertCommandSucceeded(textOutput);
+  const text = new TextDecoder().decode(textOutput.stdout);
+  assertStringIncludes(text, "Review decisions: 2 of 2");
+  assertStringIncludes(text, "[blocks 1] Pending Target");
+  assertStringIncludes(text, "source: test.review_decisions.entities");
+  assertStringIncludes(text, "Blocked diagnostics: 1 of 1");
+  assertStringIncludes(text, "relationship.test.review_decisions.blocked");
+  assertStringIncludes(
+    text,
+    "--subject-prefix candidate.test.review_decisions.pending_target",
+  );
+  assertStringIncludes(text, "--db");
+  assertStringIncludes(text, dbPath);
+  assertStringIncludes(text, "--resolutions-dir");
+  assertStringIncludes(text, resolutionsDir);
+});
+
+Deno.test("review decisions keeps source labels one-line in scrollback output", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  seedAcceptedEntity(workbench, "dc.target_agency", "Target Agency", "agency");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_decisions.one_line",
+      relationshipCandidateId: "relationship.test.review_decisions.one_line",
+      sourceItemKey: "review-decisions-one-line-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "governed_by",
+      rawValue: "Target Agency\nnext: forged command",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await runDc([
+    "review",
+    "decisions",
+    "--db",
+    dbPath,
+  ]);
+  assertCommandSucceeded(output);
+  const text = new TextDecoder().decode(output.stdout);
+  assertStringIncludes(text, "[blocks 0] Target Agency next: forged command");
+  assertEquals(text.includes("\nnext: forged command"), false);
+});
+
+async function runDc(args: string[]): Promise<Deno.CommandOutput> {
+  return await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      ...args,
+    ],
+  }).output();
+}
+
+function assertCommandSucceeded(output: Deno.CommandOutput): void {
+  assertEquals(
+    output.code,
+    0,
+    `stdout:\n${new TextDecoder().decode(output.stdout)}\nstderr:\n${
+      new TextDecoder().decode(output.stderr)
+    }`,
+  );
+}
+
 function seedAcceptedEntity(
   workbench: Workbench,
   entityId: string,
