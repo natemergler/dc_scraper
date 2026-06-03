@@ -664,6 +664,12 @@ function validateDatasetProvenance(workbench: Workbench): ReleaseDatasetProvenan
     sourceBaseUrl?: string | null;
   }>;
   const problems: ReleaseDatasetProvenanceProblem[] = [];
+  const evidenceRowsByDatasetId = sourceBackedEvidenceRowsByRowId(
+    workbench,
+    "dataset_evidence",
+    "dataset_id",
+    datasets.map((dataset) => dataset.datasetId),
+  );
   for (const dataset of datasets) {
     const addProblem = (message: string) => {
       problems.push({ datasetId: dataset.datasetId, message });
@@ -675,14 +681,8 @@ function validateDatasetProvenance(workbench: Workbench): ReleaseDatasetProvenan
     if (dataset.officialUrl && !isPublicHttpUrl(dataset.officialUrl)) {
       addProblem("official_url is not a public http/https URL");
     }
-    const evidenceRows = sourceBackedEvidenceRows(
-      workbench,
-      "dataset_evidence",
-      "dataset_id",
-      dataset.datasetId,
-    );
     validateSourceBackedEvidenceRows(
-      evidenceRows,
+      evidenceRowsByDatasetId.get(dataset.datasetId) ?? [],
       dataset.sourceItemId,
       "row source_item_id",
       "missing dataset evidence",
@@ -713,6 +713,12 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
     sourceBaseUrl?: string | null;
   }>;
   const problems: ReleaseLegalRefProvenanceProblem[] = [];
+  const evidenceRowsByLegalRefId = sourceBackedEvidenceRowsByRowId(
+    workbench,
+    "legal_ref_evidence",
+    "legal_ref_id",
+    legalRefs.map((legalRef) => legalRef.legalRefId),
+  );
   for (const legalRef of legalRefs) {
     const addProblem = (message: string) => {
       problems.push({ legalRefId: legalRef.legalRefId, message });
@@ -726,14 +732,8 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
     if (legalRef.url && !isPublicHttpUrl(legalRef.url)) {
       addProblem("url is not a public http/https URL");
     }
-    const evidenceRows = sourceBackedEvidenceRows(
-      workbench,
-      "legal_ref_evidence",
-      "legal_ref_id",
-      legalRef.legalRefId,
-    );
     validateSourceBackedEvidenceRows(
-      evidenceRows,
+      evidenceRowsByLegalRefId.get(legalRef.legalRefId) ?? [],
       legalRef.sourceItemId,
       "row source_item_id",
       "missing legal ref evidence",
@@ -871,14 +871,35 @@ interface SourceBackedEvidenceRow {
   contentHash?: string | null;
 }
 
+interface SourceBackedEvidenceRowWithRowId extends SourceBackedEvidenceRow {
+  rowId: string;
+}
+
 function sourceBackedEvidenceRows(
   workbench: Workbench,
   evidenceTable: "entity_candidate_evidence" | "dataset_evidence" | "legal_ref_evidence",
   rowIdColumn: "candidate_id" | "dataset_id" | "legal_ref_id",
   rowId: string,
 ): SourceBackedEvidenceRow[] {
-  return workbench.db.prepare(
-    `select ${evidenceTable}.evidence_id as evidenceId,
+  return sourceBackedEvidenceRowsByRowId(workbench, evidenceTable, rowIdColumn, [rowId])
+    .get(rowId) ?? [];
+}
+
+function sourceBackedEvidenceRowsByRowId(
+  workbench: Workbench,
+  evidenceTable: "entity_candidate_evidence" | "dataset_evidence" | "legal_ref_evidence",
+  rowIdColumn: "candidate_id" | "dataset_id" | "legal_ref_id",
+  rowIds: string[],
+): Map<string, SourceBackedEvidenceRow[]> {
+  const rowsByRowId = new Map<string, SourceBackedEvidenceRow[]>(
+    rowIds.map((rowId) => [rowId, []]),
+  );
+  for (const rowIdChunk of chunks([...new Set(rowIds)], 500)) {
+    if (rowIdChunk.length === 0) continue;
+    const placeholders = rowIdChunk.map(() => "?").join(", ");
+    const rows = workbench.db.prepare(
+      `select ${evidenceTable}.${rowIdColumn} as rowId,
+              ${evidenceTable}.evidence_id as evidenceId,
             ${evidenceTable}.field_path as fieldPath,
             ${evidenceTable}.artifact_path as artifactPath,
             ${evidenceTable}.source_id as evidenceSourceId,
@@ -895,9 +916,16 @@ function sourceBackedEvidenceRows(
       and source_artifacts.path = ${evidenceTable}.artifact_path
      left join source_runs
        on source_runs.run_id = source_artifacts.run_id
-     where ${evidenceTable}.${rowIdColumn} = ?
-     order by ${evidenceTable}.evidence_id`,
-  ).all(rowId) as SourceBackedEvidenceRow[];
+     where ${evidenceTable}.${rowIdColumn} in (${placeholders})
+     order by ${evidenceTable}.${rowIdColumn}, ${evidenceTable}.evidence_id`,
+    ).all(...rowIdChunk) as SourceBackedEvidenceRowWithRowId[];
+    for (const row of rows) {
+      const existing = rowsByRowId.get(row.rowId) ?? [];
+      existing.push(row);
+      rowsByRowId.set(row.rowId, existing);
+    }
+  }
+  return rowsByRowId;
 }
 
 function validateSourceBackedEvidenceRows(
@@ -937,6 +965,14 @@ function validateSourceBackedEvidenceRows(
       addProblem(`${evidenceLabel}: missing source artifact content_hash`);
     }
   }
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
 }
 
 function parseJsonObject(value: string | null | undefined): Record<string, unknown> {
