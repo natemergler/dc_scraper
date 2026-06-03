@@ -3,7 +3,11 @@ import { dcCommand } from "./command_prefix.ts";
 import { buildV2Release } from "./release.ts";
 import { renderReleaseVerification, verifyWorkbenchRelease } from "./release_verify.ts";
 import type { SmokeProfile } from "./domain.ts";
-import { buildReleaseInspection, type ReleaseManifest, renderReleaseInspection } from "./status.ts";
+import {
+  buildReleaseInspection,
+  type ReleaseManifest,
+  renderReleaseInspection,
+} from "./release_inspect.ts";
 import type { Workbench } from "./workbench.ts";
 
 export interface ReleaseCommandOptions {

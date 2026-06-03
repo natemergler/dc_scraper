@@ -3,7 +3,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release } from "../src/v2/release.ts";
-import { buildReleaseInspection } from "../src/v2/status.ts";
+import { buildReleaseInspection } from "../src/v2/release_inspect.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { syntheticEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 
