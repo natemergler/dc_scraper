@@ -961,7 +961,8 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   const batchText = new TextDecoder().decode(batchOutput.stdout);
   assertEquals(batchOutput.code, 0);
   assertStringIncludes(batchText, "deno task dc -- review batch");
-  assertStringIncludes(batchText, "deno task dc -- status");
+  assertStringIncludes(batchText, "deno task dc -- review packets");
+  assertStringIncludes(batchText, "deno task dc -- review list");
   assertStringIncludes(
     batchText,
     "deno task dc -- review batch accept-safe --mode entities",
@@ -985,7 +986,7 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   const batchFlagText = new TextDecoder().decode(batchFlagOutput.stdout);
   assertEquals(batchFlagOutput.code, 0);
   assertStringIncludes(batchFlagText, "deno task dc -- review batch");
-  assertStringIncludes(batchFlagText, "deno task dc -- status");
+  assertStringIncludes(batchFlagText, "deno task dc -- review packets");
 
   const acceptSafeOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -1005,7 +1006,7 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   assertEquals(acceptSafeOutput.code, 0);
   assertStringIncludes(acceptSafeText, "deno task dc -- review batch accept-safe");
   assertStringIncludes(acceptSafeText, "--mode entities");
-  assertStringIncludes(acceptSafeText, "Tip: run `deno task dc -- status`");
+  assertStringIncludes(acceptSafeText, "Tip: choose a narrow slice");
 });
 
 Deno.test("entity prefix commands guide the operator toward the next lookup action", async () => {

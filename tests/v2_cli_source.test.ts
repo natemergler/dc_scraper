@@ -111,8 +111,7 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
     },
     readSourceRows: async () => [],
     readWorkbenchStatus: async () => ({
-      nextCommand:
-        "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.alpha.source",
+      nextCommand: "deno task dc -- review",
       unresolvedStateNote:
         "Unresolved workbench state: open review=2, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
     }),
@@ -134,7 +133,7 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   );
   assertStringIncludes(
     lines.join("\n"),
-    "Next: deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.alpha.source",
+    "Next: deno task dc -- review",
   );
 });
 

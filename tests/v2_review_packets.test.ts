@@ -1,77 +1,13 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Workbench } from "../src/v2/workbench.ts";
-import { reviewPacketCommand } from "../src/v2/workbench/review_packets.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
   syntheticRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("review packet command can split explicit-safe and high-confidence entity batches", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  await workbench.importConnectorResult(
-    syntheticCustomEntitySourceResult({
-      sourceId: "test.packet.explicit_entities",
-      candidateId: "candidate.test.packet.explicit_entities.one",
-      sourceItemKey: "explicit-entity-row",
-      proposedEntityId: "dc.packet_explicit_entity",
-      name: "Packet Explicit Entity",
-      kind: "board",
-      observedName: "Packet Explicit Entity",
-    }),
-    dataDir,
-  );
-  workbench.db.prepare(
-    "update review_items set details_json = ? where subject_id = ?",
-  ).run(
-    JSON.stringify({
-      name: "Packet Explicit Entity",
-      kind: "board",
-      safeToAutoAccept: true,
-    }),
-    "candidate.test.packet.explicit_entities.one",
-  );
-  await workbench.importConnectorResult(
-    syntheticCustomEntitySourceResult({
-      sourceId: "test.packet.high_confidence_entities",
-      candidateId: "candidate.test.packet.high_confidence_entities.one",
-      sourceItemKey: "high-confidence-entity-row",
-      proposedEntityId: "dc.packet_high_confidence_entity",
-      name: "Packet High Confidence Entity",
-      kind: "board",
-      observedName: "Packet High Confidence Entity",
-      confidence: 0.95,
-    }),
-    dataDir,
-  );
-
-  assertEquals(
-    reviewPacketCommand(
-      workbench,
-      { mode: "entities", status: "open" },
-      "accept-safe",
-      { itemFilter: (item) => item.details.safeToAutoAccept === true },
-    ),
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.explicit_entities",
-  );
-  assertEquals(
-    reviewPacketCommand(
-      workbench,
-      { mode: "entities", status: "open" },
-      "accept-safe",
-      { itemFilter: (item) => item.details.safeToAutoAccept !== true },
-    ),
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.high_confidence_entities",
-  );
-  workbench.close();
-});
-
-Deno.test("review packet command narrows filtered entity batches before crossing safe classes", async () => {
+Deno.test("review packets group explicit-safe and high-confidence entity work without planning batches", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -112,26 +48,34 @@ Deno.test("review packet command narrows filtered entity batches before crossing
     }),
     dataDir,
   );
-
-  assertEquals(
-    reviewPacketCommand(
-      workbench,
-      { mode: "entities", status: "open" },
-      "accept-safe",
-      { itemFilter: (item) => item.details.safeToAutoAccept === true },
-    ),
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.mixed_entities.explicit",
-  );
-  assertEquals(
-    reviewPacketCommand(
-      workbench,
-      { mode: "entities", status: "open" },
-      "accept-safe",
-      { itemFilter: (item) => item.details.safeToAutoAccept !== true },
-    ),
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.mixed_entities.high_confidence",
-  );
   workbench.close();
+
+  const output = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "entities",
+    "--db",
+    dbPath,
+    "--json",
+  ]);
+  const body = JSON.parse(new TextDecoder().decode(output.stdout)) as {
+    packets: Array<{
+      itemType: string;
+      sourceId: string;
+      count: number;
+      subjectPrefix?: string;
+      nextCommand?: string;
+    }>;
+  };
+
+  assertEquals(output.code, 0);
+  assertEquals(body.packets.length, 1);
+  assertEquals(body.packets[0].itemType, "entity_candidate");
+  assertEquals(body.packets[0].sourceId, "test.packet.mixed_entities");
+  assertEquals(body.packets[0].count, 2);
+  assertEquals(body.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
+  assertEquals(body.packets[0].nextCommand, undefined);
 });
 
 Deno.test("review packets groups related relationship work conservatively", async () => {
@@ -193,7 +137,6 @@ Deno.test("review packets groups related relationship work conservatively", asyn
       count: number;
       openCount: number;
       subjectPrefix?: string;
-      nextCommand?: string;
     }>;
   };
   assertEquals(body.count, 1);
@@ -202,12 +145,6 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[0].openCount, 2);
   assertEquals(body.packets[0].subjectPrefix, "relationship.council.committees");
-  assertEquals(
-    body.packets[0].nextCommand,
-    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees --relationship-type overseen_by --db ${
-      quoteShellPath(dbPath)
-    } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
-  );
 
   const textOutput = await runDc([
     "review",
@@ -226,12 +163,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   const textBody = new TextDecoder().decode(textOutput.stdout);
   assertStringIncludes(textBody, "Review packets: 1");
   assertStringIncludes(textBody, "[2] council.committees relationship_candidate");
-  assertStringIncludes(
-    textBody,
-    `next: deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees --relationship-type overseen_by --db ${
-      quoteShellPath(dbPath)
-    } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
-  );
+  assertEquals(textBody.includes("next:"), false);
 
   const narrowedOutput = await runDc([
     "review",
@@ -253,7 +185,6 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     packets: Array<{
       count: number;
       subjectPrefix?: string;
-      nextCommand?: string;
     }>;
   };
   assertEquals(narrowedBody.count, 1);
@@ -261,12 +192,6 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(
     narrowedBody.packets[0].subjectPrefix,
     "relationship.council.committees.review_packet_one",
-  );
-  assertEquals(
-    narrowedBody.packets[0].nextCommand,
-    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees.review_packet_one --relationship-type overseen_by --raw-value-contains 'Committee on Health'\\''s Work' --db ${
-      quoteShellPath(dbPath)
-    } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
   );
 
   const broadPrefixOutput = await runDc([
@@ -285,15 +210,9 @@ Deno.test("review packets groups related relationship work conservatively", asyn
 
   assertEquals(broadPrefixOutput.code, 0);
   const broadPrefixBody = JSON.parse(new TextDecoder().decode(broadPrefixOutput.stdout)) as {
-    packets: Array<{ subjectPrefix?: string; nextCommand?: string }>;
+    packets: Array<{ subjectPrefix?: string }>;
   };
   assertEquals(broadPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
-  assertEquals(
-    broadPrefixBody.packets[0].nextCommand,
-    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees --relationship-type overseen_by --db ${
-      quoteShellPath(dbPath)
-    } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
-  );
 
   const narrowPrefixOutput = await runDc([
     "review",
@@ -311,15 +230,9 @@ Deno.test("review packets groups related relationship work conservatively", asyn
 
   assertEquals(narrowPrefixOutput.code, 0);
   const narrowPrefixBody = JSON.parse(new TextDecoder().decode(narrowPrefixOutput.stdout)) as {
-    packets: Array<{ subjectPrefix?: string; nextCommand?: string }>;
+    packets: Array<{ subjectPrefix?: string }>;
   };
   assertEquals(narrowPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
-  assertEquals(
-    narrowPrefixBody.packets[0].nextCommand,
-    `deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.council.committees.review_packet --relationship-type overseen_by --db ${
-      quoteShellPath(dbPath)
-    } --resolutions-dir ${quoteShellPath(resolutionsDir)}`,
-  );
 
   const segmentPrefixOutput = await runDc([
     "review",
@@ -340,13 +253,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     packets: Array<{ subjectPrefix?: string; nextCommand?: string }>;
   };
   assertEquals(segmentPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
-  assertEquals(
-    segmentPrefixBody.packets[0].nextCommand,
-    `deno task dc -- review list --mode relationships --type relationship_candidate --subject-prefix review_packet --relationship-type overseen_by --limit 10 --db ${
-      quoteShellPath(dbPath)
-    }`,
-  );
-  assertEquals(segmentPrefixBody.packets[0].nextCommand?.includes("batch accept-safe"), false);
+  assertEquals(segmentPrefixBody.packets[0].nextCommand, undefined);
 });
 
 Deno.test("review packet limits apply after grouping related work", async () => {
@@ -417,7 +324,6 @@ Deno.test("review packet limits apply after grouping related work", async () => 
     packets: Array<{
       sourceId: string;
       count: number;
-      nextCommand?: string;
     }>;
   };
   assertEquals(body.count, 2);
@@ -426,19 +332,9 @@ Deno.test("review packet limits apply after grouping related work", async () => 
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[1].sourceId, "test.review_packets.group_b");
   assertEquals(body.packets[1].count, 1);
-  assertStringIncludes(body.packets[0].nextCommand ?? "", "review batch accept-safe");
-  assertStringIncludes(
-    body.packets[0].nextCommand ?? "",
-    "--subject-prefix relationship.council.committees.limit_group_a",
-  );
-  assertStringIncludes(body.packets[1].nextCommand ?? "", "review list");
-  assertStringIncludes(
-    body.packets[1].nextCommand ?? "",
-    "--subject-prefix relationship.test.review_packets.group_b",
-  );
 });
 
-Deno.test("review packet next list command preserves resolved status filters", async () => {
+Deno.test("review packets preserve resolved status filters", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -483,19 +379,15 @@ Deno.test("review packet next list command preserves resolved status filters", a
 
   assertEquals(output.code, 0);
   const body = JSON.parse(new TextDecoder().decode(output.stdout)) as {
-    packets: Array<{ nextCommand?: string }>;
+    packets: Array<{ openCount: number; subjectPrefix?: string; nextCommand?: string }>;
   };
   assertEquals(body.packets.length, 1);
-  assertEquals(
-    body.packets[0].nextCommand,
-    `deno task dc -- review list --mode relationships --status resolved --type relationship_candidate --subject-prefix relationship.council.committees.resolved_packet --relationship-type overseen_by --limit 10 --db ${
-      quoteShellPath(dbPath)
-    }`,
-  );
-  assertEquals(body.packets[0].nextCommand?.includes("batch accept-safe"), false);
+  assertEquals(body.packets[0].openCount, 0);
+  assertEquals(body.packets[0].subjectPrefix, "relationship.council.committees.resolved_packet");
+  assertEquals(body.packets[0].nextCommand, undefined);
 });
 
-Deno.test("review packet next command keeps stale prior-decision work in list review", async () => {
+Deno.test("review packets keep stale prior-decision work grouped for review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -542,16 +434,14 @@ Deno.test("review packet next command keeps stale prior-decision work in list re
 
   assertEquals(output.code, 0);
   const body = JSON.parse(new TextDecoder().decode(output.stdout)) as {
-    packets: Array<{ nextCommand?: string }>;
+    packets: Array<{ subjectPrefix?: string; nextCommand?: string }>;
   };
   assertEquals(body.packets.length, 1);
   assertEquals(
-    body.packets[0].nextCommand,
-    `deno task dc -- review list --mode relationships --type relationship_candidate --subject-prefix relationship.test.signature.relationships.stale_packet_v2 --relationship-type governed_by --limit 10 --db ${
-      quoteShellPath(dbPath)
-    }`,
+    body.packets[0].subjectPrefix,
+    "relationship.test.signature.relationships.stale_packet_v2",
   );
-  assertEquals(body.packets[0].nextCommand?.includes("batch accept-safe"), false);
+  assertEquals(body.packets[0].nextCommand, undefined);
 });
 
 Deno.test("interactive review shows packet context before the current item", async () => {
@@ -636,10 +526,6 @@ function seedAcceptedEntity(
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run([entityId, name, kind]);
-}
-
-function quoteShellPath(value: string): string {
-  return /^[A-Za-z0-9._:-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 async function runDc(args: string[]): Promise<Deno.CommandOutput> {

@@ -272,7 +272,7 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");
 });
 
-Deno.test("status recommends the next scoped batch command as review debt narrows", async () => {
+Deno.test("status points open review to the primary review surface while explicit batches still work", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -410,7 +410,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusOne.nextCommand,
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities.example_explicit_safe",
+    "deno task dc -- review",
   );
 
   const acceptExplicitEntitiesOutput = await new Deno.Command(Deno.execPath(), {
@@ -460,7 +460,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusTwo.nextCommand,
-    "deno task dc -- review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+    "deno task dc -- review",
   );
 
   const deferRelationshipsOutput = await new Deno.Command(Deno.execPath(), {
@@ -512,7 +512,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusThree.nextCommand,
-    "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.dcgis.agencies --ref-type unknown",
+    "deno task dc -- review",
   );
 
   const deferLegalOutput = await new Deno.Command(Deno.execPath(), {
@@ -564,7 +564,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusFour.nextCommand,
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities.example_high_confidence",
+    "deno task dc -- review",
   );
 });
 
