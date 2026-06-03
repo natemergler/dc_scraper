@@ -4,6 +4,7 @@ import {
   type OperatorPlanWorkbench,
   unresolvedStateNote,
 } from "../src/v2/operator_plan.ts";
+import { connectors } from "../src/v2/connectors.ts";
 import type { ReviewItemRecord } from "../src/v2/domain.ts";
 import type { ReviewItemFilters } from "../src/v2/workbench/review.ts";
 
@@ -40,7 +41,7 @@ Deno.test("operator plan sends source failures to source inspection before revie
   const plan = buildOperatorPlan({
     workbench: fakeWorkbench([safeEntityReviewItem("candidate.council.committees.safe")]),
     canBatchAcceptReviewItem: batchAcceptsSafeDetails,
-    fetchedSources: 15,
+    fetchedSources: connectors.length - 1,
     failedSourceId: "council.committees",
     openReviewItemCount: 1,
     deferredReviewItemCount: 0,
@@ -60,7 +61,7 @@ Deno.test("operator plan suggests the largest explicit safe entity batch before 
       safeEntityReviewItem("candidate.council.committees.two"),
     ]),
     canBatchAcceptReviewItem: batchAcceptsSafeDetails,
-    fetchedSources: 16,
+    fetchedSources: connectors.length,
     openReviewItemCount: 3,
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
@@ -83,7 +84,7 @@ Deno.test("operator plan suggests the largest safe relationship batch before def
       deferRelationshipReviewItem("relationship.council.committees.two", "overseen_by"),
     ]),
     canBatchAcceptReviewItem: acceptsDefaultAcceptRelationship,
-    fetchedSources: 16,
+    fetchedSources: connectors.length,
     openReviewItemCount: 4,
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
@@ -104,7 +105,7 @@ Deno.test("operator plan suggests scoped default-defer relationship batches befo
       deferRelationshipReviewItem("relationship.council.committees.two", "overseen_by"),
     ]),
     canBatchAcceptReviewItem: () => false,
-    fetchedSources: 16,
+    fetchedSources: connectors.length,
     openReviewItemCount: 2,
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
@@ -125,7 +126,7 @@ Deno.test("operator plan suggests scoped default-defer legal refs before generic
       deferLegalReviewItem("legal.open_dc.public_bodies.two", "statute"),
     ]),
     canBatchAcceptReviewItem: () => false,
-    fetchedSources: 16,
+    fetchedSources: connectors.length,
     openReviewItemCount: 2,
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
@@ -144,7 +145,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([genericReviewItem("source_status.open")]),
       canBatchAcceptReviewItem: () => false,
-      fetchedSources: 16,
+      fetchedSources: connectors.length,
       openReviewItemCount: 1,
       deferredReviewItemCount: 0,
       staleReviewItemCount: 0,
@@ -158,7 +159,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
-      fetchedSources: 16,
+      fetchedSources: connectors.length,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
       staleReviewItemCount: 0,
@@ -172,7 +173,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
-      fetchedSources: 15,
+      fetchedSources: connectors.length - 1,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
       staleReviewItemCount: 0,
@@ -186,7 +187,7 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
     buildOperatorPlan({
       workbench: fakeWorkbench([]),
       canBatchAcceptReviewItem: () => false,
-      fetchedSources: 16,
+      fetchedSources: connectors.length,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
       staleReviewItemCount: 0,

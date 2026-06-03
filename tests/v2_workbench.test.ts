@@ -31,6 +31,10 @@ import {
   dcgisBoardsCommissionsCouncilsRowsFixture,
   dcgisMetadataFixture,
   dcgisRowsFixture,
+  enterpriseDatasetInventoryMetadataFixture,
+  enterpriseDatasetInventoryRowsPageOneFixture,
+  enterpriseDatasetInventoryRowsPageTwoFixture,
+  governmentOperationsCatalogFixture,
   legalEntrypointsFixture,
   limsFixture,
   openDcBoardFixture,
@@ -1142,6 +1146,26 @@ Deno.test("imports representative connector results and source inspection stays 
       "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/10?f=json",
       JSON.stringify(arcgisLayerDetailFixture("Early Vote Center")),
     ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json",
+      JSON.stringify(governmentOperationsCatalogFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json",
+      JSON.stringify(enterpriseDatasetInventoryMetadataFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json",
+      JSON.stringify({ count: 3 }),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json",
+      JSON.stringify(enterpriseDatasetInventoryRowsPageOneFixture),
+    ],
+    [
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json",
+      JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture),
+    ],
   ]);
   const fetcher = async (url: string) => {
     const body = responses.get(url);
@@ -1162,6 +1186,7 @@ Deno.test("imports representative connector results and source inspection stays 
       "legal.entrypoints",
       "admin.service_requests_311",
       "admin.budget_sources",
+      "admin.enterprise_dataset_inventory",
       "admin.permits_licenses",
       "admin.crime_public_safety",
       "admin.procurement_sources",
@@ -1175,6 +1200,7 @@ Deno.test("imports representative connector results and source inspection stays 
   }
   const dcgis = workbench.sourceSummary("dcgis.agencies");
   const quickbase = workbench.sourceSummary("mota.quickbase");
+  const enterpriseInventory = workbench.sourceSummary("admin.enterprise_dataset_inventory");
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
@@ -1192,11 +1218,14 @@ Deno.test("imports representative connector results and source inspection stays 
   assertEquals(quickbase.itemCount > 0, true);
   assertEquals(quickbase.entityCandidateCount > 0, true);
   assertEquals(quickbase.relationshipCandidateCount > 0, true);
+  assertEquals(enterpriseInventory.itemCount, 10);
+  assertEquals(enterpriseInventory.fieldCount, 9);
   assertEquals(hasRegisterRef, true);
   assertEquals(permitSummary.fieldCount > 0, true);
   assertEquals(categories.has("procurement"), true);
   assertEquals(categories.has("budget"), true);
   assertEquals(categories.has("crime_incidents"), true);
+  assertEquals(categories.has("public_services"), true);
 });
 
 Deno.test("failed parsed imports keep artifacts but roll back partial typed rows", async () => {
