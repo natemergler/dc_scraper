@@ -8,7 +8,6 @@ import {
 import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
-  runBatchDefer,
   runBatchDeferDefault,
   runInteractiveReview,
 } from "./workbench/review_cli.ts";
@@ -133,9 +132,6 @@ Usage:
     dcCommand("review batch accept-safe")
   } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${
-    dcCommand("review batch defer")
-  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  ${
     dcCommand("review batch defer-default")
   } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
@@ -165,9 +161,6 @@ Usage:
   ${
     dcCommand("review batch accept-safe")
   } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  ${
-    dcCommand("review batch defer")
-  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${
     dcCommand("review batch defer-default")
   } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
@@ -220,16 +213,6 @@ async function handleReviewBatchCommand(
     }
     await deps.withWorkbench(async (workbench) => {
       await runBatchAcceptSafe(workbench, filters, options.resolutionsDir);
-    });
-    return true;
-  }
-  if (args[2] === "defer") {
-    if (hasHelpFlag(args, 3)) {
-      printReviewBatchHelp();
-      return true;
-    }
-    await deps.withWorkbench(async (workbench) => {
-      await runBatchDefer(workbench, filters, options.resolutionsDir);
     });
     return true;
   }

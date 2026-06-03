@@ -161,13 +161,6 @@ order by
   }));
 }
 
-export function nextReviewItem(
-  store: WorkbenchStore,
-  modeOrFilters?: string | ReviewItemFilters,
-): ReviewItemRecord | undefined {
-  return listReviewItems(store, modeOrFilters).at(0);
-}
-
 export function staleReviewSummary(store: WorkbenchStore): StaleReviewSummary {
   const count = queryOne<{ count: number }>(
     store.db,
