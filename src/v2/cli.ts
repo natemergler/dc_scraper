@@ -1,5 +1,6 @@
 import { join } from "@std/path";
 import { handleAuditCommand } from "./cli_audit.ts";
+import { dcCommand } from "./command_prefix.ts";
 import { handleEntityCommand } from "./cli_entity.ts";
 import { handleReleaseCommand } from "./cli_release.ts";
 import { handleReviewCommand } from "./cli_review.ts";
@@ -151,30 +152,44 @@ export function printHelp(): void {
   console.log(`dc civic-data workbench
 
 Workflow:
-  Fetch:   dc source list | dc source fetch --all | dc source fetch dcgis.agencies
-  Audit:   dc audit | dc status --json | dc source inspect dcgis.agencies
-  Review:  dc review | dc review list --mode entities
-  Release: dc release build | dc release inspect
+  Fetch:   ${dcCommand("source list")} | ${dcCommand("source fetch --all")} | ${
+    dcCommand("source fetch dcgis.agencies")
+  }
+  Audit:   ${dcCommand("audit")} | ${dcCommand("status --json")} | ${
+    dcCommand("source inspect dcgis.agencies")
+  }
+  Review:  ${dcCommand("review")} | ${dcCommand("review list --mode entities")}
+  Release: ${dcCommand("release build")} | ${dcCommand("release inspect")}
 
 Usage:
-  dc init [--db <path>]
-  dc audit [status|doctor] [--db <path>] [--json]
-  dc status [--db <path>] [--json]
-  dc doctor [--db <path>] [--json]
-  dc source list [--db <path>] [--json]
-  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
-  dc source fetch --all [--db <path>] [--data-dir <path>] [--limit <n>]
-  dc source inspect <source-id> [--db <path>] [--json]
-  dc source compare public-bodies [--db <path>] [--json]
-  dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
-  dc review list [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  dc review batch accept-safe [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc review batch defer-default --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  dc entity search <query> [--db <path>] [--json]
-  dc entity show <entity-id> [--db <path>] [--json]
-  dc release build [--db <path>] [--out <dir>]
-  dc release inspect [--out <dir>] [--json]
+  ${dcCommand("init")} [--db <path>]
+  ${dcCommand("audit")} [status|doctor] [--db <path>] [--json]
+  ${dcCommand("status")} [--db <path>] [--json]
+  ${dcCommand("doctor")} [--db <path>] [--json]
+  ${dcCommand("source list")} [--db <path>] [--json]
+  ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>]
+  ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>]
+  ${dcCommand("source inspect <source-id>")} [--db <path>] [--json]
+  ${dcCommand("source compare public-bodies")} [--db <path>] [--json]
+  ${
+    dcCommand("review")
+  } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
+  ${
+    dcCommand("review list")
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  ${
+    dcCommand("review batch accept-safe")
+  } [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${
+    dcCommand("review batch defer-default")
+  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  ${dcCommand("entity search <query>")} [--db <path>] [--json]
+  ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
+  ${dcCommand("release build")} [--db <path>] [--out <dir>]
+  ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Defaults:
   workbench db: data/workbench.sqlite

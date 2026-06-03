@@ -1,3 +1,4 @@
+import { dcCommand } from "./command_prefix.ts";
 import type { WorkbenchMeta } from "./domain.ts";
 
 export interface WorkbenchCommandDeps {
@@ -27,18 +28,18 @@ export async function handleWorkbenchCommand(
 }
 
 export function printWorkbenchHelp(): void {
-  console.log(`dc workbench
+  console.log(`${dcCommand("workbench")}
 
 Workflow:
-  1. Create or open the workbench with \`dc init\`
-  2. Check the current state with \`dc status\`
-  3. Inspect blockers with \`dc audit\`
+  1. Create or open the workbench with \`${dcCommand("init")}\`
+  2. Check the current state with \`${dcCommand("status")}\`
+  3. Inspect blockers with \`${dcCommand("audit")}\`
 
 Usage:
-  dc init [--db <path>]
-  dc workbench init [--db <path>]
-  dc status [--db <path>] [--json]
-  dc audit [--db <path>] [--json]
+  ${dcCommand("init")} [--db <path>]
+  ${dcCommand("workbench init")} [--db <path>]
+  ${dcCommand("status")} [--db <path>] [--json]
+  ${dcCommand("audit")} [--db <path>] [--json]
 `);
 }
 

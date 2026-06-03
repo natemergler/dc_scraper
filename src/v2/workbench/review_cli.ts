@@ -66,7 +66,7 @@ export async function runInteractiveReview(
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
-  const parts = ["dc", "review"];
+  const parts = ["deno", "task", "dc", "--", "review"];
   if (filters.mode && ["entities", "relationships", "legal", "sources"].includes(filters.mode)) {
     parts.push(filters.mode);
   }

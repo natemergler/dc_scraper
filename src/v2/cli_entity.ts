@@ -1,3 +1,4 @@
+import { dcCommand } from "./command_prefix.ts";
 import type { EntitySearchResult, EntityView } from "./domain.ts";
 import { renderEntityView } from "./workbench/review_cli.ts";
 
@@ -22,7 +23,7 @@ export async function handleEntityCommand(
   }
   if (args[1] === "search") {
     if (!args[2] || args[2].startsWith("--") || hasHelpFlag(args, 2)) {
-      printEntityHelp(["run `dc entity search District` to look up a body by name"]);
+      printEntityHelp([`run \`${dcCommand("entity search District")}\` to look up a body by name`]);
       return true;
     }
     const rows = await deps.searchEntities(readFreeTextArgument(args, 2));
@@ -38,7 +39,9 @@ export async function handleEntityCommand(
   }
   if (args[1] === "show") {
     if (!args[2] || args[2].startsWith("--") || hasHelpFlag(args, 2)) {
-      printEntityHelp(["run `dc entity show dc.council` after you know the entity id"]);
+      printEntityHelp([
+        `run \`${dcCommand("entity show dc.council")}\` after you know the entity id`,
+      ]);
       return true;
     }
     const view = await deps.entityView(args[2]);
@@ -53,15 +56,15 @@ export async function handleEntityCommand(
 }
 
 export function printEntityHelp(tips: string[] = []): void {
-  console.log(`dc entity
+  console.log(`${dcCommand("entity")}
 
 Workflow:
-  1. Find an entity id with \`dc entity search District\`
-  2. Inspect the full record with \`dc entity show dc.council\`
+  1. Find an entity id with \`${dcCommand("entity search District")}\`
+  2. Inspect the full record with \`${dcCommand("entity show dc.council")}\`
 
 Usage:
-  dc entity search <query> [--db <path>] [--json]
-  dc entity show <entity-id> [--db <path>] [--json]
+  ${dcCommand("entity search <query>")} [--db <path>] [--json]
+  ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
 `);
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);

@@ -393,7 +393,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusOne.nextCommand,
-    "dc review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+    "deno task dc -- review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
   );
 
   const deferRelationshipsOutput = await new Deno.Command(Deno.execPath(), {
@@ -445,7 +445,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusTwo.nextCommand,
-    "dc review batch defer-default --mode legal --subject-prefix legal.dcgis.agencies --ref-type unknown",
+    "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.dcgis.agencies --ref-type unknown",
   );
 
   const deferLegalOutput = await new Deno.Command(Deno.execPath(), {
@@ -497,7 +497,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusThree.nextCommand,
-    "dc review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities",
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities",
   );
 });
 
@@ -545,7 +545,7 @@ Deno.test("status points to audit when blocked reconciliation is the only remain
   const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
     nextCommand: string;
   };
-  assertEquals(status.nextCommand, "dc audit");
+  assertEquals(status.nextCommand, "deno task dc -- audit");
 });
 
 Deno.test("audit surfaces first blocked raw value and doctor remains a compatibility alias", async () => {
@@ -599,7 +599,10 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
     auditText,
     "Blockers: dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health (missing)",
   );
-  assertStringIncludes(auditText, "Inspect source: dc source inspect council.committees");
+  assertStringIncludes(
+    auditText,
+    "Inspect source: deno task dc -- source inspect council.committees",
+  );
 
   const auditJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -633,7 +636,7 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
     auditJson.reconciliation.firstBlocked?.rawValue,
     "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
   );
-  assertEquals(auditJson.nextCommand, "dc audit");
+  assertEquals(auditJson.nextCommand, "deno task dc -- audit");
 
   const doctorOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -652,7 +655,10 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
   assertEquals(doctorOutput.code, 0);
   const doctorText = new TextDecoder().decode(doctorOutput.stdout);
   assertStringIncludes(doctorText, "Blocked detail:");
-  assertStringIncludes(doctorText, "Inspect source: dc source inspect council.committees");
+  assertStringIncludes(
+    doctorText,
+    "Inspect source: deno task dc -- source inspect council.committees",
+  );
 });
 
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
