@@ -256,6 +256,42 @@ export const openDcCommissionFixture = `
 </body></html>
 `;
 
+export const dcCourtsHomeFixture = `
+<html><body>
+  <h2>Superior Court</h2>
+  <a href="/superior-court">Superior Court</a>
+  <h2>Court of Appeals</h2>
+  <a href="/court-of-appeals">Court of Appeals</a>
+</body></html>
+`;
+
+export const dcCourtOfAppealsFixture = `
+<html><body>
+  <h1>Court of Appeals</h1>
+  <h2>Overview</h2>
+  <p>The District of Columbia Court of Appeals is the highest court of the District of Columbia.</p>
+</body></html>
+`;
+
+export const dcSuperiorCourtFixture = `
+<html><body>
+  <h1>Superior Court</h1>
+  <h2>Divisions, Program, and Office</h2>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/civil-division">Civil Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/crime-victims-compensation-program">Crime Victims Compensation Program</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/criminal-division">Criminal Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/domestic-violence-division">Domestic Violence Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/family-court-operations-division">Family Court Operations Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/family-court-social-services-division">Family Court Social Services Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/multi-door-dispute-resolution-division">Multi-Door Dispute Resolution Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/office-of-the-auditor-master">Office of the Auditor-Master</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/probate-division">Probate Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/special-operations-division">Special Operations Division</a></h4></div>
+  <div class="grid-nav--item"><h4><a href="/superior-court/superior-court-divisions/tax-division">Tax Division</a></h4></div>
+  <div class="grid-nav--item"><a href="/superior-court/superior-court-divisions/probate-division/probate-self-help-center">Probate Self-Help Center</a></div>
+</body></html>
+`;
+
 export const councilCommitteesFixture = `
 <html><body>
   <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
