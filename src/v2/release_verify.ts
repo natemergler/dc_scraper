@@ -410,6 +410,9 @@ function isPublicHostname(hostname: string): boolean {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
     return false;
   }
+  if (host.endsWith(".internal") || (!host.includes(".") && !host.includes(":"))) {
+    return false;
+  }
   if (isPrivateIpv4Host(host)) return false;
   if (isPrivateIpv6Host(host)) return false;
   return true;
@@ -439,6 +442,7 @@ function isPrivateIpv6Host(host: string): boolean {
   return host === "::" ||
     host === "::1" ||
     host === "0:0:0:0:0:0:0:1" ||
+    host.startsWith("::ffff:") ||
     host.startsWith("fe80:") ||
     host.startsWith("fc") ||
     host.startsWith("fd");
