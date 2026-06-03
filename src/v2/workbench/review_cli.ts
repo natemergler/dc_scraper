@@ -1,6 +1,8 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
+import { appendResolutionEvents } from "./resolution.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -20,11 +22,11 @@ interface RelationshipReviewRow {
   itemTitle: string;
 }
 
-interface EndpointStatus {
-  entityId: string;
-  status: string;
-  name?: string;
-  note?: string;
+interface ReviewSubjectContext {
+  title: string;
+  infoLabel?: string;
+  sourceLine?: string;
+  omittedDetailKeys: string[];
 }
 
 export async function runInteractiveReview(
@@ -65,7 +67,7 @@ export async function runInteractiveReview(
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
-  const parts = ["dc", "review"];
+  const parts = ["deno", "task", "dc", "--", "review"];
   if (filters.mode && ["entities", "relationships", "legal", "sources"].includes(filters.mode)) {
     parts.push(filters.mode);
   }
@@ -101,28 +103,35 @@ export function renderReviewItem(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
 ): string {
+  const context = reviewSubjectContext(store, item);
   return [
-    `Review item: ${item.reviewItemId}`,
-    "What needs review",
-    `- type: ${item.itemType}`,
-    `- subject: ${item.subjectId}`,
-    `- status: ${item.status}`,
-    "Why this matters",
-    item.reason,
-    `Default action: ${renderDefaultAction(item)}`,
-    `Available actions: ${availableActionLabels(item).join(", ")}`,
+    `Review: ${context.title}`,
+    [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
+    context.sourceLine,
+    `reason: ${item.reason}`,
+    `default: ${renderDefaultAction(item)}`,
+    `actions: ${availableActionLabels(item).join(", ")}`,
+    `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     ...renderRelationshipBlock(store, item),
-    ...renderDetailsBlock(item.details),
+    ...renderDetailsBlock(item.details, context.omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
-  ].join("\n");
+  ].filter((line): line is string => Boolean(line)).join("\n");
 }
 
-export function renderReviewItemSummary(item: ReviewItemRecord): string {
-  const details = compactDetails(item.details);
+export function renderReviewItemSummary(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): string {
+  const context = reviewSubjectContext(store, item);
+  const details = compactDetails(item.details, context.omittedDetailKeys);
   return [
-    `[${item.status}] ${item.itemType} ${item.subjectId}`,
+    `[${item.status}] ${context.title}`,
+    [humanizeToken(item.itemType), context.infoLabel, `default ${item.defaultAction}`].filter(
+      Boolean,
+    ).join(" | "),
+    context.sourceLine,
     `reason: ${item.reason}`,
-    `default: ${item.defaultAction}`,
+    `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     details ? `details: ${details}` : undefined,
   ].filter((line): line is string => Boolean(line)).join("\n");
 }
@@ -141,7 +150,13 @@ export async function runBatchAcceptSafe(
       continue;
     }
     accepted.push(item);
-    await workbench.appendResolutionEvent(batchAcceptEvent(item), resolutionsDir);
+  }
+  if (accepted.length > 0) {
+    await appendResolutionEvents(
+      workbench,
+      accepted.map((item) => batchAcceptEvent(item)),
+      resolutionsDir,
+    );
   }
   console.log(`Accepted ${accepted.length} safe review item(s).`);
   if (skipped.length > 0) {
@@ -228,19 +243,20 @@ export function renderEntityView(view: EntityView): string {
   lines.push("evidence:");
   for (const evidence of view.evidence.slice(0, 10)) {
     lines.push(
-      `- ${evidence.fieldPath} <- ${evidence.observedValue} [${evidence.sourceId} @ ${evidence.artifactPath}]`,
+      `- ${evidence.sourceId}: ${evidence.fieldPath} <- ${evidence.observedValue}`,
+      `  artifact: ${evidence.artifactPath}`,
     );
   }
   lines.push("outgoing:");
   for (const relationship of view.outgoing) {
     lines.push(
-      `- ${relationship.relationshipType} -> ${relationship.targetEntityId} (${relationship.targetName})`,
+      `- ${relationship.relationshipType} -> ${relationship.targetName} [${relationship.targetEntityId}]`,
     );
   }
   lines.push("incoming:");
   for (const relationship of view.incoming) {
     lines.push(
-      `- ${relationship.relationshipType} <- ${relationship.sourceEntityId} (${relationship.sourceName})`,
+      `- ${relationship.relationshipType} <- ${relationship.sourceName} [${relationship.sourceEntityId}]`,
     );
   }
   if (view.legalRefs.length > 0) {
@@ -363,9 +379,15 @@ function availableActionKeys(item: ReviewItemRecord): string[] {
   return ["", "d", "q"];
 }
 
-function renderDetailsBlock(details: Record<string, unknown>): string[] {
-  const entries = Object.entries(details).sort(([left], [right]) => left.localeCompare(right));
-  if (entries.length === 0) return ["details: none"];
+function renderDetailsBlock(
+  details: Record<string, unknown>,
+  omittedKeys: string[],
+): string[] {
+  const omit = new Set(omittedKeys);
+  const entries = Object.entries(details)
+    .filter(([key]) => !omit.has(key))
+    .sort(([left], [right]) => left.localeCompare(right));
+  if (entries.length === 0) return [];
   return [
     "details:",
     ...entries.map(([key, value]) => `- ${key}: ${formatDetailValue(value)}`),
@@ -384,11 +406,10 @@ function renderRelationshipBlock(
   return [
     "relationship:",
     `- type: ${relationship.relationshipType}`,
-    `- family: ${relationship.relationshipType} -> ${relationship.toEntityRef}`,
     `- from: ${renderEndpointStatus(from)}`,
     `- to: ${renderEndpointStatus(to)}`,
     `- source: ${relationship.sourceId} / ${relationship.itemTitle}`,
-    relationship.rawValue ? `- raw: ${relationship.rawValue}` : undefined,
+    relationship.rawValue ? `- raw value: ${relationship.rawValue}` : undefined,
   ].filter((line): line is string => Boolean(line));
 }
 
@@ -411,55 +432,21 @@ function relationshipReviewRow(
   );
 }
 
-function endpointStatus(store: Pick<WorkbenchStore, "db">, entityId: string): EndpointStatus {
-  const canonical = queryOne<{ name: string; reviewStatus: string; isPlaceholder: number }>(
-    store.db,
-    "select name, review_status as reviewStatus, is_placeholder as isPlaceholder from canonical_entities where entity_id = ?",
-    [entityId],
-  );
-  if (canonical) {
-    return {
-      entityId,
-      name: canonical.name,
-      status: canonical.isPlaceholder ? "placeholder" : canonical.reviewStatus,
-      note: canonical.isPlaceholder ? "review placeholder before relying on this edge" : undefined,
-    };
-  }
-  const candidate = queryOne<{ candidateId: string; name: string; reviewStatus: string }>(
-    store.db,
-    `select candidate_id as candidateId,
-            name,
-            review_status as reviewStatus
-     from entity_candidates
-     where proposed_entity_id = ?
-     order by
-       case review_status when 'accepted' then 0 when 'pending' then 1 else 2 end,
-       coalesce(confidence, 0) desc,
-       candidate_id
-     limit 1`,
-    [entityId],
-  );
-  if (candidate) {
-    return {
-      entityId,
-      name: candidate.name,
-      status: `candidate ${candidate.reviewStatus}`,
-      note: candidate.reviewStatus === "pending"
-        ? `accept entity candidate ${candidate.candidateId} first when possible`
-        : undefined,
-    };
-  }
-  return {
-    entityId,
-    status: "missing",
-    note: "accepting will create a placeholder entity",
-  };
-}
-
 function renderEndpointStatus(endpoint: EndpointStatus): string {
   const name = endpoint.name ? ` ${JSON.stringify(endpoint.name)}` : "";
-  const note = endpoint.note ? `; ${endpoint.note}` : "";
-  return `${endpoint.entityId}${name} (${endpoint.status}${note})`;
+  const note = endpointStatusNote(endpoint);
+  return `${endpoint.entityId}${name} (${endpoint.state}${note ? `; ${note}` : ""})`;
+}
+
+function endpointStatusNote(endpoint: EndpointStatus): string | undefined {
+  if (endpoint.state === "placeholder") return "review placeholder before relying on this edge";
+  if (endpoint.state === "pending_candidate") return "accept an endpoint candidate first";
+  if (endpoint.state === "deferred_candidate") return "resume deferred endpoint review first";
+  if (endpoint.state === "stale_candidate") return "resolve changed prior endpoint decision first";
+  if (endpoint.state === "replay_conflict") return "fix endpoint replay conflict first";
+  if (endpoint.state === "rejected_candidate") return "prior endpoint candidate was rejected";
+  if (endpoint.state === "missing") return "endpoint has no source-backed candidate yet";
+  return undefined;
 }
 
 function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
@@ -467,8 +454,8 @@ function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
   return [
     "evidence:",
     ...evidence.slice(0, 8).flatMap((row) => [
-      `- ${row.fieldPath} <- ${row.observedValue}`,
-      `  source: ${row.sourceId} @ ${row.artifactPath}`,
+      `- ${row.sourceId}: ${row.fieldPath} <- ${row.observedValue}`,
+      `  artifact: ${row.artifactPath}`,
     ]),
   ];
 }
@@ -519,12 +506,94 @@ function reviewEvidence(
   return [];
 }
 
-function compactDetails(details: Record<string, unknown>): string {
-  const entries = Object.entries(details).sort(([left], [right]) => left.localeCompare(right));
+function compactDetails(details: Record<string, unknown>, omittedKeys: string[] = []): string {
+  const omit = new Set(omittedKeys);
+  const entries = Object.entries(details)
+    .filter(([key]) => !omit.has(key))
+    .sort(([left], [right]) => left.localeCompare(right));
   if (entries.length === 0) return "";
   return entries
     .map(([key, value]) => `${key}=${formatDetailValue(value)}`)
     .join(" ");
+}
+
+function reviewSubjectContext(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+): ReviewSubjectContext {
+  if (item.itemType === "entity_candidate") {
+    const row = queryOne<{
+      name: string;
+      kind: string;
+      sourceId: string;
+      itemTitle: string;
+    }>(
+      store.db,
+      `select entity_candidates.name as name,
+              entity_candidates.kind as kind,
+              source_items.source_id as sourceId,
+              source_items.title as itemTitle
+       from entity_candidates
+       join source_items on source_items.source_item_id = entity_candidates.source_item_id
+       where entity_candidates.candidate_id = ?`,
+      [item.subjectId],
+    );
+    return {
+      title: row?.name ?? item.subjectId,
+      infoLabel: row?.kind ? humanizeToken(row.kind) : undefined,
+      sourceLine: row ? `source: ${row.sourceId} / ${row.itemTitle}` : undefined,
+      omittedDetailKeys: ["name", "kind"],
+    };
+  }
+  if (item.itemType === "relationship_candidate") {
+    const relationship = relationshipReviewRow(store, item.subjectId);
+    if (relationship) {
+      const from = endpointStatus(store, relationship.fromEntityRef);
+      const to = endpointStatus(store, relationship.toEntityRef);
+      return {
+        title: relationship.rawValue ?? `${endpointTitle(from)} -> ${endpointTitle(to)}`,
+        infoLabel: humanizeToken(relationship.relationshipType),
+        sourceLine: `source: ${relationship.sourceId} / ${relationship.itemTitle}`,
+        omittedDetailKeys: [],
+      };
+    }
+  }
+  if (item.itemType === "legal_ref") {
+    const row = queryOne<{
+      citationText: string;
+      refType: string;
+      sourceId: string;
+      itemTitle: string;
+    }>(
+      store.db,
+      `select legal_refs.citation_text as citationText,
+              legal_refs.ref_type as refType,
+              source_items.source_id as sourceId,
+              source_items.title as itemTitle
+       from legal_refs
+       join source_items on source_items.source_item_id = legal_refs.source_item_id
+       where legal_refs.legal_ref_id = ?`,
+      [item.subjectId],
+    );
+    return {
+      title: row?.citationText ?? item.subjectId,
+      infoLabel: row?.refType ? humanizeToken(row.refType) : undefined,
+      sourceLine: row ? `source: ${row.sourceId} / ${row.itemTitle}` : undefined,
+      omittedDetailKeys: [],
+    };
+  }
+  return {
+    title: item.subjectId,
+    omittedDetailKeys: [],
+  };
+}
+
+function endpointTitle(endpoint: EndpointStatus): string {
+  return endpoint.name ?? endpoint.entityId;
+}
+
+function humanizeToken(value: string): string {
+  return value.replaceAll("_", " ");
 }
 
 function formatDetailValue(value: unknown): string {

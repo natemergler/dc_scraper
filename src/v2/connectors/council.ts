@@ -15,8 +15,10 @@ import {
 import {
   artifact,
   buildCandidateReviewItem,
+  buildKnownCouncilOversightEntityRef,
   buildKnownEntityRef,
   fieldEvidence,
+  isScopedCouncilOversightTarget,
 } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 import { normalizeName, slugify, stripHtml } from "../domain.ts";
@@ -150,7 +152,7 @@ export const councilCommitteesConnector: SourceConnector = {
             `${detail.committee.slug}-oversight-${index + 1}`,
           ),
           sourceItemKey: `${detail.committee.slug}:oversight`,
-          fromEntityRef: buildKnownEntityRef(target),
+          fromEntityRef: buildKnownCouncilOversightEntityRef(target),
           toEntityRef: buildEntityId(detail.committee.name),
           relationshipType: "overseen_by",
           rawValue: target,
@@ -231,14 +233,9 @@ export const councilCommitteesConnector: SourceConnector = {
 function defaultActionForRelationship(candidate: RelationshipCandidateInput): "accept" | "defer" {
   if (candidate.relationshipType !== "overseen_by") return "accept";
   const rawValue = candidate.rawValue ?? "";
-  return defaultDeferOversightTargets.has(rawValue) || isGroupedOversightTarget(rawValue)
+  return defaultDeferOversightTargets.has(rawValue) || isScopedCouncilOversightTarget(rawValue)
     ? "defer"
     : "accept";
-}
-
-function isGroupedOversightTarget(rawValue: string): boolean {
-  return rawValue.includes("including") || rawValue.includes("jointly") ||
-    rawValue.startsWith("All of ");
 }
 
 function buildCommitteeMemberRelationships(
