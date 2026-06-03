@@ -42,7 +42,9 @@ export async function handleSourceCommand(
       tips: [
         `run \`${dcCommand("source list")}\` to see fetch status, \`${
           dcCommand("source fetch --all")
-        }\` for a full smoke, or \`${dcCommand("source fetch dcgis.agencies")}\` to start smaller`,
+        }\` to fetch every configured source into this workbench, or \`${
+          dcCommand("source fetch dcgis.agencies")
+        }\` to start smaller`,
       ],
       showAvailableSources: true,
       connectors: deps.connectors,
@@ -58,9 +60,11 @@ export async function handleSourceCommand(
     if (!sourceIds) {
       printSourceHelp({
         tips: [
-          `run \`${dcCommand("source fetch --all")}\` for a full smoke or \`${
+          `run \`${
+            dcCommand("source fetch --all")
+          }\` to fetch every configured source into this workbench or \`${
             dcCommand("source fetch dcgis.agencies")
-          }\` for a single source`,
+          }\` for one source`,
         ],
         showAvailableSources: true,
         connectors: deps.connectors,
