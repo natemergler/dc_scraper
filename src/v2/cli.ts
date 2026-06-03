@@ -244,7 +244,7 @@ Workflow:
 
 Usage:
   ${dcCommand("init")} [--db <path>]
-  ${dcCommand("audit")} [status] [--db <path>] [--json]
+  ${dcCommand("audit")} [--db <path>] [--json]
   ${dcCommand("status")} [--db <path>] [--json]
   ${dcCommand("source list")} [--db <path>] [--json]
   ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>]

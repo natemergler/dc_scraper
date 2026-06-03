@@ -19,6 +19,18 @@ export async function handleAuditCommand(
   options: AuditCommandOptions,
   deps: AuditCommandDeps,
 ): Promise<boolean> {
+  if (args[0] === "status") {
+    if (isHelp(args[1])) {
+      printAuditHelp();
+      return true;
+    }
+    if (!args[1] || args[1].startsWith("--")) {
+      await renderAuditSnapshot("status", options, deps);
+      return true;
+    }
+    return false;
+  }
+
   if (args[0] === "audit") {
     if (isHelp(args[1])) {
       printAuditHelp();
@@ -26,14 +38,6 @@ export async function handleAuditCommand(
     }
     if (!args[1] || args[1].startsWith("--")) {
       await renderAuditSnapshot("audit", options, deps);
-      return true;
-    }
-    if (args[1] === "status") {
-      if (hasHelpFlag(args, 2)) {
-        printAuditHelp();
-        return true;
-      }
-      await renderAuditSnapshot("status", options, deps);
       return true;
     }
     return false;
@@ -52,7 +56,6 @@ Workflow:
 
 Usage:
   ${dcCommand("audit")} [--db <path>] [--json]
-  ${dcCommand("audit status")} [--db <path>] [--json]
   ${dcCommand("status")} [--db <path>] [--json]
 `);
 }
@@ -77,8 +80,4 @@ async function renderAuditSnapshot(
 
 function isHelp(value: string | undefined): boolean {
   return value === "help" || value === "--help" || value === "-h";
-}
-
-function hasHelpFlag(args: string[], start: number): boolean {
-  return args.slice(start).some((value) => isHelp(value));
 }
