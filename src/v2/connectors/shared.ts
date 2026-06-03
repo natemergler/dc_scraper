@@ -89,6 +89,25 @@ export function buildKnownEntityRef(name: string): string {
   return knownEntityRefs.get(entityAliasKey(name)) ?? buildEntityId(name);
 }
 
+export function buildKnownCouncilOversightEntityRef(rawValue: string): string {
+  const baseName = extractScopedCouncilOversightBaseName(rawValue);
+  return buildKnownEntityRef(baseName ?? rawValue);
+}
+
+export function extractScopedCouncilOversightBaseName(rawValue: string): string | undefined {
+  const normalized = normalizeName(rawValue);
+  if (!normalized || /^all of\b/i.test(normalized)) return undefined;
+  const parenthetical = normalized.match(/^(.+?)\s*\((including|excluding|jointly)\b/i);
+  if (parenthetical?.[1]) return parenthetical[1].trim();
+  const commaScoped = normalized.match(/^(.+?),\s*(including|excluding|jointly)\b/i);
+  if (commaScoped?.[1]) return commaScoped[1].trim();
+  return undefined;
+}
+
+export function isScopedCouncilOversightTarget(rawValue: string): boolean {
+  return /\bincluding\b|\bjointly\b|^all of\b|\bexcluding\b/i.test(normalizeName(rawValue));
+}
+
 export function toPublicHttpUrl(
   baseUrl: string,
   maybeRelative: string | undefined,
@@ -148,60 +167,47 @@ const knownEntityRefs = new Map<string, string>([
     "alcoholic beverages and cannabis administration",
     "dc.alcoholic_beverage_and_cannabis_administration",
   ],
-  ["bicycle advisory council", "dc.bicycle_advisory_council_bac"],
   [
-    "board for the condemnation of insanitary buildings",
-    "dc.board_for_the_condemnation_of_insanitary_buildings_bcib",
+    "alcoholic beverages and cannabis administration (abca)",
+    "dc.alcoholic_beverage_and_cannabis_administration",
   ],
-  [
-    "board of architecture, interior design, and landscape architecture",
-    "dc.board_of_architecture_interior_design_and_landscape_architecture_boaidla",
-  ],
-  ["board of barber and cosmetology", "dc.board_of_barber_and_cosmetology_bobc"],
-  ["board of funeral directors", "dc.board_of_funeral_directors_bofd"],
-  ["board of industrial trades", "dc.board_of_industrial_trades_boit"],
-  ["board of professional engineering", "dc.board_of_professional_engineering_bope"],
-  ["board of real estate appraisers", "dc.board_of_real_estate_appraisers_borea"],
+  ["bicycle advisory council", "dc.bicycle_advisory_council"],
   [
     "board of review of anti-deficiency violations",
-    "dc.board_of_review_for_anti_deficiency_violations_brav",
+    "dc.board_of_review_for_anti_deficiency_violations",
   ],
   [
     "citizen review panel on child abuse and neglect",
-    "dc.citizen_review_panel_for_child_abuse_and_neglect_crp",
+    "dc.citizen_review_panel_on_child_abuse_and_neglect",
   ],
-  ["clemency board", "dc.clemency_board_cb"],
-  ["combat sports commission", "dc.combat_sports_commission_csc"],
-  ["commission on aging", "dc.commission_on_aging_coa"],
-  [
-    "commission on climate change and resiliency",
-    "dc.commission_on_climate_change_and_resiliency_cccr",
-  ],
-  ["commission on fashion arts and events", "dc.commission_on_fashion_arts_and_events_cfae"],
-  ["commission on health equity", "dc.commission_on_health_equity_cohe"],
-  [
-    "commission on judicial disabilities and tenure",
-    "dc.commission_on_judicial_disabilities_and_tenure_cjdt",
-  ],
-  ["commission on nightlife and culture", "dc.commission_on_nightlife_and_culture_cnc"],
-  ["commission on persons with disabilities", "dc.commission_on_persons_with_disabilities_cpd"],
-  ["commission on poverty", "dc.commission_on_poverty_cp"],
-  ["commission on women", "dc.commission_for_women_cfw"],
-  [
-    "commission on the martin luther king, jr. holiday",
-    "dc.commission_on_the_martin_luther_king_jr_holiday_cmlk",
-  ],
+  ["clemency board", "dc.clemency_board"],
+  ["commission on nightlife and culture", "dc.commission_on_nightlife_and_culture"],
+  ["commission on poverty", "dc.commission_on_poverty"],
+  ["commission on women", "dc.commission_for_women"],
   ["council", "dc.council_of_the_district_of_columbia"],
   ["council of the district of columbia", "dc.council_of_the_district_of_columbia"],
+  [
+    "department of consumer and regulatory affairs",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
+  [
+    "department of consumer and regulatory affairs (dcra)",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
+  ["department of disability services", "dc.department_on_disability_services"],
   [
     "developmental disabilities state planning council",
     "dc.developmental_disabilities_state_planning_council_dd_council",
   ],
-  ["destination dc", "dc.washington_d_c_convention_and_tourism_corporation_destination_dc"],
+  ["destination dc", "dc.destination_dc"],
   ["department of employment services (does)", "dc.department_of_employment_services"],
   ["department of health", "dc.dc_health"],
   ["department of health (doh)", "dc.dc_health"],
   ["city administrator", "dc.office_of_the_city_administrator"],
+  [
+    "dc department of licensing and consumer protection",
+    "dc.department_of_licensing_and_consumer_protection",
+  ],
   ["deputy mayor for education", "dc.office_of_the_deputy_mayor_for_education"],
   [
     "deputy mayor for health and human services",
@@ -212,43 +218,51 @@ const knownEntityRefs = new Map<string, string>([
     "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
   ],
   [
+    "deputy mayor for planning and economic development (dmped)",
+    "dc.office_of_the_deputy_mayor_for_planning_and_economic_development",
+  ],
+  [
     "deputy mayor for public safety and justice",
+    "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
+  ],
+  [
+    "deputy mayor for public safety and justice/operations (dmpsj/o)",
     "dc.office_of_the_deputy_mayor_for_public_safety_and_justice",
   ],
   ["district of columbia auditor", "dc.office_of_the_dc_auditor"],
   ["district of columbia board of elections", "dc.board_of_elections"],
   ["district of columbia housing authority", "dc.dc_housing_authority"],
+  ["district of columbia public library", "dc.dc_public_library"],
   [
     "district of columbia health benefit exchange authority",
     "dc.health_benefit_exchange_authority",
   ],
   ["district of columbia public library system", "dc.dc_public_library"],
-  ["district of columbia sentencing commission", "dc.sentencing_commission"],
-  [
-    "district of columbia state athletics commission",
-    "dc.district_of_columbia_state_athletics_commission_dcsac",
-  ],
   ["district of columbia water and sewer authority", "dc.dc_water"],
+  ["doc", "dc.department_of_corrections"],
   ["dlcp/opl", "dc.department_of_licensing_and_consumer_protection"],
   ["does", "dc.department_of_employment_services"],
   ["doh", "dc.dc_health"],
-  ["financial literacy council", "dc.financial_literacy_council_flc"],
   [
     "fire and emergency medical services department",
     "dc.fire_and_emergency_medical_services",
   ],
-  ["food policy council", "dc.food_policy_council_fpc"],
-  ["green buildings advisory council", "dc.green_building_advisory_council_gbac"],
   ["health information exchange policy board", "dc.health_information_exchange_policy_board_hie"],
   ["historic preservation review board", "dc.historic_preservation_review_board_hprb"],
   ["housing finance agency", "dc.dc_housing_finance_agency"],
   ["inspector general", "dc.office_of_the_inspector_general"],
-  ["judicial nomination commission", "dc.judicial_nomination_commission_jnc"],
+  ["mpd", "dc.metropolitan_police_department"],
   ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor's office of veteran's affairs", "dc.mayor_s_office_of_veterans_affairs"],
   ["national capital planning commission", "dc.national_capital_planning_commission_ncpc"],
   [
     "office of the attorney general for the district of columbia",
     "dc.office_of_the_attorney_general",
+  ],
+  ["office of city administrator", "dc.office_of_the_city_administrator"],
+  [
+    "office of the state superintendent for education",
+    "dc.office_of_the_state_superintendent_of_education",
   ],
   [
     "office of the people’s counsel",
@@ -258,15 +272,22 @@ const knownEntityRefs = new Map<string, string>([
     "office of lesbian, gay, bisexual, transgender, and questioning affairs",
     "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
   ],
+  [
+    "mayor's office on asian and pacific islander affairs",
+    "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
+  ],
+  ["office of religious affairs", "dc.mayor_s_office_of_religious_affairs"],
   ["office on returning citizen affairs", "dc.mayor_s_office_on_returning_citizen_affairs"],
   [
     "office on women’s policy and initiatives",
     "dc.mayor_s_office_on_women_s_policy_and_initiatives",
   ],
-  ["pedestrian advisory council", "dc.pedestrian_advisory_council_pac"],
-  ["real estate commission", "dc.real_estate_commission_rec"],
-  ["rental housing commission", "dc.rental_housing_commission_rhc"],
+  ["pedestrian advisory council", "dc.pedestrian_advisory_council"],
+  ["public charter school board", "dc.public_charter_school_board_pcsb"],
+  ["public charter school board (pcsb)", "dc.public_charter_school_board_pcsb"],
   ["secretary of the district of columbia", "dc.office_of_the_secretary"],
+  ["secretary of state of the district of columbia", "dc.office_of_the_secretary"],
+  ["state superintendent of education", "dc.office_of_the_state_superintendent_of_education"],
   ["state rehabilitation council", "dc.state_rehabilitation_council_src"],
   ["statewide health coordinating council", "dc.statewide_health_coordinating_council_shcc"],
   ["statewide independent living council", "dc.statewide_independent_living_council_silc"],
@@ -275,5 +296,5 @@ const knownEntityRefs = new Map<string, string>([
     "washington convention center and sports authority (events dc)",
     "dc.washington_convention_and_sports_authority",
   ],
-  ["washington metrorail safety commission", "dc.washington_metrorail_safety_commission_wmsc"],
+  ["washington metrorail safety commission", "dc.washington_metrorail_safety_commission"],
 ]);

@@ -1,6 +1,7 @@
 import type { EntityView, ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { appendResolutionEvents } from "./resolution.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -141,7 +142,13 @@ export async function runBatchAcceptSafe(
       continue;
     }
     accepted.push(item);
-    await workbench.appendResolutionEvent(batchAcceptEvent(item), resolutionsDir);
+  }
+  if (accepted.length > 0) {
+    await appendResolutionEvents(
+      workbench,
+      accepted.map((item) => batchAcceptEvent(item)),
+      resolutionsDir,
+    );
   }
   console.log(`Accepted ${accepted.length} safe review item(s).`);
   if (skipped.length > 0) {
