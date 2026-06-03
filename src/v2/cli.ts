@@ -205,17 +205,23 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     return true;
   }
   if (args[0] === "review" && args[1] === "list") {
-    const items = await withWorkbench(
+    const { items, summaries } = await withWorkbench(
       dbPath,
-      (workbench) => workbench.listReviewItems(readReviewFilters(args)),
+      (workbench) => {
+        const items = workbench.listReviewItems(readReviewFilters(args));
+        return {
+          items,
+          summaries: items.map((item) => renderReviewItemSummary(workbench, item)),
+        };
+      },
     );
     if (args.includes("--json")) {
       console.log(JSON.stringify({ count: items.length, items }, null, 2));
       return true;
     }
     console.log(`Review items: ${items.length}`);
-    for (const item of items) {
-      console.log(renderReviewItemSummary(item));
+    for (const summary of summaries) {
+      console.log(summary);
       console.log("");
     }
     return true;

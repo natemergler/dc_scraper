@@ -202,14 +202,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
     `Reconciliation: ${status.reconciliation.blocked} blocked${
       reconciliationDetails ? ` (${reconciliationDetails})` : ""
     }`,
-    ...(status.reconciliation.firstBlocked
-      ? [
-        `First blocked: ${status.reconciliation.firstBlocked.subjectId} [${status.reconciliation.firstBlocked.sourceId} ${status.reconciliation.firstBlocked.relationshipType}]`,
-        ...(status.reconciliation.firstBlocked.rawValue
-          ? [`Blocked raw value: ${status.reconciliation.firstBlocked.rawValue}`]
-          : []),
-      ]
-      : []),
+    ...renderFirstBlockedSummary(status.reconciliation.firstBlocked),
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Next: ${status.nextCommand}`,
   ].join("\n");
@@ -218,20 +211,25 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
 export function renderWorkbenchDoctor(status: WorkbenchStatusSnapshot): string {
   const lines = [renderWorkbenchStatus(status)];
   if (status.reconciliation.firstBlocked) {
-    const blockers = status.reconciliation.firstBlocked.blockers
-      .map((blocker) => `${blocker.blockerLabel} (${blocker.blockerState})`)
-      .join(", ");
     lines.push(
       "",
       "Blocked detail:",
       `Source: ${status.reconciliation.firstBlocked.sourceId}`,
-      `Subject: ${status.reconciliation.firstBlocked.subjectId}`,
+      `Relationship: ${status.reconciliation.firstBlocked.relationshipType}`,
       `Reason: ${status.reconciliation.firstBlocked.reason}`,
-      `Relationship type: ${status.reconciliation.firstBlocked.relationshipType}`,
       ...(status.reconciliation.firstBlocked.rawValue
-        ? [`Raw value: ${status.reconciliation.firstBlocked.rawValue}`]
+        ? [`Value: ${status.reconciliation.firstBlocked.rawValue}`]
         : []),
-      `Blockers: ${blockers}`,
+      ...(status.reconciliation.firstBlocked.blockers.length > 0
+        ? [
+          `Waiting on: ${
+            status.reconciliation.firstBlocked.blockers.map((blocker) =>
+              renderBlockedDependency(blocker, status.reconciliation.firstBlocked?.rawValue)
+            ).join(", ")
+          }`,
+        ]
+        : []),
+      `Subject id: ${status.reconciliation.firstBlocked.subjectId}`,
       `Inspect source: ${blockedInspectionCommand(status.reconciliation.firstBlocked.sourceId)}`,
     );
   }
@@ -256,6 +254,40 @@ function nextCommand(options: {
 
 function blockedInspectionCommand(sourceId: string): string {
   return `dc source inspect ${sourceId}`;
+}
+
+function renderFirstBlockedSummary(
+  firstBlocked: WorkbenchStatusSnapshot["reconciliation"]["firstBlocked"],
+): string[] {
+  if (!firstBlocked) return [];
+  return [
+    `First blocked: ${
+      firstBlocked.rawValue ?? firstBlocked.subjectId
+    } [${firstBlocked.relationshipType} from ${firstBlocked.sourceId}]`,
+    ...(firstBlocked.blockers.length > 0
+      ? [
+        `Waiting on: ${
+          firstBlocked.blockers.map((blocker) =>
+            renderBlockedDependency(blocker, firstBlocked.rawValue)
+          ).join(", ")
+        }`,
+      ]
+      : []),
+    `Subject id: ${firstBlocked.subjectId}`,
+  ];
+}
+
+function renderBlockedDependency(
+  blocker: { blockerId: string; blockerState: string; blockerLabel: string },
+  rawValue?: string | null,
+): string {
+  const label = blocker.blockerLabel === blocker.blockerId && rawValue
+    ? rawValue
+    : blocker.blockerLabel;
+  const state = blocker.blockerState === "missing"
+    ? "missing endpoint"
+    : blocker.blockerState.replaceAll("_", " ");
+  return `${label} (${state}; id ${blocker.blockerId})`;
 }
 
 interface SuggestedCommand {
