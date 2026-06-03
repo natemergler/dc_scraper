@@ -74,10 +74,10 @@ Use:
 deno task dc -- release verify
 ```
 
-This checks unresolved release work, source-artifact provenance, and accepted relationship-row
-provenance in the workbench before a public handoff. `release verify` checks that accepted
-relationship rows still trace to source-backed workbench decisions; the compact release rows remain
-short directed facts.
+This checks unresolved release work, source-artifact provenance, and repeatable row-family
+provenance in the workbench before a public handoff. `release verify` checks that accepted entity
+and relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to
+source-backed workbench decisions or references; the compact release rows remain short facts.
 
 ## Query Cookbook
 

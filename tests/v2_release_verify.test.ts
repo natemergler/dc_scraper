@@ -80,6 +80,24 @@ Deno.test("release verify exits zero for a ready workbench", async () => {
   assertEquals(body.readiness, "usable");
 });
 
+Deno.test("release verify accepts source-backed entity rows", async () => {
+  const { dbPath, workbench } = await readyEntityWorkbench();
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityProvenanceCheckedCount: number;
+    entityProvenanceProblems: Array<{ entityId: string; candidateId: string; message: string }>;
+  };
+  assertEquals(result.code, 0);
+  assertEquals(body.ready, true);
+  assertEquals(body.reasons, []);
+  assertEquals(body.entityProvenanceCheckedCount, 1);
+  assertEquals(body.entityProvenanceProblems, []);
+});
+
 Deno.test("release verify treats unresolved review as usable with warnings", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -495,6 +513,87 @@ Deno.test("release verify fails fast on unresolved work and bad artifact provena
   assertEquals(stderr, "");
 });
 
+Deno.test("release verify reports accepted entities without source evidence", async () => {
+  const { dbPath, workbench } = await readyEntityWorkbench();
+  workbench.db.prepare(
+    "delete from entity_candidate_evidence where candidate_id = ?",
+  ).run("candidate.test.release.verify.entity");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityProvenanceCheckedCount: number;
+    entityProvenanceProblems: Array<{ entityId: string; candidateId: string; message: string }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("entity row provenance: 1 problem"), true);
+  assertEquals(body.entityProvenanceCheckedCount, 1);
+  assertEquals(body.entityProvenanceProblems.length, 1);
+  assertEquals(body.entityProvenanceProblems[0].entityId, "dc.release_entity");
+  assertEquals(
+    body.entityProvenanceProblems[0].candidateId,
+    "candidate.test.release.verify.entity",
+  );
+  assertStringIncludes(
+    body.entityProvenanceProblems[0].message,
+    "missing entity candidate evidence",
+  );
+});
+
+Deno.test("release verify reports accepted entity rows without candidate links", async () => {
+  const { dbPath, workbench } = await readyEntityWorkbench();
+  workbench.db.prepare(
+    "update canonical_entities set merged_candidate_ids = '[]' where entity_id = ?",
+  ).run("dc.release_entity");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityProvenanceCheckedCount: number;
+    entityProvenanceProblems: Array<{ entityId: string; candidateId: string; message: string }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("entity row provenance: 1 problem"), true);
+  assertEquals(body.entityProvenanceCheckedCount, 1);
+  assertEquals(body.entityProvenanceProblems.length, 1);
+  assertEquals(body.entityProvenanceProblems[0].entityId, "dc.release_entity");
+  assertEquals(body.entityProvenanceProblems[0].candidateId, "unknown");
+  assertStringIncludes(
+    body.entityProvenanceProblems[0].message,
+    "missing accepted entity candidate reference",
+  );
+});
+
+Deno.test("release verify rejects private entity row URLs", async () => {
+  const { dbPath, workbench } = await readyEntityWorkbench();
+  workbench.db.prepare(
+    "update canonical_entities set official_url = 'http://localhost/entity' where entity_id = ?",
+  ).run("dc.release_entity");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityProvenanceProblems: Array<{ entityId: string; candidateId: string; message: string }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("entity row provenance: 1 problem"), true);
+  assertEquals(body.entityProvenanceProblems.length, 1);
+  assertEquals(body.entityProvenanceProblems[0].entityId, "dc.release_entity");
+  assertStringIncludes(
+    body.entityProvenanceProblems[0].message,
+    "official_url is not a public http/https URL",
+  );
+});
+
 Deno.test("release verify reports accepted relationships without source evidence", async () => {
   const { dbPath, workbench } = await readyRelationshipWorkbench();
   workbench.db.prepare(
@@ -522,6 +621,21 @@ Deno.test("release verify reports accepted relationships without source evidence
     body.relationshipProvenanceProblems[0].message,
     "missing relationship candidate evidence",
   );
+});
+
+Deno.test("release verify text reports entity provenance problems", async () => {
+  const { dbPath, workbench } = await readyEntityWorkbench();
+  workbench.db.prepare(
+    "update entity_candidate_evidence set artifact_path = 'missing/entity.json' where candidate_id = ?",
+  ).run("candidate.test.release.verify.entity");
+  workbench.close();
+
+  const output = await runReleaseVerifyText(dbPath);
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 1);
+  assertStringIncludes(stdout, "Entity rows checked: 1 accepted entity row.");
+  assertStringIncludes(stdout, "Entity row provenance problems:");
+  assertStringIncludes(stdout, "evidence artifact_path does not resolve to a source artifact");
 });
 
 Deno.test("release verify text reports relationship provenance problems", async () => {
@@ -662,6 +776,41 @@ function runReleaseVerifyText(dbPath: string): Promise<Deno.CommandOutput> {
       dbPath,
     ],
   }).output();
+}
+
+async function readyEntityWorkbench(): Promise<{
+  dbPath: string;
+  workbench: Workbench;
+}> {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.release.verify.entity_source",
+      candidateId: "candidate.test.release.verify.entity",
+      sourceItemKey: "entity-row",
+      proposedEntityId: "dc.release_entity",
+      name: "Release Entity",
+      kind: "board",
+      observedName: "Release Entity",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.release.verify.entity",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  return { dbPath, workbench };
 }
 
 async function readyRelationshipWorkbench(): Promise<{

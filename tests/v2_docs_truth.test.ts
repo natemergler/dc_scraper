@@ -65,8 +65,9 @@ Deno.test("release contract explains compact model semantics without overclaimin
       "observation or role entity -> seat, district,",
       "body, or committee role.",
       "Compact `relationships.*` rows expose accepted directed facts, not row-level evidence payloads.",
-      "`release verify` checks that accepted",
-      "relationship rows still trace to source-backed workbench decisions",
+      "`release verify` checks that accepted entity",
+      "and relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows",
+      "source-backed workbench decisions or references",
       "DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not",
     ]
   ) {
