@@ -319,7 +319,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         toEntityRef: authorityEntityRef,
         relationshipType: "authorized_by",
         rawValue: detail.enablingAuthority,
-        needsReview: true,
+        needsReview: parsed.needsReview,
         evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
       });
       reviewItems.push({

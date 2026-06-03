@@ -1,4 +1,5 @@
 import { nowIso } from "../domain.ts";
+import { getConnector } from "../connectors.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 import type { SourceEndpointDefinition } from "../domain.ts";
@@ -158,7 +159,7 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     "mota.quickbase",
     "oanc.anc_profiles",
   ] as const;
-  const sourceRows = sourceIds.map((sourceId) => sourceSummary(store, sourceId));
+  const sourceRows = sourceIds.map((sourceId) => sourceSummaryOrConfigured(store, sourceId));
   const rows = queryAll<{
     normalizedName: string;
     displayName: string;
@@ -258,4 +259,24 @@ function isPublicBodyLikeKind(kind: string): boolean {
     "office",
     "agency",
   ].includes(kind);
+}
+
+function sourceSummaryOrConfigured(store: WorkbenchStore, sourceId: string): SourceSummary {
+  try {
+    return sourceSummary(store, sourceId);
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== `Unknown source: ${sourceId}`) {
+      throw error;
+    }
+  }
+  const connector = getConnector(sourceId);
+  return {
+    sourceId,
+    title: connector.source.title,
+    latestStatus: "unfetched",
+    itemCount: 0,
+    fieldCount: 0,
+    entityCandidateCount: 0,
+    relationshipCandidateCount: 0,
+  };
 }
