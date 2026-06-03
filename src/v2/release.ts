@@ -514,7 +514,7 @@ This release contains compact canonical entities, directed relationships, source
 
 Files:
 - \`README.md\`: release summary, model semantics, and readiness notes
-- \`manifest.json\`: package metadata, hashes, source provenance, and release summary
+- \`manifest.json\`: package metadata, file hashes, source inventory/artifact summary, and release summary
 - \`dcgov.sqlite\`: release SQLite package
 - \`entities.*\`: canonical entities
 - \`relationships.*\`: directed canonical relationships
