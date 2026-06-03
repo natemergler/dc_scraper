@@ -486,7 +486,7 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.rental_housing_commission', 'Rental Housing Commission', 'commission', 'accepted', '[]', datetime('now'), datetime('now'))",
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.board_of_review_for_anti_deficiency_violations', 'Board of Review for Anti-Deficiency Violations', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
 
   const fetcher = async (url: string) => ({
@@ -505,7 +505,7 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
               <h1>Committee on Housing</h1>
               <h2>Oversight</h2>
               <ul>
-                <li>Rental Housing Commission</li>
+                <li>Board of Review of Anti-Deficiency Violations</li>
               </ul>
             </body></html>
           `;
@@ -542,6 +542,73 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
     ),
     true,
   );
+});
+
+Deno.test("council oversight legacy exact-name aliases can seed pending candidates for direct bodies", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-on-transportation-and-the-environment/">Committee on Transportation and the Environment</a>
+            </body></html>
+          `;
+        case "https://dccouncil.gov/committees/committee-on-transportation-and-the-environment/":
+          return `
+            <html><body>
+              <h1>Committee on Transportation and the Environment</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Bicycle Advisory Council</li>
+              </ul>
+            </body></html>
+          `;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.council.committees.relationship_council_committees_committee_on_transportation_and_the_environment_oversight_1_from_endpoint'`,
+  ).get() as {
+    candidateId: string;
+    proposedEntityId: string;
+    reviewStatus: string;
+  } | undefined;
+  const blocked = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_on_transportation_and_the_environment_oversight_1'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.proposedEntityId, "dc.bicycle_advisory_council");
+  assertEquals(seededCandidate.reviewStatus, "pending");
+  assert(blocked);
+  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
 });
 
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
