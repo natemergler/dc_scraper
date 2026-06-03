@@ -1,4 +1,4 @@
-import { assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 Deno.test("README and CLI help stay aligned on the current operator entrypoints", async () => {
   const readme = await Deno.readTextFile("README.md");
@@ -21,6 +21,15 @@ Deno.test("README and CLI help stay aligned on the current operator entrypoints"
   assertStringIncludes(topLevelHelp, "deno task dc -- smoke tier0");
   assertStringIncludes(topLevelHelp, "deno task dc -- release verify");
   assertStringIncludes(releaseHelp, "deno task dc -- release verify");
+  assertEquals(
+    releaseHelp.indexOf("deno task dc -- release verify"),
+    releaseHelp.lastIndexOf("deno task dc -- release verify"),
+  );
+  assertEquals(
+    releaseHelp.indexOf("deno task dc -- release verify") <
+      releaseHelp.indexOf("deno task dc -- release build"),
+    true,
+  );
   assertStringIncludes(releaseHelp, "--source-profile <structure|tier0|inventory|custom>");
   assertStringIncludes(smokeHelp, "deno task dc -- smoke inventory");
 });

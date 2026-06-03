@@ -122,6 +122,7 @@ export async function buildReleaseInspection(
     packageIntegrity: packageInspection.packageIntegrity,
     packageProblems: packageInspection.packageProblems,
     readiness: classifyReleaseReadiness({
+      sourceCount: releaseSummary.source_count ?? 0,
       failedSourceCount: releaseSummary.failed_source_count,
       openReviewItemCount: releaseSummary.open_review_item_count,
       deferredReviewItemCount: releaseSummary.deferred_review_item_count,

@@ -81,16 +81,16 @@ export function printReleaseHelp(): void {
   console.log(`${dcCommand("release")}
 
 Workflow:
-  1. Build the current release package with \`${dcCommand("release build")}\`
-  2. Fail fast on unresolved readiness and provenance with \`${dcCommand("release verify")}\`
-  3. Inspect the built package with \`${dcCommand("release inspect")}\`
-  4. Use \`${dcCommand("release inspect --json")}\` for scriptable release summary checks
+  1. Verify the current workbench readiness and provenance before building
+  2. Build the current release package
+  3. Inspect the built package
+  4. Use JSON output for scriptable release summary checks
 
 Usage:
+  ${dcCommand("release verify")} [--db <path>] [--json]
   ${
     dcCommand("release build")
   } [--db <path>] [--out <dir>] [--source-profile <structure|tier0|inventory|custom>]
-  ${dcCommand("release verify")} [--db <path>] [--json]
   ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Release files:

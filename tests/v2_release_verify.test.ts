@@ -80,6 +80,27 @@ Deno.test("release verify exits zero for a ready workbench", async () => {
   assertEquals(body.readiness, "usable");
 });
 
+Deno.test("release verify is not ready before any source is fetched", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    readiness: string;
+    nextCommand: string;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.readiness, "not-ready");
+  assertEquals(body.reasons.includes("no sources fetched"), true);
+  assertEquals(body.nextCommand, "deno task dc -- source list");
+});
+
 Deno.test("release verify accepts source-backed entity rows", async () => {
   const { dbPath, workbench } = await readyEntityWorkbench();
   workbench.close();
