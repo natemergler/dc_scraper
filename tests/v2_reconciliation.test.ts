@@ -324,6 +324,161 @@ Deno.test("relationship imports do not seed endpoint candidates when the endpoin
   assertEquals(blockedCount.count, 0);
 });
 
+Deno.test("council oversight imports seed missing direct source bodies as entity candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_the_judiciary_and_public_safety', 'Committee on the Judiciary and Public Safety', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_direct",
+      sourceItemKey: "seeded-oversight-direct-row",
+      fromEntityRef: "dc.child_support_guideline_commission",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Child Support Guideline Commission",
+    }),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.council.committees.relationship_council_committees_seeded_oversight_direct_from_endpoint'`,
+  ).get() as {
+    candidateId: string;
+    proposedEntityId: string;
+    reviewStatus: string;
+  } | undefined;
+  const blocked = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.seeded_oversight_direct'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.proposedEntityId, "dc.child_support_guideline_commission");
+  assertEquals(seededCandidate.reviewStatus, "pending");
+  assert(blocked);
+  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+});
+
+Deno.test("council oversight imports do not seed grouped source bodies as entity candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_of_the_whole', 'Committee of the Whole', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_grouped",
+      sourceItemKey: "seeded-oversight-grouped-row",
+      fromEntityRef:
+        "dc.office_of_the_chief_financial_officer_excluding_the_office_of_lottery_and_gaming",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue:
+        "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+    }),
+    dataDir,
+  );
+
+  const seededCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where candidate_id like 'candidate.council.committees.relationship_council_committees_seeded_oversight_grouped_%'",
+  ).get() as { count: number };
+  const blocked = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.seeded_oversight_grouped'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+
+  assertEquals(seededCount.count, 0);
+  assert(blocked);
+  assertStringIncludes(blocked.detailsJson, '"state":"missing"');
+});
+
+Deno.test("seeded committee endpoint candidates do not block stronger source auto-promotion", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_executive_administration_and_labor', 'Committee on Executive Administration and Labor', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_overlap",
+      sourceItemKey: "seeded-oversight-overlap-row",
+      fromEntityRef: "dc.adult_career_pathways_task_force",
+      toEntityRef: "dc.committee_on_executive_administration_and_labor",
+      relationshipType: "overseen_by",
+      rawValue: "Adult Career Pathways Task Force",
+    }),
+    dataDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId: "candidate.open_dc.public_bodies.adult_career_pathways_task_force",
+      sourceItemKey: "adult-career-pathways-task-force",
+      proposedEntityId: "dc.adult_career_pathways_task_force",
+      name: "Adult Career Pathways Task Force",
+      kind: "task_force",
+      observedName: "Adult Career Pathways Task Force",
+      confidence: 0.92,
+    }),
+    dataDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.adult_career_pathways_task_force'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.seeded_oversight_overlap'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  const relationshipItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.council.committees.seeded_oversight_overlap",
+  });
+  workbench.close();
+
+  assertEquals(canonical?.entityId, "dc.adult_career_pathways_task_force");
+  assertEquals(canonical?.reviewStatus, "accepted");
+  assertEquals(blockedCount.count, 0);
+  assertEquals(
+    relationshipItems.some((item) =>
+      item.subjectId === "relationship.council.committees.seeded_oversight_overlap"
+    ),
+    true,
+  );
+});
+
 Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into review-ready work", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

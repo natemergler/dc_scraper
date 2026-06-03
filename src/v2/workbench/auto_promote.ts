@@ -99,8 +99,12 @@ function groupIsSafeToAutoPromote(
   group: AutoPromoteCandidateRow[],
 ): boolean {
   if (group.length === 0) return false;
+  const primaryCandidates = group.filter((candidate) =>
+    !isSeededRelationshipEndpointCandidate(candidate.candidateId)
+  );
+  if (primaryCandidates.length === 0) return false;
   if (
-    group.some((candidate) =>
+    primaryCandidates.some((candidate) =>
       AUTO_PROMOTE_KIND_BLOCKLIST.has(candidate.kind) &&
       !AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST.has(candidate.sourceId)
     )
@@ -108,7 +112,7 @@ function groupIsSafeToAutoPromote(
     return false;
   }
   if (
-    group.some((candidate) =>
+    primaryCandidates.some((candidate) =>
       typeof candidate.confidence !== "number" || candidate.confidence < AUTO_PROMOTE_MIN_CONFIDENCE
     )
   ) {
@@ -124,7 +128,7 @@ function groupIsSafeToAutoPromote(
     return false;
   }
 
-  const [first] = group;
+  const [first] = primaryCandidates;
   if (!first) return false;
   if (
     group.some((candidate) =>
@@ -148,6 +152,10 @@ function groupIsSafeToAutoPromote(
   if (canonical.isPlaceholder === 1) return false;
   return normalizeName(canonical.name).toLowerCase() === first.normalizedName &&
     canonical.kind === first.kind;
+}
+
+function isSeededRelationshipEndpointCandidate(candidateId: string): boolean {
+  return candidateId.includes("_from_endpoint") || candidateId.includes("_to_endpoint");
 }
 
 function acceptEntityCandidateDirect(
