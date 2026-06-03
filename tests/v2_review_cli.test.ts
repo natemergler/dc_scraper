@@ -492,6 +492,89 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assert(items.every((item) => item.status === "open"));
 });
 
+Deno.test("interactive review prioritizes decisions that unblock relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      candidateId: "candidate.test.review_cli.graph_priority.low_impact",
+      sourceItemKey: "graph-priority-low-impact-row",
+      proposedEntityId: "dc.low_impact_board",
+      name: "Low Impact Board",
+      kind: "board",
+      observedName: "Low Impact Board",
+      confidence: 0.4,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      candidateId: "candidate.test.review_cli.graph_priority.unblocking_agency",
+      sourceItemKey: "graph-priority-unblocking-agency-row",
+      proposedEntityId: "dc.unblocking_agency",
+      name: "Unblocking Agency",
+      kind: "agency",
+      observedName: "Unblocking Agency",
+      confidence: 0.4,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      relationshipCandidateId: "relationship.test.review_cli.graph_priority.blocked",
+      sourceItemKey: "graph-priority-blocked-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.unblocking_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Unblocking Agency",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
+  assertStringIncludes(stdout, "Review: Unblocking Agency");
+  assertEquals(stdout.includes("Review: Low Impact Board"), false);
+});
+
 Deno.test("interactive review resume command preserves quoted filters", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

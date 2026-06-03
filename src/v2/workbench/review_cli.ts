@@ -12,6 +12,7 @@ import {
   reviewSubject,
 } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
+import type { UnresolvedDecisionNode } from "./unresolved_work.ts";
 
 interface ReviewSubjectContext {
   title: string;
@@ -27,7 +28,10 @@ interface RelationshipEndpointContext {
 }
 
 export async function runInteractiveReview(
-  workbench: Pick<Workbench, "db" | "listReviewItems" | "appendResolutionEvent">,
+  workbench: Pick<
+    Workbench,
+    "db" | "listReviewItems" | "appendResolutionEvent" | "unresolvedWorkGraph"
+  >,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {
@@ -36,7 +40,8 @@ export async function runInteractiveReview(
     ? { ...filters, status: "open" }
     : filters;
   while (true) {
-    const item = workbench.listReviewItems({ ...activeFilters, limit: 1 }).at(0);
+    const selection = nextInteractiveReviewSelection(workbench, activeFilters);
+    const item = selection?.item;
     if (!item) {
       console.log("No review items remain.");
       return;
@@ -46,6 +51,10 @@ export async function runInteractiveReview(
     );
     if (packet && packet.count > 1) {
       console.log(renderReviewPacketHeader(packet));
+      console.log("");
+    }
+    if (selection?.decision && selection.decision.downstreamBlockedCount > 0) {
+      console.log(renderDecisionImpact(selection.decision));
       console.log("");
     }
     console.log(renderReviewItem(workbench, item));
@@ -68,6 +77,32 @@ export async function runInteractiveReview(
     await workbench.appendResolutionEvent(event, resolutionsDir);
     await Deno.stdout.write(encoder.encode("Saved resolution.\n"));
   }
+}
+
+interface InteractiveReviewSelection {
+  item: ReviewItemRecord;
+  decision?: UnresolvedDecisionNode;
+}
+
+function nextInteractiveReviewSelection(
+  workbench: Pick<Workbench, "listReviewItems" | "unresolvedWorkGraph">,
+  filters: ReviewItemFilters,
+): InteractiveReviewSelection | undefined {
+  const filteredItems = workbench.listReviewItems({ ...filters, limit: undefined });
+  const filteredItemsById = new Map(filteredItems.map((item) => [item.reviewItemId, item]));
+  const decision = workbench.unresolvedWorkGraph().decisions.find((candidate) =>
+    filteredItemsById.has(candidate.reviewItemId)
+  );
+  if (decision) {
+    return { item: filteredItemsById.get(decision.reviewItemId)!, decision };
+  }
+  const item = filteredItems.at(0);
+  return item ? { item } : undefined;
+}
+
+function renderDecisionImpact(decision: UnresolvedDecisionNode): string {
+  const noun = decision.downstreamBlockedCount === 1 ? "relationship" : "relationships";
+  return `Decision impact: unblocks ${decision.downstreamBlockedCount} blocked ${noun}.`;
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {

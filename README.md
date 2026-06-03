@@ -48,8 +48,9 @@ deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
 
-`dc review` is the main human path. It shows what the item is, why it is here, what the default
-action is, and the exact evidence behind that default. Quit is safe; rerun `dc review` to resume.
+`dc review` is the main human path. It now starts with the open decision that unblocks the most
+downstream work, then shows what the item is, why it is here, what the default action is, and the
+exact evidence behind that default. Quit is safe; rerun `dc review` to resume.
 
 ## Review And Smoke
 
