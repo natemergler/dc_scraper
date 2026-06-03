@@ -12,6 +12,8 @@ import {
   councilCommitteeWholeDetailFixture,
 } from "./helpers/v2_fixtures.ts";
 import {
+  syntheticCustomEntitySourceResult,
+  syntheticCustomRelationshipSourceResult,
   syntheticEntitySourceResult,
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
@@ -272,6 +274,230 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
       row.sourceId === "test.signature.legal_refs" && row.openCount === 0 &&
       row.deferredCount === 1
     ),
+  );
+});
+
+Deno.test("status recommends the next scoped batch command as review debt narrows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_agency', 'Example Agency', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.other_branch', 'Other', 'branch', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.agencies",
+      relationshipCandidateId: "relationship.dcgis.agencies.example_other_branch",
+      sourceItemKey: "agency-other-branch-row",
+      fromEntityRef: "dc.example_agency",
+      toEntityRef: "dc.other_branch",
+      relationshipType: "part_of",
+      rawValue: "Other",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    {
+      source: {
+        sourceId: "dcgis.agencies",
+        title: "Test DCGIS Agencies Legal Refs",
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: "https://example.com/dcgis.agencies",
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: "dcgis.agencies.legal",
+          sourceId: "dcgis.agencies",
+          title: "Agency legal refs",
+          kind: "fixture",
+          url: "https://example.com/dcgis.agencies",
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [{
+          kind: "rows",
+          extension: "json",
+          fetchedUrl: "https://example.com/dcgis.agencies",
+          contentText: JSON.stringify({
+            legalRefId: "legal.dcgis.agencies.unknown_v1",
+            citationText: "DC. ST. D.I., T.1, Ch. 15, Subch. III, Part A, 1979 Plan 2",
+          }),
+        }],
+        parsed: {
+          items: [{
+            itemKey: "agency-legal-row",
+            itemType: "fixture_row",
+            title: "Agency legal row",
+            body: { citationText: "DC. ST. D.I., T.1, Ch. 15, Subch. III, Part A, 1979 Plan 2" },
+          }],
+          legalRefs: [{
+            legalRefId: "legal.dcgis.agencies.unknown_v1",
+            sourceItemKey: "agency-legal-row",
+            refType: "unknown",
+            citationText: "DC. ST. D.I., T.1, Ch. 15, Subch. III, Part A, 1979 Plan 2",
+            url: "https://example.com/unknown",
+            needsReview: true,
+            evidence: [{
+              fieldPath: "citation",
+              observedValue: "DC. ST. D.I., T.1, Ch. 15, Subch. III, Part A, 1979 Plan 2",
+            }],
+          }],
+        },
+      }],
+    },
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.high_confidence.entities",
+      candidateId: "candidate.test.high_confidence.entities.example_high_confidence",
+      sourceItemKey: "high-confidence-board-row",
+      proposedEntityId: "dc.example_high_confidence_board",
+      name: "Example High Confidence Board",
+      kind: "board",
+      observedName: "Example High Confidence Board",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const statusOutputOne = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(statusOutputOne.code, 0);
+  const statusOne = JSON.parse(new TextDecoder().decode(statusOutputOne.stdout)) as {
+    nextCommand: string;
+  };
+  assertEquals(
+    statusOne.nextCommand,
+    "dc review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+  );
+
+  const deferRelationshipsOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer-default",
+      "--mode",
+      "relationships",
+      "--subject-prefix",
+      "relationship.dcgis.agencies",
+      "--relationship-type",
+      "part_of",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(deferRelationshipsOutput.code, 0);
+
+  const statusOutputTwo = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(statusOutputTwo.code, 0);
+  const statusTwo = JSON.parse(new TextDecoder().decode(statusOutputTwo.stdout)) as {
+    nextCommand: string;
+  };
+  assertEquals(
+    statusTwo.nextCommand,
+    "dc review batch defer-default --mode legal --subject-prefix legal.dcgis.agencies --ref-type unknown",
+  );
+
+  const deferLegalOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer-default",
+      "--mode",
+      "legal",
+      "--subject-prefix",
+      "legal.dcgis.agencies",
+      "--ref-type",
+      "unknown",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(deferLegalOutput.code, 0);
+
+  const statusOutputThree = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(statusOutputThree.code, 0);
+  const statusThree = JSON.parse(new TextDecoder().decode(statusOutputThree.stdout)) as {
+    nextCommand: string;
+  };
+  assertEquals(
+    statusThree.nextCommand,
+    "dc review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities",
   );
 });
 
