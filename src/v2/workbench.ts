@@ -56,13 +56,31 @@ interface WorkbenchInitOptions {
   refreshDerivedState?: boolean;
 }
 
+interface WorkbenchOpenOptions {
+  readonly?: boolean;
+  busyTimeoutMs?: number;
+  useWal?: boolean;
+}
+
+export const DEFAULT_SQLITE_BUSY_TIMEOUT_MS = 5000;
+
 export class Workbench implements WorkbenchStore {
   readonly db: Database;
 
-  constructor(readonly dbPath: string) {
-    Deno.mkdirSync(dirname(dbPath), { recursive: true });
-    this.db = new Database(dbPath);
+  constructor(readonly dbPath: string, options: WorkbenchOpenOptions = {}) {
+    if (!options.readonly) {
+      Deno.mkdirSync(dirname(dbPath), { recursive: true });
+    }
+    this.db = new Database(dbPath, { readonly: options.readonly });
     this.db.exec("pragma foreign_keys = on");
+    const busyTimeoutMs = Math.max(
+      0,
+      Math.trunc(options.busyTimeoutMs ?? DEFAULT_SQLITE_BUSY_TIMEOUT_MS),
+    );
+    this.db.exec(`pragma busy_timeout = ${busyTimeoutMs}`);
+    if (!options.readonly && options.useWal !== false) {
+      this.db.exec("pragma journal_mode = wal");
+    }
   }
 
   close(): void {
