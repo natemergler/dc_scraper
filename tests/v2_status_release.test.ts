@@ -355,6 +355,28 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   await workbench.importConnectorResult(
     syntheticCustomEntitySourceResult({
       sourceId: "test.high_confidence.entities",
+      candidateId: "candidate.test.high_confidence.entities.example_explicit_safe",
+      sourceItemKey: "explicit-safe-board-row",
+      proposedEntityId: "dc.example_explicit_safe_board",
+      name: "Example Explicit Safe Board",
+      kind: "board",
+      observedName: "Example Explicit Safe Board",
+    }),
+    dataDir,
+  );
+  workbench.db.prepare(
+    "update review_items set details_json = ? where subject_id = ?",
+  ).run(
+    JSON.stringify({
+      name: "Example Explicit Safe Board",
+      kind: "board",
+      safeToAutoAccept: true,
+    }),
+    "candidate.test.high_confidence.entities.example_explicit_safe",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.high_confidence.entities",
       candidateId: "candidate.test.high_confidence.entities.example_high_confidence",
       sourceItemKey: "high-confidence-board-row",
       proposedEntityId: "dc.example_high_confidence_board",
@@ -388,6 +410,56 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   };
   assertEquals(
     statusOne.nextCommand,
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities.example_explicit_safe",
+  );
+
+  const acceptExplicitEntitiesOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.test.high_confidence.entities.example_explicit_safe",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(acceptExplicitEntitiesOutput.code, 0);
+
+  const statusOutputTwo = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(statusOutputTwo.code, 0);
+  const statusTwo = JSON.parse(new TextDecoder().decode(statusOutputTwo.stdout)) as {
+    nextCommand: string;
+  };
+  assertEquals(
+    statusTwo.nextCommand,
     "deno task dc -- review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
   );
 
@@ -419,7 +491,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   }).output();
   assertEquals(deferRelationshipsOutput.code, 0);
 
-  const statusOutputTwo = await new Deno.Command(Deno.execPath(), {
+  const statusOutputThree = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
       "run",
@@ -434,12 +506,12 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
       "--json",
     ],
   }).output();
-  assertEquals(statusOutputTwo.code, 0);
-  const statusTwo = JSON.parse(new TextDecoder().decode(statusOutputTwo.stdout)) as {
+  assertEquals(statusOutputThree.code, 0);
+  const statusThree = JSON.parse(new TextDecoder().decode(statusOutputThree.stdout)) as {
     nextCommand: string;
   };
   assertEquals(
-    statusTwo.nextCommand,
+    statusThree.nextCommand,
     "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.dcgis.agencies --ref-type unknown",
   );
 
@@ -471,7 +543,7 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
   }).output();
   assertEquals(deferLegalOutput.code, 0);
 
-  const statusOutputThree = await new Deno.Command(Deno.execPath(), {
+  const statusOutputFour = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
       "run",
@@ -486,13 +558,13 @@ Deno.test("status recommends the next scoped batch command as review debt narrow
       "--json",
     ],
   }).output();
-  assertEquals(statusOutputThree.code, 0);
-  const statusThree = JSON.parse(new TextDecoder().decode(statusOutputThree.stdout)) as {
+  assertEquals(statusOutputFour.code, 0);
+  const statusFour = JSON.parse(new TextDecoder().decode(statusOutputFour.stdout)) as {
     nextCommand: string;
   };
   assertEquals(
-    statusThree.nextCommand,
-    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities",
+    statusFour.nextCommand,
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence.entities.example_high_confidence",
   );
 });
 
