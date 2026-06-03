@@ -1,8 +1,25 @@
+import { dcCommand } from "../command_prefix.ts";
 import type { ReviewItemFilters } from "./review.ts";
 
 export interface ReviewCommandContext {
   dbPath?: string;
   resolutionsDir?: string;
+}
+
+export type ReviewBatchAction = "accept-safe" | "defer-default";
+
+export function reviewBatchCommand(
+  action: ReviewBatchAction,
+  filters: ReviewItemFilters,
+  context?: ReviewCommandContext,
+): string {
+  return dcCommand(
+    [
+      `review batch ${action}`,
+      ...reviewFilterArgs(filters, { includeMode: true, includeType: false }),
+      ...reviewContextArgs(context, "write"),
+    ].join(" "),
+  );
 }
 
 export function reviewFilterArgs(

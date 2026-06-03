@@ -1,6 +1,7 @@
 import { dcCommand } from "./command_prefix.ts";
 import { connectors } from "./connectors.ts";
 import type { ReviewItemRecord } from "./domain.ts";
+import { reviewBatchCommand } from "./workbench/review_command_args.ts";
 import type { ReviewDebtSummary, ReviewItemFilters } from "./workbench/review.ts";
 
 export interface WorkbenchUnresolvedCounts {
@@ -93,9 +94,7 @@ function suggestExplicitSafeEntityBatch(input: OperatorPlanInput): SuggestedComm
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
-      ),
+      command: reviewBatchCommand("accept-safe", filters),
       count: safeCount,
     };
     best = betterSuggestion(best, candidate);
@@ -125,9 +124,7 @@ function suggestSafeRelationshipBatch(input: OperatorPlanInput): SuggestedComman
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.detailValue}`,
-      ),
+      command: reviewBatchCommand("accept-safe", filters),
       count: safeCount,
     };
     best = betterSuggestion(best, candidate);
@@ -149,10 +146,14 @@ function suggestDeferDefaultRelationshipBatch(
     )
   ) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
+    const filters = {
+      mode: "relationships",
+      status: "open",
+      subjectPrefix: `relationship.${group.sourceId}`,
+      relationshipType: group.detailValue,
+    } as const;
     const candidate = {
-      command: dcCommand(
-        `review batch defer-default --mode relationships --subject-prefix relationship.${group.sourceId} --relationship-type ${group.detailValue}`,
-      ),
+      command: reviewBatchCommand("defer-default", filters),
       count: group.items.length,
     };
     best = betterSuggestion(best, candidate);
@@ -167,10 +168,14 @@ function suggestDeferDefaultLegalBatch(
   let best: SuggestedCommand | undefined;
   for (const group of groupedReviewSlices(items, "legal", "refType", "refType")) {
     if (group.items.some((item) => item.defaultAction !== "defer")) continue;
+    const filters = {
+      mode: "legal",
+      status: "open",
+      subjectPrefix: `legal.${group.sourceId}`,
+      refType: group.detailValue,
+    } as const;
     const candidate = {
-      command: dcCommand(
-        `review batch defer-default --mode legal --subject-prefix legal.${group.sourceId} --ref-type ${group.detailValue}`,
-      ),
+      command: reviewBatchCommand("defer-default", filters),
       count: group.items.length,
     };
     best = betterSuggestion(best, candidate);
@@ -195,9 +200,7 @@ function suggestHighConfidenceEntityBatch(input: OperatorPlanInput): SuggestedCo
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
-      command: dcCommand(
-        `review batch accept-safe --mode entities --subject-prefix candidate.${source.sourceId}`,
-      ),
+      command: reviewBatchCommand("accept-safe", filters),
       count: safeCount,
     };
     best = betterSuggestion(best, candidate);
