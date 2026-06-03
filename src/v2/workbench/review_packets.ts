@@ -1,6 +1,6 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
+import { queryAll } from "./db.ts";
 import type { ReviewItemFilters } from "./review.ts";
-import { reviewSubjectSourceId } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface ReviewPacketRecord {
@@ -40,8 +40,10 @@ export function listReviewPackets(
   const { itemFilters, packetLimit } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
-  for (const item of store.listReviewItems(itemFilters)) {
-    const sourceId = reviewSubjectSourceId(store, item);
+  const items = store.listReviewItems(itemFilters);
+  const sourceIds = reviewItemSourceIds(store, items);
+  for (const item of items) {
+    const sourceId = sourceIds.get(item.reviewItemId) ?? "unknown";
     const key = reviewPacketKey(item, sourceId);
     const existing = packets.get(key);
     if (existing) {
@@ -80,6 +82,108 @@ export function listReviewPackets(
     left.reason.localeCompare(right.reason)
   );
   return packetLimit === undefined ? sortedPackets : sortedPackets.slice(0, packetLimit);
+}
+
+interface ReviewItemSourceRow {
+  subjectId: string;
+  sourceId?: string | null;
+}
+
+function reviewItemSourceIds(
+  store: Pick<WorkbenchStore, "db">,
+  items: ReviewItemRecord[],
+): Map<string, string> {
+  if (items.length === 0) return new Map();
+  const sourceIds = new Map<string, string>();
+  const idsByType = new Map<ReviewItemRecord["itemType"], string[]>();
+  for (const item of items) {
+    if (item.itemType === "source_status") {
+      sourceIds.set(item.reviewItemId, item.subjectId);
+      continue;
+    }
+    if (item.itemType === "placeholder_entity") {
+      sourceIds.set(item.reviewItemId, "workbench");
+      continue;
+    }
+    const ids = idsByType.get(item.itemType) ?? [];
+    ids.push(item.subjectId);
+    idsByType.set(item.itemType, ids);
+  }
+  const subjectSourceIds = new Map<string, string>();
+  addSubjectSourceRows(
+    subjectSourceIds,
+    sourceRowsForSubjects(
+      store,
+      idsByType.get("entity_candidate") ?? [],
+      "entity_candidates",
+      "candidate_id",
+    ),
+  );
+  addSubjectSourceRows(
+    subjectSourceIds,
+    sourceRowsForSubjects(
+      store,
+      idsByType.get("relationship_candidate") ?? [],
+      "relationship_candidates",
+      "relationship_candidate_id",
+    ),
+  );
+  addSubjectSourceRows(
+    subjectSourceIds,
+    sourceRowsForSubjects(
+      store,
+      idsByType.get("legal_ref") ?? [],
+      "legal_refs",
+      "legal_ref_id",
+    ),
+  );
+  for (const item of items) {
+    if (sourceIds.has(item.reviewItemId)) continue;
+    sourceIds.set(item.reviewItemId, subjectSourceIds.get(item.subjectId) ?? "unknown");
+  }
+  return sourceIds;
+}
+
+function addSubjectSourceRows(
+  sourceIds: Map<string, string>,
+  rows: ReviewItemSourceRow[],
+): void {
+  for (const row of rows) {
+    sourceIds.set(row.subjectId, row.sourceId ?? "unknown");
+  }
+}
+
+function sourceRowsForSubjects(
+  store: Pick<WorkbenchStore, "db">,
+  subjectIds: string[],
+  tableName: "entity_candidates" | "relationship_candidates" | "legal_refs",
+  subjectColumn: "candidate_id" | "relationship_candidate_id" | "legal_ref_id",
+): ReviewItemSourceRow[] {
+  const rows: ReviewItemSourceRow[] = [];
+  for (const chunk of chunks(subjectIds, 500)) {
+    if (chunk.length === 0) continue;
+    const placeholders = chunk.map(() => "?").join(", ");
+    rows.push(
+      ...queryAll<ReviewItemSourceRow>(
+        store.db,
+        `select ${tableName}.${subjectColumn} as subjectId,
+                source_items.source_id as sourceId
+         from ${tableName}
+         join source_items on source_items.source_item_id = ${tableName}.source_item_id
+         where ${tableName}.${subjectColumn} in (${placeholders})`,
+        chunk,
+      ),
+    );
+  }
+  return rows;
+}
+
+function chunks<T>(values: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    result.push(values.slice(index, index + size));
+  }
+  return result;
 }
 
 export function reviewPacketDebtSummary(
