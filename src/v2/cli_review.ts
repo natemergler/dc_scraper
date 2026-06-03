@@ -30,6 +30,9 @@ export interface ReviewCommandDeps {
   withReadonlyWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
 }
 
+const DEFAULT_REVIEW_DECISION_LIMIT = 10;
+const DISPLAY_TEXT_MAX_LENGTH = 120;
+
 export async function handleReviewCommand(
   args: string[],
   options: ReviewCommandOptions,
@@ -74,8 +77,9 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
+    const limit = readReviewDecisionLimit(args);
     const view = await deps.withReadonlyWorkbench((workbench) =>
-      reviewDecisionView(workbench.unresolvedWorkGraph(), options.nextCommandContext)
+      reviewDecisionView(workbench.unresolvedWorkGraph(), options.nextCommandContext, limit)
     );
     if (options.json) {
       console.log(JSON.stringify(view, null, 2));
@@ -147,7 +151,7 @@ Usage:
   ${
     dcCommand("review list")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
-  ${dcCommand("review decisions")} [--db <path>] [--resolutions-dir <path>] [--json]
+  ${dcCommand("review decisions")} [--limit <n>] [--db <path>] [--resolutions-dir <path>] [--json]
   ${
     dcCommand("review packets")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
@@ -166,6 +170,9 @@ Interactive actions:
 
 interface ReviewDecisionView {
   count: number;
+  totalDecisionCount: number;
+  totalDiagnosticCount: number;
+  limit: number;
   decisions: ReviewDecisionRecord[];
   diagnostics: UnresolvedDiagnosticNode[];
   edges: UnresolvedWorkGraph["edges"];
@@ -179,44 +186,57 @@ interface ReviewDecisionRecord extends UnresolvedDecisionNode {
 function reviewDecisionView(
   graph: UnresolvedWorkGraph,
   commandContext: ReviewPacketCommandContext | undefined,
+  limit: number,
 ): ReviewDecisionView {
-  const decisions = graph.decisions.map((decision) => ({
+  const decisions = graph.decisions.slice(0, limit).map((decision) => ({
     ...decision,
     label: reviewDecisionLabel(decision),
     nextCommand: reviewDecisionNextCommand(decision, commandContext),
   }));
+  const diagnostics = graph.diagnostics.slice(0, limit);
+  const visibleNodeIds = new Set([
+    ...decisions.map((decision) => decision.nodeId),
+    ...diagnostics.map((diagnostic) => diagnostic.nodeId),
+  ]);
   return {
     count: decisions.length,
+    totalDecisionCount: graph.decisions.length,
+    totalDiagnosticCount: graph.diagnostics.length,
+    limit,
     decisions,
-    diagnostics: graph.diagnostics,
-    edges: graph.edges,
+    diagnostics,
+    edges: graph.edges.filter((edge) =>
+      visibleNodeIds.has(edge.fromNodeId) && visibleNodeIds.has(edge.toNodeId)
+    ),
   };
 }
 
 function renderReviewDecisionView(view: ReviewDecisionView): string {
-  const lines = [`Review decisions: ${view.count}`];
+  const lines = [`Review decisions: ${view.count} of ${view.totalDecisionCount}`];
   for (const decision of view.decisions) {
     lines.push(
       `[blocks ${decision.downstreamBlockedCount}] ${decision.label}`,
-      `type: ${decision.itemType}`,
-      `source: ${decision.sourceId}`,
-      `default: ${decision.defaultAction}`,
-      `reason: ${decision.reason}`,
-      `subject: ${decision.subjectId}`,
+      `type: ${displayText(decision.itemType)}`,
+      `source: ${displayText(decision.sourceId)}`,
+      `default: ${displayText(decision.defaultAction)}`,
+      `reason: ${displayText(decision.reason)}`,
+      `subject: ${displayText(decision.subjectId)}`,
     );
-    if (decision.nextCommand) lines.push(`next: ${decision.nextCommand}`);
+    if (decision.nextCommand) lines.push(`next: ${displayText(decision.nextCommand)}`);
     lines.push("");
   }
-  lines.push(`Blocked diagnostics: ${view.diagnostics.length}`);
+  lines.push(`Blocked diagnostics: ${view.diagnostics.length} of ${view.totalDiagnosticCount}`);
   for (const diagnostic of view.diagnostics) {
     lines.push(
-      `- ${diagnostic.subjectId} (${diagnostic.reason}; source=${diagnostic.sourceId})`,
+      `- ${displayText(diagnostic.subjectId)} (${displayText(diagnostic.reason)}; source=${
+        displayText(diagnostic.sourceId)
+      })`,
     );
     for (const blocker of diagnostic.blockers) {
       lines.push(
-        `  blocker: ${blocker.blockerLabel} (${blocker.blockerState}; actionable=${
-          blocker.hasActionablePrerequisite ? "yes" : "no"
-        })`,
+        `  blocker: ${displayText(blocker.blockerLabel)} (${
+          displayText(blocker.blockerState)
+        }; actionable=${blocker.hasActionablePrerequisite ? "yes" : "no"})`,
       );
     }
   }
@@ -226,9 +246,11 @@ function renderReviewDecisionView(view: ReviewDecisionView): string {
 function reviewDecisionLabel(decision: UnresolvedDecisionNode): string {
   for (const key of ["name", "title", "normalizedCitation", "citationText", "rawValue"]) {
     const value = decision.details[key];
-    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value !== "string") continue;
+    const label = displayText(value);
+    if (label) return label;
   }
-  return decision.subjectId;
+  return displayText(decision.subjectId);
 }
 
 function reviewDecisionNextCommand(
@@ -254,6 +276,15 @@ function reviewDecisionMode(itemType: UnresolvedDecisionNode["itemType"]): strin
   if (itemType === "relationship_candidate") return "relationships";
   if (itemType === "legal_ref") return "legal";
   return undefined;
+}
+
+function displayText(value: string): string {
+  const oneLine = Array.from(value, (character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? " " : character;
+  }).join("").replace(/\s+/g, " ").trim();
+  if (oneLine.length <= DISPLAY_TEXT_MAX_LENGTH) return oneLine;
+  return `${oneLine.slice(0, DISPLAY_TEXT_MAX_LENGTH - 3).trimEnd()}...`;
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {
@@ -283,6 +314,12 @@ Usage:
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);
   }
+}
+
+function readReviewDecisionLimit(args: string[]): number {
+  const limit = readNumberFlag(args, "--limit");
+  if (limit === undefined || !Number.isFinite(limit)) return DEFAULT_REVIEW_DECISION_LIMIT;
+  return Math.max(0, Math.floor(limit));
 }
 
 function readReviewFilters(args: string[]): ReviewItemFilters {
