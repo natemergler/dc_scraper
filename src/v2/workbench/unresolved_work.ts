@@ -50,6 +50,26 @@ export interface UnresolvedWorkGraph {
   edges: UnresolvedWorkEdge[];
 }
 
+export interface UnresolvedReconciliationSummary {
+  blockedCount: number;
+  blockedBySource: Array<{ sourceId: string; count: number }>;
+  blockedByBlockerState: Array<{ blockerState: string; count: number }>;
+  blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
+  blockedByReason: Array<{ reason: string; count: number }>;
+  firstBlocked?: {
+    subjectId: string;
+    sourceId: string;
+    reason: string;
+    relationshipType: string;
+    rawValue?: string | null;
+    blockers: Array<{
+      blockerId: string;
+      blockerState: string;
+      blockerLabel: string;
+    }>;
+  };
+}
+
 interface DecisionRow {
   reviewItemId: string;
   itemType: ReviewItemType;
@@ -142,6 +162,40 @@ export function buildUnresolvedWorkGraph(
   );
 
   return { decisions, diagnostics, edges };
+}
+
+export function summarizeUnresolvedReconciliation(
+  graph: UnresolvedWorkGraph,
+): UnresolvedReconciliationSummary {
+  const firstDiagnostic = graph.diagnostics[0];
+  return {
+    blockedCount: graph.diagnostics.length,
+    blockedBySource: countByKey(graph.diagnostics, "sourceId"),
+    blockedByBlockerState: countByKey(
+      graph.diagnostics.flatMap((diagnostic) => diagnostic.blockers),
+      "blockerState",
+    ),
+    blockedByRelationshipType: countByMappedKey(
+      graph.diagnostics,
+      (diagnostic) => diagnostic.relationshipType ?? "unknown",
+      "relationshipType",
+    ),
+    blockedByReason: countByKey(graph.diagnostics, "reason"),
+    firstBlocked: firstDiagnostic
+      ? {
+        subjectId: firstDiagnostic.subjectId,
+        sourceId: firstDiagnostic.sourceId,
+        reason: firstDiagnostic.reason,
+        relationshipType: firstDiagnostic.relationshipType ?? "unknown",
+        rawValue: firstDiagnostic.rawValue,
+        blockers: firstDiagnostic.blockers.map((blocker) => ({
+          blockerId: blocker.blockerId,
+          blockerState: blocker.blockerState,
+          blockerLabel: blocker.blockerLabel,
+        })),
+      }
+      : undefined,
+  };
 }
 
 function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisionNode[] {
@@ -352,6 +406,32 @@ function diagnosticNodeId(subjectType: string, subjectId: string): string {
 
 function diagnosticSubjectKey(subjectType: string, subjectId: string): string {
   return `${subjectType}\u0000${subjectId}`;
+}
+
+function countByKey<T extends Record<K, string>, K extends string>(
+  rows: T[],
+  key: K,
+): Array<{ [P in K]: string } & { count: number }> {
+  return countByMappedKey(rows, (row) => row[key], key);
+}
+
+function countByMappedKey<T, K extends string>(
+  rows: T[],
+  keyOf: (row: T) => string,
+  keyName: K,
+): Array<{ [P in K]: string } & { count: number }> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const key = keyOf(row);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([leftKey, leftCount], [rightKey, rightCount]) =>
+      rightCount - leftCount || leftKey.localeCompare(rightKey)
+    )
+    .map(([key, count]) => ({ [keyName]: key, count } as { [P in K]: string } & {
+      count: number;
+    }));
 }
 
 function parseDetails(detailsJson: string): Record<string, unknown> {

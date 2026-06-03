@@ -2,6 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { summarizeUnresolvedReconciliation } from "../src/v2/workbench/unresolved_work.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -96,6 +97,31 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
       blockedGraph.decisions.findIndex((decision) => decision.nodeId === unrelatedDecision.nodeId),
     true,
   );
+  const summary = summarizeUnresolvedReconciliation(blockedGraph);
+  assertEquals(summary.blockedCount, 1);
+  assertEquals(summary.blockedBySource, [
+    { sourceId: "test.unresolved_work.relationships", count: 1 },
+  ]);
+  assertEquals(summary.blockedByBlockerState, [
+    { blockerState: "pending_candidate", count: 1 },
+  ]);
+  assertEquals(summary.blockedByRelationshipType, [
+    { relationshipType: "governed_by", count: 1 },
+  ]);
+  assertEquals(summary.blockedByReason, [
+    { reason: "unresolved_endpoints", count: 1 },
+  ]);
+  assertEquals(
+    summary.firstBlocked?.subjectId,
+    "relationship.test.unresolved_work.pending_dependency",
+  );
+  assertEquals(summary.firstBlocked?.blockers, [
+    {
+      blockerId: "dc.pending_target",
+      blockerState: "pending_candidate",
+      blockerLabel: "Pending Target",
+    },
+  ]);
 
   await workbench.appendResolutionEvent(
     {

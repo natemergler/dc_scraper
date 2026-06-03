@@ -27,10 +27,7 @@ import {
 } from "./workbench/resolution.ts";
 import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
 import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
-import {
-  reconcileRelationshipCandidates,
-  reconciliationSummary as readReconciliationSummary,
-} from "./workbench/reconciliation.ts";
+import { reconcileRelationshipCandidates } from "./workbench/reconciliation.ts";
 import { buildUnresolvedWorkGraph } from "./workbench/unresolved_work.ts";
 import {
   listReviewItems as readReviewQueue,
@@ -206,10 +203,6 @@ export class Workbench implements WorkbenchStore {
 
   sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {
     return readSourceArtifacts(this);
-  }
-
-  reconciliationSummary(): ReturnType<typeof readReconciliationSummary> {
-    return readReconciliationSummary(this);
   }
 
   unresolvedWorkGraph(): ReturnType<typeof buildUnresolvedWorkGraph> {

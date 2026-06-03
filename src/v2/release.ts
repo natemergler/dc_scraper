@@ -5,6 +5,7 @@ import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
 import { unresolvedStateNote } from "./operator_plan.ts";
+import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
@@ -585,7 +586,7 @@ function buildReleaseSummary(
   ).all() as Array<{ item_type: string; count: number }>;
   const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
   const reviewDebt = workbench.reviewDebtSummary();
-  const reconciliation = workbench.reconciliationSummary();
+  const reconciliation = summarizeUnresolvedReconciliation(workbench.unresolvedWorkGraph());
   const staleReview = workbench.staleReviewSummary();
   const placeholderEntityCount = workbench.db.prepare(
     "select count(*) as count from canonical_entities where is_placeholder = 1",
