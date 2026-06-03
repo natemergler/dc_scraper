@@ -1,12 +1,15 @@
 import { join } from "@std/path";
 import { dcCommand } from "./command_prefix.ts";
 import { buildV2Release } from "./release.ts";
+import { renderReleaseVerification, verifyWorkbenchRelease } from "./release_verify.ts";
+import type { SmokeProfile } from "./domain.ts";
 import { buildReleaseInspection, type ReleaseManifest, renderReleaseInspection } from "./status.ts";
 import type { Workbench } from "./workbench.ts";
 
 export interface ReleaseCommandOptions {
   json?: boolean;
   outDir: string;
+  sourceProfile?: SmokeProfile | "custom";
 }
 
 export interface ReleaseCommandDeps {
@@ -30,9 +33,26 @@ export async function handleReleaseCommand(
       return true;
     }
     const result = await deps.withWorkbench(
-      async (workbench) => await buildV2Release(workbench, options.outDir),
+      async (workbench) =>
+        await buildV2Release(workbench, options.outDir, {
+          sourceProfile: options.sourceProfile,
+        }),
     );
     console.log(`Built v2 release ${result.outDir}`);
+    return true;
+  }
+  if (args[1] === "verify") {
+    if (hasHelpFlag(args, 2)) {
+      printReleaseHelp();
+      return true;
+    }
+    const result = await deps.withWorkbench((workbench) => verifyWorkbenchRelease(workbench));
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(renderReleaseVerification(result));
+    }
+    if (!result.ready) Deno.exitCode = 1;
     return true;
   }
   if (args[1] === "inspect") {
@@ -58,15 +78,19 @@ export function printReleaseHelp(): void {
 
 Workflow:
   1. Build the current release package with \`${dcCommand("release build")}\`
-  2. Inspect the built package with \`${dcCommand("release inspect")}\`
-  3. Use \`${dcCommand("release inspect --json")}\` for scriptable release summary checks
+  2. Fail fast on unresolved readiness with \`${dcCommand("release verify")}\`
+  3. Inspect the built package with \`${dcCommand("release inspect")}\`
+  4. Use \`${dcCommand("release inspect --json")}\` for scriptable release summary checks
 
 Usage:
-  ${dcCommand("release build")} [--db <path>] [--out <dir>]
+  ${
+    dcCommand("release build")
+  } [--db <path>] [--out <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  ${dcCommand("release verify")} [--db <path>] [--json]
   ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Release files:
-  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*
+  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*, entity_legal_refs.*, relationship_legal_refs.*
 `);
 }
 

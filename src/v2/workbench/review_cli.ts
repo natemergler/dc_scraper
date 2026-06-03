@@ -3,6 +3,7 @@ import { type Workbench } from "../workbench.ts";
 import { queryAll, queryOne } from "./db.ts";
 import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
+import { listReviewPackets, renderReviewPacketHeader } from "./review_packets.ts";
 import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -44,6 +45,13 @@ export async function runInteractiveReview(
     if (!item) {
       console.log("No review items remain.");
       return;
+    }
+    const packet = listReviewPackets(workbench, activeFilters).find((candidate) =>
+      candidate.reviewItemIds.includes(item.reviewItemId)
+    );
+    if (packet && packet.count > 1) {
+      console.log(renderReviewPacketHeader(packet));
+      console.log("");
     }
     console.log(renderReviewItem(workbench, item));
     const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);

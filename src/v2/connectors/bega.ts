@@ -28,6 +28,12 @@ const begaSource: SourceDefinition = {
   baseUrl: "https://bega.dc.gov/",
   notes:
     "Captures only the shallow institutional structure around BEGA, the Office of Government Ethics, and the Office of Open Government.",
+  tier: "tier1",
+  releaseRole: "structure",
+  smokeProfiles: ["structure"],
+  privacyNotes: [
+    "Institutional structure only; no staff directories, complaint records, or contact output.",
+  ],
 };
 
 const begaUrl = "https://bega.dc.gov/node/61616/";

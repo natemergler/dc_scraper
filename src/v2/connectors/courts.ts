@@ -29,6 +29,12 @@ const dcCourtsSource: SourceDefinition = {
   baseUrl: "https://www.dccourts.gov/",
   notes:
     "Captures only the shallow institutional court structure: the DC Courts root, the Court of Appeals, the Superior Court, and direct Superior Court divisions.",
+  tier: "tier1",
+  releaseRole: "structure",
+  smokeProfiles: ["structure"],
+  privacyNotes: [
+    "Institutional court structure only; no judges, case records, or contact-directory data.",
+  ],
 };
 
 const homeUrl = dcCourtsSource.baseUrl;

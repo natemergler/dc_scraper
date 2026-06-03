@@ -29,6 +29,12 @@ const councilCommitteesSource: SourceDefinition = {
   kind: "committee_pages",
   accessMethod: "official_page_html",
   baseUrl: "https://dccouncil.gov/committees/",
+  tier: "tier0",
+  releaseRole: "structure",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: [
+    "Keep committee structure and oversight evidence; no staff-directory or contact output.",
+  ],
 };
 
 const councilLimsSource: SourceDefinition = {
@@ -37,6 +43,12 @@ const councilLimsSource: SourceDefinition = {
   kind: "json_api",
   accessMethod: "official_json_api",
   baseUrl: "https://lims.dccouncil.gov/api/Search/GetWhatsNew",
+  tier: "tier1",
+  releaseRole: "inventory",
+  smokeProfiles: ["structure", "inventory"],
+  privacyNotes: [
+    "Inventory-only legislative publication surface; do not imply full legal-action modeling.",
+  ],
 };
 
 const defaultDeferOversightTargets = new Set([

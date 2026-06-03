@@ -1,5 +1,6 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
+import { listReviewPackets, renderReviewPacketSummary } from "./workbench/review_packets.ts";
 import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
@@ -58,6 +59,25 @@ export async function handleReviewCommand(
     }
     return true;
   }
+  if (args[1] === "packets") {
+    if (hasHelpFlag(args, 2)) {
+      printReviewHelp();
+      return true;
+    }
+    const packets = await deps.withReadonlyWorkbench((workbench) =>
+      listReviewPackets(workbench, readReviewFilters(args))
+    );
+    if (options.json) {
+      console.log(JSON.stringify({ count: packets.length, packets }, null, 2));
+      return true;
+    }
+    console.log(`Review packets: ${packets.length}`);
+    for (const packet of packets) {
+      console.log(renderReviewPacketSummary(packet));
+      console.log("");
+    }
+    return true;
+  }
   if (args[1] === "batch") {
     return await handleReviewBatchCommand(args, options, deps);
   }
@@ -84,8 +104,9 @@ export function printReviewHelp(): void {
 Workflow:
   1. Run \`${dcCommand("review")}\` for the next open item
   2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  3. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
-  4. Apply a scoped batch like \`${
+  3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
+  4. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
+  5. Apply a scoped batch like \`${
     dcCommand(
       "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
     )
@@ -97,6 +118,9 @@ Usage:
   } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
   ${
     dcCommand("review list")
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  ${
+    dcCommand("review packets")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   ${
     dcCommand("review batch accept-safe")

@@ -19,6 +19,10 @@ const legalEntrypointsSource: SourceDefinition = {
   kind: "legal_source_index",
   accessMethod: "official_page_html",
   baseUrl: "https://dc.gov/page/laws-regulations-and-courts",
+  tier: "tier0",
+  releaseRole: "legal",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: ["Keep source-backed legal citations and public legal-source links only."],
 };
 
 export const legalEntrypointsConnector: SourceConnector = {

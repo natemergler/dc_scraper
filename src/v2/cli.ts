@@ -4,8 +4,10 @@ import { dcCommand } from "./command_prefix.ts";
 import { handleEntityCommand } from "./cli_entity.ts";
 import { handleReleaseCommand } from "./cli_release.ts";
 import { handleReviewCommand } from "./cli_review.ts";
+import { handleSmokeCommand } from "./cli_smoke.ts";
 import { handleSourceCommand } from "./cli_source.ts";
 import { handleWorkbenchCommand } from "./cli_workbench.ts";
+import { fetchSources } from "./cli_source.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
 import { buildWorkbenchStatus } from "./status.ts";
 import { Workbench } from "./workbench.ts";
@@ -17,6 +19,12 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
+  const sourceProfile = readFlag(args, "--source-profile") as
+    | "structure"
+    | "tier0"
+    | "inventory"
+    | "custom"
+    | undefined;
   const sourceHandled = await handleSourceCommand(args, { json: args.includes("--json"), limit }, {
     connectors,
     getConnector,
@@ -80,9 +88,37 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     },
   );
   if (reviewHandled) return true;
+  const smokeHandled = await handleSmokeCommand(
+    args,
+    { json: args.includes("--json"), limit },
+    {
+      connectors,
+      makeTempDir: async () => await Deno.makeTempDir({ prefix: "dc-smoke-" }),
+      fetchSources: async (sourceIds, smokeOptions, paths) =>
+        await fetchSources(sourceIds, { limit: smokeOptions.limit }, {
+          getConnector,
+          createConnectorContext: ({ limit }) => createConnectorContext({ limit }),
+          importConnectorResult: async (result) =>
+            await withWorkbench(
+              paths.dbPath,
+              async (workbench) => {
+                await workbench.importConnectorResult(result, paths.dataDir);
+              },
+              { refreshDerivedState: false },
+            ),
+        }),
+      readWorkbenchStatus: async (paths) =>
+        await withWorkbench(
+          paths.dbPath,
+          (workbench) => buildWorkbenchStatus(workbench),
+          { readonly: true, fallbackToWritable: true },
+        ),
+    },
+  );
+  if (smokeHandled) return true;
   const releaseHandled = await handleReleaseCommand(
     args,
-    { json: args.includes("--json"), outDir },
+    { json: args.includes("--json"), outDir, sourceProfile },
     {
       withWorkbench: async (action) =>
         await withWorkbench(dbPath, action, {
@@ -222,6 +258,7 @@ Workflow:
   Fetch:   ${dcCommand("source list")} | ${dcCommand("source fetch --all")} | ${
     dcCommand("source fetch dcgis.agencies")
   }
+  Smoke:   ${dcCommand("smoke tier0")} | ${dcCommand("smoke structure")}
   Audit:   ${dcCommand("audit")} | ${dcCommand("status --json")} | ${
     dcCommand("source inspect dcgis.agencies")
   }
@@ -238,6 +275,7 @@ Usage:
   ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>]
   ${dcCommand("source inspect <source-id>")} [--db <path>] [--json]
   ${dcCommand("source compare public-bodies")} [--db <path>] [--json]
+  ${dcCommand("smoke <structure|tier0|inventory>")} [--limit <n>] [--json]
   ${
     dcCommand("review")
   } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
@@ -255,7 +293,10 @@ Usage:
   } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${dcCommand("entity search <query>")} [--db <path>] [--json]
   ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
-  ${dcCommand("release build")} [--db <path>] [--out <dir>]
+  ${
+    dcCommand("release build")
+  } [--db <path>] [--out <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  ${dcCommand("release verify")} [--db <path>] [--json]
   ${dcCommand("release inspect")} [--out <dir>] [--json]
 
 Defaults:

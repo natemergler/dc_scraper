@@ -1,9 +1,11 @@
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
+import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
-import { nowIso, sha256Hex } from "./domain.ts";
+import { nowIso, sha256Hex, type SmokeProfile } from "./domain.ts";
 import { unresolvedStateNote } from "./operator_plan.ts";
+import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -14,9 +16,17 @@ type EntityLegalRefRow = ReturnType<Workbench["entityLegalRefs"]>[number];
 type RelationshipLegalRefRow = ReturnType<Workbench["relationshipLegalRefs"]>[number];
 type SourceArtifactRow = ReturnType<Workbench["sourceArtifacts"]>[number];
 
+export interface BuildReleaseOptions {
+  sourceProfile?: SmokeProfile | "custom";
+  repoRoot?: string;
+  gitCommit?: string;
+  toolVersion?: string;
+}
+
 export async function buildV2Release(
   workbench: Workbench,
   outDir: string,
+  options: BuildReleaseOptions = {},
 ): Promise<{ outDir: string; fileNames: string[] }> {
   await resetReleaseDirectory(outDir);
   const entities: EntityRow[] = workbench.canonicalEntities();
@@ -164,9 +174,18 @@ export async function buildV2Release(
   });
   const readme = buildReadme(summary);
   await Deno.writeTextFile(join(outDir, "README.md"), readme);
+  const generatedAt = nowIso();
+  const gitCommit = options.gitCommit ?? await readGitCommit(options.repoRoot ?? Deno.cwd());
+  const sourceProfile = options.sourceProfile ?? "custom";
+  const toolVersion = options.toolVersion ?? TOOL_VERSION;
   const manifest = {
+    manifest_version: MANIFEST_VERSION,
+    release_id: buildReleaseId(generatedAt, gitCommit),
+    tool_version: toolVersion,
+    git_commit: gitCommit,
+    source_profile: sourceProfile,
     schema_version: workbench.meta().schemaVersion,
-    generated_at: nowIso(),
+    generated_at: generatedAt,
     files: await Promise.all(
       ["README.md", "dcgov.sqlite", ...files.keys()].map(async (name) => ({
         name,
@@ -183,6 +202,12 @@ export async function buildV2Release(
     outDir,
     fileNames: [...Array.from(manifest.files, (file) => file.name), "manifest.json"],
   };
+}
+
+function buildReleaseId(generatedAt: string, gitCommit: string): string {
+  const timestamp = generatedAt.replaceAll(/[^0-9]/g, "").slice(0, 14);
+  const shortCommit = gitCommit === "unknown" ? "unknown" : gitCommit.slice(0, 12);
+  return `release.${timestamp}.${shortCommit}`;
 }
 
 async function resetReleaseDirectory(outDir: string): Promise<void> {

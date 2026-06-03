@@ -17,6 +17,10 @@ const admin311Source: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/ServiceRequests/FeatureServer/21",
+  tier: "tier1",
+  releaseRole: "inventory",
+  smokeProfiles: ["structure", "inventory"],
+  privacyNotes: ["Inventory metadata only; do not ingest request-level or person-linked records."],
 };
 
 export const admin311Connector: SourceConnector = {
@@ -102,6 +106,10 @@ const enterpriseDatasetInventorySource: SourceDefinition = {
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5",
   notes:
     "Captures the live Enterprise Dataset Inventory rows plus the surrounding Government Operations service catalog. This lane is inventory-only and does not turn table families into graph facts.",
+  tier: "tier1",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: ["Inventory-only lane; keep dataset metadata compact and privacy-safe."],
 };
 
 const governmentOperationsServiceUrl =
@@ -551,6 +559,10 @@ const adminPermitSource: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer",
+  tier: "tier2",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: ["Metadata-only inventory lane; do not widen into permit-holder or licensee data."],
 };
 
 export const adminPermitsConnector = buildArcGisCatalogConnector({
@@ -572,6 +584,12 @@ const adminCrimeSource: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer",
+  tier: "tier2",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: [
+    "Metadata-only inventory lane; avoid widening into sensitive incident or person data.",
+  ],
 };
 
 export const adminCrimeConnector = buildArcGisCatalogConnector({
@@ -592,6 +610,12 @@ const adminPropertySource: SourceDefinition = {
   kind: "dataset_metadata",
   accessMethod: "official_arcgis_rest",
   baseUrl: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
+  tier: "tier2",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: [
+    "Metadata-only property inventory lane; no parcel-owner or address-directory expansion.",
+  ],
 };
 
 export const adminPropertyConnector = buildArcGisCatalogConnector({
@@ -614,6 +638,10 @@ const adminElectionsSource: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer",
+  tier: "tier2",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: ["Metadata-only elections lane; no voter or polling-detail expansion."],
 };
 
 export const adminElectionsConnector = buildArcGisCatalogConnector({
@@ -634,6 +662,12 @@ const adminProcurementSource: SourceDefinition = {
   kind: "source_index",
   accessMethod: "official_page_html",
   baseUrl: "https://ocp.dc.gov/page/doing-business-dc-government",
+  tier: "tier1",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: [
+    "Inventory-only procurement lane; no contracting-person or vendor-directory claims.",
+  ],
 };
 
 export const adminProcurementConnector: SourceConnector = {
@@ -703,6 +737,12 @@ const adminBudgetSource: SourceDefinition = {
   kind: "source_index",
   accessMethod: "official_page_html",
   baseUrl: "https://cfo.dc.gov/budget",
+  tier: "tier1",
+  releaseRole: "inventory",
+  smokeProfiles: ["inventory"],
+  privacyNotes: [
+    "Inventory-only budget lane; do not turn source indexes into budget facts without a dedicated model.",
+  ],
 };
 
 export const adminBudgetConnector: SourceConnector = {

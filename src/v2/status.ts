@@ -5,8 +5,13 @@ import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
 export interface ReleaseManifest {
+  manifest_version?: number;
+  release_id?: string;
+  tool_version?: string;
+  git_commit?: string;
+  source_profile?: string;
   generated_at?: string;
-  files?: Array<{ name: string }>;
+  files?: Array<{ name: string; sha256?: string }>;
   release_summary?: {
     entities_by_review_status?: Array<{ review_status: string; count: number }>;
     relationships_by_review_status?: Array<{ review_status: string; count: number }>;
@@ -287,6 +292,11 @@ export function renderReleaseInspection(outDir: string, manifest: ReleaseManifes
   const summary = inspection.releaseSummary;
   return [
     `Release: ${inspection.outDir}`,
+    `Manifest version: ${manifest.manifest_version ?? "unknown"}`,
+    `Release id: ${manifest.release_id ?? "unknown"}`,
+    `Tool version: ${manifest.tool_version ?? "unknown"}`,
+    `Git commit: ${manifest.git_commit ?? "unknown"}`,
+    `Source profile: ${manifest.source_profile ?? "custom"}`,
     `Generated: ${inspection.generatedAt}`,
     `Files: ${inspection.fileCount}`,
     `Release readiness: ${inspection.readiness}`,

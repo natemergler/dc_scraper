@@ -32,6 +32,12 @@ const openDcSource: SourceDefinition = {
   kind: "public_body_pages",
   accessMethod: "official_page_html",
   baseUrl: "https://www.open-dc.gov/public-bodies",
+  tier: "tier0",
+  releaseRole: "public_body",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: [
+    "Keep public-body structure and legal authority evidence; drop local or contact-like URLs.",
+  ],
 };
 
 const priorityPublicBodySlugs = new Set([

@@ -15,6 +15,15 @@ export type ReviewItemType =
   | "source_status"
   | "placeholder_entity";
 
+export type SourceTier = "tier0" | "tier1" | "tier2" | "tier3";
+export type SourceReleaseRole =
+  | "structure"
+  | "public_body"
+  | "legal"
+  | "appointments"
+  | "inventory";
+export type SmokeProfile = "structure" | "tier0" | "inventory";
+
 export type ReviewStatus = "open" | "resolved" | "deferred";
 export type CandidateStatus = "pending" | "accepted" | "rejected";
 export type RelationshipType =
@@ -45,6 +54,10 @@ export interface SourceDefinition {
   accessMethod: string;
   baseUrl: string;
   notes?: string;
+  tier?: SourceTier;
+  releaseRole?: SourceReleaseRole;
+  smokeProfiles?: SmokeProfile[];
+  privacyNotes?: string[];
 }
 
 export interface SourceEndpointDefinition {

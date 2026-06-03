@@ -33,6 +33,12 @@ const quickbaseSource: SourceDefinition = {
   baseUrl: "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0",
   notes:
     "Anonymous access includes a CSV export path (`dlta=xs`) for the appointments report plus app metadata on the base report page.",
+  tier: "tier1",
+  releaseRole: "appointments",
+  smokeProfiles: ["structure"],
+  privacyNotes: [
+    "Contact columns are explicitly out of scope; keep only public appointment structure and observations.",
+  ],
 };
 
 const quickbaseColumns = {

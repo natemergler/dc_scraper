@@ -21,6 +21,12 @@ const councilMembersSource: SourceDefinition = {
   kind: "official_page_html",
   accessMethod: "official_page_html",
   baseUrl: "https://dccouncil.gov/councilmembers/",
+  tier: "tier0",
+  releaseRole: "structure",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: [
+    "Keep public names, seats, and roles only; no biographies or contact-directory fields.",
+  ],
 };
 
 interface CouncilMemberBlock {

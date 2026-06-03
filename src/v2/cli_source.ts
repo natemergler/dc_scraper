@@ -183,6 +183,10 @@ export async function handleSourceCommand(
         title: connector.source.title,
         status: row?.latestStatus ?? "unfetched",
         latestRunFinishedAt: row?.latestRunFinishedAt,
+        tier: connector.source.tier ?? "unspecified",
+        releaseRole: connector.source.releaseRole ?? "unspecified",
+        smokeProfiles: connector.source.smokeProfiles ?? [],
+        privacyNotes: connector.source.privacyNotes ?? [],
       };
     });
     if (options.json) {
@@ -191,9 +195,9 @@ export async function handleSourceCommand(
     }
     for (const row of sourceRows) {
       console.log(
-        `${row.sourceId} ${row.status}${
-          row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
-        }`,
+        `${row.sourceId} ${row.status} ${row.tier}/${row.releaseRole}${
+          row.smokeProfiles.length > 0 ? ` [${row.smokeProfiles.join(",")}]` : ""
+        }${row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""}`,
       );
     }
     return true;

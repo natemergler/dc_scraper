@@ -34,6 +34,12 @@ const dcgisAgenciesSource: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6",
+  tier: "tier0",
+  releaseRole: "structure",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: [
+    "Release public civic structure and legal refs only; contact-directory fields stay out.",
+  ],
 };
 
 const dcgisBoardsCommissionsCouncilsSource: SourceDefinition = {
@@ -43,6 +49,12 @@ const dcgisBoardsCommissionsCouncilsSource: SourceDefinition = {
   accessMethod: "official_arcgis_rest",
   baseUrl:
     "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+  tier: "tier0",
+  releaseRole: "public_body",
+  smokeProfiles: ["structure", "tier0"],
+  privacyNotes: [
+    "Release public-body structure and legal refs only; do not widen into contact data.",
+  ],
 };
 
 export const dcgisAgenciesConnector: SourceConnector = {

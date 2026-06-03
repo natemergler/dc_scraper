@@ -24,6 +24,12 @@ const oancSource: SourceDefinition = {
   kind: "anc_profile_pages",
   accessMethod: "official_page_html",
   baseUrl: "https://oanc.dc.gov/anc-profile-listing",
+  tier: "tier1",
+  releaseRole: "public_body",
+  smokeProfiles: ["structure"],
+  privacyNotes: [
+    "Drop commissioner contact columns before review or release; keep public structure only.",
+  ],
 };
 
 interface AncListingEntry {
