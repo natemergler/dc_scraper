@@ -52,6 +52,25 @@ Deno.test("release file lists stay aligned across README, release help, and rele
   assertStringIncludes(releaseHelp, "entity_legal_refs.*");
 });
 
+Deno.test("release contract explains compact model semantics without overclaiming", async () => {
+  const releaseContract = await Deno.readTextFile("docs/RELEASE_CONTRACT.md");
+
+  for (
+    const phrase of [
+      "Public official observations are source-backed role or seat observations, not a personnel or",
+      "`datasets.*` and `legal_refs.*` are separate inventory/reference tables.",
+      "`part_of`: component -> containing entity.",
+      "`has_seat` / `has_status`: body, seat, or observation -> seat/status marker.",
+      "civic subject -> governing, oversight, appointment, designation, legal-authority, or publication",
+      "observation or role entity -> seat, district,",
+      "body, or committee role.",
+      "DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not",
+    ]
+  ) {
+    assertStringIncludes(releaseContract, phrase);
+  }
+});
+
 async function runCli(args: string[]): Promise<string> {
   const output = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
