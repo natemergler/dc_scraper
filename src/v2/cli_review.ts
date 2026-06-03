@@ -16,6 +16,7 @@ export interface ReviewCommandOptions {
 
 export interface ReviewCommandDeps {
   withWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
+  withReadonlyWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
 }
 
 export async function handleReviewCommand(
@@ -39,7 +40,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const { items, summaries } = await deps.withWorkbench((workbench) => {
+    const { items, summaries } = await deps.withReadonlyWorkbench((workbench) => {
       const items = workbench.listReviewItems(readReviewFilters(args));
       return {
         items,
