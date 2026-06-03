@@ -711,6 +711,10 @@ Deno.test("review decisions exposes dependency-ordered unresolved work", async (
     text,
     "--subject-prefix candidate.test.review_decisions.pending_target",
   );
+  assertStringIncludes(text, "--db");
+  assertStringIncludes(text, dbPath);
+  assertStringIncludes(text, "--resolutions-dir");
+  assertStringIncludes(text, resolutionsDir);
 });
 
 Deno.test("review decisions keeps source labels one-line in scrollback output", async () => {

@@ -222,7 +222,7 @@ function renderReviewDecisionView(view: ReviewDecisionView): string {
       `reason: ${displayText(decision.reason)}`,
       `subject: ${displayText(decision.subjectId)}`,
     );
-    if (decision.nextCommand) lines.push(`next: ${displayText(decision.nextCommand)}`);
+    if (decision.nextCommand) lines.push(`next: ${displayLine(decision.nextCommand)}`);
     lines.push("");
   }
   lines.push(`Blocked diagnostics: ${view.diagnostics.length} of ${view.totalDiagnosticCount}`);
@@ -279,12 +279,17 @@ function reviewDecisionMode(itemType: UnresolvedDecisionNode["itemType"]): strin
 }
 
 function displayText(value: string): string {
+  const oneLine = displayLine(value);
+  if (oneLine.length <= DISPLAY_TEXT_MAX_LENGTH) return oneLine;
+  return `${oneLine.slice(0, DISPLAY_TEXT_MAX_LENGTH - 3).trimEnd()}...`;
+}
+
+function displayLine(value: string): string {
   const oneLine = Array.from(value, (character) => {
     const code = character.charCodeAt(0);
     return code < 32 || code === 127 ? " " : character;
   }).join("").replace(/\s+/g, " ").trim();
-  if (oneLine.length <= DISPLAY_TEXT_MAX_LENGTH) return oneLine;
-  return `${oneLine.slice(0, DISPLAY_TEXT_MAX_LENGTH - 3).trimEnd()}...`;
+  return oneLine;
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {
