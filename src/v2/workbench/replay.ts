@@ -11,6 +11,7 @@ import { queryOne, run } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
+import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface EntityDecisionHint {
@@ -1052,7 +1053,13 @@ function reuseAcceptedRelationshipDecision(
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
     [relationshipId],
   );
-  if (!existing && !isLegalAuthorityRelationship(relationshipType, toEntityId)) {
+  if (isLegalAuthorityRelationship(relationshipType, toEntityId)) {
+    run(
+      store.db,
+      "delete from relationship_legal_refs where relationship_id in (?, ?)",
+      [relationshipCandidateId, relationshipId],
+    );
+  } else if (!existing) {
     run(
       store.db,
       `insert into canonical_relationships(
@@ -1067,11 +1074,4 @@ function reuseAcceptedRelationshipDecision(
     [relationshipCandidateId],
   );
   return { reused: true };
-}
-
-function isLegalAuthorityRelationship(
-  relationshipType: string,
-  toEntityId: string,
-): boolean {
-  return relationshipType === "authorized_by" && toEntityId.startsWith("legal.");
 }

@@ -2654,7 +2654,7 @@ Deno.test("public body comparison report stays usable when Quickbase is unfetche
   );
 });
 
-Deno.test("relationship acceptance migrates pending legal attachments onto the canonical relationship id", async () => {
+Deno.test("legal authority acceptance keeps legal refs on the entity instead of a non-exported relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -2689,14 +2689,24 @@ Deno.test("relationship acceptance migrates pending legal attachments onto the c
     },
     resolutionsDir,
   );
-  const legalAttachmentRows = workbench.db.prepare(
+  const relationshipLegalAttachmentRows = workbench.db.prepare(
     "select relationship_id as relationshipId, legal_ref_id as legalRefId from relationship_legal_refs order by relationship_id",
   ).all().map((row) => row as { relationshipId: string; legalRefId: string });
+  const entityLegalAttachmentRows = workbench.db.prepare(
+    "select entity_id as entityId, legal_ref_id as legalRefId from entity_legal_refs order by entity_id",
+  ).all().map((row) => row as { entityId: string; legalRefId: string });
+  const acceptedAuthorityRelationship = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
+  ).get(
+    "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by",
+  ) as { reviewStatus: string } | undefined;
   workbench.close();
-  assertEquals(legalAttachmentRows, [{
-    relationshipId: "dc.commission_on_example_services:authorized_by:legal.mayor_s_order_2019_010",
+  assertEquals(relationshipLegalAttachmentRows, []);
+  assertEquals(entityLegalAttachmentRows, [{
+    entityId: "dc.commission_on_example_services",
     legalRefId: "legal.open_dc.public_bodies.commission_on_example_services_authority",
   }]);
+  assertEquals(acceptedAuthorityRelationship?.reviewStatus, "accepted");
 });
 
 Deno.test("relationship acceptance rejects blocked endpoints instead of creating placeholders", async () => {

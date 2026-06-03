@@ -17,6 +17,7 @@ import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ResolutionRecord {
@@ -841,12 +842,22 @@ function acceptRelationshipCandidate(
     relationshipCandidateId,
   );
   const relationshipId = `${fromEntityId}:${relationshipType}:${toEntityId}`;
+  if (isLegalAuthorityRelationship(relationshipType, toEntityId)) {
+    run(
+      store.db,
+      "delete from relationship_legal_refs where relationship_id in (?, ?)",
+      [relationshipCandidateId, relationshipId],
+    );
+    setRelationshipCandidateStatus(store, relationshipCandidateId, "accepted");
+    resolveReviewBySubject(store, relationshipCandidateId);
+    return;
+  }
   const existing = queryOne<{ relationshipId: string }>(
     store.db,
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
     [relationshipId],
   );
-  if (!existing && !isLegalAuthorityRelationship(relationshipType, toEntityId)) {
+  if (!existing) {
     run(
       store.db,
       "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values(?, ?, ?, ?, 'accepted', ?, ?)",
@@ -890,10 +901,6 @@ function requireAcceptedEntity(
     );
   }
   return entityId;
-}
-
-function isLegalAuthorityRelationship(relationshipType: string, toEntityId: string): boolean {
-  return relationshipType === "authorized_by" && toEntityId.startsWith("legal.");
 }
 
 function setEntityCandidateStatus(
