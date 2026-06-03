@@ -1,6 +1,6 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
 import { queryAll, run } from "./db.ts";
-import { endpointStatus } from "./reconciliation.ts";
+import { endpointStatus } from "./endpoint_status.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_ACCEPT_RULES = new Map<string, Set<RelationshipType>>([
