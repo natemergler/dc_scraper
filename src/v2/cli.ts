@@ -1,15 +1,10 @@
 import { join } from "@std/path";
 import { handleAuditCommand } from "./cli_audit.ts";
+import { handleReleaseCommand } from "./cli_release.ts";
 import { handleReviewCommand } from "./cli_review.ts";
 import { handleSourceCommand } from "./cli_source.ts";
-import { buildV2Release } from "./release.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
-import {
-  buildReleaseInspection,
-  buildWorkbenchStatus,
-  type ReleaseManifest,
-  renderReleaseInspection,
-} from "./status.ts";
+import { buildWorkbenchStatus } from "./status.ts";
 import { renderEntityView } from "./workbench/review_cli.ts";
 import { Workbench } from "./workbench.ts";
 
@@ -68,12 +63,17 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     },
   );
   if (reviewHandled) return true;
+  const releaseHandled = await handleReleaseCommand(
+    args,
+    { json: args.includes("--json"), outDir },
+    {
+      withWorkbench: async (action) => await withWorkbench(dbPath, action),
+      readFile: async (path) => await Deno.readTextFile(path),
+    },
+  );
+  if (releaseHandled) return true;
   if (args[0] === "entity" && isHelp(args[1])) {
     printEntityHelp();
-    return true;
-  }
-  if (args[0] === "release" && isHelp(args[1])) {
-    printReleaseHelp();
     return true;
   }
   if (args[0] === "workbench" && args[1] === "init") {
@@ -106,25 +106,6 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       return true;
     }
     console.log(renderEntityView(view));
-    return true;
-  }
-  if (args[0] === "release" && args[1] === "build") {
-    const result = await withWorkbench(
-      dbPath,
-      async (workbench) => await buildV2Release(workbench, outDir),
-    );
-    console.log(`Built v2 release ${result.outDir}`);
-    return true;
-  }
-  if (args[0] === "release" && args[1] === "inspect") {
-    const manifest = JSON.parse(
-      await Deno.readTextFile(join(outDir, "manifest.json")),
-    ) as ReleaseManifest;
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(buildReleaseInspection(outDir, manifest), null, 2));
-      return true;
-    }
-    console.log(renderReleaseInspection(outDir, manifest));
     return true;
   }
   return false;
@@ -239,17 +220,5 @@ function printEntityHelp(): void {
 Usage:
   dc entity search <query> [--db <path>] [--json]
   dc entity show <entity-id> [--db <path>] [--json]
-`);
-}
-
-function printReleaseHelp(): void {
-  console.log(`dc release
-
-Usage:
-  dc release build [--db <path>] [--out <dir>]
-  dc release inspect [--out <dir>] [--json]
-
-Release files:
-  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*
 `);
 }
