@@ -437,6 +437,26 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertStringIncludes(auditText, "Usage:");
   assertStringIncludes(auditText, "dc audit [--db <path>] [--json]");
   assertStringIncludes(auditText, "dc audit doctor [--db <path>] [--json]");
+  assert(!auditText.includes("DB: "));
+
+  const auditStatusHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "audit",
+      "status",
+      "--help",
+    ],
+  }).output();
+  const auditStatusHelpText = new TextDecoder().decode(auditStatusHelp.stdout);
+  assertEquals(auditStatusHelp.code, 0);
+  assertStringIncludes(auditStatusHelpText, "dc audit status [--db <path>] [--json]");
+  assert(!auditStatusHelpText.includes("DB: "));
 
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -458,6 +478,46 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertStringIncludes(sourceText, "dc source fetch <source-id>");
   assertStringIncludes(sourceText, "dc source fetch --all");
   assertStringIncludes(sourceText, "dc source inspect <source-id>");
+
+  const workbenchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "workbench",
+      "--help",
+    ],
+  }).output();
+  const workbenchHelpText = new TextDecoder().decode(workbenchHelp.stdout);
+  assertEquals(workbenchHelp.code, 0);
+  assertStringIncludes(workbenchHelpText, "dc workbench");
+  assertStringIncludes(workbenchHelpText, "dc init [--db <path>]");
+  assertStringIncludes(workbenchHelpText, "dc status [--db <path>] [--json]");
+
+  const initHelpDb = join(await Deno.makeTempDir(), "workbench.sqlite");
+  const initHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "init",
+      "--help",
+      "--db",
+      initHelpDb,
+    ],
+  }).output();
+  const initHelpText = new TextDecoder().decode(initHelp.stdout);
+  assertEquals(initHelp.code, 0);
+  assertStringIncludes(initHelpText, "dc workbench");
+  assert(!initHelpText.includes("Initialized v2 workbench"));
 
   const reviewHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -692,6 +752,24 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   assertStringIncludes(sourceText, "dcgis.agencies");
   assertStringIncludes(sourceText, "Tip: run `dc source list`");
 
+  const compareOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "compare",
+    ],
+  }).output();
+  const compareText = new TextDecoder().decode(compareOutput.stdout);
+  assertEquals(compareOutput.code, 0);
+  assertStringIncludes(compareText, "dc source compare public-bodies");
+  assertStringIncludes(compareText, "Tip: run `dc source compare public-bodies`");
+
   const fetchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -711,6 +789,25 @@ Deno.test("source prefix commands guide the operator toward the next fetch actio
   assertStringIncludes(fetchText, "dc source fetch --all");
   assertStringIncludes(fetchText, "Tip: run `dc source fetch --all`");
   assertStringIncludes(fetchText, "dc source list");
+
+  const listHelpOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--help",
+    ],
+  }).output();
+  const listHelpText = new TextDecoder().decode(listHelpOutput.stdout);
+  assertEquals(listHelpOutput.code, 0);
+  assertStringIncludes(listHelpText, "dc source list");
+  assert(!listHelpText.includes("unfetched"));
 });
 
 Deno.test("review prefix commands guide the operator toward the next safe review action", async () => {

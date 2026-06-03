@@ -4,6 +4,7 @@ import { handleEntityCommand } from "./cli_entity.ts";
 import { handleReleaseCommand } from "./cli_release.ts";
 import { handleReviewCommand } from "./cli_review.ts";
 import { handleSourceCommand } from "./cli_source.ts";
+import { handleWorkbenchCommand } from "./cli_workbench.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
 import { buildWorkbenchStatus } from "./status.ts";
 import { Workbench } from "./workbench.ts";
@@ -83,14 +84,13 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     },
   );
   if (entityHandled) return true;
-  if (args[0] === "workbench" && args[1] === "init") {
-    const meta = await withWorkbench(dbPath, (_workbench, meta) => meta, {
-      refreshDerivedState: false,
-    });
-    console.log(`Initialized v2 workbench: ${dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
-    return true;
-  }
+  const workbenchHandled = await handleWorkbenchCommand(args, {
+    initWorkbench: async () =>
+      await withWorkbench(dbPath, (_workbench, meta) => meta, {
+        refreshDerivedState: false,
+      }),
+  });
+  if (workbenchHandled) return true;
   return false;
 }
 
