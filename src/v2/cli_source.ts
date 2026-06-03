@@ -20,6 +20,7 @@ export interface SourceCommandDeps {
   readSourceSummary(sourceId: string): Promise<SourceSummary>;
   readPublicBodyComparison(): Promise<PublicBodyComparisonReport>;
   readSourceRows(): Promise<SourceListRow[]>;
+  readWorkbenchStatus?(): Promise<{ nextCommand: string; unresolvedStateNote: string }>;
 }
 
 export interface SourceFetchOutcome {
@@ -92,6 +93,11 @@ export async function handleSourceCommand(
           failures.map((outcome) => outcome.sourceId).join(", ")
         }`,
       );
+    }
+    if (!options.json && deps.readWorkbenchStatus) {
+      const status = await deps.readWorkbenchStatus();
+      console.log(`Readiness: ${status.unresolvedStateNote}`);
+      console.log(`Next: ${status.nextCommand}`);
     }
     return true;
   }
