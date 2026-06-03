@@ -1,6 +1,6 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import type { ReviewItemFilters } from "./review.ts";
-import { reviewSubjectSourceId } from "./review_subject.ts";
+import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface ReviewPacketRecord {
@@ -40,8 +40,10 @@ export function listReviewPackets(
   const { itemFilters, packetLimit } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
-  for (const item of store.listReviewItems(itemFilters)) {
-    const sourceId = reviewSubjectSourceId(store, item);
+  const items = store.listReviewItems(itemFilters);
+  const sourceIds = reviewSubjectSourceIds(store, items);
+  for (const item of items) {
+    const sourceId = sourceIds.get(item.reviewItemId) ?? "unknown";
     const key = reviewPacketKey(item, sourceId);
     const existing = packets.get(key);
     if (existing) {
