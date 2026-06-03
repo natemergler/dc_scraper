@@ -589,15 +589,22 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
   }).output();
   assertEquals(auditOutput.code, 0);
   const auditText = new TextDecoder().decode(auditOutput.stdout);
-  assertStringIncludes(auditText, "First blocked: relationship.test.blocked.doctor");
   assertStringIncludes(
     auditText,
-    "Blocked raw value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+    "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
   );
   assertStringIncludes(auditText, "Blocked detail:");
   assertStringIncludes(
     auditText,
-    "Blockers: dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health (missing)",
+    "Value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertStringIncludes(
+    auditText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
+  );
+  assertStringIncludes(
+    auditText,
+    "Subject id: relationship.test.blocked.doctor",
   );
   assertStringIncludes(
     auditText,
@@ -654,7 +661,27 @@ Deno.test("audit surfaces first blocked raw value and doctor remains a compatibi
   }).output();
   assertEquals(doctorOutput.code, 0);
   const doctorText = new TextDecoder().decode(doctorOutput.stdout);
+  assertStringIncludes(
+    doctorText,
+    "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Subject id: relationship.test.blocked.doctor",
+  );
   assertStringIncludes(doctorText, "Blocked detail:");
+  assertStringIncludes(
+    doctorText,
+    "Value: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
+  );
+  assertStringIncludes(
+    doctorText,
+    "Waiting on: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health (missing endpoint;",
+  );
   assertStringIncludes(
     doctorText,
     "Inspect source: deno task dc -- source inspect council.committees",

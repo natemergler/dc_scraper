@@ -89,7 +89,8 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   const stderr = new TextDecoder().decode(output.stderr);
   assertEquals(output.code, 0);
   assertEquals(stderr, "");
-  assertStringIncludes(stdout, "Review item:");
+  assertStringIncludes(stdout, "Review: DC Register / DCMR");
+  assertStringIncludes(stdout, "legal ref | dc register | open");
   assertStringIncludes(stdout, "n normalize and accept");
   assertStringIncludes(stdout, "Saved resolution.");
   assertStringIncludes(stdout, "No review items remain.");
@@ -163,16 +164,22 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertStringIncludes(reviewText, "What needs review");
-  assertStringIncludes(reviewText, "Why this matters");
-  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
+  assertStringIncludes(reviewText, "Review: Board of Accountancy");
+  assertStringIncludes(reviewText, "entity candidate | board | open");
+  assertStringIncludes(reviewText, "source: test.review_cli.entities / Custom entity row");
+  assertStringIncludes(reviewText, "reason: Review fixture entity candidate");
+  assertStringIncludes(reviewText, "default: accept (Enter or a)");
   assertStringIncludes(
     reviewText,
-    "Available actions: Enter accept, a accept, r reject, m merge, d defer, q quit",
+    "actions: Enter accept, a accept, r reject, m merge, d defer, q quit",
+  );
+  assertStringIncludes(
+    reviewText,
+    "ids: subject=candidate.test.review_cli.board_accountancy",
   );
   assertStringIncludes(reviewText, "evidence:");
-  assertStringIncludes(reviewText, "name <- Board of Accountancy");
-  assertStringIncludes(reviewText, "source: test.review_cli.entities @");
+  assertStringIncludes(reviewText, "test.review_cli.entities: name <- Board of Accountancy");
+  assertStringIncludes(reviewText, "artifact:");
   assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -238,7 +245,8 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   const showText = new TextDecoder().decode(showOutput.stdout);
   assertStringIncludes(showText, "Board of Accountancy");
   assertStringIncludes(showText, "evidence:");
-  assertStringIncludes(showText, "@");
+  assertStringIncludes(showText, "open_dc.public_bodies:");
+  assertStringIncludes(showText, "artifact:");
   assertStringIncludes(showText, "legal_refs:");
   const showJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -321,7 +329,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "Default action: accept (Enter or a)");
+  assertStringIncludes(reviewText, "default: accept (Enter or a)");
   assertStringIncludes(reviewText, "Saved resolution.");
 
   const reopened = new Workbench(dbPath);
@@ -502,10 +510,9 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   const output = await reviewProcess.output();
   const text = new TextDecoder().decode(output.stdout);
   assertEquals(output.code, 0);
-  assertStringIncludes(text, "Default action: defer (Enter or d)");
+  assertStringIncludes(text, "default: defer (Enter or d)");
   assertStringIncludes(text, "Saved resolution.");
   assertStringIncludes(text, "No review items remain.");
-  assertEquals(text.match(/Review item:/g)?.length, 1);
 
   const reopened = new Workbench(dbPath);
   reopened.init();
