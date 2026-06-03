@@ -42,7 +42,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     readSourceSummary: async (sourceId) =>
       await withWorkbench(
         dbPath,
-        (workbench) => sourceSummaryOrConfigured(workbench, sourceId),
+        (workbench) => workbench.sourceSummary(sourceId),
         { refreshDerivedState: false },
       ),
     readPublicBodyComparison: async () =>
@@ -219,34 +219,6 @@ function shouldFallbackToWritableWorkbench(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.message.includes("unable to open database file") ||
     error.message.includes("no such table:");
-}
-
-function sourceSummaryOrConfigured(workbench: Workbench, sourceId: string): {
-  sourceId: string;
-  title: string;
-  latestStatus?: string;
-  latestRunFinishedAt?: string;
-  latestArtifactPath?: string;
-  itemCount: number;
-  fieldCount: number;
-  entityCandidateCount: number;
-  relationshipCandidateCount: number;
-} {
-  try {
-    return workbench.sourceSummary(sourceId);
-  } catch (error) {
-    if (!(error instanceof Error) || !error.message.startsWith("Unknown source:")) throw error;
-    const connector = getConnector(sourceId);
-    return {
-      sourceId: connector.sourceId,
-      title: connector.source.title,
-      latestStatus: "unfetched",
-      itemCount: 0,
-      fieldCount: 0,
-      entityCandidateCount: 0,
-      relationshipCandidateCount: 0,
-    };
-  }
 }
 
 function readFlag(args: string[], flag: string): string | undefined {
