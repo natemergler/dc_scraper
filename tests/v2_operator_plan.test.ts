@@ -51,11 +51,14 @@ Deno.test("operator plan sends source failures to source inspection before revie
   assertEquals(plan.nextCommand, "deno task dc -- source inspect council.committees");
 });
 
-Deno.test("operator plan suggests the largest explicit safe entity batch before generic review", () => {
+Deno.test("operator plan suggests explicit safe entity packets before relationship work", () => {
   const plan = buildOperatorPlan({
     suggestReviewPacketCommand: packetCommand({
-      "entities:accept-safe:explicit-safe":
-        "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+      "entities:accept-safe": {
+        command:
+          "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+        items: [explicitSafeEntityItem],
+      },
       "relationships:accept-safe":
         "deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type administered_by",
     }),
@@ -73,9 +76,14 @@ Deno.test("operator plan suggests the largest explicit safe entity batch before 
   );
 });
 
-Deno.test("operator plan suggests the largest safe relationship batch before defer work", () => {
+Deno.test("operator plan suggests safe relationship packets before high-confidence entities", () => {
   const plan = buildOperatorPlan({
     suggestReviewPacketCommand: packetCommand({
+      "entities:accept-safe": {
+        command:
+          "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence",
+        items: [highConfidenceEntityItem],
+      },
       "relationships:accept-safe":
         "deno task dc -- review batch accept-safe --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type administered_by",
     }),
@@ -207,15 +215,47 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
   );
 });
 
+Deno.test("operator plan keeps high-confidence entity batches after relationship and legal work", () => {
+  const plan = buildOperatorPlan({
+    suggestReviewPacketCommand: packetCommand({
+      "entities:accept-safe": {
+        command:
+          "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence",
+        items: [highConfidenceEntityItem],
+      },
+    }),
+    fetchedSources: connectors.length,
+    openReviewItemCount: 1,
+    deferredReviewItemCount: 0,
+    staleReviewItemCount: 0,
+    blockedReconciliationCount: 0,
+    placeholderEntityCount: 0,
+  });
+
+  assertEquals(
+    plan.nextCommand,
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.high_confidence",
+  );
+});
+
 const noPacketCommand: ReviewPacketCommandSuggester = () => undefined;
 
-function packetCommand(commands: Record<string, string>): ReviewPacketCommandSuggester {
+type PacketCommandFixture = string | {
+  command: string;
+  items?: ReviewItemRecord[];
+};
+
+function packetCommand(
+  commands: Record<string, PacketCommandFixture>,
+): ReviewPacketCommandSuggester {
   return (filters, action, options) => {
-    const itemKind = filters.mode === "entities" && options?.itemFilter
-      ? options.itemFilter(explicitSafeEntityItem) ? "explicit-safe" : "non-explicit-safe"
-      : undefined;
-    return commands[[filters.mode, action, itemKind].filter(Boolean).join(":")] ??
-      commands[`${filters.mode}:${action}`];
+    const fixture = commands[`${filters.mode}:${action}`];
+    if (!fixture) return undefined;
+    const normalized = typeof fixture === "string" ? { command: fixture } : fixture;
+    if (options?.itemFilter && !normalized.items?.some(options.itemFilter)) {
+      return undefined;
+    }
+    return normalized.command;
   };
 }
 
@@ -227,4 +267,14 @@ const explicitSafeEntityItem: ReviewItemRecord = {
   defaultAction: "accept",
   status: "open",
   details: { safeToAutoAccept: true },
+};
+
+const highConfidenceEntityItem: ReviewItemRecord = {
+  reviewItemId: "review.candidate.test.high_confidence",
+  itemType: "entity_candidate",
+  subjectId: "candidate.test.high_confidence",
+  reason: "Review entity candidate",
+  defaultAction: "accept",
+  status: "open",
+  details: {},
 };

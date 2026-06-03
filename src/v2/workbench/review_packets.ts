@@ -241,17 +241,22 @@ function reviewPacketNextCommand(
     includeType: true,
   });
   const openItems = items.filter((item) => item.status === "open");
+  const acceptSafeFilters = acceptSafeBatchFilters(
+    store,
+    batchScopedFilters,
+    openItems,
+    itemFilter,
+  );
   if (
     openItems.length > 0 &&
     packet.defaultAction === "accept" &&
     commandSubjectPrefix &&
     requestedSubjectPrefixCanScopeBatch &&
     isOpenPacketScope(batchScopedFilters) &&
-    openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters)) &&
-    acceptedBatchScopeMatchesItemFilter(store, batchScopedFilters, itemFilter)
+    acceptSafeFilters
   ) {
     return {
-      command: reviewBatchCommand("accept-safe", batchScopedFilters, commandContext),
+      command: reviewBatchCommand("accept-safe", acceptSafeFilters, commandContext),
       action: "accept-safe",
     };
   }
@@ -283,17 +288,40 @@ function reviewPacketNextCommand(
   };
 }
 
-function acceptedBatchScopeMatchesItemFilter(
+function acceptSafeBatchFilters(
   store: Pick<WorkbenchStore, "db"> & {
     listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
   },
   filters: ReviewItemFilters,
+  openItems: ReviewItemRecord[],
   itemFilter: ((item: ReviewItemRecord) => boolean) | undefined,
-): boolean {
-  if (!itemFilter) return true;
-  return store.listReviewItems(filters).every((item) =>
-    !canBatchAcceptReviewItem(store, item, filters) || itemFilter(item)
-  );
+): ReviewItemFilters | undefined {
+  for (const candidateFilters of acceptSafeBatchFilterCandidates(filters, openItems, itemFilter)) {
+    const acceptedItems = store.listReviewItems(candidateFilters).filter((item) =>
+      canBatchAcceptReviewItem(store, item, candidateFilters)
+    );
+    if (acceptedItems.length === 0) continue;
+    if (itemFilter && !acceptedItems.every(itemFilter)) continue;
+    return candidateFilters;
+  }
+  return undefined;
+}
+
+function acceptSafeBatchFilterCandidates(
+  filters: ReviewItemFilters,
+  openItems: ReviewItemRecord[],
+  itemFilter: ((item: ReviewItemRecord) => boolean) | undefined,
+): ReviewItemFilters[] {
+  const subjectPrefixes = [filters.subjectPrefix];
+  if (itemFilter) {
+    subjectPrefixes.push(...openItems.filter(itemFilter).map((item) => item.subjectId));
+  }
+  const seen = new Set<string>();
+  return subjectPrefixes.flatMap((subjectPrefix) => {
+    if (!subjectPrefix || seen.has(subjectPrefix)) return [];
+    seen.add(subjectPrefix);
+    return [{ ...filters, subjectPrefix }];
+  });
 }
 
 function sourceSubjectPrefixForPacket(

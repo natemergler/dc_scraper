@@ -71,7 +71,7 @@ Deno.test("review packet command can split explicit-safe and high-confidence ent
   workbench.close();
 });
 
-Deno.test("review packet command refuses filtered entity batches that would accept another safe class", async () => {
+Deno.test("review packet command narrows filtered entity batches before crossing safe classes", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -120,7 +120,7 @@ Deno.test("review packet command refuses filtered entity batches that would acce
       "accept-safe",
       { itemFilter: (item) => item.details.safeToAutoAccept === true },
     ),
-    undefined,
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.mixed_entities.explicit",
   );
   assertEquals(
     reviewPacketCommand(
@@ -129,7 +129,7 @@ Deno.test("review packet command refuses filtered entity batches that would acce
       "accept-safe",
       { itemFilter: (item) => item.details.safeToAutoAccept !== true },
     ),
-    undefined,
+    "deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.test.packet.mixed_entities.high_confidence",
   );
   workbench.close();
 });

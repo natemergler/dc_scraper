@@ -66,7 +66,7 @@ function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefine
   return input.suggestReviewPacketCommand(
     { mode: "entities", status: "open" },
     "accept-safe",
-    { itemFilter: isExplicitSafeEntityReviewItem },
+    { commandSubjectScope: "packet", itemFilter: isExplicitSafeEntityReviewItem },
   ) ??
     input.suggestReviewPacketCommand(
       { mode: "relationships", status: "open" },
@@ -80,7 +80,7 @@ function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefine
     input.suggestReviewPacketCommand(
       { mode: "entities", status: "open" },
       "accept-safe",
-      { itemFilter: isNonExplicitSafeEntityReviewItem },
+      { commandSubjectScope: "packet", itemFilter: isNonExplicitSafeEntityReviewItem },
     );
 }
 
