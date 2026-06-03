@@ -535,8 +535,63 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   }).output();
   const entityText = new TextDecoder().decode(entityHelp.stdout);
   assertEquals(entityHelp.code, 0);
+  assertStringIncludes(entityText, "Workflow:");
   assertStringIncludes(entityText, "dc entity search <query>");
   assertStringIncludes(entityText, "dc entity show <entity-id>");
+
+  const entityBare = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+    ],
+  }).output();
+  const entityBareText = new TextDecoder().decode(entityBare.stdout);
+  assertEquals(entityBare.code, 0);
+  assertStringIncludes(entityBareText, "dc entity");
+  assertStringIncludes(entityBareText, "dc entity search <query>");
+
+  const entitySearchHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "search",
+      "--help",
+    ],
+  }).output();
+  const entitySearchHelpText = new TextDecoder().decode(entitySearchHelp.stdout);
+  assertEquals(entitySearchHelp.code, 0);
+  assertStringIncludes(entitySearchHelpText, "dc entity search <query>");
+  assert(!entitySearchHelpText.includes("[]"));
+
+  const entityShowHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "show",
+      "--help",
+    ],
+  }).output();
+  const entityShowHelpText = new TextDecoder().decode(entityShowHelp.stdout);
+  assertEquals(entityShowHelp.code, 0);
+  assertStringIncludes(entityShowHelpText, "dc entity show <entity-id>");
 
   const releaseHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -717,6 +772,44 @@ Deno.test("review prefix commands guide the operator toward the next safe review
   assertStringIncludes(acceptSafeText, "dc review batch accept-safe");
   assertStringIncludes(acceptSafeText, "--mode entities");
   assertStringIncludes(acceptSafeText, "Tip: run `dc status`");
+});
+
+Deno.test("entity prefix commands guide the operator toward the next lookup action", async () => {
+  const entityOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+    ],
+  }).output();
+  const entityText = new TextDecoder().decode(entityOutput.stdout);
+  assertEquals(entityOutput.code, 0);
+  assertStringIncludes(entityText, "dc entity");
+  assertStringIncludes(entityText, "dc entity search");
+  assertStringIncludes(entityText, "dc entity show");
+
+  const searchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "search",
+    ],
+  }).output();
+  const searchText = new TextDecoder().decode(searchOutput.stdout);
+  assertEquals(searchOutput.code, 0);
+  assertStringIncludes(searchText, "dc entity search <query>");
+  assertStringIncludes(searchText, "Tip: run `dc entity search District`");
 });
 
 Deno.test("imports representative connector results and source inspection stays queryable after failures", async () => {
