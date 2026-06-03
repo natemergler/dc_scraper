@@ -592,6 +592,111 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   assertEquals(deferred.length, 1);
 });
 
+Deno.test("review decisions exposes dependency-ordered unresolved work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_decisions.relationships",
+      relationshipCandidateId: "relationship.test.review_decisions.blocked",
+      sourceItemKey: "review-decisions-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_decisions.entities",
+      candidateId: "candidate.test.review_decisions.pending_target",
+      sourceItemKey: "review-decisions-entity-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const jsonOutput = await runDc([
+    "review",
+    "decisions",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--json",
+  ]);
+  assertEquals(jsonOutput.code, 0);
+  const body = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+    count: number;
+    decisions: Array<{ subjectId: string; downstreamBlockedCount: number; nextCommand: string }>;
+    diagnostics: Array<{
+      subjectId: string;
+      blockers: Array<{ actionableDecisionIds: string[] }>;
+    }>;
+  };
+  assertEquals(body.count, 2);
+  assertEquals(body.decisions[0].subjectId, "candidate.test.review_decisions.pending_target");
+  assertEquals(body.decisions[0].downstreamBlockedCount, 1);
+  assertStringIncludes(body.decisions[0].nextCommand, "review entities");
+  assertStringIncludes(
+    body.decisions[0].nextCommand,
+    "--subject-prefix candidate.test.review_decisions.pending_target",
+  );
+  assertStringIncludes(body.decisions[0].nextCommand, "--db");
+  assertStringIncludes(body.decisions[0].nextCommand, dbPath);
+  assertStringIncludes(body.decisions[0].nextCommand, "--resolutions-dir");
+  assertStringIncludes(body.decisions[0].nextCommand, resolutionsDir);
+  assertEquals(body.diagnostics[0].subjectId, "relationship.test.review_decisions.blocked");
+  assert(body.diagnostics[0].blockers[0].actionableDecisionIds.length > 0);
+
+  const textOutput = await runDc([
+    "review",
+    "decisions",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
+  const text = new TextDecoder().decode(textOutput.stdout);
+  assertEquals(textOutput.code, 0);
+  assertStringIncludes(text, "Review decisions: 2");
+  assertStringIncludes(text, "[blocks 1] Pending Target");
+  assertStringIncludes(text, "source: test.review_decisions.entities");
+  assertStringIncludes(text, "Blocked diagnostics: 1");
+  assertStringIncludes(text, "relationship.test.review_decisions.blocked");
+  assertStringIncludes(
+    text,
+    "--subject-prefix candidate.test.review_decisions.pending_target",
+  );
+});
+
+async function runDc(args: string[]): Promise<Deno.CommandOutput> {
+  return await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      ...args,
+    ],
+  }).output();
+}
+
 function seedAcceptedEntity(
   workbench: Workbench,
   entityId: string,
