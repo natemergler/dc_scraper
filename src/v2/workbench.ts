@@ -129,7 +129,7 @@ export class Workbench implements WorkbenchStore {
     return listSourceRows(this);
   }
 
-  listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[] {
+  listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[] {
     return readReviewQueue(this, filters);
   }
 

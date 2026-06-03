@@ -1,26 +1,4 @@
-import { dcCommand } from "../command_prefix.ts";
 import type { ReviewItemFilters } from "./review.ts";
-
-export interface ReviewCommandContext {
-  dbPath?: string;
-  resolutionsDir?: string;
-}
-
-export type ReviewBatchAction = "accept-safe" | "defer-default";
-
-export function reviewBatchCommand(
-  action: ReviewBatchAction,
-  filters: ReviewItemFilters,
-  context?: ReviewCommandContext,
-): string {
-  return dcCommand(
-    [
-      `review batch ${action}`,
-      ...reviewFilterArgs(filters, { includeMode: true, includeType: false }),
-      ...reviewContextArgs(context, "write"),
-    ].join(" "),
-  );
-}
 
 export function reviewFilterArgs(
   filters: ReviewItemFilters,
@@ -43,18 +21,6 @@ export function reviewFilterArgs(
     filters.rawValueContains ? quoteShellArg(filters.rawValueContains) : undefined,
     filters.refType ? "--ref-type" : undefined,
     filters.refType ? quoteShellArg(filters.refType) : undefined,
-  ].filter((value): value is string => Boolean(value));
-}
-
-export function reviewContextArgs(
-  context: ReviewCommandContext | undefined,
-  mode: "read" | "write",
-): string[] {
-  return [
-    context?.dbPath ? "--db" : undefined,
-    context?.dbPath ? quoteShellArg(context.dbPath) : undefined,
-    mode === "write" && context?.resolutionsDir ? "--resolutions-dir" : undefined,
-    mode === "write" && context?.resolutionsDir ? quoteShellArg(context.resolutionsDir) : undefined,
   ].filter((value): value is string => Boolean(value));
 }
 

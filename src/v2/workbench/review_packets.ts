@@ -33,9 +33,9 @@ export interface ReviewDebtSummary {
 
 export function listReviewPackets(
   store: Pick<WorkbenchStore, "db"> & {
-    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+    listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
   },
-  filters?: string | ReviewItemFilters,
+  filters?: ReviewItemFilters,
 ): ReviewPacketRecord[] {
   const { itemFilters, packetLimit } = packetListFilters(filters);
   const packets = new Map<string, ReviewPacketRecord>();
@@ -86,7 +86,7 @@ export function listReviewPackets(
 
 export function reviewPacketDebtSummary(
   store: Pick<WorkbenchStore, "db"> & {
-    listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[];
+    listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
   },
 ): ReviewDebtSummary {
   const packets = listReviewPackets(store, { status: "all" })
@@ -158,13 +158,10 @@ function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(
     }));
 }
 
-function packetListFilters(filters?: string | ReviewItemFilters): {
-  itemFilters?: string | ReviewItemFilters;
+function packetListFilters(filters?: ReviewItemFilters): {
+  itemFilters?: ReviewItemFilters;
   packetLimit?: number;
 } {
-  if (typeof filters === "string") {
-    return { itemFilters: filters };
-  }
   if (!filters) return {};
   const { limit, ...itemFilters } = filters;
   return { itemFilters, packetLimit: limit };
