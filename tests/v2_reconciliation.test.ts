@@ -373,7 +373,7 @@ Deno.test("council oversight imports seed missing direct source bodies as entity
   assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
 });
 
-Deno.test("council oversight imports do not seed grouped source bodies as entity candidates", async () => {
+Deno.test("council oversight imports do not seed broad grouped source bodies as entity candidates", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -389,11 +389,11 @@ Deno.test("council oversight imports do not seed grouped source bodies as entity
       relationshipCandidateId: "relationship.council.committees.seeded_oversight_grouped",
       sourceItemKey: "seeded-oversight-grouped-row",
       fromEntityRef:
-        "dc.office_of_the_chief_financial_officer_excluding_the_office_of_lottery_and_gaming",
+        "dc.all_of_the_advisory_committees_and_professional_boards_serving_the_department_of_health_or_department_of_behavioral_health",
       toEntityRef: "dc.committee_of_the_whole",
       relationshipType: "overseen_by",
       rawValue:
-        "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+        "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
     }),
     dataDir,
   );
@@ -412,6 +412,111 @@ Deno.test("council oversight imports do not seed grouped source bodies as entity
   assertEquals(seededCount.count, 0);
   assert(blocked);
   assertStringIncludes(blocked.detailsJson, '"state":"missing"');
+});
+
+Deno.test("council oversight imports seed scoped grouped source bodies as base entity candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_of_the_whole', 'Committee of the Whole', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_scoped_grouped",
+      sourceItemKey: "seeded-oversight-scoped-grouped-row",
+      fromEntityRef: "dc.office_of_the_chief_financial_officer",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue:
+        "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+    }),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId,
+            name,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.council.committees.relationship_council_committees_seeded_oversight_scoped_grouped_from_endpoint'`,
+  ).get() as {
+    candidateId: string;
+    proposedEntityId: string;
+    name: string;
+    reviewStatus: string;
+  } | undefined;
+  const blocked = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.seeded_oversight_scoped_grouped'
+       and state = 'blocked'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.proposedEntityId, "dc.office_of_the_chief_financial_officer");
+  assertEquals(seededCandidate.name, "Office of the Chief Financial Officer");
+  assertEquals(seededCandidate.reviewStatus, "pending");
+  assert(blocked);
+  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+});
+
+Deno.test("council oversight scoped grouped bodies reopen as deferred review when the base entity is accepted", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+      ["dc.office_of_planning", "Office of Planning", "office"],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_scoped_accepted",
+      sourceItemKey: "seeded-oversight-scoped-accepted-row",
+      fromEntityRef: "dc.office_of_planning",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Office of Planning (including commemorative works)",
+    }),
+    dataDir,
+  );
+
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.council.committees.seeded_oversight_scoped_accepted",
+  });
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.seeded_oversight_scoped_accepted'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(reviewItems.length, 1);
+  assertEquals(reviewItems[0]?.defaultAction, "defer");
+  assertEquals(reviewItems[0]?.details.fromEntityRef, "dc.office_of_planning");
+  assertEquals(
+    reviewItems[0]?.details.rawValue,
+    "Office of Planning (including commemorative works)",
+  );
+  assertEquals(blockedCount.count, 0);
 });
 
 Deno.test("seeded committee endpoint candidates do not block stronger source auto-promotion", async () => {

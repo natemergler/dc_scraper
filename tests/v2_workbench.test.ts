@@ -1946,6 +1946,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.citizen_review_panel_on_child_abuse_and_neglect",
   );
   assertEquals(
+    buildKnownEntityRef("Commission on Nightlife and Culture"),
+    "dc.commission_on_nightlife_and_culture",
+  );
+  assertEquals(
     buildKnownEntityRef("Commission on Women"),
     "dc.commission_for_women",
   );
