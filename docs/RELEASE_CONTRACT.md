@@ -25,6 +25,19 @@ The release contains exactly these public files:
 - Evidence remains source-backed, compact, and reviewable.
 - Personal contact details and local filesystem paths are never allowed in release output.
 
+## Model Semantics
+
+- `entities.*` contains canonical civic entities such as public bodies, offices, seats/roles, status
+  markers, and source-backed public official observations.
+- `relationships.*` stores one directed fact per row:
+  `from_entity_id --relationship_type--> to_entity_id`.
+- Relationship types cover structure, authority/source, and civic role facts; incoming/backlink
+  views are derived instead of storing inverse facts.
+- Pending, deferred, blocked, and stale work must stay visible in release summaries instead of being
+  silently treated as complete.
+- DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not
+  inferred beyond bounded source-backed evidence.
+
 ## Manifest
 
 `manifest.json` is part of the contract. It includes:
