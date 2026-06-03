@@ -19,9 +19,11 @@ import {
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("release inspection readiness summarizes unresolved work severity", () => {
+Deno.test("release inspection readiness summarizes unresolved work severity", async () => {
+  const outDir = await makeMinimalReleaseDir();
   assertEquals(
-    buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 0,
         deferred_review_item_count: 0,
@@ -30,11 +32,12 @@ Deno.test("release inspection readiness summarizes unresolved work severity", ()
         placeholder_entity_count: 0,
         failed_source_count: 0,
       },
-    }).readiness,
+    })).readiness,
     "usable",
   );
   assertEquals(
-    buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 2,
         deferred_review_item_count: 0,
@@ -43,11 +46,12 @@ Deno.test("release inspection readiness summarizes unresolved work severity", ()
         placeholder_entity_count: 0,
         failed_source_count: 0,
       },
-    }).readiness,
+    })).readiness,
     "usable-with-warnings",
   );
   assertEquals(
-    buildReleaseInspection("/tmp/release", {
+    (await buildReleaseInspection(outDir, {
+      files: [],
       release_summary: {
         open_review_item_count: 0,
         deferred_review_item_count: 0,
@@ -56,9 +60,26 @@ Deno.test("release inspection readiness summarizes unresolved work severity", ()
         placeholder_entity_count: 0,
         failed_source_count: 0,
       },
-    }).readiness,
+    })).readiness,
     "not-ready",
   );
+});
+
+Deno.test("release inspection treats missing file manifest as not-ready", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const inspection = await buildReleaseInspection(outDir, {
+    release_summary: {
+      open_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.packageIntegrity, "unknown");
+  assertEquals(inspection.readiness, "not-ready");
 });
 
 Deno.test("status surfaces placeholder risk with readable reason", async () => {
@@ -949,6 +970,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(inspectText, "Files: 17");
+  assertStringIncludes(inspectText, "Package integrity: ok");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -969,17 +991,141 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
     outDir: string;
     fileCount: number;
+    packageIntegrity: string;
+    packageProblems: Array<{ fileName: string; problem: string }>;
     releaseSummary: { source_count: number };
   };
   assertEquals(inspectJsonOutput.code, 0);
   assertEquals(inspectJson.outDir, outDir);
   assertEquals(inspectJson.fileCount, 17);
+  assertEquals(inspectJson.packageIntegrity, "ok");
+  assertEquals(inspectJson.packageProblems, []);
   assertEquals(inspectJson.releaseSummary.source_count, 1);
   if (manifest.source_artifacts.length > 0) {
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
   }
 });
+
+Deno.test("release inspect reports missing, changed, and unexpected package files", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticEntitySourceResult("candidate.test.release.integrity.board", "Integrity Board"),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: "candidate.test.release.integrity.board",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await buildV2Release(workbench, outDir);
+  workbench.close();
+
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
+    files: Array<{ name: string; sha256: string }>;
+  };
+  const sqliteSha = manifest.files.find((file) => file.name === "dcgov.sqlite")?.sha256;
+  assertEquals(sqliteSha, await fileByteSha(join(outDir, "dcgov.sqlite")));
+  await mutateFileWithoutChangingDecodedText(join(outDir, "dcgov.sqlite"));
+  await Deno.writeTextFile(join(outDir, "entities.csv"), "changed\n");
+  await Deno.remove(join(outDir, "relationships.json"));
+  await Deno.writeTextFile(join(outDir, "extra.csv"), "stale\n");
+  await ensureDir(join(outDir, "raw_rows"));
+  await Deno.writeTextFile(join(outDir, "raw_rows", "rows.json"), "stale\n");
+
+  const inspectOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+      "--json",
+    ],
+  }).output();
+
+  assertEquals(inspectOutput.code, 0);
+  const inspectJson = JSON.parse(new TextDecoder().decode(inspectOutput.stdout)) as {
+    readiness: string;
+    packageIntegrity: string;
+    packageProblems: Array<{ fileName: string; problem: string }>;
+  };
+  assertEquals(inspectJson.readiness, "not-ready");
+  assertEquals(inspectJson.packageIntegrity, "problem");
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "entities.csv" && problem.problem === "sha256 mismatch"
+    ),
+  );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "dcgov.sqlite" && problem.problem === "sha256 mismatch"
+    ),
+  );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "relationships.json" && problem.problem === "missing file"
+    ),
+  );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "extra.csv" && problem.problem === "unexpected file"
+    ),
+  );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "raw_rows/" && problem.problem === "unexpected directory"
+    ),
+  );
+});
+
+async function makeMinimalReleaseDir(): Promise<string> {
+  const outDir = await Deno.makeTempDir();
+  await Deno.writeTextFile(join(outDir, "manifest.json"), "{}");
+  return outDir;
+}
+
+async function fileByteSha(path: string): Promise<string> {
+  const bytes = await Deno.readFile(path);
+  const stableBytes = new Uint8Array(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", stableBytes.buffer);
+  return `sha256:${
+    Array.from(new Uint8Array(digest))
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join("")
+  }`;
+}
+
+async function mutateFileWithoutChangingDecodedText(path: string): Promise<void> {
+  const bytes = await Deno.readFile(path);
+  const originalText = new TextDecoder().decode(bytes);
+  for (let index = 0; index < bytes.length; index += 1) {
+    for (const replacement of [0x80, 0x81, 0x82, 0xff]) {
+      if (bytes[index] === replacement) continue;
+      const mutated = bytes.slice();
+      mutated[index] = replacement;
+      if (new TextDecoder().decode(mutated) === originalText) {
+        await Deno.writeFile(path, mutated);
+        return;
+      }
+    }
+  }
+  throw new Error("Could not find a byte mutation that preserves decoded text");
+}
 
 Deno.test("release summary surfaces unresolved review debt and placeholder risk neutrally", async () => {
   const dir = await Deno.makeTempDir();
