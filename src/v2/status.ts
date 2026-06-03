@@ -2,6 +2,7 @@ import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
+import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
 export interface WorkbenchStatusSnapshot {
@@ -70,7 +71,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const openReview = workbench.listReviewItems({ status: "open" }).length;
   const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
-  const reviewDebt = workbench.reviewDebtSummary();
+  const reviewDebt = reviewPacketDebtSummary(workbench);
   const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
   const unresolvedWork = workbench.unresolvedWorkGraph();
