@@ -1,4 +1,5 @@
 import { dcgisAgenciesConnector, dcgisBoardsCommissionsCouncilsConnector } from "./dcgis.ts";
+import { begaConnector } from "./bega.ts";
 import { dcCourtsConnector } from "./courts.ts";
 import { openDcConnector } from "./open_dc.ts";
 import { councilCommitteesConnector, councilLimsConnector } from "./council.ts";
@@ -23,6 +24,7 @@ export const connectors: SourceConnector[] = [
   dcgisAgenciesConnector,
   dcgisBoardsCommissionsCouncilsConnector,
   dcCourtsConnector,
+  begaConnector,
   openDcConnector,
   councilMembersConnector,
   councilCommitteesConnector,
