@@ -152,6 +152,35 @@ Deno.test("release verify accepts source-backed dataset and legal ref rows", asy
   assertEquals(body.legalRefProvenanceProblems, []);
 });
 
+Deno.test("release verify accepts source-backed legal attachment rows", async () => {
+  const { dbPath, workbench } = await sourceBackedLegalAttachmentWorkbench();
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityLegalRefProvenanceCheckedCount: number;
+    entityLegalRefProvenanceProblems: Array<
+      { attachmentId: string; entityId: string; legalRefId: string; message: string }
+    >;
+    relationshipLegalRefProvenanceCheckedCount: number;
+    relationshipLegalRefProvenanceProblems: Array<{
+      attachmentId: string;
+      relationshipId: string;
+      legalRefId: string;
+      message: string;
+    }>;
+  };
+  assertEquals(result.code, 0);
+  assertEquals(body.ready, true);
+  assertEquals(body.reasons, []);
+  assertEquals(body.entityLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.entityLegalRefProvenanceProblems, []);
+  assertEquals(body.relationshipLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.relationshipLegalRefProvenanceProblems, []);
+});
+
 Deno.test("release verify reports dataset and legal ref rows without source evidence", async () => {
   const { dbPath, workbench } = await sourceBackedInventoryWorkbench();
   workbench.db.prepare(
@@ -191,6 +220,137 @@ Deno.test("release verify reports dataset and legal ref rows without source evid
   assertStringIncludes(
     body.legalRefProvenanceProblems[0].message,
     "evidence artifact_path does not resolve to a source artifact",
+  );
+});
+
+Deno.test("release verify does not duplicate legal ref evidence problems onto attachment rows", async () => {
+  const { dbPath, workbench } = await sourceBackedLegalAttachmentWorkbench();
+  workbench.db.prepare(
+    "update legal_ref_evidence set artifact_path = 'missing/legal-attachment.json' where legal_ref_id = ?",
+  ).run("legal.test.release.verify.attachment");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    legalRefProvenanceProblems: Array<{ legalRefId: string; message: string }>;
+    entityLegalRefProvenanceCheckedCount: number;
+    entityLegalRefProvenanceProblems: Array<
+      { attachmentId: string; entityId: string; legalRefId: string; message: string }
+    >;
+    relationshipLegalRefProvenanceCheckedCount: number;
+    relationshipLegalRefProvenanceProblems: Array<{
+      attachmentId: string;
+      relationshipId: string;
+      legalRefId: string;
+      message: string;
+    }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("legal ref row provenance: 1 problem"), true);
+  assertEquals(body.reasons.includes("entity legal ref row provenance: 1 problem"), false);
+  assertEquals(body.reasons.includes("relationship legal ref row provenance: 1 problem"), false);
+  assertEquals(body.legalRefProvenanceProblems.length, 1);
+  assertEquals(body.entityLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.entityLegalRefProvenanceProblems, []);
+  assertEquals(body.relationshipLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.relationshipLegalRefProvenanceProblems, []);
+});
+
+Deno.test("release verify reports dangling legal attachment links", async () => {
+  const { dbPath, workbench } = await sourceBackedLegalAttachmentWorkbench();
+  workbench.db.prepare(
+    "update entity_legal_refs set entity_id = ? where legal_ref_id = ?",
+  ).run("dc.missing_entity", "legal.test.release.verify.attachment");
+  workbench.db.prepare(
+    "update relationship_legal_refs set relationship_id = ? where legal_ref_id = ?",
+  ).run("dc.source_board:governed_by:dc.missing_agency", "legal.test.release.verify.attachment");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    entityLegalRefProvenanceCheckedCount: number;
+    entityLegalRefProvenanceProblems: Array<
+      { attachmentId: string; entityId: string; legalRefId: string; message: string }
+    >;
+    relationshipLegalRefProvenanceCheckedCount: number;
+    relationshipLegalRefProvenanceProblems: Array<{
+      attachmentId: string;
+      relationshipId: string;
+      legalRefId: string;
+      message: string;
+    }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("entity legal ref row provenance: 1 problem"), true);
+  assertEquals(body.reasons.includes("relationship legal ref row provenance: 1 problem"), true);
+  assertEquals(body.entityLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.entityLegalRefProvenanceProblems.length, 1);
+  assertEquals(
+    body.entityLegalRefProvenanceProblems[0].attachmentId,
+    "dc.source_board:legal.test.release.verify.attachment",
+  );
+  assertEquals(body.entityLegalRefProvenanceProblems[0].entityId, "dc.missing_entity");
+  assertEquals(
+    body.entityLegalRefProvenanceProblems[0].legalRefId,
+    "legal.test.release.verify.attachment",
+  );
+  assertStringIncludes(
+    body.entityLegalRefProvenanceProblems[0].message,
+    "entity_id does not resolve to a canonical entity",
+  );
+  assertEquals(body.relationshipLegalRefProvenanceCheckedCount, 1);
+  assertEquals(body.relationshipLegalRefProvenanceProblems.length, 1);
+  assertEquals(
+    body.relationshipLegalRefProvenanceProblems[0].attachmentId,
+    "dc.source_board:governed_by:dc.target_agency:legal.test.release.verify.attachment",
+  );
+  assertEquals(
+    body.relationshipLegalRefProvenanceProblems[0].relationshipId,
+    "dc.source_board:governed_by:dc.missing_agency",
+  );
+  assertEquals(
+    body.relationshipLegalRefProvenanceProblems[0].legalRefId,
+    "legal.test.release.verify.attachment",
+  );
+  assertStringIncludes(
+    body.relationshipLegalRefProvenanceProblems[0].message,
+    "relationship_id does not resolve to a canonical relationship",
+  );
+});
+
+Deno.test("release verify reports legal attachment relationship id drift", async () => {
+  const { dbPath, workbench } = await sourceBackedLegalAttachmentWorkbench();
+  workbench.db.prepare(
+    "update canonical_relationships set from_entity_id = ? where relationship_id = ?",
+  ).run("dc.target_agency", "dc.source_board:governed_by:dc.target_agency");
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    relationshipProvenanceProblems: Array<{ relationshipId: string; message: string }>;
+    relationshipLegalRefProvenanceProblems: Array<{
+      relationshipId: string;
+      legalRefId: string;
+      message: string;
+    }>;
+  };
+  assertEquals(result.code, 1);
+  assertEquals(body.ready, false);
+  assertEquals(body.reasons.includes("relationship row provenance: 1 problem"), true);
+  assertEquals(body.reasons.includes("relationship legal ref row provenance: 1 problem"), true);
+  assertEquals(body.relationshipProvenanceProblems.length, 1);
+  assertEquals(body.relationshipLegalRefProvenanceProblems.length, 1);
+  assertStringIncludes(
+    body.relationshipLegalRefProvenanceProblems[0].message,
+    "relationship_id does not match canonical relationship fields",
   );
 });
 
@@ -244,6 +404,28 @@ Deno.test("release verify text reports dataset and legal ref provenance problems
   assertStringIncludes(stdout, "Legal ref row provenance problems:");
   assertStringIncludes(stdout, "missing dataset evidence");
   assertStringIncludes(stdout, "evidence artifact_path does not resolve to a source artifact");
+});
+
+Deno.test("release verify text reports legal attachment provenance problems", async () => {
+  const { dbPath, workbench } = await sourceBackedLegalAttachmentWorkbench();
+  workbench.db.prepare(
+    "update entity_legal_refs set entity_id = ? where legal_ref_id = ?",
+  ).run("dc.missing_entity", "legal.test.release.verify.attachment");
+  workbench.db.prepare(
+    "update relationship_legal_refs set relationship_id = ? where legal_ref_id = ?",
+  ).run("dc.source_board:governed_by:dc.missing_agency", "legal.test.release.verify.attachment");
+  workbench.close();
+
+  const output = await runReleaseVerifyText(dbPath);
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 1);
+  assertStringIncludes(stdout, "Entity legal ref row provenance checked: 1 attachment row.");
+  assertStringIncludes(stdout, "Relationship legal ref row provenance checked: 1 attachment row.");
+  assertStringIncludes(stdout, "Entity legal ref row provenance problems:");
+  assertStringIncludes(stdout, "Relationship legal ref row provenance problems:");
+  assertStringIncludes(stdout, "legal.test.release.verify.attachment");
+  assertStringIncludes(stdout, "entity_id does not resolve to a canonical entity");
+  assertStringIncludes(stdout, "relationship_id does not resolve to a canonical relationship");
 });
 
 Deno.test("release verify accepts camelCase relationship decision payloads", async () => {
@@ -484,6 +666,8 @@ function runReleaseVerifyText(dbPath: string): Promise<Deno.CommandOutput> {
 
 async function readyRelationshipWorkbench(): Promise<{
   dbPath: string;
+  dataDir: string;
+  resolutionsDir: string;
   workbench: Workbench;
 }> {
   const dir = await Deno.makeTempDir();
@@ -556,6 +740,23 @@ async function readyRelationshipWorkbench(): Promise<{
     resolutionsDir,
   );
 
+  return { dbPath, dataDir, resolutionsDir, workbench };
+}
+
+async function sourceBackedLegalAttachmentWorkbench(): Promise<{
+  dbPath: string;
+  workbench: Workbench;
+}> {
+  const { dbPath, dataDir, resolutionsDir, workbench } = await readyRelationshipWorkbench();
+  await workbench.importConnectorResult(syntheticLegalAttachmentSourceResult(), dataDir);
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_legal_ref",
+      subjectId: "legal.test.release.verify.attachment",
+      payload: {},
+    },
+    resolutionsDir,
+  );
   return { dbPath, workbench };
 }
 
@@ -649,6 +850,63 @@ function syntheticInventorySourceResult(): ConnectorResult {
           evidence: [{
             fieldPath: "citation",
             observedValue: "D.C. Code § 1-204.22",
+          }],
+        }],
+      },
+    }],
+  };
+}
+
+function syntheticLegalAttachmentSourceResult(): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.release.verify.legal_attachment",
+      title: "Test Release Legal Attachment",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/release-legal-attachment",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.release.verify.legal_attachment.main",
+        sourceId: "test.release.verify.legal_attachment",
+        title: "Release legal attachment rows",
+        kind: "fixture",
+        url: "https://example.com/release-legal-attachment",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/release-legal-attachment",
+        contentText: JSON.stringify({
+          legalRefId: "legal.test.release.verify.attachment",
+          entityId: "dc.source_board",
+          relationshipId: "dc.source_board:governed_by:dc.target_agency",
+        }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "legal-attachment-row",
+          itemType: "fixture_legal_ref",
+          title: "Legal attachment row",
+          body: { citationText: "D.C. Code § 1-204.04" },
+        }],
+        legalRefs: [{
+          legalRefId: "legal.test.release.verify.attachment",
+          sourceItemKey: "legal-attachment-row",
+          refType: "dc_code",
+          citationText: "D.C. Code § 1-204.04",
+          normalizedCitation: "D.C. Code 1-204.04",
+          url: "https://code.dccouncil.gov/us/dc/council/code/sections/1-204.04",
+          needsReview: true,
+          attachEntityRef: "dc.source_board",
+          attachRelationshipRef: "dc.source_board:governed_by:dc.target_agency",
+          evidence: [{
+            fieldPath: "citation",
+            observedValue: "D.C. Code § 1-204.04",
           }],
         }],
       },

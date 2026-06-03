@@ -27,6 +27,20 @@ export interface ReleaseLegalRefProvenanceProblem {
   message: string;
 }
 
+export interface ReleaseEntityLegalRefProvenanceProblem {
+  attachmentId: string;
+  entityId: string;
+  legalRefId: string;
+  message: string;
+}
+
+export interface ReleaseRelationshipLegalRefProvenanceProblem {
+  attachmentId: string;
+  relationshipId: string;
+  legalRefId: string;
+  message: string;
+}
+
 export interface ReleaseVerificationResult {
   ready: boolean;
   readiness: ReleaseReadiness;
@@ -38,6 +52,10 @@ export interface ReleaseVerificationResult {
   datasetProvenanceProblems: ReleaseDatasetProvenanceProblem[];
   legalRefProvenanceCheckedCount: number;
   legalRefProvenanceProblems: ReleaseLegalRefProvenanceProblem[];
+  entityLegalRefProvenanceCheckedCount: number;
+  entityLegalRefProvenanceProblems: ReleaseEntityLegalRefProvenanceProblem[];
+  relationshipLegalRefProvenanceCheckedCount: number;
+  relationshipLegalRefProvenanceProblems: ReleaseRelationshipLegalRefProvenanceProblem[];
   nextCommand: string;
   unresolvedStateNote: string;
 }
@@ -57,6 +75,16 @@ interface ReleaseLegalRefProvenanceCheck {
   problems: ReleaseLegalRefProvenanceProblem[];
 }
 
+interface ReleaseEntityLegalRefProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseEntityLegalRefProvenanceProblem[];
+}
+
+interface ReleaseRelationshipLegalRefProvenanceCheck {
+  checkedCount: number;
+  problems: ReleaseRelationshipLegalRefProvenanceProblem[];
+}
+
 export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificationResult {
   const status = buildWorkbenchStatus(workbench);
   const sourceArtifactProblems = validateSourceArtifacts(workbench.sourceArtifacts());
@@ -66,6 +94,10 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   const datasetProvenanceProblems = datasetProvenance.problems;
   const legalRefProvenance = validateLegalRefProvenance(workbench);
   const legalRefProvenanceProblems = legalRefProvenance.problems;
+  const entityLegalRefProvenance = validateEntityLegalRefProvenance(workbench);
+  const entityLegalRefProvenanceProblems = entityLegalRefProvenance.problems;
+  const relationshipLegalRefProvenance = validateRelationshipLegalRefProvenance(workbench);
+  const relationshipLegalRefProvenanceProblems = relationshipLegalRefProvenance.problems;
   const reasons: string[] = [];
   if (status.sources.failed > 0) reasons.push(`failed sources: ${status.sources.failed}`);
   if (status.review.open > 0) reasons.push(`open review items: ${status.review.open}`);
@@ -105,6 +137,20 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       }`,
     );
   }
+  if (entityLegalRefProvenanceProblems.length > 0) {
+    reasons.push(
+      `entity legal ref row provenance: ${entityLegalRefProvenanceProblems.length} problem${
+        entityLegalRefProvenanceProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
+  if (relationshipLegalRefProvenanceProblems.length > 0) {
+    reasons.push(
+      `relationship legal ref row provenance: ${relationshipLegalRefProvenanceProblems.length} problem${
+        relationshipLegalRefProvenanceProblems.length === 1 ? "" : "s"
+      }`,
+    );
+  }
   return {
     ready: reasons.length === 0,
     readiness: classifyReleaseReadiness({
@@ -117,7 +163,9 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       blockingProblemCount: sourceArtifactProblems.length +
         relationshipProvenanceProblems.length +
         datasetProvenanceProblems.length +
-        legalRefProvenanceProblems.length,
+        legalRefProvenanceProblems.length +
+        entityLegalRefProvenanceProblems.length +
+        relationshipLegalRefProvenanceProblems.length,
     }),
     reasons,
     sourceArtifactProblems,
@@ -127,6 +175,10 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
     datasetProvenanceProblems,
     legalRefProvenanceCheckedCount: legalRefProvenance.checkedCount,
     legalRefProvenanceProblems,
+    entityLegalRefProvenanceCheckedCount: entityLegalRefProvenance.checkedCount,
+    entityLegalRefProvenanceProblems,
+    relationshipLegalRefProvenanceCheckedCount: relationshipLegalRefProvenance.checkedCount,
+    relationshipLegalRefProvenanceProblems,
     nextCommand: status.nextCommand,
     unresolvedStateNote: status.unresolvedStateNote,
   };
@@ -173,6 +225,16 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       result.legalRefProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
+  lines.push(
+    `Entity legal ref row provenance checked: ${result.entityLegalRefProvenanceCheckedCount} attachment row${
+      result.entityLegalRefProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
+  lines.push(
+    `Relationship legal ref row provenance checked: ${result.relationshipLegalRefProvenanceCheckedCount} attachment row${
+      result.relationshipLegalRefProvenanceCheckedCount === 1 ? "" : "s"
+    }.`,
+  );
   if (result.relationshipProvenanceProblems.length > 0) {
     const problems = result.relationshipProvenanceProblems.slice(0, 5);
     lines.push(
@@ -206,6 +268,32 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
     );
     for (const problem of problems) {
       lines.push(`- ${problem.legalRefId}: ${problem.message}`);
+    }
+  }
+  if (result.entityLegalRefProvenanceProblems.length > 0) {
+    const problems = result.entityLegalRefProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Entity legal ref row provenance problems${
+        truncationNote(problems.length, result.entityLegalRefProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(
+        `- ${problem.attachmentId}: ${problem.entityId} ${problem.legalRefId}: ${problem.message}`,
+      );
+    }
+  }
+  if (result.relationshipLegalRefProvenanceProblems.length > 0) {
+    const problems = result.relationshipLegalRefProvenanceProblems.slice(0, 5);
+    lines.push(
+      `Relationship legal ref row provenance problems${
+        truncationNote(problems.length, result.relationshipLegalRefProvenanceProblems.length)
+      }:`,
+    );
+    for (const problem of problems) {
+      lines.push(
+        `- ${problem.attachmentId}: ${problem.relationshipId} ${problem.legalRefId}: ${problem.message}`,
+      );
     }
   }
   lines.push(`Readiness note: ${result.unresolvedStateNote}`);
@@ -511,6 +599,122 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
     );
   }
   return { checkedCount: legalRefs.length, problems };
+}
+
+function validateEntityLegalRefProvenance(
+  workbench: Workbench,
+): ReleaseEntityLegalRefProvenanceCheck {
+  const attachments = workbench.db.prepare(
+    `select entity_legal_refs.entity_legal_ref_id as attachmentId,
+            entity_legal_refs.entity_id as entityId,
+            entity_legal_refs.legal_ref_id as legalRefId,
+            canonical_entities.entity_id as resolvedEntityId,
+            canonical_entities.name as entityName,
+            canonical_entities.review_status as entityReviewStatus,
+            legal_refs.legal_ref_id as resolvedLegalRefId
+     from entity_legal_refs
+     left join canonical_entities
+       on canonical_entities.entity_id = entity_legal_refs.entity_id
+     left join legal_refs
+       on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
+     order by entity_legal_refs.entity_legal_ref_id`,
+  ).all() as Array<{
+    attachmentId: string;
+    entityId: string;
+    legalRefId: string;
+    resolvedEntityId?: string | null;
+    entityName?: string | null;
+    entityReviewStatus?: string | null;
+    resolvedLegalRefId?: string | null;
+  }>;
+  const problems: ReleaseEntityLegalRefProvenanceProblem[] = [];
+  for (const attachment of attachments) {
+    const addProblem = (message: string) => {
+      problems.push({
+        attachmentId: attachment.attachmentId,
+        entityId: attachment.entityId,
+        legalRefId: attachment.legalRefId,
+        message,
+      });
+    };
+    if (!attachment.resolvedEntityId) {
+      addProblem("entity_id does not resolve to a canonical entity");
+    } else {
+      if (!attachment.entityName) addProblem("missing entity label");
+      if (attachment.entityReviewStatus !== "accepted") addProblem("entity row is not accepted");
+    }
+    if (!attachment.resolvedLegalRefId) addProblem("legal_ref_id does not resolve to a legal ref");
+  }
+  return { checkedCount: attachments.length, problems };
+}
+
+function validateRelationshipLegalRefProvenance(
+  workbench: Workbench,
+): ReleaseRelationshipLegalRefProvenanceCheck {
+  const attachments = workbench.db.prepare(
+    `select relationship_legal_refs.relationship_legal_ref_id as attachmentId,
+            relationship_legal_refs.relationship_id as relationshipId,
+            relationship_legal_refs.legal_ref_id as legalRefId,
+            canonical_relationships.relationship_id as resolvedRelationshipId,
+            canonical_relationships.from_entity_id as fromEntityId,
+            canonical_relationships.relationship_type as relationshipType,
+            canonical_relationships.to_entity_id as toEntityId,
+            canonical_relationships.review_status as relationshipReviewStatus,
+            from_entities.name as fromEntityName,
+            to_entities.name as toEntityName,
+            legal_refs.legal_ref_id as resolvedLegalRefId
+     from relationship_legal_refs
+     left join canonical_relationships
+       on canonical_relationships.relationship_id = relationship_legal_refs.relationship_id
+     left join canonical_entities as from_entities
+       on from_entities.entity_id = canonical_relationships.from_entity_id
+     left join canonical_entities as to_entities
+       on to_entities.entity_id = canonical_relationships.to_entity_id
+     left join legal_refs
+       on legal_refs.legal_ref_id = relationship_legal_refs.legal_ref_id
+     order by relationship_legal_refs.relationship_legal_ref_id`,
+  ).all() as Array<{
+    attachmentId: string;
+    relationshipId: string;
+    legalRefId: string;
+    resolvedRelationshipId?: string | null;
+    fromEntityId?: string | null;
+    relationshipType?: string | null;
+    toEntityId?: string | null;
+    relationshipReviewStatus?: string | null;
+    fromEntityName?: string | null;
+    toEntityName?: string | null;
+    resolvedLegalRefId?: string | null;
+  }>;
+  const problems: ReleaseRelationshipLegalRefProvenanceProblem[] = [];
+  for (const attachment of attachments) {
+    const addProblem = (message: string) => {
+      problems.push({
+        attachmentId: attachment.attachmentId,
+        relationshipId: attachment.relationshipId,
+        legalRefId: attachment.legalRefId,
+        message,
+      });
+    };
+    if (!attachment.resolvedRelationshipId) {
+      addProblem("relationship_id does not resolve to a canonical relationship");
+    } else {
+      if (attachment.relationshipReviewStatus !== "accepted") {
+        addProblem("relationship row is not accepted");
+      }
+      if (!attachment.fromEntityName) addProblem("missing from_entity label");
+      if (!attachment.toEntityName) addProblem("missing to_entity label");
+      const expectedRelationshipId =
+        `${attachment.fromEntityId}:${attachment.relationshipType}:${attachment.toEntityId}`;
+      if (attachment.relationshipId !== expectedRelationshipId) {
+        addProblem(
+          `relationship_id does not match canonical relationship fields ${expectedRelationshipId}`,
+        );
+      }
+    }
+    if (!attachment.resolvedLegalRefId) addProblem("legal_ref_id does not resolve to a legal ref");
+  }
+  return { checkedCount: attachments.length, problems };
 }
 
 interface SourceBackedEvidenceRow {
