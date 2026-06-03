@@ -248,6 +248,7 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   }).output();
   assertEquals(jsonStatusOutput.code, 0);
   const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+    unresolvedStateNote: string;
     review: {
       byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
       bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
@@ -275,6 +276,9 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
       row.deferredCount === 1
     ),
   );
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "open review=1");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");
 });
 
 Deno.test("status recommends the next scoped batch command as review debt narrows", async () => {
@@ -944,7 +948,11 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   );
   assertStringIncludes(
     manifest.release_summary.review_status_note,
-    "Release built with unresolved workbench state:",
+    "Unresolved workbench state:",
+  );
+  assertStringIncludes(
+    manifest.release_summary.review_status_note,
+    "Release generated from accepted materialized facts only.",
   );
   assertStringIncludes(readme, "review status note:");
   assertStringIncludes(readme, "blocked by source: council.committees=");
