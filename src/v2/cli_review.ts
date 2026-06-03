@@ -1,10 +1,6 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
-import {
-  listReviewPackets,
-  renderReviewPacketSummary,
-  type ReviewPacketCommandContext,
-} from "./workbench/review_packets.ts";
+import { listReviewPackets, renderReviewPacketSummary } from "./workbench/review_packets.ts";
 import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
@@ -16,7 +12,6 @@ import type { Workbench } from "./workbench.ts";
 export interface ReviewCommandOptions {
   json?: boolean;
   resolutionsDir: string;
-  nextCommandContext?: ReviewPacketCommandContext;
 }
 
 export interface ReviewCommandDeps {
@@ -69,9 +64,7 @@ export async function handleReviewCommand(
       return true;
     }
     const packets = await deps.withReadonlyWorkbench((workbench) =>
-      listReviewPackets(workbench, readReviewFilters(args), {
-        commandContext: options.nextCommandContext,
-      })
+      listReviewPackets(workbench, readReviewFilters(args))
     );
     if (options.json) {
       console.log(JSON.stringify({ count: packets.length, packets }, null, 2));
@@ -111,8 +104,8 @@ Workflow:
   1. Run \`${dcCommand("review")}\` for the next open item
   2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
   3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
-  4. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
-  5. Apply a scoped batch like \`${
+  4. Run \`${dcCommand("status")}\` for readiness and the next broad surface
+  5. Apply a scoped batch deliberately, like \`${
     dcCommand(
       "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
     )
@@ -145,7 +138,9 @@ function printReviewBatchHelp(tips: string[] = []): void {
   console.log(`${dcCommand("review batch")}
 
 Workflow:
-  1. Run \`${dcCommand("status")}\` for the next suggested scoped batch command
+  1. Choose a narrow slice with \`${dcCommand("review packets")}\` or \`${
+    dcCommand("review list")
+  }\`
   2. Accept safe work with \`${
     dcCommand(
       "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
@@ -207,7 +202,7 @@ async function handleReviewBatchCommand(
   if (args[2] === "accept-safe") {
     if (hasHelpFlag(args, 3) || !filters.mode) {
       printReviewBatchHelp([
-        `run \`${dcCommand("status")}\` for the next suggested scoped batch command`,
+        `choose a narrow slice with \`${dcCommand("review packets")}\` before batching`,
       ]);
       return true;
     }

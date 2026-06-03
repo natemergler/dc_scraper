@@ -82,10 +82,6 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     {
       json: args.includes("--json"),
       resolutionsDir,
-      nextCommandContext: {
-        dbPath: explicitDbPath,
-        resolutionsDir: explicitResolutionsDir,
-      },
     },
     {
       withWorkbench: async (action) => await withWorkbench(dbPath, action),
