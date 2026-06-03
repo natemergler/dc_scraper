@@ -1,4 +1,5 @@
 import { join } from "@std/path";
+import { handleSourceCommand } from "./cli_source.ts";
 import { buildV2Release } from "./release.ts";
 import { connectors, createConnectorContext, getConnector } from "./connectors.ts";
 import {
@@ -27,37 +28,38 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = readFlag(args, "--resolutions-dir") ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
-  if (args[0] === "source" && !args[1]) {
-    printSourceHelp({
-      tips: [
-        "run `dc source list` to see fetch status and `dc source fetch dcgis.agencies` to start",
-      ],
-      showAvailableSources: true,
-    });
-    return true;
-  }
-  if (args[0] === "source" && isHelp(args[1])) {
-    printSourceHelp();
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "fetch" && !args[2]) {
-    printSourceHelp({
-      tips: [
-        "run `dc source fetch dcgis.agencies` for a single source or `dc source list` to browse source ids",
-      ],
-      showAvailableSources: true,
-    });
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "inspect" && !args[2]) {
-    printSourceHelp({
-      tips: [
-        "run `dc source inspect dcgis.agencies` after a fetch or `dc source list` to browse ids",
-      ],
-      showAvailableSources: true,
-    });
-    return true;
-  }
+  const sourceHandled = await handleSourceCommand(args, { json: args.includes("--json"), limit }, {
+    connectors,
+    getConnector,
+    createConnectorContext,
+    importConnectorResult: async (result) =>
+      await withWorkbench(
+        dbPath,
+        async (workbench) => {
+          await workbench.importConnectorResult(result, dataDir);
+        },
+        { refreshDerivedState: false },
+      ),
+    readSourceSummary: async (sourceId) =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => sourceSummaryOrConfigured(workbench, sourceId),
+        { refreshDerivedState: false },
+      ),
+    readPublicBodyComparison: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => workbench.comparePublicBodies(),
+        { refreshDerivedState: false },
+      ),
+    readSourceRows: async () =>
+      await withWorkbench(
+        dbPath,
+        (workbench) => workbench.listSources(),
+        { refreshDerivedState: false },
+      ),
+  });
+  if (sourceHandled) return true;
   if (args[0] === "review" && isHelp(args[1])) {
     printReviewHelp();
     return true;
@@ -110,92 +112,6 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
     }
     console.log(renderWorkbenchDoctor(status));
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "fetch" && args[2]) {
-    const connector = getConnector(args[2]);
-    const result = await connector.run(createConnectorContext({ limit }));
-    await withWorkbench(
-      dbPath,
-      async (workbench) => {
-        await workbench.importConnectorResult(result, dataDir);
-      },
-      { refreshDerivedState: false },
-    );
-    const statuses = result.endpointResults.map((item) =>
-      `${item.endpoint.endpointId}:${item.status}`
-    ).join(", ");
-    console.log(`Fetched ${connector.sourceId}`);
-    console.log(statuses);
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "inspect" && args[2]) {
-    const summary = await withWorkbench(
-      dbPath,
-      (workbench) => sourceSummaryOrConfigured(workbench, args[2]),
-      { refreshDerivedState: false },
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(summary, null, 2));
-      return true;
-    }
-    console.log(`${summary.sourceId} - ${summary.title}`);
-    console.log(`Latest status: ${summary.latestStatus ?? "unfetched"}`);
-    console.log(`Latest run: ${summary.latestRunFinishedAt ?? "n/a"}`);
-    console.log(`Latest artifact: ${summary.latestArtifactPath ?? "n/a"}`);
-    console.log(
-      `Counts: items=${summary.itemCount} fields=${summary.fieldCount} entity_candidates=${summary.entityCandidateCount} relationship_candidates=${summary.relationshipCandidateCount}`,
-    );
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "compare" && args[2] === "public-bodies") {
-    const comparison = await withWorkbench(
-      dbPath,
-      (workbench) => workbench.comparePublicBodies(),
-      { refreshDerivedState: false },
-    );
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(comparison, null, 2));
-      return true;
-    }
-    console.log("Public-body overlap comparison");
-    for (const source of comparison.sourceSummaries) {
-      console.log(
-        `${source.sourceId} ${source.normalizedNameCount} names (${source.sharedNameCount} shared, ${source.exclusiveNameCount} exclusive) entity_candidates=${source.entityCandidateCount} relationship_candidates=${source.relationshipCandidateCount}`,
-      );
-    }
-    console.log(`Shared exact names: ${comparison.sharedNameCount}`);
-    for (const row of comparison.rows.filter((row) => row.sourceIds.length > 1)) {
-      console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
-    }
-    return true;
-  }
-  if (args[0] === "source" && args[1] === "list") {
-    const rowsBySourceId = await withWorkbench(
-      dbPath,
-      (workbench) => new Map(workbench.listSources().map((row) => [row.sourceId, row])),
-      { refreshDerivedState: false },
-    );
-    const sourceRows = connectors.map((connector) => {
-      const row = rowsBySourceId.get(connector.sourceId);
-      return {
-        sourceId: connector.sourceId,
-        title: connector.source.title,
-        status: row?.latestStatus ?? "unfetched",
-        latestRunFinishedAt: row?.latestRunFinishedAt,
-      };
-    });
-    if (args.includes("--json")) {
-      console.log(JSON.stringify(sourceRows, null, 2));
-      return true;
-    }
-    for (const row of sourceRows) {
-      console.log(
-        `${row.sourceId} ${row.status}${
-          row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""
-        }`,
-      );
-    }
     return true;
   }
   if (args[0] === "review" && (!args[1] || args[1].startsWith("--"))) {
@@ -392,12 +308,19 @@ function readFreeTextArgument(args: string[], startIndex: number): string {
 export function printHelp(): void {
   console.log(`dc civic-data workbench
 
+Workflow:
+  Fetch:   dc source list | dc source fetch --all | dc source fetch dcgis.agencies
+  Audit:   dc status | dc doctor | dc source inspect dcgis.agencies
+  Review:  dc review | dc review list --mode entities
+  Release: dc release build | dc release inspect
+
 Usage:
   dc init [--db <path>]
   dc status [--db <path>] [--json]
   dc doctor [--db <path>]
   dc source list [--db <path>] [--json]
   dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
+  dc source fetch --all [--db <path>] [--data-dir <path>] [--limit <n>]
   dc source inspect <source-id> [--db <path>] [--json]
   dc source compare public-bodies [--db <path>] [--json]
   dc review [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
@@ -432,32 +355,6 @@ Interactive actions:
   Enter runs the default action for the current item.
   a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
 `);
-}
-
-function printSourceHelp(
-  options: {
-    tips?: string[];
-    showAvailableSources?: boolean;
-  } = {},
-): void {
-  console.log(`dc source
-
-Usage:
-  dc source list [--db <path>] [--json]
-  dc source fetch <source-id> [--db <path>] [--data-dir <path>] [--limit <n>]
-  dc source inspect <source-id> [--db <path>] [--json]
-  dc source compare public-bodies [--db <path>] [--json]
-`);
-  if (options.showAvailableSources) {
-    console.log("Available sources:");
-    for (const connector of connectors) {
-      console.log(`  ${connector.sourceId}`);
-    }
-    console.log("");
-  }
-  for (const tip of options.tips ?? []) {
-    console.log(`Tip: ${tip}`);
-  }
 }
 
 function printEntityHelp(): void {
