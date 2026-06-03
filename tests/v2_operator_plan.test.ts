@@ -140,6 +140,27 @@ Deno.test("operator plan suggests scoped default-defer legal refs before generic
   );
 });
 
+Deno.test("operator plan quotes shell-sensitive review batch filter values", () => {
+  const plan = buildOperatorPlan({
+    workbench: fakeWorkbench([
+      deferLegalReviewItem("legal.open_dc.public_bodies.one", "Mayor's Order"),
+      deferLegalReviewItem("legal.open_dc.public_bodies.two", "Mayor's Order"),
+    ]),
+    canBatchAcceptReviewItem: () => false,
+    fetchedSources: connectors.length,
+    openReviewItemCount: 2,
+    deferredReviewItemCount: 0,
+    staleReviewItemCount: 0,
+    blockedReconciliationCount: 0,
+    placeholderEntityCount: 0,
+  });
+
+  assertEquals(
+    plan.nextCommand,
+    "deno task dc -- review batch defer-default --mode legal --subject-prefix legal.open_dc.public_bodies --ref-type 'Mayor'\\''s Order'",
+  );
+});
+
 Deno.test("operator plan falls back through review, audit, source list, and release build", () => {
   assertEquals(
     buildOperatorPlan({

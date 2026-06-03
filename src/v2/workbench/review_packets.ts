@@ -1,6 +1,7 @@
 import { dcCommand } from "../command_prefix.ts";
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import {
+  reviewBatchCommand,
   type ReviewCommandContext,
   reviewContextArgs,
   reviewFilterArgs,
@@ -174,10 +175,6 @@ function reviewPacketNextCommand(
       : originalFilters?.subjectPrefix ?? commandSubjectPrefix,
     originalFilters,
   );
-  const batchFilterArgs = reviewFilterArgs(batchScopedFilters, {
-    includeMode: true,
-    includeType: false,
-  });
   const listFilterArgs = reviewFilterArgs(listScopedFilters, {
     includeMode: true,
     includeType: true,
@@ -191,14 +188,7 @@ function reviewPacketNextCommand(
     isOpenPacketScope(batchScopedFilters) &&
     openItems.some((item) => canBatchAcceptReviewItem(store, item, batchScopedFilters))
   ) {
-    return dcCommand(
-      [
-        "review batch accept-safe",
-        ...batchFilterArgs,
-        ...reviewContextArgs(commandContext, "write"),
-      ]
-        .join(" "),
-    );
+    return reviewBatchCommand("accept-safe", batchScopedFilters, commandContext);
   }
   if (
     openItems.length > 0 &&
@@ -208,13 +198,7 @@ function reviewPacketNextCommand(
     isOpenPacketScope(batchScopedFilters) &&
     hasBatchNarrowing(batchScopedFilters)
   ) {
-    return dcCommand(
-      [
-        "review batch defer-default",
-        ...batchFilterArgs,
-        ...reviewContextArgs(commandContext, "write"),
-      ].join(" "),
-    );
+    return reviewBatchCommand("defer-default", batchScopedFilters, commandContext);
   }
   return dcCommand(
     [
