@@ -3,6 +3,7 @@ import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
 import { canBatchAcceptReviewItem } from "./workbench/review.ts";
+import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
 export interface WorkbenchStatusSnapshot {
   sources: {
@@ -73,7 +74,8 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const reviewDebt = workbench.reviewDebtSummary();
   const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
-  const reconciliation = workbench.reconciliationSummary();
+  const unresolvedWork = workbench.unresolvedWorkGraph();
+  const reconciliation = summarizeUnresolvedReconciliation(unresolvedWork);
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
   const operatorPlan = buildOperatorPlan({

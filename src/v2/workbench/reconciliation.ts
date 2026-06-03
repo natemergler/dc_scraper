@@ -1,5 +1,5 @@
 import { nowIso } from "../domain.ts";
-import { queryAll, queryOne, run } from "./db.ts";
+import { queryAll, run } from "./db.ts";
 import { type EndpointStatus, endpointStatus } from "./endpoint_status.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -13,38 +13,6 @@ interface RelationshipCandidateRow {
   rawValue?: string | null;
   needsReview: number;
   reviewStatus: string;
-}
-
-export interface ReconciliationSummary {
-  blockedCount: number;
-  blockedBySource: Array<{
-    sourceId: string;
-    count: number;
-  }>;
-  blockedByBlockerState: Array<{
-    blockerState: string;
-    count: number;
-  }>;
-  blockedByRelationshipType: Array<{
-    relationshipType: string;
-    count: number;
-  }>;
-  blockedByReason: Array<{
-    reason: string;
-    count: number;
-  }>;
-  firstBlocked?: {
-    subjectId: string;
-    sourceId: string;
-    reason: string;
-    relationshipType: string;
-    rawValue?: string | null;
-    blockers: Array<{
-      blockerId: string;
-      blockerState: string;
-      blockerLabel: string;
-    }>;
-  };
 }
 
 export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
@@ -79,118 +47,6 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
     clearRelationshipReconciliationState(store, candidate.relationshipCandidateId);
     upsertRelationshipReviewItem(store, candidate);
   }
-}
-
-export function reconciliationSummary(store: WorkbenchStore): ReconciliationSummary {
-  const blockedCount = queryOne<{ count: number }>(
-    store.db,
-    "select count(*) as count from reconciliation_items where state = 'blocked'",
-  )?.count ?? 0;
-  const blockedBySource = queryAll<{ sourceId: string; count: number }>(
-    store.db,
-    `select source_items.source_id as sourceId,
-            count(*) as count
-     from reconciliation_items
-     join relationship_candidates
-       on relationship_candidates.relationship_candidate_id = reconciliation_items.subject_id
-     join source_items
-       on source_items.source_item_id = relationship_candidates.source_item_id
-     where reconciliation_items.state = 'blocked'
-     group by source_items.source_id
-     order by count(*) desc, source_items.source_id`,
-  );
-  const blockedByBlockerState = queryAll<{ blockerState: string; count: number }>(
-    store.db,
-    `select blocker_state as blockerState,
-            count(*) as count
-     from reconciliation_blockers
-     where subject_type = 'relationship_candidate'
-     group by blocker_state
-     order by count(*) desc, blocker_state`,
-  );
-  const blockedByRelationshipType = queryAll<{ relationshipType: string; count: number }>(
-    store.db,
-    `select relationship_candidates.relationship_type as relationshipType,
-            count(*) as count
-     from reconciliation_items
-     join relationship_candidates
-       on relationship_candidates.relationship_candidate_id = reconciliation_items.subject_id
-     where reconciliation_items.state = 'blocked'
-     group by relationship_candidates.relationship_type
-     order by count(*) desc, relationship_candidates.relationship_type`,
-  );
-  const blockedByReason = queryAll<{ reason: string; count: number }>(
-    store.db,
-    `select reason, count(*) as count
-     from reconciliation_items
-     where state = 'blocked'
-     group by reason
-     order by count(*) desc, reason`,
-  );
-  const firstBlockedRow = queryOne<{
-    subjectId: string;
-    sourceId: string;
-    reason: string;
-    relationshipType: string;
-    rawValue?: string | null;
-  }>(
-    store.db,
-    `select reconciliation_items.subject_id as subjectId,
-            source_items.source_id as sourceId,
-            reconciliation_items.reason,
-            relationship_candidates.relationship_type as relationshipType,
-            relationship_candidates.raw_value as rawValue
-     from reconciliation_items
-     join relationship_candidates
-       on relationship_candidates.relationship_candidate_id = reconciliation_items.subject_id
-     join source_items
-       on source_items.source_item_id = relationship_candidates.source_item_id
-     where state = 'blocked'
-     order by updated_at, subject_id
-     limit 1`,
-  );
-  const firstBlocked = firstBlockedRow
-    ? {
-      ...firstBlockedRow,
-      blockers: queryAll<{ blockerId: string; blockerState: string; blockerLabel: string }>(
-        store.db,
-        `select reconciliation_blockers.blocker_id as blockerId,
-                reconciliation_blockers.blocker_state as blockerState,
-                coalesce(
-                  canonical_entities.name,
-                  (
-                    select entity_candidates.name
-                    from entity_candidates
-                    where entity_candidates.proposed_entity_id = reconciliation_blockers.blocker_id
-                    order by
-                      case entity_candidates.review_status
-                        when 'accepted' then 0
-                        when 'pending' then 1
-                        else 2
-                      end,
-                      coalesce(entity_candidates.confidence, 0) desc,
-                      entity_candidates.candidate_id
-                    limit 1
-                  ),
-                  reconciliation_blockers.blocker_id
-                ) as blockerLabel
-         from reconciliation_blockers
-         left join canonical_entities
-           on canonical_entities.entity_id = reconciliation_blockers.blocker_id
-         where subject_type = 'relationship_candidate' and subject_id = ?
-         order by blocker_key`,
-        [firstBlockedRow.subjectId],
-      ),
-    }
-    : undefined;
-  return {
-    blockedCount,
-    blockedBySource,
-    blockedByBlockerState,
-    blockedByRelationshipType,
-    blockedByReason,
-    firstBlocked,
-  };
 }
 
 function upsertBlockedRelationship(
