@@ -115,7 +115,27 @@ export async function handleSourceCommand(
     );
     return true;
   }
+  if (args[1] === "compare") {
+    if (!args[2] || args[2].startsWith("--") || isHelp(args[2])) {
+      printSourceHelp({
+        tips: [
+          "run `dc source compare public-bodies` after fetching overlapping public-body lanes",
+        ],
+        connectors: deps.connectors,
+      });
+      return true;
+    }
+  }
   if (args[1] === "compare" && args[2] === "public-bodies") {
+    if (hasHelpFlag(args, 3)) {
+      printSourceHelp({
+        tips: [
+          "run `dc source compare public-bodies` after fetching overlapping public-body lanes",
+        ],
+        connectors: deps.connectors,
+      });
+      return true;
+    }
     const comparison = await deps.readPublicBodyComparison();
     if (options.json) {
       console.log(JSON.stringify(comparison, null, 2));
@@ -134,6 +154,10 @@ export async function handleSourceCommand(
     return true;
   }
   if (args[1] === "list") {
+    if (hasHelpFlag(args, 2)) {
+      printSourceHelp({ connectors: deps.connectors });
+      return true;
+    }
     const rowsBySourceId = new Map((await deps.readSourceRows()).map((row) => [row.sourceId, row]));
     const sourceRows = deps.connectors.map((connector) => {
       const row = rowsBySourceId.get(connector.sourceId);
@@ -263,6 +287,10 @@ async function readSourceSummaryOrConfigured(
 
 function isHelp(value: string | undefined): boolean {
   return value === "help" || value === "--help" || value === "-h";
+}
+
+function hasHelpFlag(args: string[], start: number): boolean {
+  return args.slice(start).some((value) => isHelp(value));
 }
 
 function readPositionalArg(args: string[], startIndex: number): string | undefined {
