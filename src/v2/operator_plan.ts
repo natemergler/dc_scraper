@@ -1,8 +1,7 @@
 import { dcCommand } from "./command_prefix.ts";
 import { connectors } from "./connectors.ts";
 import type { ReviewItemRecord } from "./domain.ts";
-import type { Workbench } from "./workbench.ts";
-import { canBatchAcceptReviewItem } from "./workbench/review.ts";
+import type { ReviewDebtSummary, ReviewItemFilters } from "./workbench/review.ts";
 
 export interface WorkbenchUnresolvedCounts {
   openReviewItemCount: number;
@@ -13,10 +12,21 @@ export interface WorkbenchUnresolvedCounts {
 }
 
 export interface OperatorPlanInput extends WorkbenchUnresolvedCounts {
-  workbench: Workbench;
+  workbench: OperatorPlanWorkbench;
+  canBatchAcceptReviewItem: BatchAcceptPredicate;
   fetchedSources: number;
   failedSourceId?: string;
 }
+
+export interface OperatorPlanWorkbench {
+  reviewDebtSummary(): ReviewDebtSummary;
+  listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
+}
+
+export type BatchAcceptPredicate = (
+  item: ReviewItemRecord,
+  filters: ReviewItemFilters,
+) => boolean;
 
 export interface OperatorPlan {
   nextCommand: string;
@@ -45,7 +55,7 @@ export function unresolvedStateNote(counts: WorkbenchUnresolvedCounts): string {
 
 function nextCommand(input: OperatorPlanInput): string {
   if (input.failedSourceId) return dcCommand(`source inspect ${input.failedSourceId}`);
-  const suggestedReviewCommand = suggestScopedReviewCommand(input.workbench);
+  const suggestedReviewCommand = suggestScopedReviewCommand(input);
   if (suggestedReviewCommand) return suggestedReviewCommand;
   if (input.openReviewItemCount > 0) return dcCommand("review");
   if (input.blockedReconciliationCount > 0) return dcCommand("audit");
@@ -58,16 +68,16 @@ interface SuggestedCommand {
   count: number;
 }
 
-function suggestScopedReviewCommand(workbench: Workbench): string | undefined {
-  return suggestExplicitSafeEntityBatch(workbench)?.command ??
-    suggestSafeRelationshipBatch(workbench)?.command ??
-    suggestDeferDefaultRelationshipBatch(workbench)?.command ??
-    suggestDeferDefaultLegalBatch(workbench)?.command ??
-    suggestHighConfidenceEntityBatch(workbench)?.command;
+function suggestScopedReviewCommand(input: OperatorPlanInput): string | undefined {
+  return suggestExplicitSafeEntityBatch(input)?.command ??
+    suggestSafeRelationshipBatch(input)?.command ??
+    suggestDeferDefaultRelationshipBatch(input.workbench)?.command ??
+    suggestDeferDefaultLegalBatch(input.workbench)?.command ??
+    suggestHighConfidenceEntityBatch(input)?.command;
 }
 
-function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const reviewDebt = workbench.reviewDebtSummary();
+function suggestExplicitSafeEntityBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
+  const reviewDebt = input.workbench.reviewDebtSummary();
   let best: SuggestedCommand | undefined;
   for (const source of reviewDebt.bySource) {
     if (source.openCount === 0) continue;
@@ -76,10 +86,10 @@ function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand 
       status: "open",
       subjectPrefix: `candidate.${source.sourceId}`,
     } as const;
-    const items = workbench.listReviewItems(filters);
+    const items = input.workbench.listReviewItems(filters);
     const safeCount = items.filter((item) =>
       item.details.safeToAutoAccept === true &&
-      canBatchAcceptReviewItem(workbench, item, filters)
+      input.canBatchAcceptReviewItem(item, filters)
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
@@ -93,8 +103,8 @@ function suggestExplicitSafeEntityBatch(workbench: Workbench): SuggestedCommand 
   return best;
 }
 
-function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
+function suggestSafeRelationshipBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
+  const items = input.workbench.listReviewItems({ mode: "relationships", status: "open" });
   let best: SuggestedCommand | undefined;
   for (
     const group of groupedReviewSlices(
@@ -111,7 +121,7 @@ function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | 
       relationshipType: group.detailValue,
     } as const;
     const safeCount = group.items.filter((item) =>
-      canBatchAcceptReviewItem(workbench, item, filters)
+      input.canBatchAcceptReviewItem(item, filters)
     ).length;
     if (safeCount === 0) continue;
     const candidate = {
@@ -125,7 +135,9 @@ function suggestSafeRelationshipBatch(workbench: Workbench): SuggestedCommand | 
   return best;
 }
 
-function suggestDeferDefaultRelationshipBatch(workbench: Workbench): SuggestedCommand | undefined {
+function suggestDeferDefaultRelationshipBatch(
+  workbench: OperatorPlanWorkbench,
+): SuggestedCommand | undefined {
   const items = workbench.listReviewItems({ mode: "relationships", status: "open" });
   let best: SuggestedCommand | undefined;
   for (
@@ -148,7 +160,9 @@ function suggestDeferDefaultRelationshipBatch(workbench: Workbench): SuggestedCo
   return best;
 }
 
-function suggestDeferDefaultLegalBatch(workbench: Workbench): SuggestedCommand | undefined {
+function suggestDeferDefaultLegalBatch(
+  workbench: OperatorPlanWorkbench,
+): SuggestedCommand | undefined {
   const items = workbench.listReviewItems({ mode: "legal", status: "open" });
   let best: SuggestedCommand | undefined;
   for (const group of groupedReviewSlices(items, "legal", "refType", "refType")) {
@@ -164,8 +178,8 @@ function suggestDeferDefaultLegalBatch(workbench: Workbench): SuggestedCommand |
   return best;
 }
 
-function suggestHighConfidenceEntityBatch(workbench: Workbench): SuggestedCommand | undefined {
-  const reviewDebt = workbench.reviewDebtSummary();
+function suggestHighConfidenceEntityBatch(input: OperatorPlanInput): SuggestedCommand | undefined {
+  const reviewDebt = input.workbench.reviewDebtSummary();
   let best: SuggestedCommand | undefined;
   for (const source of reviewDebt.bySource) {
     if (source.openCount === 0) continue;
@@ -174,10 +188,10 @@ function suggestHighConfidenceEntityBatch(workbench: Workbench): SuggestedComman
       status: "open",
       subjectPrefix: `candidate.${source.sourceId}`,
     } as const;
-    const items = workbench.listReviewItems(filters);
+    const items = input.workbench.listReviewItems(filters);
     const safeCount = items.filter((item) =>
       item.details.safeToAutoAccept !== true &&
-      canBatchAcceptReviewItem(workbench, item, filters)
+      input.canBatchAcceptReviewItem(item, filters)
     ).length;
     if (safeCount === 0) continue;
     const candidate = {

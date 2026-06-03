@@ -2,6 +2,7 @@ import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
+import { canBatchAcceptReviewItem } from "./workbench/review.ts";
 
 export interface ReleaseManifest {
   generated_at?: string;
@@ -109,6 +110,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const relationships = workbench.canonicalRelationships().length;
   const operatorPlan = buildOperatorPlan({
     workbench,
+    canBatchAcceptReviewItem: (item, filters) => canBatchAcceptReviewItem(workbench, item, filters),
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
     openReviewItemCount: openReview,

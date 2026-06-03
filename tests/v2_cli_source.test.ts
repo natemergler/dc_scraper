@@ -190,6 +190,9 @@ Deno.test("source fetch --all continues through failures and throws a summary er
       throw new Error("unused");
     },
     readSourceRows: async () => [],
+    readWorkbenchStatus: async () => {
+      throw new Error("stale workbench status should not be read after a fetch failure");
+    },
   };
 
   const original = console.log;
@@ -211,4 +214,5 @@ Deno.test("source fetch --all continues through failures and throws a summary er
   assertStringIncludes(lines.join("\n"), "Fetch failed broken.source");
   assertStringIncludes(lines.join("\n"), "fixture boom");
   assertStringIncludes(lines.join("\n"), "Source fetch summary: 1/2 succeeded.");
+  assertEquals(lines.some((line) => line.startsWith("Next:")), false);
 });
