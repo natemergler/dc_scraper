@@ -1,7 +1,20 @@
 import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
+import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { run, withTransaction } from "./db.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
+import {
+  buildEntityDecisionHint,
+  buildLegalRefDecisionHint,
+  buildRelationshipDecisionHint,
+  reuseOrMarkStaleEntityDecisions,
+  reuseOrMarkStaleLegalRefDecisions,
+  reuseOrMarkStaleRelationshipDecisions,
+} from "./replay.ts";
+import { augmentParsedOutputWithRelationshipEndpointCandidates } from "./seeded_endpoints.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ArtifactRecord {
@@ -29,6 +42,13 @@ export async function importConnectorResult(
     result.source.notes,
   );
   for (const endpointResult of result.endpointResults) {
+    const parsed = endpointResult.parsed
+      ? augmentParsedOutputWithRelationshipEndpointCandidates(
+        store,
+        endpointResult.endpoint.sourceId,
+        endpointResult.parsed,
+      )
+      : undefined;
     upsertEndpoint(store, endpointResult.endpoint);
     const runId = makeId("run");
     const startedAt = nowIso();
@@ -44,6 +64,27 @@ export async function importConnectorResult(
       ],
     );
     const artifactRecords: ArtifactRecord[] = [];
+    const entityDecisionHints = parsed?.entityCandidates
+      ? await Promise.all(
+        parsed.entityCandidates.map((candidate) =>
+          buildEntityDecisionHint(endpointResult.endpoint.sourceId, candidate)
+        ),
+      )
+      : [];
+    const legalRefDecisionHints = parsed?.legalRefs
+      ? await Promise.all(
+        parsed.legalRefs.map((legalRef) =>
+          buildLegalRefDecisionHint(endpointResult.endpoint.sourceId, legalRef)
+        ),
+      )
+      : [];
+    const relationshipDecisionHints = parsed?.relationshipCandidates
+      ? await Promise.all(
+        parsed.relationshipCandidates.map((candidate) =>
+          buildRelationshipDecisionHint(endpointResult.endpoint.sourceId, candidate)
+        ),
+      )
+      : [];
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
@@ -71,7 +112,7 @@ export async function importConnectorResult(
         );
         artifactRecords.push({ artifactId, artifactPath: relativePath });
       }
-      if (endpointResult.parsed) {
+      if (parsed) {
         withTransaction(store.db, () => {
           importParsedOutput(
             store,
@@ -79,9 +120,16 @@ export async function importConnectorResult(
             endpointResult.endpoint.endpointId,
             runId,
             artifactRecords,
-            endpointResult.parsed,
+            parsed,
           );
         });
+        await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
+        await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
+        autoAcceptSafeLegalRefs(store);
+        autoPromoteSafeEntityCandidates(store);
+        reconcileRelationshipCandidates(store);
+        await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
+        autoAcceptSafeRelationshipCandidates(store);
       }
       run(
         store.db,
@@ -337,6 +385,10 @@ function importParsedOutput(
     }
   }
   for (const reviewItem of parsed.reviewItems ?? []) {
+    if (reviewItem.itemType === "relationship_candidate") {
+      // Relationship review visibility is derived from reconciled candidate state.
+      continue;
+    }
     run(
       store.db,
       "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
