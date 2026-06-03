@@ -5861,25 +5861,47 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
   assertStringIncludes(readme, "Relationship coverage note:");
+  assertStringIncludes(
+    readme,
+    "`README.md`: release summary, model semantics, and readiness notes",
+  );
+  assertStringIncludes(
+    readme,
+    "`manifest.json`: package metadata, hashes, source provenance, and release summary",
+  );
   assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
   assertStringIncludes(
     readme,
     "`relationship_legal_refs.*`: relationship-linked legal reference attachments",
   );
+  assertStringIncludes(readme, "## Model semantics");
   assertStringIncludes(
     readme,
-    "Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.",
+    "`entities.*`: canonical civic entities such as public bodies, offices, seats/roles, status markers, and source-backed public official observations.",
   );
   assertStringIncludes(
     readme,
-    "Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.",
+    "`relationships.*`: one directed fact per row, `from_entity_id --relationship_type--> to_entity_id`.",
   );
   assertStringIncludes(
     readme,
-    "Public appointment observations may appear as `appointee_observation` entities, with `holds` and `has_status` facts kept separate from seat structure.",
+    "Relationship families: structure (`part_of`, `has_seat`, `has_status`), authority/source (`governed_by`, `overseen_by`, `appointed_by`, `designated_by`, `authorized_by`, `published_by`), and civic role (`holds`, `represents`, `member_of`, `chairs`).",
+  );
+  assertStringIncludes(
+    readme,
+    "Release tables keep their own `review_status`: accepted entity/relationship rows are materialized canonical facts, while inventory/reference rows such as datasets and legal refs can remain pending or deferred and stay visible in the summary.",
+  );
+  assertStringIncludes(
+    readme,
+    "Blocked and stale counts report unresolved work instead of marking it complete.",
+  );
+  assertStringIncludes(
+    readme,
+    "DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.",
   );
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(readme, "relationship legal refs: total=1");
+  assertStringIncludes(readme, "legal refs by review_status: pending=1");
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(

@@ -512,6 +512,8 @@ function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
 
 Files:
+- \`README.md\`: release summary, model semantics, and readiness notes
+- \`manifest.json\`: package metadata, hashes, source provenance, and release summary
 - \`dcgov.sqlite\`: release SQLite package
 - \`entities.*\`: canonical entities
 - \`relationships.*\`: directed canonical relationships
@@ -521,11 +523,21 @@ Files:
 - \`entity_legal_refs.*\`: entity-linked legal reference attachments
 - \`relationship_legal_refs.*\`: relationship-linked legal reference attachments
 
-Civic role relationship types used by the workbench: holds, represents, member_of, and chairs.
+## Model semantics
 
-Public-body seat relationship types used by the workbench: has_seat, has_status, appointed_by, and designated_by.
+\`entities.*\`: canonical civic entities such as public bodies, offices, seats/roles, status markers, and source-backed public official observations. Datasets and legal refs have their own tables.
 
-Public appointment observations may appear as \`appointee_observation\` entities, with \`holds\` and \`has_status\` facts kept separate from seat structure.
+\`relationships.*\`: one directed fact per row, \`from_entity_id --relationship_type--> to_entity_id\`. Incoming/backlink views are derived from that directed row.
+
+Relationship families: structure (\`part_of\`, \`has_seat\`, \`has_status\`), authority/source (\`governed_by\`, \`overseen_by\`, \`appointed_by\`, \`designated_by\`, \`authorized_by\`, \`published_by\`), and civic role (\`holds\`, \`represents\`, \`member_of\`, \`chairs\`).
+
+Release tables keep their own \`review_status\`: accepted entity/relationship rows are materialized canonical facts, while inventory/reference rows such as datasets and legal refs can remain pending or deferred and stay visible in the summary.
+
+Blocked and stale counts report unresolved work instead of marking it complete.
+
+Deterministic source-backed facts may be accepted automatically. Ambiguous names, relationship directions, statuses, and legal citations stay review-first until a replayable decision accepts or defers them.
+
+DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.
 
 ## Release summary
 
@@ -622,7 +634,9 @@ function buildReleaseSummary(
 }
 
 function releaseReviewStatusNote(counts: Parameters<typeof unresolvedStateNote>[0]): string {
-  return `${unresolvedStateNote(counts)} Release generated from accepted materialized facts only.`;
+  return `${
+    unresolvedStateNote(counts)
+  } Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
 }
 
 function countByReviewStatus<T>(
