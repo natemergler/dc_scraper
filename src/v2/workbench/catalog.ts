@@ -157,6 +157,7 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     "dcgis.boards_commissions_councils",
     "open_dc.public_bodies",
     "mota.quickbase",
+    "oanc.anc_profiles",
   ] as const;
   const sourceRows = sourceIds.map((sourceId) => sourceSummaryOrConfigured(store, sourceId));
   const rows = queryAll<{
@@ -164,19 +165,25 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     displayName: string;
     sourceId: string;
     sourceTitle: string;
+    kind: string;
+    rawKind?: string | null;
   }>(
     store.db,
     `select
        entity_candidates.normalized_name as normalizedName,
        entity_candidates.name as displayName,
        sources.source_id as sourceId,
-       sources.title as sourceTitle
+       sources.title as sourceTitle,
+       entity_candidates.kind as kind,
+       entity_candidates.raw_kind as rawKind
      from entity_candidates
      join source_items on source_items.source_item_id = entity_candidates.source_item_id
      join sources on sources.source_id = source_items.source_id
-     where sources.source_id in (?, ?, ?)
+     where sources.source_id in (?, ?, ?, ?)
      order by entity_candidates.normalized_name, sources.source_id, entity_candidates.name`,
     [...sourceIds],
+  ).filter((row) =>
+    isPublicBodyComparisonCandidate(row.sourceId, row.kind, row.rawKind ?? undefined)
   );
   const grouped = new Map<string, {
     normalizedName: string;
@@ -225,6 +232,33 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     sharedNameCount: groupedRows.filter((row) => row.sourceIds.length > 1).length,
     exclusiveNameCount: groupedRows.filter((row) => row.sourceIds.length === 1).length,
   };
+}
+
+function isPublicBodyComparisonCandidate(
+  sourceId: string,
+  kind: string,
+  rawKind?: string,
+): boolean {
+  if (sourceId === "mota.quickbase") {
+    return isPublicBodyLikeKind(kind);
+  }
+  if (sourceId === "oanc.anc_profiles") {
+    return kind === "commission" && (rawKind === "anc" || rawKind === "commission");
+  }
+  return isPublicBodyLikeKind(kind);
+}
+
+function isPublicBodyLikeKind(kind: string): boolean {
+  return [
+    "public_body",
+    "board",
+    "commission",
+    "council",
+    "committee",
+    "task_force",
+    "office",
+    "agency",
+  ].includes(kind);
 }
 
 function sourceSummaryOrConfigured(store: WorkbenchStore, sourceId: string): SourceSummary {
