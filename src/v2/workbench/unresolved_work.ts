@@ -1,4 +1,4 @@
-import type { ReviewItemType, ReviewStatus } from "../domain.ts";
+import { buildEntityId, type ReviewItemType, type ReviewStatus } from "../domain.ts";
 import { queryAll } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -61,6 +61,12 @@ interface DecisionRow {
   detailsJson: string;
 }
 
+interface LegalDecisionEndpointRow {
+  legalRefId: string;
+  citationText: string;
+  normalizedCitation?: string | null;
+}
+
 interface DiagnosticRow {
   subjectType: string;
   subjectId: string;
@@ -85,7 +91,7 @@ export function buildUnresolvedWorkGraph(
 ): UnresolvedWorkGraph {
   const decisions = readDecisionNodes(store);
   const diagnostics = readDiagnosticNodes(store);
-  const decisionsByEndpoint = decisionsByProposedEndpoint(store, decisions);
+  const decisionsByEndpoint = decisionsByBlockerEndpoint(store, decisions);
   const diagnosticNodesBySubject = new Map(diagnostics.map((diagnostic) => [
     diagnosticSubjectKey(diagnostic.subjectType, diagnostic.subjectId),
     diagnostic,
@@ -252,14 +258,30 @@ function readBlockers(store: Pick<WorkbenchStore, "db">): BlockerRow[] {
   );
 }
 
-function decisionsByProposedEndpoint(
+function decisionsByBlockerEndpoint(
   store: Pick<WorkbenchStore, "db">,
   decisions: UnresolvedDecisionNode[],
 ): Map<string, UnresolvedDecisionNode[]> {
+  const result = new Map<string, UnresolvedDecisionNode[]>();
+  for (const decision of decisions) {
+    if (decision.itemType === "placeholder_entity") {
+      addDecisionByEndpoint(result, decision.subjectId, decision);
+    }
+  }
+  addEntityCandidateDecisionsByEndpoint(store, decisions, result);
+  addLegalRefDecisionsByEndpoint(store, decisions, result);
+  return result;
+}
+
+function addEntityCandidateDecisionsByEndpoint(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: UnresolvedDecisionNode[],
+  result: Map<string, UnresolvedDecisionNode[]>,
+): void {
   const entityDecisionIds = decisions
     .filter((decision) => decision.itemType === "entity_candidate")
     .map((decision) => decision.subjectId);
-  if (entityDecisionIds.length === 0) return new Map();
+  if (entityDecisionIds.length === 0) return;
 
   const placeholders = entityDecisionIds.map(() => "?").join(", ");
   const rows = queryAll<{ candidateId: string; proposedEntityId: string }>(
@@ -271,15 +293,53 @@ function decisionsByProposedEndpoint(
     entityDecisionIds,
   );
   const decisionsBySubject = new Map(decisions.map((decision) => [decision.subjectId, decision]));
-  const result = new Map<string, UnresolvedDecisionNode[]>();
   for (const row of rows) {
     const decision = decisionsBySubject.get(row.candidateId);
     if (!decision) continue;
-    const existing = result.get(row.proposedEntityId) ?? [];
-    existing.push(decision);
-    result.set(row.proposedEntityId, existing);
+    addDecisionByEndpoint(result, row.proposedEntityId, decision);
   }
-  return result;
+}
+
+function addLegalRefDecisionsByEndpoint(
+  store: Pick<WorkbenchStore, "db">,
+  decisions: UnresolvedDecisionNode[],
+  result: Map<string, UnresolvedDecisionNode[]>,
+): void {
+  const legalDecisionIds = decisions
+    .filter((decision) => decision.itemType === "legal_ref")
+    .map((decision) => decision.subjectId);
+  if (legalDecisionIds.length === 0) return;
+
+  const placeholders = legalDecisionIds.map(() => "?").join(", ");
+  const rows = queryAll<LegalDecisionEndpointRow>(
+    store.db,
+    `select legal_ref_id as legalRefId,
+            citation_text as citationText,
+            normalized_citation as normalizedCitation
+     from legal_refs
+     where legal_ref_id in (${placeholders})`,
+    legalDecisionIds,
+  );
+  const decisionsBySubject = new Map(decisions.map((decision) => [decision.subjectId, decision]));
+  for (const row of rows) {
+    const decision = decisionsBySubject.get(row.legalRefId);
+    if (!decision) continue;
+    addDecisionByEndpoint(
+      result,
+      buildEntityId(row.normalizedCitation ?? row.citationText, "legal"),
+      decision,
+    );
+  }
+}
+
+function addDecisionByEndpoint(
+  decisionsByEndpoint: Map<string, UnresolvedDecisionNode[]>,
+  endpointId: string,
+  decision: UnresolvedDecisionNode,
+): void {
+  const existing = decisionsByEndpoint.get(endpointId) ?? [];
+  existing.push(decision);
+  decisionsByEndpoint.set(endpointId, existing);
 }
 
 function decisionNodeId(reviewItemId: string): string {
