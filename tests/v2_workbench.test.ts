@@ -1828,11 +1828,11 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Board of Barber and Cosmetology"),
-    "dc.board_of_barber_and_cosmetology_bobc",
+    "dc.board_of_barber_and_cosmetology",
   );
   assertEquals(
     buildKnownEntityRef("Commission on Aging"),
-    "dc.commission_on_aging_coa",
+    "dc.commission_on_aging",
   );
   assertEquals(
     buildKnownEntityRef("Health Information Exchange Policy Board"),
@@ -1849,6 +1849,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   assertEquals(
     buildKnownEntityRef("Commission on Women"),
     "dc.commission_for_women_cfw",
+  );
+  assertEquals(
+    buildKnownEntityRef("District of Columbia Sentencing Commission"),
+    "dc.district_of_columbia_sentencing_commission",
   );
   assertEquals(
     buildKnownEntityRef("Destination DC"),
@@ -1877,6 +1881,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   assertEquals(
     buildKnownEntityRef("Office of Religious Affairs"),
     "dc.mayor_s_office_of_religious_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Rental Housing Commission"),
+    "dc.rental_housing_commission",
   );
 });
 
