@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Workbench } from "../src/v2/workbench.ts";
+import { listReviewPackets } from "../src/v2/workbench/review_packets.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -76,6 +77,63 @@ Deno.test("review packets group explicit-safe and high-confidence entity work wi
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
   assertEquals(body.packets[0].nextCommand, undefined);
+});
+
+Deno.test("review packet source lookup does not scale queries per item", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.query_scaling",
+      candidateId: "candidate.test.packet.query_scaling.one",
+      sourceItemKey: "query-scaling-row-one",
+      proposedEntityId: "dc.packet_query_scaling_one",
+      name: "Packet Query Scaling One",
+      kind: "board",
+      observedName: "Packet Query Scaling One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.query_scaling",
+      candidateId: "candidate.test.packet.query_scaling.two",
+      sourceItemKey: "query-scaling-row-two",
+      proposedEntityId: "dc.packet_query_scaling_two",
+      name: "Packet Query Scaling Two",
+      kind: "board",
+      observedName: "Packet Query Scaling Two",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.packet.query_scaling",
+      candidateId: "candidate.test.packet.query_scaling.three",
+      sourceItemKey: "query-scaling-row-three",
+      proposedEntityId: "dc.packet_query_scaling_three",
+      name: "Packet Query Scaling Three",
+      kind: "board",
+      observedName: "Packet Query Scaling Three",
+    }),
+    dataDir,
+  );
+
+  const oneItemPrepareCount = countPacketPrepares(workbench, {
+    mode: "entities",
+    subjectPrefix: "candidate.test.packet.query_scaling.one",
+  });
+  const allItemsPrepareCount = countPacketPrepares(workbench, {
+    mode: "entities",
+    subjectPrefix: "candidate.test.packet.query_scaling",
+  });
+  workbench.close();
+
+  assertEquals(oneItemPrepareCount, 1);
+  assertEquals(allItemsPrepareCount, oneItemPrepareCount);
 });
 
 Deno.test("review packets groups related relationship work conservatively", async () => {
@@ -516,6 +574,24 @@ Deno.test("interactive review shows packet context before the current item", asy
   );
   assertStringIncludes(stdout, "Review stopped. 2 item(s) remain.");
 });
+
+function countPacketPrepares(
+  workbench: Workbench,
+  filters: Parameters<typeof listReviewPackets>[1],
+): number {
+  let prepareCount = 0;
+  const store = {
+    db: {
+      prepare(sql: string) {
+        prepareCount += 1;
+        return workbench.db.prepare(sql);
+      },
+    },
+    listReviewItems: workbench.listReviewItems.bind(workbench),
+  };
+  listReviewPackets(store as unknown as Parameters<typeof listReviewPackets>[0], filters);
+  return prepareCount;
+}
 
 function seedAcceptedEntity(
   workbench: Workbench,
