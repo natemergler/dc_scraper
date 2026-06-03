@@ -547,9 +547,31 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(auditHelp.code, 0);
   assertStringIncludes(auditText, "Usage:");
   assertStringIncludes(auditText, "deno task dc -- audit [--db <path>] [--json]");
-  assertStringIncludes(auditText, "deno task dc -- audit status [--db <path>] [--json]");
+  assert(!auditText.includes("audit status"));
   assert(!auditText.includes("doctor"));
   assert(!auditText.includes("DB: "));
+
+  const statusHelp = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--help",
+    ],
+  }).output();
+  const statusHelpText = new TextDecoder().decode(statusHelp.stdout);
+  assertEquals(statusHelp.code, 0);
+  assertStringIncludes(
+    statusHelpText,
+    "deno task dc -- status [--db <path>] [--json]",
+  );
+  assert(!statusHelpText.includes("audit status"));
+  assert(!statusHelpText.includes("DB: "));
 
   const auditStatusHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -564,14 +586,11 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
       "status",
       "--help",
     ],
+    stderr: "piped",
   }).output();
-  const auditStatusHelpText = new TextDecoder().decode(auditStatusHelp.stdout);
-  assertEquals(auditStatusHelp.code, 0);
-  assertStringIncludes(
-    auditStatusHelpText,
-    "deno task dc -- audit status [--db <path>] [--json]",
-  );
-  assert(!auditStatusHelpText.includes("DB: "));
+  const auditStatusHelpError = new TextDecoder().decode(auditStatusHelp.stderr);
+  assertEquals(auditStatusHelp.code, 2);
+  assertStringIncludes(auditStatusHelpError, "Unknown command: audit status --help");
 
   const sourceHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
