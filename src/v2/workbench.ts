@@ -17,6 +17,9 @@ import {
   upsertEndpoint as writeEndpointRecord,
   upsertSource as writeSourceRecord,
 } from "./workbench/catalog.ts";
+import { autoAcceptSafeLegalRefs } from "./workbench/auto_accept_legal_refs.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./workbench/auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./workbench/auto_promote.ts";
 import {
   appendResolutionEvent as appendResolutionRecord,
   applyResolutionEvent as applyResolutionRecord,
@@ -25,9 +28,15 @@ import {
 import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
 import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
 import {
+  reconcileRelationshipCandidates,
+  reconciliationSummary as readReconciliationSummary,
+} from "./workbench/reconciliation.ts";
+import {
   listReviewItems as readReviewQueue,
   nextReviewItem as peekNextReviewItem,
+  reviewDebtSummary as readReviewDebtSummary,
   type ReviewItemFilters,
+  staleReviewSummary as readStaleReviewSummary,
 } from "./workbench/review.ts";
 import {
   canonicalEntities as readCanonicalEntities,
@@ -36,11 +45,16 @@ import {
   entityLegalRefs as readEntityLegalRefs,
   entityView as readEntityView,
   legalRefs as readLegalRefs,
+  placeholderSummary as readPlaceholderSummary,
   searchEntities as findEntities,
   sourceArtifacts as readSourceArtifacts,
   sourceInventory as readSourceInventory,
 } from "./workbench/entity.ts";
 import type { WorkbenchStore } from "./workbench/store.ts";
+
+interface WorkbenchInitOptions {
+  refreshDerivedState?: boolean;
+}
 
 export class Workbench implements WorkbenchStore {
   readonly db: Database;
@@ -55,8 +69,14 @@ export class Workbench implements WorkbenchStore {
     this.db.close();
   }
 
-  init(): WorkbenchMeta {
-    return initWorkbench(this);
+  init(options: WorkbenchInitOptions = {}): WorkbenchMeta {
+    const meta = initWorkbench(this);
+    if (options.refreshDerivedState === false) return meta;
+    autoAcceptSafeLegalRefs(this);
+    autoPromoteSafeEntityCandidates(this);
+    reconcileRelationshipCandidates(this);
+    autoAcceptSafeRelationshipCandidates(this);
+    return meta;
   }
 
   meta(): WorkbenchMeta {
@@ -100,6 +120,14 @@ export class Workbench implements WorkbenchStore {
 
   nextReviewItem(filters?: string | ReviewItemFilters): ReviewItemRecord | undefined {
     return peekNextReviewItem(this, filters);
+  }
+
+  staleReviewSummary(): ReturnType<typeof readStaleReviewSummary> {
+    return readStaleReviewSummary(this);
+  }
+
+  reviewDebtSummary(): ReturnType<typeof readReviewDebtSummary> {
+    return readReviewDebtSummary(this);
   }
 
   async appendResolutionEvent(
@@ -153,7 +181,15 @@ export class Workbench implements WorkbenchStore {
     return readEntityLegalRefs(this);
   }
 
+  placeholderSummary(): ReturnType<typeof readPlaceholderSummary> {
+    return readPlaceholderSummary(this);
+  }
+
   sourceArtifacts(): ReturnType<typeof readSourceArtifacts> {
     return readSourceArtifacts(this);
+  }
+
+  reconciliationSummary(): ReturnType<typeof readReconciliationSummary> {
+    return readReconciliationSummary(this);
   }
 }
