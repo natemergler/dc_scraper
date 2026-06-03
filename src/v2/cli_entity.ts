@@ -1,6 +1,5 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { EntitySearchResult, EntityView } from "./domain.ts";
-import { renderEntityView } from "./workbench/review_cli.ts";
 
 export interface EntityCommandOptions {
   json?: boolean;
@@ -69,6 +68,52 @@ Usage:
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);
   }
+}
+
+function renderEntityView(view: EntityView): string {
+  const lines = [
+    `${view.name} (${view.kind})`,
+    `id: ${view.entityId}`,
+    `review: ${view.reviewStatus}`,
+  ];
+  if (view.branch) lines.push(`branch: ${view.branch}`);
+  if (view.cluster) lines.push(`cluster: ${view.cluster}`);
+  if (view.officialUrl) lines.push(`official_url: ${view.officialUrl}`);
+  if (view.isPlaceholder) {
+    lines.push(`placeholder: yes${view.placeholderReason ? ` (${view.placeholderReason})` : ""}`);
+  }
+  lines.push("evidence:");
+  for (const evidence of view.evidence.slice(0, 10)) {
+    lines.push(
+      `- ${evidence.sourceId}: ${evidence.fieldPath} <- ${evidence.observedValue}`,
+      `  artifact: ${evidence.artifactPath}`,
+    );
+  }
+  lines.push("outgoing:");
+  for (const relationship of view.outgoing) {
+    lines.push(
+      `- ${relationship.relationshipType} -> ${relationship.targetName} [${relationship.targetEntityId}]`,
+    );
+  }
+  lines.push("incoming:");
+  for (const relationship of view.incoming) {
+    lines.push(
+      `- ${relationship.relationshipType} <- ${relationship.sourceName} [${relationship.sourceEntityId}]`,
+    );
+  }
+  if (view.legalRefs.length > 0) {
+    lines.push("legal_refs:");
+    for (const legalRef of view.legalRefs) {
+      lines.push(`- ${legalRef.refType}: ${legalRef.normalizedCitation ?? legalRef.citationText}`);
+    }
+  }
+  if (view.reviewItems.length > 0) {
+    lines.push("open_review:");
+    for (const item of view.reviewItems) {
+      lines.push(`- ${item.itemType}: ${item.reason}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 function hasHelpFlag(args: string[], start: number): boolean {
