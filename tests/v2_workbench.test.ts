@@ -3278,7 +3278,7 @@ Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe imp
   assertEquals(pendingItem.details.refType, "dc_register");
 });
 
-Deno.test("batch defer marks scoped legal refs deferred without changing legal ref status", async () => {
+Deno.test("batch defer-default marks scoped legal refs deferred without changing legal ref status", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -3347,7 +3347,7 @@ Deno.test("batch defer marks scoped legal refs deferred without changing legal r
       "scripts/dc.ts",
       "review",
       "batch",
-      "defer",
+      "defer-default",
       "--mode",
       "legal",
       "--subject-prefix",
@@ -3361,7 +3361,10 @@ Deno.test("batch defer marks scoped legal refs deferred without changing legal r
     ],
   }).output();
   assertEquals(deferOutput.code, 0);
-  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 1 review item(s).");
+  assertStringIncludes(
+    new TextDecoder().decode(deferOutput.stdout),
+    "Deferred 1 default-defer review item(s).",
+  );
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -5167,7 +5170,7 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
   assert(!remainingBranches.includes("Judicial"));
 });
 
-Deno.test("batch defer marks a scoped relationship review slice deferred", async () => {
+Deno.test("batch defer-default marks a scoped relationship review slice deferred", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -5250,7 +5253,7 @@ Deno.test("batch defer marks a scoped relationship review slice deferred", async
       "scripts/dc.ts",
       "review",
       "batch",
-      "defer",
+      "defer-default",
       "--mode",
       "relationships",
       "--relationship-type",
@@ -5266,7 +5269,10 @@ Deno.test("batch defer marks a scoped relationship review slice deferred", async
     ],
   }).output();
   assertEquals(deferOutput.code, 0);
-  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 1 review item(s).");
+  assertStringIncludes(
+    new TextDecoder().decode(deferOutput.stdout),
+    "Deferred 1 default-defer review item(s).",
+  );
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -5289,7 +5295,7 @@ Deno.test("batch defer marks a scoped relationship review slice deferred", async
   assertEquals(deferredOther.length, 1);
 });
 
-Deno.test("batch defer marks a raw-value substring relationship slice deferred", async () => {
+Deno.test("batch defer-default skips accept-default raw-value substring slices", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -5354,7 +5360,7 @@ Deno.test("batch defer marks a raw-value substring relationship slice deferred",
       "scripts/dc.ts",
       "review",
       "batch",
-      "defer",
+      "defer-default",
       "--mode",
       "relationships",
       "--relationship-type",
@@ -5370,7 +5376,14 @@ Deno.test("batch defer marks a raw-value substring relationship slice deferred",
     ],
   }).output();
   assertEquals(deferOutput.code, 0);
-  assertStringIncludes(new TextDecoder().decode(deferOutput.stdout), "Deferred 2 review item(s).");
+  assertStringIncludes(
+    new TextDecoder().decode(deferOutput.stdout),
+    "Deferred 0 default-defer review item(s).",
+  );
+  assertStringIncludes(
+    new TextDecoder().decode(deferOutput.stdout),
+    "Skipped 2 item(s) whose default action was not defer.",
+  );
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -5388,8 +5401,45 @@ Deno.test("batch defer marks a raw-value substring relationship slice deferred",
     subjectPrefix: "relationship.council.committees",
   });
   reopened.close();
-  assertEquals(deferredHealth.length, 2);
-  assertEquals(openOversight.length, 0);
+  assertEquals(deferredHealth.length, 0);
+  assertEquals(openOversight.length, 2);
+});
+
+Deno.test("plain batch defer is not available", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const deferOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "defer",
+      "--mode",
+      "relationships",
+      "--subject-prefix",
+      "relationship.example",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+
+  assertEquals(deferOutput.code, 2);
+  assertStringIncludes(
+    new TextDecoder().decode(deferOutput.stderr),
+    "Unknown command: review batch defer",
+  );
 });
 
 Deno.test("resolution replay rebuilds accepted entities deterministically", async () => {

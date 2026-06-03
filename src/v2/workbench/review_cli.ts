@@ -162,32 +162,12 @@ export async function runBatchAcceptSafe(
   }
 }
 
-export async function runBatchDefer(
-  workbench: Pick<Workbench, "listReviewItems" | "appendResolutionEvent">,
-  filters: ReviewItemFilters,
-  resolutionsDir: string,
-): Promise<void> {
-  if (!isScopedBatchDefer(filters)) {
-    throw new Error(
-      "Batch defer requires --mode, --subject-prefix, and at least one narrowing filter.",
-    );
-  }
-  const items = workbench.listReviewItems({ ...filters, status: "open" });
-  for (const item of items) {
-    await workbench.appendResolutionEvent(
-      { eventType: "defer_review_item", subjectId: item.reviewItemId, payload: {} },
-      resolutionsDir,
-    );
-  }
-  console.log(`Deferred ${items.length} review item(s).`);
-}
-
 export async function runBatchDeferDefault(
   workbench: Pick<Workbench, "listReviewItems" | "appendResolutionEvent">,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {
-  if (!isScopedBatchDefer(filters)) {
+  if (!isScopedDefaultDeferBatch(filters)) {
     throw new Error(
       "Batch defer-default requires --mode, --subject-prefix, and at least one narrowing filter.",
     );
@@ -207,7 +187,7 @@ export async function runBatchDeferDefault(
   }
 }
 
-function isScopedBatchDefer(filters: ReviewItemFilters): boolean {
+function isScopedDefaultDeferBatch(filters: ReviewItemFilters): boolean {
   return Boolean(
     filters.mode &&
       filters.subjectPrefix &&

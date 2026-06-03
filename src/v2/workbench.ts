@@ -33,7 +33,6 @@ import {
 } from "./workbench/reconciliation.ts";
 import {
   listReviewItems as readReviewQueue,
-  nextReviewItem as peekNextReviewItem,
   reviewDebtSummary as readReviewDebtSummary,
   type ReviewItemFilters,
   staleReviewSummary as readStaleReviewSummary,
@@ -135,10 +134,6 @@ export class Workbench implements WorkbenchStore {
 
   listReviewItems(filters?: string | ReviewItemFilters): ReviewItemRecord[] {
     return readReviewQueue(this, filters);
-  }
-
-  nextReviewItem(filters?: string | ReviewItemFilters): ReviewItemRecord | undefined {
-    return peekNextReviewItem(this, filters);
   }
 
   staleReviewSummary(): ReturnType<typeof readStaleReviewSummary> {

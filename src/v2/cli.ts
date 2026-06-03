@@ -295,9 +295,6 @@ Usage:
     dcCommand("review batch accept-safe")
   } [--mode <mode>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${
-    dcCommand("review batch defer")
-  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
-  ${
     dcCommand("review batch defer-default")
   } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${dcCommand("entity search <query>")} [--db <path>] [--json]
