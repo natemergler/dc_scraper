@@ -56,10 +56,11 @@ comparison surface. The report surfaced `28` shared exact names across the four 
 kept Quickbase to `157` public-body names instead of its full seat/status/observation candidate set,
 and brought ANC overlap into the same exact-name comparison lane.
 
-Fresh June 2, 2026 `#78` governing-agency smoke on a new temp workbench fetched
-`open_dc.public_bodies` and re-listed its governing-agency review slice. The current bounded detail
-set still produced `8` governed-by review items, but the previously generic
-`Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)` endpoint now resolves to the
+Fresh June 3, 2026 `#78` governing-agency smoke on a new temp workbench fetched
+`open_dc.public_bodies` and re-listed its governing-agency review slice. The current live bounded
+detail set produced `8` blocked `governed_by` reconciliation items and `2` governed-by review items;
+it did not surface the `Deputy Mayor for Public Safety and Justice/Operations (DMPSJ/O)` label in
+this run. Targeted fixture tests cover that qualified deputy-mayor labels resolve to the
 accepted-style `dc.office_of_the_deputy_mayor_for_public_safety_and_justice` id instead of a
 throwaway generic variant.
 
