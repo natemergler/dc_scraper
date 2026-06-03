@@ -86,7 +86,16 @@ export function toAbsoluteUrl(baseUrl: string, maybeRelative: string): string {
 }
 
 export function buildKnownEntityRef(name: string): string {
-  return knownEntityRefs.get(entityAliasKey(name)) ?? buildEntityId(name);
+  const directAlias = knownEntityRefs.get(entityAliasKey(name));
+  if (directAlias) return directAlias;
+  for (const variant of acceptedStyleEntityVariants(name)) {
+    const alias = knownEntityRefs.get(entityAliasKey(variant));
+    if (alias) return alias;
+  }
+  for (const variant of acceptedStyleEntityVariants(name)) {
+    if (looksLikeAgencyStyleEndpoint(variant)) return buildEntityId(variant);
+  }
+  return buildEntityId(name);
 }
 
 export function buildKnownCouncilOversightEntityRef(rawValue: string): string {
@@ -160,6 +169,34 @@ function repeatedlyDecodeURIComponent(value: string): string {
 
 function entityAliasKey(name: string): string {
   return normalizeName(name).toLowerCase();
+}
+
+function acceptedStyleEntityVariants(name: string): string[] {
+  const normalized = normalizeName(name);
+  const variants: string[] = [];
+  const withoutTrailingParenthetical = normalized.replace(/\s+\([^)]+\)\s*$/, "").trim();
+  if (withoutTrailingParenthetical && withoutTrailingParenthetical !== normalized) {
+    variants.push(withoutTrailingParenthetical);
+  }
+  for (const value of [...variants]) {
+    if (
+      /^deputy mayor for /i.test(value) && value.includes("/") &&
+      !variants.includes(value.replace(/\/.*$/, "").trim())
+    ) {
+      variants.push(value.replace(/\/.*$/, "").trim());
+    }
+  }
+  return variants;
+}
+
+function looksLikeAgencyStyleEndpoint(name: string): boolean {
+  const value = entityAliasKey(name);
+  return value.includes("department") ||
+    value.includes("office") ||
+    value.includes("agency") ||
+    value.includes("deputy mayor") ||
+    value.includes("city administrator") ||
+    value.includes("chief financial officer");
 }
 
 const knownEntityRefs = new Map<string, string>([
