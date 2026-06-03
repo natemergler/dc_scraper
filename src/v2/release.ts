@@ -5,6 +5,7 @@ import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
 import { unresolvedStateNote } from "./operator_plan.ts";
+import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 
@@ -585,7 +586,7 @@ function buildReleaseSummary(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
   const reviewStatusCounts = new Map(reviewByStatus.map((row) => [row.status, row.count]));
-  const reviewDebt = workbench.reviewDebtSummary();
+  const reviewDebt = reviewPacketDebtSummary(workbench);
   const reconciliation = summarizeUnresolvedReconciliation(workbench.unresolvedWorkGraph());
   const staleReview = workbench.staleReviewSummary();
   const placeholderEntityCount = workbench.db.prepare(
