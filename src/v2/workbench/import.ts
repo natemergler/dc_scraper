@@ -279,6 +279,7 @@ function shouldSeedFromRelationshipEndpoint(
 function seededRelationshipEndpointReviewItem(
   candidate: EntityCandidateInput,
 ): ReviewItemInput {
+  const safeToAutoAccept = isSafeToBatchAcceptSeededEndpointCandidate(candidate);
   return {
     reviewItemId: buildReviewItemId(candidate.candidateId, "seeded-endpoint"),
     itemType: "entity_candidate",
@@ -290,8 +291,16 @@ function seededRelationshipEndpointReviewItem(
       kind: candidate.kind,
       proposedEntityId: candidate.proposedEntityId,
       seededFrom: "relationship_endpoint",
+      ...(safeToAutoAccept ? { safeToAutoAccept: true } : {}),
     },
   };
+}
+
+function isSafeToBatchAcceptSeededEndpointCandidate(
+  candidate: EntityCandidateInput,
+): boolean {
+  return candidate.candidateId.startsWith("candidate.council.committees.relationship_") &&
+    candidate.candidateId.endsWith("_from_endpoint");
 }
 
 function isSeedableEndpointName(value: string): boolean {
