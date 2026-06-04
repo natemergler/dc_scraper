@@ -74,6 +74,9 @@ manual review work. When review is needed, it opens with a ranked decision inbox
 slice. Press Enter for the recommended packet or choose another packet from the list, then inspect
 the evidence and decide. Quit is safe; rerun `dc review` to resume.
 
+On current `main`, a healthy full structure refresh should mostly materialize on its own. The
+remaining review load should be small and source-specific, not a giant queue of safe additions.
+
 ## Inspect And Smoke
 
 Use the temp-workbench smoke profiles when you want a clean operator rehearsal:
@@ -127,6 +130,9 @@ of the full workbench database.
   review decisions remain visible without automatically invalidating source-backed release rows.
 - `deno task dc -- release inspect` checks the built package on disk against the manifest and
   reports package integrity plus release readiness.
+
+A healthy current full-source run ends with a compact set of explicit human decisions, not broad
+manual approval of routine source-backed facts.
 
 ## Current Docs
 
