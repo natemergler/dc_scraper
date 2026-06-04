@@ -887,6 +887,10 @@ function extractSeatLabel(seat: string): string {
 function parseDesignatingAuthorityFromSeat(seat: string): string | undefined {
   const rawValue = maybeString(seat);
   if (!rawValue || !/\bdesignee\b/i.test(rawValue)) return undefined;
+  const organization = parseGoverningAgencyFromSeat(rawValue);
+  if (organization) {
+    return normalizeAuthorityName(organization);
+  }
   const withoutDesignee = rawValue.replace(/\bdesignee\b/gi, "").replaceAll(/\s+/g, " ").trim();
   const matched = withoutDesignee.match(/^(.*?)\(([^()]+)\)\s*$/);
   if (!matched) {
@@ -951,6 +955,7 @@ function normalizeAuthorityName(value: string): string | undefined {
   }
   normalized = normalized.replace(/\s+\([^)]*\)\s*/g, " ").trim();
   normalized = normalized.replace(/^the\s+/i, "").trim();
+  normalized = normalized.replace(/^mayor['’]s$/i, "Mayor").trim();
   normalized = normalized.replace(/\bvoting government member\b/i, "").trim();
   return normalized || undefined;
 }

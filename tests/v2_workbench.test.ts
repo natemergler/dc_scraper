@@ -1626,6 +1626,10 @@ Deno.test("quickbase governing-agency parsing normalizes trusted designee seats 
 "Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
 "Example Charter Board","Public Charter School Board (PCSB) Designee","Filled","Alex Doe","Active"
 "Example Licensing Board","Department of Consumer and Regulatory Affairs (DCRA) Designee","Filled","Sam Doe","Active"
+"Example Alternate Board","Department of Health (DOH) Alternate Designee","Filled","Taylor Doe","Active"
+"Example Subunit Board","Department of Behavioral Health (DBH) - Addiction Prevention and Recovery Administration Designee","Filled","Robin Doe","Active"
+"Example Chief Board","Chief of the Fire and Emergency Medical Services Department (FEMS) Designee","Filled","Morgan Doe","Active"
+"Example Mayor Board","The Mayor's designee","Filled","Casey Doe","Active"
 "Example Professional Board","Licensed Independent Clinical Social Worker (LICSW)","Filled","Pat Doe","Active"
 `.trim();
   const result = await getConnector("mota.quickbase").run(
@@ -1670,6 +1674,36 @@ Deno.test("quickbase governing-agency parsing normalizes trusted designee seats 
       candidate.rawValue === "Department of Consumer and Regulatory Affairs (DCRA) Designee" &&
       candidate.toEntityRef === "dc.department_of_licensing_and_consumer_protection" &&
       candidate.needsReview === false
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
+      candidate.rawValue === "Department of Health (DOH) Alternate Designee" &&
+      candidate.toEntityRef === "dc.dc_health"
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
+      candidate.rawValue ===
+        "Department of Behavioral Health (DBH) - Addiction Prevention and Recovery Administration Designee" &&
+      candidate.toEntityRef === "dc.department_of_behavioral_health"
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
+      candidate.rawValue ===
+        "Chief of the Fire and Emergency Medical Services Department (FEMS) Designee" &&
+      candidate.toEntityRef === "dc.fire_and_emergency_medical_services"
+    ),
+  );
+  assert(
+    relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
+      candidate.rawValue === "The Mayor's designee" &&
+      candidate.toEntityRef === "dc.mayor"
     ),
   );
   assertEquals(
