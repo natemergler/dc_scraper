@@ -87,8 +87,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 13);
-  assertEquals(second.schemaVersion, 13);
+  assertEquals(first.schemaVersion, 14);
+  assertEquals(second.schemaVersion, 14);
   assertEquals(second.schemaMarkers.length, 1);
   assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
@@ -352,7 +352,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 13");
+  assertStringIncludes(statusText, "Schema version: 14");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -381,7 +381,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 13);
+  assertEquals(jsonStatus.schemaVersion, 14);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
@@ -509,7 +509,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 13. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 14. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -540,7 +540,7 @@ Deno.test("source list rejects a current schema marker when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 13. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 14. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -3673,6 +3673,32 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   assertEquals(
     parseLegalReference("D.C. Official Code § 47-2853.06(b)(1)").normalizedCitation,
     "D.C. Code 47-2853.06(b)(1)",
+  );
+  assertEquals(parseLegalReference("D.C. Law 22-155").refType, "dc_law");
+  assertEquals(parseLegalReference("D.C. Law 22-155").normalizedCitation, "D.C. Law 22-155");
+  assertEquals(
+    parseLegalReference("D.C. Law 22-228. Boxing and Wrestling Commission Amendment Act of 2018")
+      .normalizedCitation,
+    "D.C. Law 22-228",
+  );
+  assertEquals(parseLegalReference("REACH Act (D.C. Act 23-521)").refType, "dc_act");
+  assertEquals(
+    parseLegalReference("REACH Act (D.C. Act 23-521)").normalizedCitation,
+    "D.C. Act 23-521",
+  );
+  assertEquals(parseLegalReference("Public Law 89-774").refType, "public_law");
+  assertEquals(parseLegalReference("Public Law 89-774").normalizedCitation, "Public Law 89-774");
+  assertEquals(
+    parseLegalReference("DC ST D.I, T. 1, Ch.15, Subch. XIV, Pt. A, 1996 Plan 4")
+      .normalizedCitation,
+    "Reorganization Plan No. 4 of 1996",
+  );
+  assertEquals(
+    parseLegalReference(
+      "DC. ST. D.I., T.1, Ch 15, Subch. III, Pt. 1, 1979 Plan 2 (IV. B. (2)); 5-1402 et seq.",
+    )
+      .refType,
+    "unknown",
   );
 });
 

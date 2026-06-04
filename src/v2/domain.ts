@@ -328,6 +328,44 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
+  const dcLawMatch = text.match(/D\.?\s*C\.?\s+Law\s+([0-9]{1,2}-[0-9]{1,4})/i);
+  if (dcLawMatch) {
+    return {
+      refType: "dc_law",
+      citationText: text,
+      normalizedCitation: `D.C. Law ${dcLawMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const dcActMatch = text.match(/D\.?\s*C\.?\s+Act\s+([0-9]{1,2}-[0-9]{1,4})/i);
+  if (dcActMatch) {
+    return {
+      refType: "dc_act",
+      citationText: text,
+      normalizedCitation: `D.C. Act ${dcActMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const publicLawMatch = text.match(/Public\s+Law\s+([0-9]{1,3}-[0-9]{1,4})/i);
+  if (publicLawMatch) {
+    return {
+      refType: "public_law",
+      citationText: text,
+      normalizedCitation: `Public Law ${publicLawMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const reorganizationPlanMatch = text.match(/\b([12][0-9]{3})\s+Plan\s+([0-9]+)\b/i);
+  if (reorganizationPlanMatch && !text.includes(";")) {
+    return {
+      refType: "reorganization_plan",
+      citationText: text,
+      normalizedCitation: `Reorganization Plan No. ${reorganizationPlanMatch[2]} of ${
+        reorganizationPlanMatch[1]
+      }`,
+      needsReview: false,
+    };
+  }
   const registerDetailMatch = text.match(/(\d+)\s*D\.?\s*C\.?\s+Register\s+([0-9A-Za-z.\-]+)/i);
   if (registerDetailMatch) {
     return {
