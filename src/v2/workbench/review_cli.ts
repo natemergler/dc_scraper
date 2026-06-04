@@ -443,7 +443,7 @@ export function renderReviewItem(
     [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
     context.sourceLine,
     `reason: ${item.reason}`,
-    renderIdentityQuestion(item),
+    renderDecisionQuestion(item),
     ...renderIdentityContext(item),
     renderWhyDeferred(item),
     `default: ${renderDefaultAction(item)}`,
@@ -655,10 +655,26 @@ function renderDecisionOutcome(item: ReviewItemRecord): string | undefined {
   return undefined;
 }
 
-function renderIdentityQuestion(item: ReviewItemRecord): string | undefined {
-  return typeof item.details.identityQuestion === "string"
-    ? `question: ${item.details.identityQuestion}`
-    : undefined;
+function renderDecisionQuestion(item: ReviewItemRecord): string | undefined {
+  if (typeof item.details.identityQuestion === "string") {
+    return `question: ${item.details.identityQuestion}`;
+  }
+  if (item.itemType === "entity_candidate") {
+    return "question: Should this source entity candidate be accepted, merged, rejected, or deferred?";
+  }
+  if (item.itemType === "relationship_candidate") {
+    return "question: Should this directed relationship be accepted, edited, rejected, or deferred?";
+  }
+  if (item.itemType === "legal_ref") {
+    return "question: Should this legal reference be accepted, normalized, rejected, or deferred?";
+  }
+  if (item.itemType === "source_status") {
+    return "question: Should this source issue stay deferred while the source is fixed?";
+  }
+  if (item.itemType === "placeholder_entity") {
+    return "question: Should this placeholder entity be resolved before relying on dependent facts?";
+  }
+  return undefined;
 }
 
 function renderIdentityContext(item: ReviewItemRecord): string[] {
