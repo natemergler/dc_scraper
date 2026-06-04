@@ -1227,7 +1227,7 @@ Deno.test("imports representative connector results and source inspection stays 
       JSON.stringify(dcgisMetadataFixture),
     ],
     [
-      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json",
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json",
       JSON.stringify(dcgisRowsFixture),
     ],
     ["https://www.open-dc.gov/public-bodies", openDcIndexFixture],
@@ -2548,13 +2548,105 @@ Deno.test("multi-artifact connector imports keep schema and row evidence on the 
   const dataDir = join(dir, "artifacts");
   const workbench = new Workbench(dbPath);
   workbench.init();
+  const progressMessages: string[] = [];
   const fetcher = async (url: string) => {
     const body = (() => {
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return JSON.stringify(dcgisMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(
+      createConnectorContext({
+        fetcher,
+        onProgress: (event) => progressMessages.push(event.message),
+      }),
+    ),
+    dataDir,
+  );
+  const schemaArtifact = workbench.db.prepare(
+    `select source_artifacts.path as artifactPath
+     from source_fields
+     join source_artifacts on source_artifacts.artifact_id = source_fields.artifact_id
+     where source_fields.endpoint_id = ? and source_fields.field_name = ?`,
+  ).get("dcgis.agencies.main", "AGENCY_NAME") as { artifactPath: string };
+  const rowArtifact = workbench.db.prepare(
+    `select source_artifacts.path as artifactPath,
+            source_artifacts.fetched_url as fetchedUrl
+     from source_items
+     join source_artifacts on source_artifacts.artifact_id = source_items.artifact_id
+     where source_items.endpoint_id = ? and source_items.item_key = ?`,
+  ).get("dcgis.agencies.main", "1001") as { artifactPath: string; fetchedUrl: string };
+  const evidence = workbench.db.prepare(
+    `select artifact_path as artifactPath
+     from entity_candidate_evidence
+     where candidate_id = ?
+     order by evidence_id
+     limit 1`,
+  ).get("candidate.dcgis.agencies.1001") as { artifactPath: string };
+  workbench.close();
+  assertEquals(progressMessages, [
+    "Fetching DCGIS table metadata",
+    "Fetching DCGIS rows starting at 1 (page 1, up to 1000)",
+  ]);
+  assertStringIncludes(rowArtifact.fetchedUrl, "outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME");
+  assert(!rowArtifact.fetchedUrl.includes("outFields=*"));
+  assert(schemaArtifact.artifactPath !== rowArtifact.artifactPath);
+  assertEquals(evidence.artifactPath, rowArtifact.artifactPath);
+});
+
+Deno.test("DCGIS paged row evidence points to the row page artifact", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const metadata = { ...dcgisMetadataFixture, maxRecordCount: 1 };
+  const firstPage = {
+    features: [{
+      attributes: {
+        OBJECTID: 1,
+        AGENCY_ID: "2001",
+        AGENCY_NAME: "First DCGIS Agency",
+        TYPE: "agency",
+        WEB_URL: "https://example.com/first",
+      },
+    }],
+  };
+  const secondPage = {
+    features: [{
+      attributes: {
+        OBJECTID: 2,
+        AGENCY_ID: "2002",
+        AGENCY_NAME: "Second DCGIS Agency",
+        TYPE: "agency",
+        WEB_URL: "https://example.com/second",
+      },
+    }],
+  };
+  const emptyPage = { features: [] };
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(metadata);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1&f=json":
+          return JSON.stringify(firstPage);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=1&resultRecordCount=1&f=json":
+          return JSON.stringify(secondPage);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
+          return JSON.stringify(emptyPage);
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -2569,28 +2661,59 @@ Deno.test("multi-artifact connector imports keep schema and row evidence on the 
     await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  const schemaArtifact = workbench.db.prepare(
-    `select source_artifacts.path as artifactPath
-     from source_fields
-     join source_artifacts on source_artifacts.artifact_id = source_fields.artifact_id
-     where source_fields.endpoint_id = ? and source_fields.field_name = ?`,
-  ).get("dcgis.agencies.main", "AGENCY_NAME") as { artifactPath: string };
-  const rowArtifact = workbench.db.prepare(
-    `select source_artifacts.path as artifactPath
+  const secondRowArtifact = workbench.db.prepare(
+    `select source_artifacts.path as artifactPath,
+            source_artifacts.fetched_url as fetchedUrl
      from source_items
      join source_artifacts on source_artifacts.artifact_id = source_items.artifact_id
      where source_items.endpoint_id = ? and source_items.item_key = ?`,
-  ).get("dcgis.agencies.main", "1001") as { artifactPath: string };
-  const evidence = workbench.db.prepare(
+  ).get("dcgis.agencies.main", "2002") as { artifactPath: string; fetchedUrl: string };
+  const secondEvidence = workbench.db.prepare(
     `select artifact_path as artifactPath
      from entity_candidate_evidence
      where candidate_id = ?
-     order by evidence_id
+       and field_path = 'NAME'
      limit 1`,
-  ).get("candidate.dcgis.agencies.1001") as { artifactPath: string };
+  ).get("candidate.dcgis.agencies.2002") as { artifactPath: string };
+  const rowArtifactCount = workbench.db.prepare(
+    "select count(*) as count from source_artifacts where endpoint_id = ? and kind = 'rows'",
+  ).get("dcgis.agencies.main") as { count: number };
   workbench.close();
-  assert(schemaArtifact.artifactPath !== rowArtifact.artifactPath);
-  assertEquals(evidence.artifactPath, rowArtifact.artifactPath);
+
+  assertEquals(rowArtifactCount.count, 3);
+  assertStringIncludes(secondRowArtifact.fetchedUrl, "resultOffset=1");
+  assertEquals(secondEvidence.artifactPath, secondRowArtifact.artifactPath);
+});
+
+Deno.test("DCGIS connector fails loudly on ArcGIS query error payloads", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify({
+            error: {
+              code: 400,
+              message: "Failed to execute query.",
+              details: ["Invalid field name"],
+            },
+          });
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await assertRejects(
+    () => getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    Error,
+    "dcgis.agencies Failed to execute query.: Invalid field name",
+  );
 });
 
 Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps conservatively", async () => {
@@ -2600,7 +2723,7 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
         default:
           throw new Error(`Unexpected url ${url}`);
@@ -2982,7 +3105,7 @@ Deno.test("public body comparison report stays on public-body candidates and inc
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
         case "https://www.open-dc.gov/public-bodies":
           return openDcIndexFixture;
@@ -3331,7 +3454,7 @@ Deno.test("public body comparison report stays usable when Quickbase is unfetche
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
         case "https://www.open-dc.gov/public-bodies":
           return openDcIndexFixture;
@@ -6148,7 +6271,7 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return JSON.stringify(dcgisMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisRowsFixture);
         default:
           throw new Error(`Unexpected url ${url}`);
@@ -6158,7 +6281,7 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return dcgisMetadataFixture as T;
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return dcgisRowsFixture as T;
         default:
           throw new Error(`Unexpected url ${url}`) as T;
@@ -6338,7 +6461,7 @@ Deno.test("BEGA structure upgrades earlier DCGIS taxonomy for the same entity", 
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return JSON.stringify(dcgisMetadataFixture);
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(dcgisRowsFixture);
         default:
           throw new Error(`Unexpected url ${url}`);
@@ -6348,7 +6471,7 @@ Deno.test("BEGA structure upgrades earlier DCGIS taxonomy for the same entity", 
       switch (url) {
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return dcgisMetadataFixture as T;
-        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return dcgisRowsFixture as T;
         default:
           throw new Error(`Unexpected url ${url}`) as T;
@@ -6718,7 +6841,7 @@ Deno.test("dcgis agency taxonomy labels do not create branch review slices", asy
     switch (url) {
       case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
         return JSON.stringify(dcgisMetadataFixture);
-      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
         return JSON.stringify(mixedBranchRowsFixture);
       default:
         throw new Error(`Unexpected url ${url}`);
