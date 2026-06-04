@@ -174,6 +174,7 @@ create index source_fields_endpoint_idx on source_fields(endpoint_id, ordinal);
 create index source_items_source_key_idx on source_items(source_id, item_key);
 create index source_items_run_idx on source_items(run_id);
 create index entity_candidates_review_idx on entity_candidates(review_status, normalized_name);
+create index entity_candidates_proposed_idx on entity_candidates(proposed_entity_id, candidate_id);
 create index entity_candidates_source_item_idx on entity_candidates(source_item_id);
 create index entity_candidate_evidence_candidate_idx on entity_candidate_evidence(candidate_id);
 create index legal_refs_source_item_idx on legal_refs(source_item_id);
@@ -249,6 +250,7 @@ create table reconciliation_blockers(
   primary key(subject_type, subject_id, blocker_key)
 );
 create index relationship_candidates_review_idx on relationship_candidates(review_status, relationship_type);
+create index relationship_candidates_pending_fact_idx on relationship_candidates(review_status, from_entity_ref, relationship_type, to_entity_ref, relationship_candidate_id);
 create index relationship_candidates_source_item_idx on relationship_candidates(source_item_id);
 create index relationship_candidate_evidence_candidate_idx on relationship_candidate_evidence(relationship_candidate_id);
 create index canonical_relationships_from_idx on canonical_relationships(from_entity_id, relationship_type);
@@ -291,9 +293,11 @@ const EXPECTED_INDEXES = new Set([
   "source_items_source_key_idx",
   "source_items_run_idx",
   "entity_candidates_review_idx",
+  "entity_candidates_proposed_idx",
   "entity_candidates_source_item_idx",
   "entity_candidate_evidence_candidate_idx",
   "relationship_candidates_review_idx",
+  "relationship_candidates_pending_fact_idx",
   "relationship_candidates_source_item_idx",
   "relationship_candidate_evidence_candidate_idx",
   "legal_refs_source_item_idx",
