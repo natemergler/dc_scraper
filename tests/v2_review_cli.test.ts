@@ -1124,6 +1124,77 @@ Deno.test("interactive relationship review quit reports filtered resume command"
   assertStringIncludes(reviewText, "No review items remain.");
 });
 
+Deno.test("interactive review auto-accepts accepted-endpoint additive relationships before rendering", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.superior_court_of_the_district_of_columbia",
+    "Superior Court of the District of Columbia",
+    "court",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.district_of_columbia_courts",
+    "District of Columbia Courts",
+    "court_system",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dccourts.structure",
+      relationshipCandidateId: "relationship.test.review_cli.auto_accept.dccourts.part_of",
+      sourceItemKey: "review-cli-auto-accept-dccourts-row",
+      fromEntityRef: "dc.superior_court_of_the_district_of_columbia",
+      toEntityRef: "dc.district_of_columbia_courts",
+      relationshipType: "part_of",
+      rawValue: "Superior Court -> DC Courts",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.test.review_cli.auto_accept.dccourts",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const reviewProcess = reviewRun.spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(reviewText, "No review items remain.");
+  assertEquals(reviewText.includes("Decision inbox"), false);
+});
+
 Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

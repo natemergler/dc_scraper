@@ -1,17 +1,23 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
-import { queryAll, run } from "./db.ts";
-import { endpointStatus } from "./endpoint_status.ts";
+import { queryAll, run, withTransaction } from "./db.ts";
+import { endpointStatusMap } from "./endpoint_status.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
-const AUTO_ACCEPT_RULES = new Map<string, Set<RelationshipType>>([
+const AUTO_ACCEPT_NO_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
   ["council.committees", new Set(["chairs", "member_of", "part_of"])],
   ["council.members", new Set(["holds", "part_of", "represents"])],
   ["dcgis.agencies", new Set(["part_of"])],
   ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
-  ["mota.quickbase", new Set(["governed_by"])],
+  ["mota.quickbase", new Set(["governed_by", "has_seat"])],
   ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
   ["open_dc.public_bodies", new Set(["authorized_by", "governed_by"])],
+]);
+
+const AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES = new Map<string, Set<RelationshipType>>([
+  ["bega.structure", new Set(["part_of"])],
+  ["dccourts.structure", new Set(["part_of"])],
+  ["mota.quickbase", new Set(["appointed_by", "designated_by", "has_status", "holds"])],
 ]);
 
 interface AutoAcceptRelationshipRow {
@@ -26,7 +32,9 @@ interface AutoAcceptRelationshipRow {
   stalePriorDecision?: number | null;
 }
 
-export function autoAcceptSafeRelationshipCandidates(store: WorkbenchStore): number {
+export function autoAcceptSafeRelationshipCandidates(
+  store: Pick<WorkbenchStore, "db">,
+): number {
   const candidates = queryAll<AutoAcceptRelationshipRow>(
     store.db,
     `select relationship_candidates.relationship_candidate_id as relationshipCandidateId,
@@ -45,29 +53,51 @@ export function autoAcceptSafeRelationshipCandidates(store: WorkbenchStore): num
       and review_items.item_type = 'relationship_candidate'
      where relationship_candidates.review_status = 'pending'`,
   );
+  const endpointStatuses = endpointStatusMap(
+    store,
+    candidates.flatMap((candidate) => [candidate.fromEntityRef, candidate.toEntityRef]),
+  );
 
   let acceptedCount = 0;
-  for (const candidate of candidates) {
-    if (!isSafeToAutoAccept(store, candidate)) continue;
-    acceptRelationshipCandidateDirect(store, candidate);
-    acceptedCount += 1;
-  }
+  withTransaction(store.db, () => {
+    for (const candidate of candidates) {
+      if (!isSafeToAutoAccept(endpointStatuses, candidate)) continue;
+      acceptRelationshipCandidateDirect(store, candidate);
+      acceptedCount += 1;
+    }
+  });
   return acceptedCount;
 }
 
-function isSafeToAutoAccept(store: WorkbenchStore, candidate: AutoAcceptRelationshipRow): boolean {
-  const allowedTypes = AUTO_ACCEPT_RULES.get(candidate.sourceId);
-  if (!allowedTypes?.has(candidate.relationshipType)) return false;
+function isSafeToAutoAccept(
+  endpointStatuses: ReturnType<typeof endpointStatusMap>,
+  candidate: AutoAcceptRelationshipRow,
+): boolean {
+  if (!isAllowedAutoAcceptType(candidate)) return false;
   if (candidate.reviewItemStatus !== "open") return false;
   if (candidate.defaultAction !== "accept") return false;
-  if (candidate.needsReview !== 0) return false;
+  if (!allowsNeedsReviewAutoAccept(candidate) && candidate.needsReview !== 0) return false;
   if (candidate.stalePriorDecision === 1) return false;
-  return endpointStatus(store, candidate.fromEntityRef).state === "accepted" &&
-    endpointStatus(store, candidate.toEntityRef).state === "accepted";
+  return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
+    endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
+}
+
+function isAllowedAutoAcceptType(candidate: AutoAcceptRelationshipRow): boolean {
+  return AUTO_ACCEPT_NO_REVIEW_RULES.get(candidate.sourceId)?.has(candidate.relationshipType) ===
+      true ||
+    AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES.get(candidate.sourceId)?.has(candidate.relationshipType) ===
+      true;
+}
+
+function allowsNeedsReviewAutoAccept(candidate: AutoAcceptRelationshipRow): boolean {
+  return AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES.get(candidate.sourceId)?.has(
+    candidate.relationshipType,
+  ) ===
+    true;
 }
 
 function acceptRelationshipCandidateDirect(
-  store: WorkbenchStore,
+  store: Pick<WorkbenchStore, "db">,
   candidate: AutoAcceptRelationshipRow,
 ): void {
   const eventId = `resolution.auto.relationship.${candidate.relationshipCandidateId}`;

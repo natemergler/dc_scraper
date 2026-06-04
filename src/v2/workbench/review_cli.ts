@@ -1,5 +1,6 @@
 import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
+import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
@@ -46,6 +47,7 @@ export async function runInteractiveReview(
   const activeFilters: ReviewItemFilters = filters.status === undefined
     ? { ...filters, status: "open" }
     : filters;
+  autoAcceptSafeRelationshipCandidates(workbench);
   let stickyPacketId: string | undefined;
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
