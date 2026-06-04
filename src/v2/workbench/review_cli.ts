@@ -391,7 +391,7 @@ function deferredRelationshipPacketTitle(
       : "Quickbase committee-like Council oversight";
   }
   if (!packet.toEntityRef) return undefined;
-  const targetName = endpointStatus(store, packet.toEntityRef).name ??
+  const targetName = endpointStatusMap(store, [packet.toEntityRef]).get(packet.toEntityRef)?.name ??
     humanizeToken(packet.toEntityRef.replace(/^dc\./, "").replace(/^legal\./, ""));
   if (packet.whyDeferred?.startsWith("Scoped oversight text")) {
     return `${targetName} scoped oversight`;
