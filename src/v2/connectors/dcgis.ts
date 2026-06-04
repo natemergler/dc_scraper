@@ -7,6 +7,7 @@ import {
   detectEntityKind,
   parseLegalReference,
 } from "../domain.ts";
+import { DC_LAW_INDEX_URL, DcLawTitleIndex, looksLikeDcLawTitle } from "./dc_law_index.ts";
 import {
   artifact,
   buildCandidateReviewItem,
@@ -17,6 +18,7 @@ import {
 } from "./shared.ts";
 import type { ConnectorContext, ConnectorResult, SourceConnector } from "./shared.ts";
 import type {
+  ArtifactCaptureInput,
   EntityCandidateInput,
   LegalRefInput,
   RelationshipCandidateInput,
@@ -179,9 +181,10 @@ async function runDcgisTableSource(
   }
   const fields = buildDcgisFields(metadata);
   const items = buildDcgisItems(fetchedRows, options.itemType);
+  const lawTitleIndex = await fetchLawTitleIndexIfNeeded(context, items, rowArtifacts.length + 1);
   const entityCandidates = buildDcgisEntityCandidates(source, items);
   const relationshipCandidates = buildDcgisRelationshipCandidates(source, items);
-  const legalRefs = buildDcgisLegalRefs(source, items);
+  const legalRefs = buildDcgisLegalRefs(source, items, lawTitleIndex);
   const reviewItems = buildDcgisReviewItems(
     options.entityReason,
     options.relationshipReason,
@@ -196,6 +199,7 @@ async function runDcgisTableSource(
       artifacts: [
         artifact("schema", "json", metadataUrl, metadataText),
         ...rowArtifacts,
+        ...(lawTitleIndex ? [lawTitleIndex.artifact] : []),
       ],
       parsed: {
         fields,
@@ -364,7 +368,46 @@ function buildDcgisRelationshipCandidates(
   return relationshipCandidates;
 }
 
-function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[]): LegalRefInput[] {
+interface DcgisLawTitleIndex {
+  index: DcLawTitleIndex;
+  artifact: ArtifactCaptureInput;
+  artifactIndex: number;
+}
+
+async function fetchLawTitleIndexIfNeeded(
+  context: ConnectorContext,
+  items: SourceItemInput[],
+  artifactIndex: number,
+): Promise<DcgisLawTitleIndex | undefined> {
+  if (!dcgisItemsNeedLawTitleIndex(items)) return undefined;
+  context.onProgress?.({ message: "Fetching D.C. Council law title index" });
+  const response = await context.fetcher(DC_LAW_INDEX_URL);
+  const text = await response.text();
+  return {
+    index: DcLawTitleIndex.fromJsonText(text),
+    artifact: artifact("rows", "json", DC_LAW_INDEX_URL, text),
+    artifactIndex,
+  };
+}
+
+function dcgisItemsNeedLawTitleIndex(items: SourceItemInput[]): boolean {
+  for (const item of items) {
+    const row = item.body as Record<string, unknown>;
+    const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
+    if (!legislation) continue;
+    for (const citationText of splitDcgisLegalAuthority(legislation)) {
+      const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
+      if (parsed.refType === "unknown" && looksLikeDcLawTitle(parsed.citationText)) return true;
+    }
+  }
+  return false;
+}
+
+function buildDcgisLegalRefs(
+  source: SourceDefinition,
+  items: SourceItemInput[],
+  lawTitleIndex?: DcgisLawTitleIndex,
+): LegalRefInput[] {
   const legalRefs: LegalRefInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
@@ -377,19 +420,33 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
     const entityName = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
     citationParts.forEach((citationText, index) => {
       const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
+      const lawTitleMatch = parsed.refType === "unknown"
+        ? lawTitleIndex?.index.matchTitle(parsed.citationText)
+        : undefined;
       const idSuffix = citationParts.length === 1
         ? `${item.itemKey}-legislation`
         : `${item.itemKey}-legislation-${index + 1}`;
       legalRefs.push({
         legalRefId: buildLegalRefId(source.sourceId, idSuffix),
         sourceItemKey: item.itemKey,
-        refType: parsed.refType,
+        refType: lawTitleMatch ? "dc_law" : parsed.refType,
         citationText: parsed.citationText,
-        normalizedCitation: parsed.normalizedCitation,
-        url: extractFirstUrl(citationText) ?? extractFirstUrl(legislation) ??
+        normalizedCitation: lawTitleMatch?.citation ?? parsed.normalizedCitation,
+        url: lawTitleMatch?.url ?? extractFirstUrl(citationText) ?? extractFirstUrl(legislation) ??
           maybeString(row.WEB_URL),
-        needsReview: parsed.needsReview,
-        evidence: [fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item))],
+        needsReview: lawTitleMatch ? false : parsed.needsReview,
+        evidence: [
+          fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item)),
+          ...(lawTitleMatch && lawTitleIndex
+            ? [
+              fieldEvidence(
+                "DCCouncil law index",
+                `${lawTitleMatch.citation}: ${lawTitleMatch.title}`,
+                lawTitleIndex.artifactIndex,
+              ),
+            ]
+            : []),
+        ],
         attachEntityRef: buildKnownEntityRef(entityName),
       });
     });
