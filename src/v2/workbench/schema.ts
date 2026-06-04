@@ -311,7 +311,7 @@ const EXPECTED_INDEXES = new Set([
 ]);
 
 function currentSchemaRequiredMessage(version: number): string {
-  return `Local workbench does not match the current schema contract (found version ${version}). Rebuild this ignored local DB or point --db at a current workbench.`;
+  return `Local workbench DB is not a current dc_scraper workbench (found schema version ${version}). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.`;
 }
 
 function workbenchSchemaTableExists(store: WorkbenchStore): boolean {

@@ -37,5 +37,5 @@ objects.
 Operator notes:
 
 - Keep local workbench data under ignored paths.
-- If an ignored local workbench DB is outside the current schema contract, rebuild and refetch it.
-  Do not silently repair or commit generated local data.
+- If an ignored local workbench DB is not current, treat it as scratch: point `--db` at a current
+  workbench or delete it and refetch. Do not silently repair or commit generated local data.

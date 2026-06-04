@@ -44,7 +44,8 @@ deno task dc -- smoke inventory
 Smoke profiles always create a fresh temp workspace and print the DB path they used. Use
 `source fetch --all --db <path> --data-dir <path>` when you need to fetch into explicit local paths.
 Local workbench DBs are current-schema only: connect to a current preexisting DB, or create and
-refetch a fresh one. Ignored local DBs outside the current schema contract are scratch state.
+refetch a fresh one. If an ignored local DB is not current, treat it as scratch state: point `--db`
+at a current workbench or delete the old DB and let `dc init` create a fresh one.
 
 ## Audit And Review
 
@@ -104,7 +105,7 @@ deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 
 `release verify` checks source-backed provenance and release blockers before build.
 `release inspect` checks the built package on disk against the manifest and reports package
-integrity plus release readiness.
+integrity plus the built package summary.
 
 ## Health
 
@@ -113,7 +114,8 @@ integrity plus release readiness.
 - `dc release verify` answers "do accepted release rows still trace to source-backed decisions, and
   are there provenance or blocker problems?"
 - `dc release inspect` answers "does the built release package still match its manifest?" Use
-  `dc release inspect --json` when you need structured readiness drilldowns from the manifest.
+  `dc release inspect --json` when you need structured package-integrity and release-summary details
+  from the manifest.
 
 If a command fails, keep the smallest real surface in mind: inspect one source, one review slice, or
 one release verification reason before widening again.
