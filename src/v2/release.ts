@@ -59,9 +59,16 @@ export async function buildV2Release(
   const relationships: RelationshipRow[] = workbench.canonicalRelationships();
   const sources: SourceRow[] = workbench.sourceInventory();
   const datasets: DatasetRow[] = workbench.datasets();
-  const legalRefs: LegalRefRow[] = workbench.legalRefs();
-  const entityLegalRefs: EntityLegalRefRow[] = workbench.entityLegalRefs();
-  const relationshipLegalRefs: RelationshipLegalRefRow[] = workbench.relationshipLegalRefs();
+  const legalRefs: LegalRefRow[] = acceptedReleaseLegalRefs(workbench.legalRefs());
+  const legalRefIds = new Set(legalRefs.map((row) => row.id));
+  const entityLegalRefs: EntityLegalRefRow[] = acceptedReleaseLegalAttachments(
+    workbench.entityLegalRefs(),
+    legalRefIds,
+  );
+  const relationshipLegalRefs: RelationshipLegalRefRow[] = acceptedReleaseLegalAttachments(
+    workbench.relationshipLegalRefs(),
+    legalRefIds,
+  );
   const sourceArtifacts: SourceArtifactRow[] = workbench.sourceArtifacts();
   emitReleaseProgress(options, {
     phase: "summarize",
@@ -267,6 +274,21 @@ function emitReleaseProgress(
   event: ReleaseBuildProgressEvent,
 ): void {
   options.onProgress?.(event);
+}
+
+function acceptedReleaseLegalRefs(rows: LegalRefRow[]): LegalRefRow[] {
+  return rows.filter((row) => row.review_status === "accepted");
+}
+
+function acceptedReleaseLegalAttachments<
+  T extends { legal_ref_id: string; review_status: string },
+>(
+  rows: T[],
+  acceptedLegalRefIds: ReadonlySet<string>,
+): T[] {
+  return rows.filter((row) =>
+    row.review_status === "accepted" && acceptedLegalRefIds.has(row.legal_ref_id)
+  );
 }
 
 function buildReleaseId(generatedAt: string, gitCommit: string): string {

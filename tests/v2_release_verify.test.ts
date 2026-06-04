@@ -209,6 +209,30 @@ Deno.test("release verify accepts source-backed dataset and legal ref rows", asy
   assertEquals(body.legalRefProvenanceProblems, []);
 });
 
+Deno.test("release verify ignores pending unknown legal refs outside the public release row family", async () => {
+  const { dbPath, workbench } = await sourceBackedInventoryWorkbench();
+  const sourceItem = workbench.db.prepare(
+    "select source_item_id as sourceItemId from source_items order by source_item_id limit 1",
+  ).get() as { sourceItemId: string };
+  workbench.db.prepare(
+    "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values('legal.test.release.verify.pending_unknown', ?, 'unknown', 'Organizational ByLaws', null, null, 'pending')",
+  ).run(sourceItem.sourceItemId);
+  workbench.close();
+
+  const result = await runReleaseVerifyJson(dbPath);
+  const body = result.body as {
+    ready: boolean;
+    reasons: string[];
+    legalRefProvenanceCheckedCount: number;
+    legalRefProvenanceProblems: Array<{ legalRefId: string; message: string }>;
+  };
+  assertEquals(result.code, 0);
+  assertEquals(body.ready, true);
+  assertEquals(body.reasons, []);
+  assertEquals(body.legalRefProvenanceCheckedCount, 1);
+  assertEquals(body.legalRefProvenanceProblems, []);
+});
+
 Deno.test("release verify batches inventory evidence lookup across rows", async () => {
   const { workbench } = await sourceBackedInventoryWorkbench();
   duplicateInventoryRows(workbench, 3);

@@ -308,7 +308,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "D.C. Official Code § 47-2853.06(b)(1)",
     "D.C. Code 47-2853.06(b)(1)",
     "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)",
-    "pending",
+    "accepted",
   ]);
   workbench.db.prepare(
     "insert into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values(?, ?, ?)",
@@ -519,6 +519,95 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("content_hash"), true);
     assertEquals(Object.keys(manifest.source_artifacts[0]).includes("path"), false);
   }
+});
+
+Deno.test("release builder excludes pending unknown legal refs from public package rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.legal_unknown_body', 'Legal Unknown Body', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.legal_authority', 'Legal Authority', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('event.pending_unknown_relationship', 'accept_relationship_candidate', 'relationship.pending_unknown', '{}', 'fixture.jsonl', 1, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.legal_unknown_body:authorized_by:dc.legal_authority', 'dc.legal_unknown_body', 'authorized_by', 'dc.legal_authority', 'accepted', 'event.pending_unknown_relationship', datetime('now'))",
+  ).run();
+  workbench.upsertSource(
+    "test.pending_unknown_legal_refs",
+    "Pending Unknown Legal Refs",
+    "fixture",
+    "fixture",
+    "https://example.com/pending-unknown-legal-refs",
+  );
+  workbench.upsertEndpoint({
+    endpointId: "test.pending_unknown_legal_refs.main",
+    sourceId: "test.pending_unknown_legal_refs",
+    title: "Pending Unknown Legal Refs",
+    kind: "fixture",
+    url: "https://example.com/pending-unknown-legal-refs",
+    method: "GET",
+    captureMode: "rows",
+  });
+  workbench.db.prepare(
+    "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values('run.pending_unknown_legal_refs', 'test.pending_unknown_legal_refs', 'test.pending_unknown_legal_refs.main', datetime('now'), datetime('now'), 'success')",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.pending_unknown_legal_refs', 'run.pending_unknown_legal_refs', 'test.pending_unknown_legal_refs.main', 'rows', 'pending-unknown-legal-refs.json', 'https://example.com/pending-unknown-legal-refs', 'sha256:pending-unknown', 100, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values('item.pending_unknown_legal_ref', 'test.pending_unknown_legal_refs', 'test.pending_unknown_legal_refs.main', 'run.pending_unknown_legal_refs', 'artifact.pending_unknown_legal_refs', 'pending-unknown', 'fixture_legal_ref', 'Organizational ByLaws', '{}')",
+  ).run();
+  workbench.db.prepare(
+    "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values('legal.pending_unknown.by_laws', 'item.pending_unknown_legal_ref', 'unknown', 'Organizational ByLaws', null, null, 'pending')",
+  ).run();
+  workbench.db.prepare(
+    "insert into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values('entity_legal_ref.pending_unknown.by_laws', 'dc.legal_unknown_body', 'legal.pending_unknown.by_laws')",
+  ).run();
+  workbench.db.prepare(
+    "insert into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values('relationship_legal_ref.pending_unknown.by_laws', 'dc.legal_unknown_body:authorized_by:dc.legal_authority', 'legal.pending_unknown.by_laws')",
+  ).run();
+
+  const outDir = join(dir, "release");
+  await buildV2Release(workbench, outDir);
+
+  const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
+  const legalRefsJson = JSON.parse(await Deno.readTextFile(join(outDir, "legal_refs.json")));
+  const entityLegalRefsJson = JSON.parse(
+    await Deno.readTextFile(join(outDir, "entity_legal_refs.json")),
+  );
+  const relationshipLegalRefsJson = JSON.parse(
+    await Deno.readTextFile(join(outDir, "relationship_legal_refs.json")),
+  );
+  const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
+  const releaseDb = new Database(join(outDir, "dcgov.sqlite"));
+  const releaseDbCounts = releaseDb.prepare(
+    "select (select count(*) from legal_refs) as legalRefs, (select count(*) from entity_legal_refs) as entityLegalRefs, (select count(*) from relationship_legal_refs) as relationshipLegalRefs",
+  ).get() as { legalRefs: number; entityLegalRefs: number; relationshipLegalRefs: number };
+  releaseDb.close();
+  workbench.close();
+
+  assert(!legalRefsCsv.includes("Organizational ByLaws"));
+  assertEquals(legalRefsJson, []);
+  assertEquals(entityLegalRefsJson, []);
+  assertEquals(relationshipLegalRefsJson, []);
+  assertStringIncludes(readme, "legal refs: total=0");
+  assertStringIncludes(readme, "entity legal refs: total=0");
+  assertStringIncludes(readme, "relationship legal refs: total=0");
+  assertEquals(manifest.release_summary.legal_refs_by_review_status, []);
+  assertEquals(manifest.release_summary.legal_refs_by_type, []);
+  assertEquals(releaseDbCounts, {
+    legalRefs: 0,
+    entityLegalRefs: 0,
+    relationshipLegalRefs: 0,
+  });
+  assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 });
 
 Deno.test("release inspect reports missing, changed, and unexpected package files", async () => {
