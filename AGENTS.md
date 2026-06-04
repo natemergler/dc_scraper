@@ -99,7 +99,7 @@ Good boundaries:
 
 ```text
 src/domain/       IDs, domain types, validators, pure operations
-src/db/           migrations, schema bootstrap, typed query helpers
+src/db/           current-schema bootstrap, typed query helpers
 src/sources/      connectors and parsers
 src/resolutions/  operation types and replay
 src/review/       review item generation and interactive flow

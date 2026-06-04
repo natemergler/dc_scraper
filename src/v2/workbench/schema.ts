@@ -2,13 +2,13 @@ import { nowIso, type WorkbenchMeta } from "../domain.ts";
 import { queryAll, run, withTransaction } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
-export interface SchemaMigrationRow {
+export interface SchemaMarkerRow {
   version: number;
   name: string;
   appliedAt: string;
 }
 
-const CURRENT_SCHEMA_VERSION = 14;
+const CURRENT_SCHEMA_VERSION = 15;
 const CURRENT_SCHEMA_NAME = "v2_current_workbench_schema";
 
 const CURRENT_SCHEMA_SQL = `create table sources(
@@ -258,7 +258,7 @@ create index reconciliation_blockers_subject_idx on reconciliation_blockers(subj
 `;
 
 const EXPECTED_TABLES = new Set([
-  "schema_migrations",
+  "schema_markers",
   "sources",
   "source_endpoints",
   "source_runs",
@@ -317,7 +317,7 @@ function unsupportedWorkbenchMessage(version: number): string {
 function schemaMarkerTableExists(store: WorkbenchStore): boolean {
   const rows = queryAll<{ name: string }>(
     store.db,
-    "select name from sqlite_master where type = 'table' and name = 'schema_migrations'",
+    "select name from sqlite_master where type = 'table' and name = 'schema_markers'",
   );
   return rows.length > 0;
 }
@@ -342,7 +342,7 @@ function userIndexNames(store: WorkbenchStore): Set<string> {
 
 function assertCurrentWorkbenchSchema(
   store: WorkbenchStore,
-  markerRows: SchemaMigrationRow[],
+  markerRows: SchemaMarkerRow[],
 ): void {
   const version = markerRows.at(-1)?.version ?? 0;
   if (
@@ -366,15 +366,15 @@ function assertCurrentWorkbenchSchema(
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
   store.db.exec(`
-create table if not exists schema_migrations (
+create table if not exists schema_markers (
   version integer primary key,
   name text not null,
   applied_at text not null
 );
 `);
-  const existingMarkers = queryAll<SchemaMigrationRow>(
+  const existingMarkers = queryAll<SchemaMarkerRow>(
     store.db,
-    "select version, name, applied_at as appliedAt from schema_migrations order by version",
+    "select version, name, applied_at as appliedAt from schema_markers order by version",
   );
   if (existingMarkers.length > 0) {
     assertCurrentWorkbenchSchema(store, existingMarkers);
@@ -391,7 +391,7 @@ create table if not exists schema_migrations (
     store.db.exec(CURRENT_SCHEMA_SQL);
     run(
       store.db,
-      "insert into schema_migrations(version, name, applied_at) values(?, ?, ?)",
+      "insert into schema_markers(version, name, applied_at) values(?, ?, ?)",
       [CURRENT_SCHEMA_VERSION, CURRENT_SCHEMA_NAME, nowIso()],
     );
   });
@@ -402,9 +402,9 @@ export function readWorkbenchMeta(store: WorkbenchStore): WorkbenchMeta {
   if (!schemaMarkerTableExists(store)) {
     throw new Error(unsupportedWorkbenchMessage(0));
   }
-  const markerRows = queryAll<SchemaMigrationRow>(
+  const markerRows = queryAll<SchemaMarkerRow>(
     store.db,
-    "select version, name, applied_at as appliedAt from schema_migrations order by version",
+    "select version, name, applied_at as appliedAt from schema_markers order by version",
   );
   assertCurrentWorkbenchSchema(store, markerRows);
   return {

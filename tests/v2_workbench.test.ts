@@ -87,8 +87,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 14);
-  assertEquals(second.schemaVersion, 14);
+  assertEquals(first.schemaVersion, 15);
+  assertEquals(second.schemaVersion, 15);
   assertEquals(second.schemaMarkers.length, 1);
   assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
@@ -352,7 +352,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 14");
+  assertStringIncludes(statusText, "Schema version: 15");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -381,7 +381,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 14);
+  assertEquals(jsonStatus.schemaVersion, 15);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
@@ -487,7 +487,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.exec("update schema_migrations set name = 'v2_old_migration_ledger'");
+  workbench.db.exec("update schema_markers set name = 'v2_old_schema_marker'");
   workbench.close();
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
@@ -509,7 +509,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 14. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 15. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -540,7 +540,7 @@ Deno.test("source list rejects a current schema marker when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 14. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 15. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
