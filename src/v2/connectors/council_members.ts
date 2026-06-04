@@ -59,6 +59,7 @@ export const councilMembersConnector: SourceConnector = {
     const personCandidates = buildCouncilMemberPersonCandidates(sections);
     const roleCandidates = buildCouncilSeatRoleCandidates(sections);
     const entityCandidates = [
+      buildCouncilEntityCandidate(),
       ...personCandidates,
       ...roleCandidates,
       ...buildWardAndDistrictCandidates(sections),
@@ -111,6 +112,24 @@ export const councilMembersConnector: SourceConnector = {
     };
   },
 };
+
+function buildCouncilEntityCandidate(): EntityCandidateInput {
+  const name = "Council of the District of Columbia";
+  return {
+    candidateId: buildCandidateId(
+      councilMembersSource.sourceId,
+      "council-of-the-district-of-columbia",
+    ),
+    sourceItemKey: "council-members-page",
+    proposedEntityId: buildEntityId(name),
+    name,
+    kind: "council",
+    rawKind: "council",
+    officialUrl: new URL("/", councilMembersSource.baseUrl).toString(),
+    confidence: 0.99,
+    evidence: [fieldEvidence("source", name, 0)],
+  };
+}
 
 function buildCouncilMemberPersonCandidates(
   sections: CouncilMemberBlock[],

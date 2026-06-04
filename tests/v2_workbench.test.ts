@@ -1594,6 +1594,52 @@ Deno.test(
   },
 );
 
+Deno.test("Quickbase board labels resolve through accepted-style entity refs", async () => {
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Jane Doe","Active"
+`.trim();
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return csv;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+
+  const parsed = result.endpointResults[1].parsed;
+  const boardCandidate = parsed?.entityCandidates?.find((candidate) =>
+    candidate.candidateId ===
+      "candidate.mota.quickbase.board_of_ethics_and_government_accountability_bega"
+  );
+  const seatRelationship = parsed?.relationshipCandidates?.find((candidate) =>
+    candidate.relationshipType === "has_seat"
+  );
+
+  assertEquals(
+    boardCandidate?.proposedEntityId,
+    "dc.board_of_ethics_and_government_accountability",
+  );
+  assertEquals(
+    seatRelationship?.fromEntityRef,
+    "dc.board_of_ethics_and_government_accountability",
+  );
+});
+
 Deno.test("quickbase connector derives public appointee observations from live-style name columns", async () => {
   const liveStyleCsv = `
 "Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
@@ -2562,6 +2608,13 @@ Deno.test("Council members connector captures seats and ward representations", a
   const parsed = result.endpointResults[0].parsed;
   assert(parsed);
   assertEquals(parsed.items?.length, 1);
+  assert(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name === "Council of the District of Columbia" &&
+      candidate.kind === "council" &&
+      candidate.officialUrl === "https://dccouncil.gov/"
+    ),
+  );
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Council Chairman"));
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "District of Columbia"));
   assert(
@@ -2581,6 +2634,62 @@ Deno.test("Council members connector captures seats and ward representations", a
       candidate.toEntityRef === buildEntityId("District of Columbia")
     ),
   );
+});
+
+Deno.test("Council member source upgrades stale DCGIS Council official URL", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.agencies",
+      candidateId: "candidate.dcgis.agencies.council",
+      sourceItemKey: "dcgis-council-row",
+      proposedEntityId: "dc.council_of_the_district_of_columbia",
+      name: "Council of the District of Columbia",
+      kind: "council",
+      officialUrl: "https://dccouncil.us/",
+      observedName: "Council of the District of Columbia",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("council.members").run(createConnectorContext({
+      fetcher: async (url: string) => ({
+        status: 200,
+        text: async () => {
+          switch (url) {
+            case "https://dccouncil.gov/councilmembers/":
+              return councilMembersFixture;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        },
+        json: async <T>() => {
+          throw new Error(`No json fixture for ${url}`) as T;
+        },
+      }),
+    })),
+    dataDir,
+  );
+
+  const council = workbench.db.prepare(
+    `select official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.council_of_the_district_of_columbia'`,
+  ).get() as { officialUrl: string | null; mergedCandidateIds: string };
+  workbench.close();
+
+  assertEquals(council.officialUrl, "https://dccouncil.gov/");
+  assertEquals(JSON.parse(council.mergedCandidateIds), [
+    "candidate.dcgis.agencies.council",
+    "candidate.council.members.council_of_the_district_of_columbia",
+  ]);
 });
 
 Deno.test("Council members connector ignores limit for the single-page roster", async () => {
@@ -5626,7 +5735,7 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
   const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
   assert(
     relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
+      "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
     ),
   );
   assert(
