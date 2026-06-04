@@ -138,6 +138,62 @@ Deno.test("reused accepted entity decisions refresh canonical fields from refetc
   );
 });
 
+Deno.test("refetched accepted entity candidates move to corrected proposed entity ids", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const candidateId = "candidate.open_dc.public_bodies.public_charter_school_board_pcsb";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId,
+      sourceItemKey: "public-charter-school-board-pcsb",
+      proposedEntityId: "dc.public_charter_school_board",
+      name: "Public Charter School Board",
+      kind: "board",
+      observedName: "Public Charter School Board (PCSB)",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId,
+      sourceItemKey: "public-charter-school-board-pcsb",
+      proposedEntityId: "dc.public_charter_school_board_pcsb",
+      name: "Public Charter School Board",
+      kind: "board",
+      observedName: "Public Charter School Board (PCSB)",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const oldCanonical = workbench.db.prepare(
+    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.public_charter_school_board'",
+  ).get() as { mergedCandidateIds: string } | undefined;
+  const correctedCanonical = workbench.db.prepare(
+    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.public_charter_school_board_pcsb'",
+  ).get() as { mergedCandidateIds: string } | undefined;
+  const candidate = workbench.db.prepare(
+    "select proposed_entity_id as proposedEntityId, review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(candidateId) as { proposedEntityId: string; reviewStatus: string };
+  workbench.close();
+
+  assertEquals(candidate.proposedEntityId, "dc.public_charter_school_board_pcsb");
+  assertEquals(candidate.reviewStatus, "accepted");
+  assertEquals(oldCanonical, undefined);
+  assertEquals(
+    JSON.parse(correctedCanonical?.mergedCandidateIds ?? "[]") as string[],
+    [candidateId],
+  );
+});
+
 Deno.test("accepting a stronger entity candidate refreshes canonical fields", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

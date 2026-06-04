@@ -1,6 +1,7 @@
 import {
   buildReviewItemId,
   type ConnectorResult,
+  type EntityCandidateInput,
   type LegalRefInput,
   nowIso,
   type ReviewItemInput,
@@ -34,6 +35,12 @@ interface ArtifactRecord {
 interface ParsedSourceItemRecord {
   sourceItemId: string;
   artifactIndex: number;
+}
+
+interface ExistingEntityCandidateRecord {
+  proposedEntityId: string;
+  reviewStatus: string;
+  hasExplicitResolution: number;
 }
 
 interface EntityReviewConflictContext {
@@ -327,10 +334,8 @@ function importParsedOutput(
     );
   }
   const itemIndex = new Map<string, ParsedSourceItemRecord & { artifactPath: string }>();
-  const existingEntityCandidateStatuses = reviewStatusesById(
+  const existingEntityCandidates = existingEntityCandidatesById(
     store,
-    "entity_candidates",
-    "candidate_id",
     parsed.entityCandidates?.map((candidate) => candidate.candidateId) ?? [],
   );
   const existingRelationshipCandidateStatuses = reviewStatusesById(
@@ -408,7 +413,7 @@ function importParsedOutput(
       candidate.officialUrl ?? null,
       candidate.confidence ?? null,
       candidate.duplicateHint ?? null,
-      existingEntityCandidateStatuses.get(candidate.candidateId) ?? "pending",
+      importedEntityCandidateStatus(existingEntityCandidates.get(candidate.candidateId), candidate),
     ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
       const evidenceId = `${candidate.candidateId}:${index}`;
@@ -878,6 +883,64 @@ function reviewStatusesById(
     }
   }
   return statuses;
+}
+
+function existingEntityCandidatesById(
+  store: WorkbenchStore,
+  ids: string[],
+): Map<string, ExistingEntityCandidateRecord> {
+  const uniqueIds = [...new Set(ids)];
+  const records = new Map<string, ExistingEntityCandidateRecord>();
+  for (const idChunk of chunks(uniqueIds, 500)) {
+    if (idChunk.length === 0) continue;
+    const placeholders = idChunk.map(() => "?").join(", ");
+    const rows = queryAll<
+      ExistingEntityCandidateRecord & { id: string }
+    >(
+      store.db,
+      `select entity_candidates.candidate_id as id,
+              entity_candidates.proposed_entity_id as proposedEntityId,
+              entity_candidates.review_status as reviewStatus,
+              exists (
+                select 1
+                from resolution_events
+                where (
+                    event_type in ('accept_entity_candidate', 'reject_entity_candidate')
+                    and subject_id = entity_candidates.candidate_id
+                  )
+                  or (
+                    event_type = 'merge_entity_candidates'
+                    and exists (
+                      select 1
+                      from json_each(resolution_events.payload_json, '$.candidate_replays')
+                      where json_extract(value, '$.candidate_id') = entity_candidates.candidate_id
+                    )
+                  )
+              ) as hasExplicitResolution
+       from entity_candidates
+       where entity_candidates.candidate_id in (${placeholders})`,
+      idChunk,
+    );
+    for (const row of rows) {
+      records.set(row.id, row);
+    }
+  }
+  return records;
+}
+
+function importedEntityCandidateStatus(
+  existing: ExistingEntityCandidateRecord | undefined,
+  candidate: EntityCandidateInput,
+): string {
+  if (!existing) return "pending";
+  if (
+    existing.reviewStatus === "accepted" &&
+    existing.proposedEntityId !== candidate.proposedEntityId &&
+    existing.hasExplicitResolution !== 1
+  ) {
+    return "pending";
+  }
+  return existing.reviewStatus;
 }
 
 function deleteStaleCandidateEvidence(

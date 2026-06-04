@@ -15,6 +15,7 @@ import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
+import { detachEntityCandidateFromOtherCanonicalEntities } from "./canonical_entity_membership.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
@@ -708,6 +709,7 @@ function acceptEntityCandidate(
     throw new Error(`Conflict: candidate ${candidateId} was already rejected`);
   }
   const entityId = String(payload.entityId ?? candidate.proposedEntityId);
+  detachEntityCandidateFromOtherCanonicalEntities(store, candidateId, entityId);
   const existing = queryOne<{
     mergedCandidateIds: string;
     isPlaceholder: number;
