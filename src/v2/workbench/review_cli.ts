@@ -13,7 +13,7 @@ import {
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
-import { type ReviewItemFilters } from "./review.ts";
+import { type ReviewItemFilters, reviewItemWorkKind } from "./review.ts";
 import {
   reviewEvidence,
   type ReviewEvidenceRow,
@@ -494,7 +494,7 @@ export function renderReviewItemSummary(
     specialOmittedDetailKeys(item, context.omittedDetailKeys),
   );
   return [
-    `[${item.status}] ${context.title}`,
+    `[${item.status} ${reviewItemWorkKind(item)}] ${context.title}`,
     [humanizeToken(item.itemType), context.infoLabel, `default ${item.defaultAction}`].filter(
       Boolean,
     ).join(" | "),

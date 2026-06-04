@@ -150,12 +150,20 @@ Deno.test("review list json includes source and label context", async () => {
   assertEquals(output.code, 0, stderr);
   const parsed = JSON.parse(stdout) as {
     count: number;
-    items: Array<{ sourceId?: string; label?: string; subjectId: string }>;
+    items: Array<{
+      sourceId?: string;
+      label?: string;
+      subjectId: string;
+      workKind: string;
+      humanDecision: boolean;
+    }>;
   };
   assertEquals(parsed.count, 1);
   assertEquals(parsed.items[0].sourceId, "test.review_list.entities");
   assertEquals(parsed.items[0].label, "Review List Board");
   assertStringIncludes(parsed.items[0].subjectId, "candidate.test.review_list.entity");
+  assertEquals(parsed.items[0].workKind, "browse");
+  assertEquals(parsed.items[0].humanDecision, false);
 });
 
 function findReviewItem(

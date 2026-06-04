@@ -4476,7 +4476,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(output.code, 0);
   const text = new TextDecoder().decode(output.stdout);
   assertStringIncludes(text, "Review items:");
-  assertStringIncludes(text, "[open] Review List Entity");
+  assertStringIncludes(text, "[open browse] Review List Entity");
   assertStringIncludes(text, "entity candidate | board | default accept");
   assertStringIncludes(text, "source: test.review_list.entities / Custom entity row");
   assertStringIncludes(
@@ -4512,12 +4512,14 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   }).output();
   const json = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
     count: number;
-    items: Array<{ itemType: string; subjectId: string }>;
+    items: Array<{ itemType: string; subjectId: string; workKind: string; humanDecision: boolean }>;
   };
   assertEquals(jsonOutput.code, 0);
   assertEquals(json.count, json.items.length);
   assert(json.items.every((item) => item.itemType === "entity_candidate"));
   assert(json.items.every((item) => item.subjectId.startsWith("candidate.test.review_list")));
+  assert(json.items.every((item) => item.workKind === "browse"));
+  assert(json.items.every((item) => item.humanDecision === false));
 
   const relationshipTypeJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -4547,7 +4549,13 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     new TextDecoder().decode(relationshipTypeJsonOutput.stdout),
   ) as {
     count: number;
-    items: Array<{ itemType: string; subjectId: string; details: { relationshipType: string } }>;
+    items: Array<{
+      itemType: string;
+      subjectId: string;
+      workKind: string;
+      humanDecision: boolean;
+      details: { relationshipType: string };
+    }>;
   };
   assertEquals(relationshipTypeJsonOutput.code, 0);
   assert(relationshipTypeJson.count > 0);
@@ -4555,7 +4563,9 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     relationshipTypeJson.items.every((item) =>
       item.itemType === "relationship_candidate" &&
       item.subjectId.startsWith("relationship.council.committees.review_list_oversight") &&
-      item.details.relationshipType === "overseen_by"
+      item.details.relationshipType === "overseen_by" &&
+      item.workKind === "decision" &&
+      item.humanDecision === true
     ),
   );
 
