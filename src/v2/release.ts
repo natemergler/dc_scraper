@@ -548,8 +548,8 @@ function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
 
 Files:
-- \`README.md\`: package overview, model semantics, and release counts
-- \`manifest.json\`: package metadata, file hashes, source inventory/artifact summary, and release summary
+- \`README.md\`: package overview, model semantics, and package counts
+- \`manifest.json\`: package metadata, file hashes, and source inventory/artifact summary
 - \`dcgov.sqlite\`: release SQLite package
 - \`entities.*\`: canonical entities
 - \`relationships.*\`: directed canonical relationships
@@ -573,7 +573,7 @@ Relationship direction guide: \`part_of\` points from a component to its contain
 
 DC city/county distinctions are not inferred beyond source-backed civic structure labels.
 
-## Release summary
+## Package counts
 
 - entities: total=${totalReviewStatusCount(summary.entities_by_review_status)}
 - relationships: total=${totalReviewStatusCount(summary.relationships_by_review_status)}
