@@ -73,6 +73,29 @@ Deno.test("review packets group explicit-safe and high-confidence entity work wi
   assertEquals(output.code, 0);
   assertEquals(body.packets.length, 0);
 
+  const openOutput = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "entities",
+    "--status",
+    "open",
+    "--db",
+    dbPath,
+    "--json",
+  ]);
+  const openBody = JSON.parse(new TextDecoder().decode(openOutput.stdout)) as {
+    packets: Array<{
+      itemType: string;
+      sourceId: string;
+      count: number;
+      subjectPrefix?: string;
+    }>;
+  };
+
+  assertEquals(openOutput.code, 0);
+  assertEquals(openBody.packets.length, 0);
+
   const rawOutput = await runDc([
     "review",
     "packets",

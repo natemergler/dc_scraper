@@ -40,6 +40,7 @@ export interface ReviewEvidenceRow {
   observedValue: string;
   sourceId: string;
   artifactPath: string;
+  fetchedUrl?: string | null;
 }
 
 type ReviewSubjectSourceLookupItem = Pick<
@@ -236,45 +237,58 @@ export function reviewEvidence(
   item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
 ): ReviewEvidenceRow[] {
   if (item.itemType === "entity_candidate") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from entity_candidate_evidence
-       where candidate_id = ?
-       order by field_path`,
-      [item.subjectId],
+    return sourceBackedReviewEvidenceRows(
+      store,
+      "entity_candidate_evidence",
+      "candidate_id",
+      item.subjectId,
     );
   }
   if (item.itemType === "relationship_candidate") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from relationship_candidate_evidence
-       where relationship_candidate_id = ?
-       order by field_path`,
-      [item.subjectId],
+    return sourceBackedReviewEvidenceRows(
+      store,
+      "relationship_candidate_evidence",
+      "relationship_candidate_id",
+      item.subjectId,
     );
   }
   if (item.itemType === "legal_ref") {
-    return queryAll<ReviewEvidenceRow>(
-      store.db,
-      `select field_path as fieldPath,
-              observed_value as observedValue,
-              source_id as sourceId,
-              artifact_path as artifactPath
-       from legal_ref_evidence
-       where legal_ref_id = ?
-       order by field_path`,
-      [item.subjectId],
+    return sourceBackedReviewEvidenceRows(
+      store,
+      "legal_ref_evidence",
+      "legal_ref_id",
+      item.subjectId,
     );
   }
   return [];
+}
+
+function sourceBackedReviewEvidenceRows(
+  store: Pick<WorkbenchStore, "db">,
+  evidenceTable:
+    | "entity_candidate_evidence"
+    | "relationship_candidate_evidence"
+    | "legal_ref_evidence",
+  subjectColumn: "candidate_id" | "relationship_candidate_id" | "legal_ref_id",
+  subjectId: string,
+): ReviewEvidenceRow[] {
+  return queryAll<ReviewEvidenceRow>(
+    store.db,
+    `select ${evidenceTable}.field_path as fieldPath,
+            ${evidenceTable}.observed_value as observedValue,
+            ${evidenceTable}.source_id as sourceId,
+            ${evidenceTable}.artifact_path as artifactPath,
+            source_artifacts.fetched_url as fetchedUrl
+     from ${evidenceTable}
+     left join source_items
+       on source_items.source_item_id = ${evidenceTable}.source_item_id
+     left join source_artifacts
+       on source_artifacts.run_id = source_items.run_id
+      and source_artifacts.path = ${evidenceTable}.artifact_path
+     where ${evidenceTable}.${subjectColumn} = ?
+     order by ${evidenceTable}.field_path`,
+    [subjectId],
+  );
 }
 
 function directReviewSubjectSourceId(

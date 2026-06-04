@@ -87,7 +87,7 @@ export async function handleReviewCommand(
     const filters = readReviewFilters(args);
     const includeReviewItemIds = args.includes("--include-review-item-ids");
     const packets = await deps.withWorkbench((workbench) =>
-      filters.status === undefined
+      filters.status === undefined || filters.status === "open"
         ? listOpenDecisionReviewPackets(workbench, filters)
         : listReviewPackets(workbench, filters)
     );
