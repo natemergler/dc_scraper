@@ -44,6 +44,8 @@ export interface ReviewDecisionSummary {
   deferred: number;
 }
 
+export type ReviewWorkKind = "decision" | "browse" | "deferred" | "resolved";
+
 export function listReviewItems(
   store: WorkbenchStore,
   filters: ReviewItemFilters = {},
@@ -182,6 +184,12 @@ export function isHumanDecisionReviewItem(item: ReviewItemRecord): boolean {
       typeof item.details.candidateKind === "string";
   }
   return false;
+}
+
+export function reviewItemWorkKind(item: ReviewItemRecord): ReviewWorkKind {
+  if (item.status === "resolved") return "resolved";
+  if (item.status === "deferred") return "deferred";
+  return isHumanDecisionReviewItem(item) ? "decision" : "browse";
 }
 
 export function reviewDecisionSummary(store: WorkbenchStore): ReviewDecisionSummary {

@@ -14,6 +14,7 @@ import {
   runInteractiveReview,
 } from "./workbench/review_cli.ts";
 import type { Workbench } from "./workbench.ts";
+import { isHumanDecisionReviewItem, reviewItemWorkKind } from "./workbench/review.ts";
 
 export interface ReviewCommandOptions {
   json?: boolean;
@@ -55,6 +56,8 @@ export async function handleReviewCommand(
           ...item,
           sourceId: sourceIds.get(item.reviewItemId) ?? "unknown",
           label: reviewItemLabel(item),
+          workKind: reviewItemWorkKind(item),
+          humanDecision: isHumanDecisionReviewItem(item),
         })),
         summaries: items.map((item) => renderReviewItemSummary(workbench, item)),
       };
