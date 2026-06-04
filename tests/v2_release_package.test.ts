@@ -7,6 +7,7 @@ import { renderReleaseBuildProgress } from "../src/v2/cli_release.ts";
 import { buildReleaseInspection } from "../src/v2/release_inspect.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { syntheticEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
+import { assertReleaseReadmeOmitsWorkbenchStatusLanguage } from "./helpers/v2_release_readme_assertions.ts";
 
 Deno.test("release inspection readiness summarizes unresolved work severity", async () => {
   const outDir = await makeMinimalReleaseDir();
@@ -597,50 +598,6 @@ async function makeMinimalReleaseDir(): Promise<string> {
   const outDir = await Deno.makeTempDir();
   await Deno.writeTextFile(join(outDir, "manifest.json"), "{}");
   return outDir;
-}
-
-function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
-  const normalized = readme.toLowerCase();
-  for (
-    const snippet of [
-      "review_status",
-      "review",
-      "review status note:",
-      "review items by",
-      "review debt by",
-      "unresolved",
-      "unresolved workbench state:",
-      "deferred",
-      "blocked",
-      "open review",
-      "top unresolved",
-      "coverage note",
-      "unresolved rows",
-      "pending",
-      "stale review:",
-      "blocked by source:",
-      "candidate.",
-      "relationship.",
-      "legal.",
-      "blocked and stale counts report unresolved work",
-      "stay review-first",
-      "internal",
-      "caveat",
-      "gap",
-      "incomplete",
-      "does not claim complete",
-      "current-schema",
-      "local db",
-      "local database",
-      "contract",
-      "workbench",
-      "legacy",
-      "migration",
-      "schema_migrations",
-    ]
-  ) {
-    assert(!normalized.includes(snippet), `README should not include ${snippet}`);
-  }
 }
 
 async function fileByteSha(path: string): Promise<string> {
