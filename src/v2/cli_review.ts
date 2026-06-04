@@ -110,7 +110,7 @@ export function printReviewHelp(): void {
 Workflow:
   1. Run \`${dcCommand("review")}\` to open the decision inbox
   2. Press Enter for the recommended packet or choose another ranked decision packet
-  3. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  3. Browse review items with \`${dcCommand("review list --mode relationships --limit 5")}\`
   4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
   5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
   6. Apply a scoped batch deliberately, like \`${
