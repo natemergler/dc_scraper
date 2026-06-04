@@ -1004,7 +1004,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(releaseBuildHelp.code, 0);
   assertStringIncludes(releaseBuildHelpText, "deno task dc -- release build");
   assertStringIncludes(releaseBuildHelpText, "deno task dc -- release inspect");
-  assert(!releaseBuildHelpText.includes("Built v2 release"));
+  assert(!releaseBuildHelpText.includes("Built release"));
 
   const releaseInspectHelp = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),

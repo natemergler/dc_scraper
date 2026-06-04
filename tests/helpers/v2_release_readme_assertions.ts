@@ -51,6 +51,7 @@ export function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) 
       "database migration",
       "database migrations",
       "schema_migrations",
+      "v2",
     ]
   ) {
     assert(!normalized.includes(snippet), `README should not include ${snippet}`);
