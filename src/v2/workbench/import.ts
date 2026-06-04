@@ -179,6 +179,24 @@ function importParsedOutput(
   parsed: ConnectorResult["endpointResults"][number]["parsed"],
 ): void {
   if (!parsed) return;
+  const insertSourceItem = store.db.prepare(
+    "insert or replace into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
+  const insertEntityCandidate = store.db.prepare(
+    "insert or replace into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, branch, cluster, official_url, confidence, duplicate_hint, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from entity_candidates where candidate_id = ?), 'pending'))",
+  );
+  const insertEntityCandidateEvidence = store.db.prepare(
+    "insert or replace into entity_candidate_evidence(evidence_id, candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
+  );
+  const insertRelationshipCandidate = store.db.prepare(
+    "insert or replace into relationship_candidates(relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from relationship_candidates where relationship_candidate_id = ?), 'pending'))",
+  );
+  const insertRelationshipCandidateEvidence = store.db.prepare(
+    "insert or replace into relationship_candidate_evidence(evidence_id, relationship_candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
+  );
+  const insertReviewItem = store.db.prepare(
+    "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
+  );
   for (const field of parsed.fields ?? []) {
     const artifactRecord = artifactAt(artifactRecords, field.artifactIndex);
     run(
@@ -204,9 +222,8 @@ function importParsedOutput(
       artifactIndex: item.artifactIndex ?? 0,
       artifactPath: artifactRecord.artifactPath,
     });
-    run(
-      store.db,
-      "insert or replace into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    runPrepared(
+      insertSourceItem,
       [
         sourceItemId,
         sourceId,
@@ -222,9 +239,8 @@ function importParsedOutput(
   }
   for (const candidate of parsed.entityCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
-    run(
-      store.db,
-      "insert or replace into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, branch, cluster, official_url, confidence, duplicate_hint, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from entity_candidates where candidate_id = ?), 'pending'))",
+    runPrepared(
+      insertEntityCandidate,
       [
         candidate.candidateId,
         sourceItem.sourceItemId,
@@ -246,9 +262,8 @@ function importParsedOutput(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
       );
-      run(
-        store.db,
-        "insert or replace into entity_candidate_evidence(evidence_id, candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
+      runPrepared(
+        insertEntityCandidateEvidence,
         [
           `${candidate.candidateId}:${index}`,
           candidate.candidateId,
@@ -263,9 +278,8 @@ function importParsedOutput(
   }
   for (const candidate of parsed.relationshipCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
-    run(
-      store.db,
-      "insert or replace into relationship_candidates(relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from relationship_candidates where relationship_candidate_id = ?), 'pending'))",
+    runPrepared(
+      insertRelationshipCandidate,
       [
         candidate.relationshipCandidateId,
         sourceItem.sourceItemId,
@@ -282,9 +296,8 @@ function importParsedOutput(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
       );
-      run(
-        store.db,
-        "insert or replace into relationship_candidate_evidence(evidence_id, relationship_candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values(?, ?, ?, ?, ?, ?, ?)",
+      runPrepared(
+        insertRelationshipCandidateEvidence,
         [
           `${candidate.relationshipCandidateId}:${index}`,
           candidate.relationshipCandidateId,
@@ -417,9 +430,8 @@ function importParsedOutput(
       continue;
     }
     const resolvedReviewItem = reviewItemWithWorkbenchContext(store, reviewItem);
-    run(
-      store.db,
-      "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
+    runPrepared(
+      insertReviewItem,
       [
         resolvedReviewItem.reviewItemId,
         resolvedReviewItem.itemType,
@@ -434,6 +446,13 @@ function importParsedOutput(
       ],
     );
   }
+}
+
+function runPrepared(
+  statement: ReturnType<WorkbenchStore["db"]["prepare"]>,
+  params: unknown[],
+): void {
+  statement.run(...(params as never[]));
 }
 
 function reviewItemWithWorkbenchContext(
