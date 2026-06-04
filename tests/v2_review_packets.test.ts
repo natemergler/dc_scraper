@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Workbench } from "../src/v2/workbench.ts";
 import { listReviewPackets } from "../src/v2/workbench/review_packets.ts";
@@ -387,7 +387,7 @@ Deno.test("review packets split deferred relationship work by target and defer r
       fromEntityRef: "dc.department_of_buildings",
       toEntityRef: "dc.committee_on_health",
       relationshipType: "overseen_by",
-      rawValue: "Department of Buildings (including construction codes)",
+      rawValue: "Department of Buildings (excluding construction codes)",
       needsReview: true,
     }),
     dataDir,
@@ -430,30 +430,12 @@ Deno.test("review packets split deferred relationship work by target and defer r
       whyDeferred?: string;
     }>;
   };
-  assertEquals(body.count, 3);
-  const namedHealthPacket = body.packets.find((packet) =>
-    packet.toEntityRef === "dc.committee_on_health" && packet.count === 2
-  );
-  assertEquals(namedHealthPacket?.sourceId, "council.committees");
-  assertEquals(namedHealthPacket?.relationshipType, "overseen_by");
-  assertStringIncludes(
-    namedHealthPacket?.whyDeferred ?? "",
-    "conservative Council oversight defer list",
-  );
-  assert(
-    body.packets.some((packet) =>
-      packet.count === 1 &&
-      packet.toEntityRef === "dc.committee_of_the_whole" &&
-      (packet.whyDeferred ?? "").includes("conservative Council oversight defer list")
-    ),
-  );
-  assert(
-    body.packets.some((packet) =>
-      packet.count === 1 &&
-      packet.toEntityRef === "dc.committee_on_health" &&
-      (packet.whyDeferred ?? "").includes("Scoped oversight text")
-    ),
-  );
+  assertEquals(body.count, 1);
+  assertEquals(body.packets[0]?.sourceId, "council.committees");
+  assertEquals(body.packets[0]?.relationshipType, "overseen_by");
+  assertEquals(body.packets[0]?.count, 1);
+  assertEquals(body.packets[0]?.toEntityRef, "dc.committee_on_health");
+  assertStringIncludes(body.packets[0]?.whyDeferred ?? "", "exclusion wording");
 });
 
 Deno.test("review packet limits apply after grouping related work", async () => {

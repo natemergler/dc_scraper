@@ -3565,7 +3565,7 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
   );
 });
 
-Deno.test("Council classified remaining oversight endpoints default to defer", async () => {
+Deno.test("Council oversight targets default to accept except exclusion text", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -3582,6 +3582,9 @@ Deno.test("Council classified remaining oversight endpoints default to defer", a
               <li>Department of Health</li>
               <li>Cedar Hill Hospital</li>
               <li>Committee on Facilities and Procurement</li>
+              <li>Department of Buildings (including construction codes)</li>
+              <li>Office of the Attorney General (jointly, only for oversight purposes, with the Committee on the Judiciary and Public Safety)</li>
+              <li>Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)</li>
               <li>All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health</li>
             </ul>
           </body></html>`;
@@ -3603,14 +3606,28 @@ Deno.test("Council classified remaining oversight endpoints default to defer", a
   const facilitiesItem = items.find((item) =>
     item.details.rawValue === "Committee on Facilities and Procurement"
   );
+  const includingItem = items.find((item) =>
+    item.details.rawValue === "Department of Buildings (including construction codes)"
+  );
+  const jointlyItem = items.find((item) =>
+    item.details.rawValue ===
+      "Office of the Attorney General (jointly, only for oversight purposes, with the Committee on the Judiciary and Public Safety)"
+  );
+  const excludingItem = items.find((item) =>
+    item.details.rawValue ===
+      "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)"
+  );
   const groupedItem = items.find((item) =>
     item.details.rawValue ===
       "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health"
   );
 
   assertEquals(healthItem?.defaultAction, "accept");
-  assertEquals(cedarHillItem?.defaultAction, "defer");
-  assertEquals(facilitiesItem?.defaultAction, "defer");
+  assertEquals(cedarHillItem?.defaultAction, "accept");
+  assertEquals(facilitiesItem?.defaultAction, "accept");
+  assertEquals(includingItem?.defaultAction, "accept");
+  assertEquals(jointlyItem?.defaultAction, "accept");
+  assertEquals(excludingItem?.defaultAction, "defer");
   assertEquals(groupedItem, undefined);
 });
 
@@ -4245,7 +4262,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       fromEntityRef: "dc.corrections_information_council",
       toEntityRef: "dc.council_of_the_district_of_columbia",
       relationshipType: "overseen_by",
-      rawValue: "Corrections Information Council",
+      rawValue: "Corrections Information Council (excluding archived records)",
       needsReview: true,
     }),
     dataDir,
@@ -5853,7 +5870,7 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
     <ul>
       <li>Department of Health</li>
       <li>Cedar Hill Hospital</li>
-      <li>All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health</li>
+      <li>Department of Buildings (excluding construction codes)</li>
     </ul>
   </body></html>`;
   const fetcher = async (url: string) => ({
