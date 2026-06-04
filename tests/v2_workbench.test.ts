@@ -6677,7 +6677,7 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
   assertEquals(deferredOther.length, 1);
 });
 
-Deno.test("batch defer-default skips accept-default raw-value substring slices", async () => {
+Deno.test("batch defer-default leaves auto-materialized accept-default relationship slices alone", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -6696,8 +6696,9 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
   }
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
-      sourceId: "test.defer_default.accept_relationship",
-      relationshipCandidateId: "relationship.test.defer_default.accept_relationship.health",
+      sourceId: "council.committees",
+      relationshipCandidateId:
+        "relationship.council.committees.defer_default.accept_relationship.health",
       sourceItemKey: "defer-default-accept-health-row",
       fromEntityRef: "dc.accept_default_test_parent",
       toEntityRef: "dc.accept_default_test_committee",
@@ -6728,7 +6729,7 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
       "--relationship-type",
       "overseen_by",
       "--subject-prefix",
-      "relationship.test.defer_default.accept_relationship",
+      "relationship.council.committees.defer_default.accept_relationship",
       "--raw-value-contains",
       "Health",
       "--db",
@@ -6742,10 +6743,6 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
     new TextDecoder().decode(deferOutput.stdout),
     "Deferred 0 default-defer review item(s).",
   );
-  assertStringIncludes(
-    new TextDecoder().decode(deferOutput.stdout),
-    "Skipped 1 item(s) whose default action was not defer.",
-  );
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -6753,18 +6750,24 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
     mode: "relationships",
     status: "deferred",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.test.defer_default.accept_relationship",
+    subjectPrefix: "relationship.council.committees.defer_default.accept_relationship",
     rawValueContains: "Health",
   });
   const openOversight = reopened.listReviewItems({
     mode: "relationships",
     status: "open",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.test.defer_default.accept_relationship",
+    subjectPrefix: "relationship.council.committees.defer_default.accept_relationship",
   });
+  const acceptedRelationship = reopened.db.prepare(
+    `select count(*) as count
+     from canonical_relationships
+     where relationship_id = 'dc.accept_default_test_parent:overseen_by:dc.accept_default_test_committee'`,
+  ).get() as { count: number };
   reopened.close();
   assertEquals(deferredHealth.length, 0);
-  assertEquals(openOversight.length, 1);
+  assertEquals(openOversight.length, 0);
+  assertEquals(acceptedRelationship.count, 1);
 });
 
 Deno.test("plain batch defer is not available", async () => {

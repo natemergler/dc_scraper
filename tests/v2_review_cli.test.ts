@@ -749,7 +749,7 @@ Deno.test("interactive review starts with an inbox summary for the current slice
   assertStringIncludes(stdout, "Choose a packet by the decision it will put in front of you:");
   assertStringIncludes(
     stdout,
-    "1. [recommended] Committee on Health - test.review_cli.inbox overseen_by [default accept; packet 2 open]",
+    "1. [recommended] Alt Agency - test.review_cli.inbox overseen_by [default defer; packet 1 open]",
   );
 });
 
