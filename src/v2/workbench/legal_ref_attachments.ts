@@ -38,7 +38,7 @@ function refreshLegalRefAttachment(
   if (
     attachment.attachEntityRef &&
     isAcceptedCanonicalEntity(store, attachment.attachEntityRef) &&
-    !hasMatchingUnacceptedEntityCandidate(
+    !hasMatchingPendingEntityCandidate(
       store,
       attachment.sourceItemId,
       attachment.attachEntityRef,
@@ -58,7 +58,7 @@ function refreshLegalRefAttachment(
   }
 }
 
-function hasMatchingUnacceptedEntityCandidate(
+function hasMatchingPendingEntityCandidate(
   store: Pick<WorkbenchStore, "db">,
   sourceItemId: string,
   entityId: string,
@@ -71,8 +71,7 @@ function hasMatchingUnacceptedEntityCandidate(
        and proposed_entity_id = ?`,
     [sourceItemId, entityId],
   );
-  return candidates.length > 0 &&
-    candidates.every((candidate) => candidate.reviewStatus !== "accepted");
+  return candidates.some((candidate) => candidate.reviewStatus === "pending");
 }
 
 function isAcceptedCanonicalEntity(
