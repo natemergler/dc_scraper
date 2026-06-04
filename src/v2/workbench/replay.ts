@@ -44,7 +44,21 @@ interface RelationshipReplayDecisionRow {
   resolvedToEntityId?: string | null;
 }
 
+interface EntityReplayDecisionRow {
+  factSignature: string;
+  eventType: string;
+  evidenceHash?: string | null;
+  resolvedEntityId?: string | null;
+}
+
 interface RelationshipReplayReviewDecisionRow {
+  factSignature: string;
+  eventType: string;
+  reviewItemId: string;
+  evidenceHash?: string | null;
+}
+
+interface EntityReplayReviewDecisionRow {
   factSignature: string;
   eventType: string;
   reviewItemId: string;
@@ -56,10 +70,24 @@ interface RelationshipReplayCandidateRow {
   reviewStatus: string;
 }
 
+interface EntityReplayCandidateRow {
+  candidateId: string;
+  reviewStatus: string;
+}
+
 interface RelationshipReplayReviewItemRow {
   relationshipCandidateId: string;
   reviewItemId: string;
   reason: string;
+  detailsJson: string;
+  status: string;
+}
+
+interface EntityReplayReviewItemRow {
+  candidateId: string;
+  reviewItemId: string;
+  reason: string;
+  defaultAction: string;
   detailsJson: string;
   status: string;
 }
@@ -102,53 +130,59 @@ export async function reuseOrMarkStaleEntityDecisions(
   store: WorkbenchStore,
   hints: EntityDecisionHint[],
 ): Promise<void> {
+  const priorDecisionsByFactSignature = latestEntityReplayDecisionsByFactSignature(
+    store,
+    hints.map((hint) => hint.factSignature),
+  );
+  const factSignaturesMissingAcceptReject = hints
+    .filter((hint) => !priorDecisionsByFactSignature.get(hint.factSignature)?.evidenceHash)
+    .map((hint) => hint.factSignature);
+  const priorMergeDecisionsByFactSignature = latestEntityMergeReplayDecisionsByFactSignature(
+    store,
+    factSignaturesMissingAcceptReject,
+  );
+  const decisionByFactSignature = new Map<string, EntityReplayDecisionRow>();
+  for (const [factSignature, decision] of priorMergeDecisionsByFactSignature.entries()) {
+    decisionByFactSignature.set(factSignature, decision);
+  }
+  for (const [factSignature, decision] of priorDecisionsByFactSignature.entries()) {
+    if (decision.evidenceHash) decisionByFactSignature.set(factSignature, decision);
+  }
+  const exactReplayHints = hints.filter((hint) =>
+    decisionByFactSignature.get(hint.factSignature)?.evidenceHash === hint.evidenceHash
+  );
+  const staleOrDeferredHints = hints.filter((hint) =>
+    decisionByFactSignature.get(hint.factSignature)?.evidenceHash !== hint.evidenceHash
+  );
+  const priorReviewDecisionsByFactSignature = latestEntityReplayReviewDecisionsByFactSignature(
+    store,
+    staleOrDeferredHints
+      .filter((hint) => !decisionByFactSignature.get(hint.factSignature)?.evidenceHash)
+      .map((hint) => hint.factSignature),
+  );
+  const candidatesById = entityReplayCandidatesById(
+    store,
+    exactReplayHints.map((hint) => hint.candidateId),
+  );
+  const reviewItemsByCandidateId = entityReplayReviewItemsByCandidateId(
+    store,
+    staleOrDeferredHints.map((hint) => hint.candidateId),
+  );
   let changed = false;
   for (const hint of hints) {
-    const priorDecision = queryOne<{
-      eventType: string;
-      evidenceHash?: string | null;
-      resolvedEntityId?: string | null;
-    }>(
-      store.db,
-      `select event_type as eventType,
-              json_extract(payload_json, '$.evidence_hash') as evidenceHash,
-              json_extract(payload_json, '$.resolved_entity_id') as resolvedEntityId
-       from resolution_events
-       where event_type in ('accept_entity_candidate', 'reject_entity_candidate')
-         and json_extract(payload_json, '$.fact_signature') = ?
-       order by created_at desc, event_id desc
-       limit 1`,
-      [hint.factSignature],
-    );
-    const priorMergeDecision = priorDecision?.evidenceHash ? undefined : queryOne<{
-      eventType: string;
-      evidenceHash?: string | null;
-      resolvedEntityId?: string | null;
-    }>(
-      store.db,
-      `select resolution_events.event_type as eventType,
-                json_extract(json_each.value, '$.evidence_hash') as evidenceHash,
-                json_extract(json_each.value, '$.resolved_entity_id') as resolvedEntityId
-         from resolution_events,
-              json_each(resolution_events.payload_json, '$.candidate_replays')
-         where resolution_events.event_type = 'merge_entity_candidates'
-           and json_extract(json_each.value, '$.fact_signature') = ?
-         order by resolution_events.created_at desc, resolution_events.event_id desc
-         limit 1`,
-      [hint.factSignature],
-    );
-    const decision = priorDecision?.evidenceHash ? priorDecision : priorMergeDecision;
+    const decision = decisionByFactSignature.get(hint.factSignature);
     if (!decision?.evidenceHash) {
-      reuseOrMarkStaleDeferredEntityReview(store, hint);
+      reuseOrMarkStaleDeferredEntityReview(
+        store,
+        hint,
+        priorReviewDecisionsByFactSignature.get(hint.factSignature),
+        reviewItemsByCandidateId.get(hint.candidateId),
+      );
       continue;
     }
 
     if (decision.evidenceHash === hint.evidenceHash) {
-      const candidate = queryOne<{ reviewStatus: string }>(
-        store.db,
-        "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
-        [hint.candidateId],
-      );
+      const candidate = candidatesById.get(hint.candidateId);
       if (!candidate) continue;
       if (
         decision.eventType === "accept_entity_candidate" ||
@@ -191,19 +225,7 @@ export async function reuseOrMarkStaleEntityDecisions(
       continue;
     }
 
-    const reviewItem = queryOne<{
-      reason: string;
-      defaultAction: string;
-      detailsJson: string;
-    }>(
-      store.db,
-      `select reason,
-              default_action as defaultAction,
-              details_json as detailsJson
-       from review_items
-       where subject_id = ? and item_type = 'entity_candidate'`,
-      [hint.candidateId],
-    );
+    const reviewItem = reviewItemsByCandidateId.get(hint.candidateId);
     if (!reviewItem) continue;
     const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
     const priorDecisionState = decision.eventType === "accept_entity_candidate"
@@ -523,42 +545,13 @@ function markEntityReplayConflict(
 function reuseOrMarkStaleDeferredEntityReview(
   store: WorkbenchStore,
   hint: EntityDecisionHint,
+  priorReviewDecision?: EntityReplayReviewDecisionRow,
+  reviewItem?: EntityReplayReviewItemRow,
 ): void {
-  const priorReviewDecision = queryOne<{
-    eventType: string;
-    reviewItemId: string;
-    evidenceHash?: string | null;
-  }>(
-    store.db,
-    `select event_type as eventType,
-            subject_id as reviewItemId,
-            json_extract(payload_json, '$.evidence_hash') as evidenceHash
-     from resolution_events
-     where event_type in ('defer_review_item', 'reopen_review_item')
-       and json_extract(payload_json, '$.fact_signature') = ?
-     order by created_at desc, event_id desc
-     limit 1`,
-    [hint.factSignature],
-  );
   if (!priorReviewDecision?.evidenceHash || priorReviewDecision.eventType !== "defer_review_item") {
     return;
   }
 
-  const reviewItem = queryOne<{
-    reviewItemId: string;
-    reason: string;
-    detailsJson: string;
-    status: string;
-  }>(
-    store.db,
-    `select review_item_id as reviewItemId,
-            reason,
-            details_json as detailsJson,
-            status
-     from review_items
-     where subject_id = ? and item_type = 'entity_candidate'`,
-    [hint.candidateId],
-  );
   if (!reviewItem || reviewItem.status === "resolved") return;
   if (priorReviewDecision.reviewItemId !== reviewItem.reviewItemId) {
     run(
@@ -599,6 +592,138 @@ function reuseOrMarkStaleDeferredEntityReview(
       nowIso(),
       hint.candidateId,
     ],
+  );
+}
+
+function latestEntityReplayDecisionsByFactSignature(
+  store: WorkbenchStore,
+  factSignatures: string[],
+): Map<string, EntityReplayDecisionRow> {
+  return new Map(
+    queryRowsByValues<EntityReplayDecisionRow>(
+      store,
+      factSignatures,
+      (placeholders) => `
+        with ranked as (
+          select json_extract(payload_json, '$.fact_signature') as factSignature,
+                 event_type as eventType,
+                 json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+                 json_extract(payload_json, '$.resolved_entity_id') as resolvedEntityId,
+                 row_number() over (
+                   partition by json_extract(payload_json, '$.fact_signature')
+                   order by created_at desc, event_id desc
+                 ) as rowNumber
+          from resolution_events
+          where event_type in ('accept_entity_candidate', 'reject_entity_candidate')
+            and json_extract(payload_json, '$.fact_signature') in (${placeholders})
+        )
+        select factSignature, eventType, evidenceHash, resolvedEntityId
+        from ranked
+        where rowNumber = 1
+      `,
+    ).map((row) => [row.factSignature, row]),
+  );
+}
+
+function latestEntityMergeReplayDecisionsByFactSignature(
+  store: WorkbenchStore,
+  factSignatures: string[],
+): Map<string, EntityReplayDecisionRow> {
+  return new Map(
+    queryRowsByValues<EntityReplayDecisionRow>(
+      store,
+      factSignatures,
+      (placeholders) => `
+        with ranked as (
+          select json_extract(json_each.value, '$.fact_signature') as factSignature,
+                 resolution_events.event_type as eventType,
+                 json_extract(json_each.value, '$.evidence_hash') as evidenceHash,
+                 json_extract(json_each.value, '$.resolved_entity_id') as resolvedEntityId,
+                 row_number() over (
+                   partition by json_extract(json_each.value, '$.fact_signature')
+                   order by resolution_events.created_at desc, resolution_events.event_id desc
+                 ) as rowNumber
+          from resolution_events,
+               json_each(resolution_events.payload_json, '$.candidate_replays')
+          where resolution_events.event_type = 'merge_entity_candidates'
+            and json_extract(json_each.value, '$.fact_signature') in (${placeholders})
+        )
+        select factSignature, eventType, evidenceHash, resolvedEntityId
+        from ranked
+        where rowNumber = 1
+      `,
+    ).map((row) => [row.factSignature, row]),
+  );
+}
+
+function latestEntityReplayReviewDecisionsByFactSignature(
+  store: WorkbenchStore,
+  factSignatures: string[],
+): Map<string, EntityReplayReviewDecisionRow> {
+  return new Map(
+    queryRowsByValues<EntityReplayReviewDecisionRow>(
+      store,
+      factSignatures,
+      (placeholders) => `
+        with ranked as (
+          select json_extract(payload_json, '$.fact_signature') as factSignature,
+                 event_type as eventType,
+                 subject_id as reviewItemId,
+                 json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+                 row_number() over (
+                   partition by json_extract(payload_json, '$.fact_signature')
+                   order by created_at desc, event_id desc
+                 ) as rowNumber
+          from resolution_events
+          where event_type in ('defer_review_item', 'reopen_review_item')
+            and json_extract(payload_json, '$.fact_signature') in (${placeholders})
+        )
+        select factSignature, eventType, reviewItemId, evidenceHash
+        from ranked
+        where rowNumber = 1
+      `,
+    ).map((row) => [row.factSignature, row]),
+  );
+}
+
+function entityReplayCandidatesById(
+  store: WorkbenchStore,
+  candidateIds: string[],
+): Map<string, EntityReplayCandidateRow> {
+  return new Map(
+    queryRowsByValues<EntityReplayCandidateRow>(
+      store,
+      candidateIds,
+      (placeholders) => `
+        select candidate_id as candidateId,
+               review_status as reviewStatus
+        from entity_candidates
+        where candidate_id in (${placeholders})
+      `,
+    ).map((row) => [row.candidateId, row]),
+  );
+}
+
+function entityReplayReviewItemsByCandidateId(
+  store: WorkbenchStore,
+  candidateIds: string[],
+): Map<string, EntityReplayReviewItemRow> {
+  return new Map(
+    queryRowsByValues<EntityReplayReviewItemRow>(
+      store,
+      candidateIds,
+      (placeholders) => `
+        select subject_id as candidateId,
+               review_item_id as reviewItemId,
+               reason,
+               default_action as defaultAction,
+               details_json as detailsJson,
+               status
+        from review_items
+        where item_type = 'entity_candidate'
+          and subject_id in (${placeholders})
+      `,
+    ).map((row) => [row.candidateId, row]),
   );
 }
 

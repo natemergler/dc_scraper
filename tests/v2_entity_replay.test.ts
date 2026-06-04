@@ -2,6 +2,10 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import {
+  buildEntityDecisionHint,
+  reuseOrMarkStaleEntityDecisions,
+} from "../src/v2/workbench/replay.ts";
 import { canBatchAcceptReviewItem } from "../src/v2/workbench/review_batch.ts";
 import {
   syntheticCustomEntitySourceResult,
@@ -1056,3 +1060,141 @@ Deno.test("missing resolved merge target returns unchanged entity refetch to rev
     "prior merged decision could not be replayed because resolved entity dc.existing_board is missing",
   );
 });
+
+Deno.test("entity replay batches prior-decision lookups across refetched candidates", async () => {
+  const one = await countEntityReplayPrepares(1);
+  const many = await countEntityReplayPrepares(8);
+
+  assertEquals(one.acceptRejectDecisionQueries, 1);
+  assertEquals(one.mergeDecisionQueries, 0);
+  assertEquals(one.deferReviewDecisionQueries, 0);
+  assertEquals(one.candidateStatusQueries, 1);
+  assertEquals(one.reviewItemQueries, 0);
+
+  assertEquals(many.acceptRejectDecisionQueries, 1);
+  assertEquals(many.mergeDecisionQueries, 0);
+  assertEquals(many.deferReviewDecisionQueries, 0);
+  assertEquals(many.candidateStatusQueries, 1);
+  assertEquals(many.reviewItemQueries, 0);
+});
+
+async function countEntityReplayPrepares(candidateCount: number): Promise<{
+  acceptRejectDecisionQueries: number;
+  mergeDecisionQueries: number;
+  deferReviewDecisionQueries: number;
+  candidateStatusQueries: number;
+  reviewItemQueries: number;
+}> {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const hints = [];
+  for (let index = 0; index < candidateCount; index += 1) {
+    const sourceItemKey = `bulk-entity-row-${index}`;
+    const firstCandidateId = `candidate.test.signature.entities.bulk_${index}_v1`;
+    await workbench.importConnectorResult(
+      syntheticCustomEntitySourceResult({
+        sourceId: "test.signature.entities",
+        candidateId: firstCandidateId,
+        sourceItemKey,
+        proposedEntityId: `dc.bulk_entity_${index}`,
+        name: `Bulk Entity ${index}`,
+        kind: "board",
+        observedName: `Bulk Entity ${index}`,
+        confidence: 0.95,
+      }),
+      dataDir,
+    );
+    await workbench.appendResolutionEvent(
+      {
+        eventType: "accept_entity_candidate",
+        subjectId: firstCandidateId,
+        payload: {},
+      },
+      resolutionsDir,
+    );
+
+    const secondCandidateId = `candidate.test.signature.entities.bulk_${index}_v2`;
+    const secondResult = syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: secondCandidateId,
+      sourceItemKey,
+      proposedEntityId: `dc.bulk_entity_${index}`,
+      name: `Bulk Entity ${index}`,
+      kind: "board",
+      observedName: `Bulk Entity ${index}`,
+      confidence: 0.95,
+    });
+    await workbench.importConnectorResult(secondResult, dataDir);
+    const endpointResult = secondResult.endpointResults[0];
+    assert(endpointResult);
+    const parsed = endpointResult.parsed;
+    assert(parsed);
+    const entityCandidate = parsed.entityCandidates?.[0];
+    assert(entityCandidate);
+    hints.push(
+      await buildEntityDecisionHint(
+        secondResult.source.sourceId,
+        entityCandidate,
+      ),
+    );
+  }
+
+  let acceptRejectDecisionQueries = 0;
+  let mergeDecisionQueries = 0;
+  let deferReviewDecisionQueries = 0;
+  let candidateStatusQueries = 0;
+  let reviewItemQueries = 0;
+  const store = {
+    db: {
+      exec(sql: string) {
+        return workbench.db.exec(sql);
+      },
+      prepare(sql: string) {
+        if (sql.includes("accept_entity_candidate', 'reject_entity_candidate")) {
+          acceptRejectDecisionQueries += 1;
+        }
+        if (
+          sql.includes("merge_entity_candidates") &&
+          sql.includes("candidate_replays")
+        ) {
+          mergeDecisionQueries += 1;
+        }
+        if (sql.includes("defer_review_item', 'reopen_review_item")) {
+          deferReviewDecisionQueries += 1;
+        }
+        if (
+          sql.includes("from entity_candidates") &&
+          sql.includes("review_status as reviewStatus")
+        ) {
+          candidateStatusQueries += 1;
+        }
+        if (
+          sql.includes("from review_items") &&
+          sql.includes("item_type = 'entity_candidate'") &&
+          sql.includes("subject_id in")
+        ) {
+          reviewItemQueries += 1;
+        }
+        return workbench.db.prepare(sql);
+      },
+    },
+  };
+
+  await reuseOrMarkStaleEntityDecisions(
+    store as unknown as Parameters<typeof reuseOrMarkStaleEntityDecisions>[0],
+    hints,
+  );
+  workbench.close();
+  return {
+    acceptRejectDecisionQueries,
+    mergeDecisionQueries,
+    deferReviewDecisionQueries,
+    candidateStatusQueries,
+    reviewItemQueries,
+  };
+}
