@@ -36,5 +36,5 @@ Operator notes:
 - Do not push from pre-rewrite local branches unless they are first rebased or recreated from the
   rewritten remote branch.
 - Keep local workbench data under ignored paths.
-- If an ignored local workbench DB is from an older schema or drifts out of the current schema
-  contract, rebuild and refetch it. Do not silently repair or commit generated local data.
+- If an ignored local workbench DB is outside the current schema contract, rebuild and refetch it.
+  Do not silently repair or commit generated local data.

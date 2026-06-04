@@ -17,5 +17,6 @@ The live v2 workbench uses SQLite as the local index, review, and release-prepar
 ## Consequences
 
 - The product supports creating a new current-schema workbench or reopening a current-schema
-  workbench. Older ignored local DBs are rebuildable scratch state, not a compatibility promise.
+  workbench. Non-current ignored local DBs are rebuildable scratch state, not a compatibility
+  promise.
 - Release SQLite is rebuilt from whitelisted public tables, not copied from the workbench.

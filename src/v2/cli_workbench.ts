@@ -21,7 +21,7 @@ export async function handleWorkbenchCommand(
     }
     const meta = await deps.initWorkbench();
     console.log(`Initialized v2 workbench: ${meta.dbPath}`);
-    console.log(`Schema version: ${meta.schemaVersion}`);
+    console.log(`Schema version: ${meta.schema.version}`);
     return true;
   }
   return false;

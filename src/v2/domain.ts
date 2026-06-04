@@ -43,8 +43,7 @@ export type RelationshipType =
 
 export interface WorkbenchMeta {
   dbPath: string;
-  schemaVersion: number;
-  schemaMarkers: Array<{ version: number; name: string; appliedAt: string }>;
+  schema: { version: number; name: string; initializedAt: string };
 }
 
 export interface SourceDefinition {

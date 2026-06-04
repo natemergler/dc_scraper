@@ -2,16 +2,16 @@ import { nowIso, type WorkbenchMeta } from "../domain.ts";
 import { queryAll, run, withTransaction } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
-export interface SchemaMarkerRow {
+export interface WorkbenchSchemaRow {
   version: number;
   name: string;
-  appliedAt: string;
+  initializedAt: string;
 }
 
-const CURRENT_SCHEMA_VERSION = 16;
-const CURRENT_SCHEMA_NAME = "v2_current_workbench_schema";
+const WORKBENCH_SCHEMA_VERSION = 16;
+const WORKBENCH_SCHEMA_NAME = "v2_current_workbench_schema";
 
-const CURRENT_SCHEMA_SQL = `create table sources(
+const CREATE_WORKBENCH_SQL = `create table sources(
   source_id text primary key,
   title text not null,
   kind text not null,
@@ -258,7 +258,7 @@ create index reconciliation_blockers_subject_idx on reconciliation_blockers(subj
 `;
 
 const EXPECTED_TABLES = new Set([
-  "schema_markers",
+  "workbench_schema",
   "sources",
   "source_endpoints",
   "source_runs",
@@ -314,10 +314,10 @@ function unsupportedWorkbenchMessage(version: number): string {
   return `Unsupported local workbench schema version ${version}. Rebuild this ignored local DB or point --db at a current workbench.`;
 }
 
-function schemaMarkerTableExists(store: WorkbenchStore): boolean {
+function workbenchSchemaTableExists(store: WorkbenchStore): boolean {
   const rows = queryAll<{ name: string }>(
     store.db,
-    "select name from sqlite_master where type = 'table' and name = 'schema_markers'",
+    "select name from sqlite_master where type = 'table' and name = 'workbench_schema'",
   );
   return rows.length > 0;
 }
@@ -342,13 +342,13 @@ function userIndexNames(store: WorkbenchStore): Set<string> {
 
 function assertCurrentWorkbenchSchema(
   store: WorkbenchStore,
-  markerRows: SchemaMarkerRow[],
+  schemaRow: WorkbenchSchemaRow | undefined,
 ): void {
-  const version = markerRows.at(-1)?.version ?? 0;
+  const version = schemaRow?.version ?? 0;
   if (
-    markerRows.length !== 1 ||
-    markerRows[0].version !== CURRENT_SCHEMA_VERSION ||
-    markerRows[0].name !== CURRENT_SCHEMA_NAME
+    !schemaRow ||
+    schemaRow.version !== WORKBENCH_SCHEMA_VERSION ||
+    schemaRow.name !== WORKBENCH_SCHEMA_NAME
   ) {
     throw new Error(unsupportedWorkbenchMessage(version));
   }
@@ -365,51 +365,63 @@ function assertCurrentWorkbenchSchema(
 }
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
-  store.db.exec(`
-create table if not exists schema_markers (
-  version integer primary key,
-  name text not null,
-  applied_at text not null
-);
-`);
-  const existingMarkers = queryAll<SchemaMarkerRow>(
-    store.db,
-    "select version, name, applied_at as appliedAt from schema_markers order by version",
-  );
-  if (existingMarkers.length > 0) {
-    assertCurrentWorkbenchSchema(store, existingMarkers);
+  const existingTables = userTableNames(store);
+  if (existingTables.has("workbench_schema")) {
+    const schema = readWorkbenchSchema(store);
+    assertCurrentWorkbenchSchema(store, schema);
     return {
       dbPath: store.dbPath,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      schemaMarkers: existingMarkers,
+      schema,
     };
   }
-  if (userTableNames(store).size > 1) {
+  if (existingTables.size > 0) {
     throw new Error(unsupportedWorkbenchMessage(0));
   }
   withTransaction(store.db, () => {
-    store.db.exec(CURRENT_SCHEMA_SQL);
+    store.db.exec(`
+create table workbench_schema (
+  version integer primary key,
+  name text not null,
+  initialized_at text not null
+);
+`);
+    store.db.exec(CREATE_WORKBENCH_SQL);
     run(
       store.db,
-      "insert into schema_markers(version, name, applied_at) values(?, ?, ?)",
-      [CURRENT_SCHEMA_VERSION, CURRENT_SCHEMA_NAME, nowIso()],
+      "insert into workbench_schema(version, name, initialized_at) values(?, ?, ?)",
+      [WORKBENCH_SCHEMA_VERSION, WORKBENCH_SCHEMA_NAME, nowIso()],
     );
   });
   return readWorkbenchMeta(store);
 }
 
 export function readWorkbenchMeta(store: WorkbenchStore): WorkbenchMeta {
-  if (!schemaMarkerTableExists(store)) {
+  if (!workbenchSchemaTableExists(store)) {
     throw new Error(unsupportedWorkbenchMessage(0));
   }
-  const markerRows = queryAll<SchemaMarkerRow>(
-    store.db,
-    "select version, name, applied_at as appliedAt from schema_markers order by version",
-  );
-  assertCurrentWorkbenchSchema(store, markerRows);
+  const schema = readWorkbenchSchema(store);
+  assertCurrentWorkbenchSchema(store, schema);
   return {
     dbPath: store.dbPath,
-    schemaVersion: markerRows.at(-1)?.version ?? 0,
-    schemaMarkers: markerRows,
+    schema,
   };
+}
+
+function readWorkbenchSchema(store: WorkbenchStore): WorkbenchSchemaRow {
+  const columns = new Set(
+    queryAll<{ name: string }>(store.db, "pragma table_info(workbench_schema)").map((row) =>
+      row.name
+    ),
+  );
+  if (!columns.has("version") || !columns.has("name") || !columns.has("initialized_at")) {
+    throw new Error(unsupportedWorkbenchMessage(0));
+  }
+  const schema = queryAll<WorkbenchSchemaRow>(
+    store.db,
+    "select version, name, initialized_at as initializedAt from workbench_schema",
+  );
+  if (schema.length !== 1) {
+    throw new Error(unsupportedWorkbenchMessage(schema.at(-1)?.version ?? 0));
+  }
+  return schema[0];
 }
