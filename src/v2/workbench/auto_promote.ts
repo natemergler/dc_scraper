@@ -1,10 +1,13 @@
 import { normalizeName, nowIso } from "../domain.ts";
+import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_PROMOTE_SOURCE_ALLOWLIST = new Set([
+  "bega.structure",
   "dcgis.agencies",
   "dcgis.boards_commissions_councils",
+  "dccourts.structure",
   "open_dc.public_bodies",
   "council.members",
   "council.committees",
@@ -35,6 +38,7 @@ interface AutoPromoteCandidateRow {
   confidence?: number | null;
   sourceId: string;
   reviewItemStatus?: string | null;
+  safeToAutoAccept?: number | null;
   stalePriorDecision?: number | null;
   replayConflict?: number | null;
 }
@@ -60,6 +64,7 @@ export function autoPromoteSafeEntityCandidates(store: WorkbenchStore): number {
             entity_candidates.confidence,
             source_items.source_id as sourceId,
             review_items.status as reviewItemStatus,
+            json_extract(review_items.details_json, '$.safeToAutoAccept') as safeToAutoAccept,
             json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
             json_extract(review_items.details_json, '$.replayConflict') as replayConflict
      from entity_candidates
@@ -102,9 +107,15 @@ function groupIsSafeToAutoPromote(
   const primaryCandidates = group.filter((candidate) =>
     !isSeededRelationshipEndpointCandidate(candidate.candidateId)
   );
-  if (primaryCandidates.length === 0) return false;
+  const promotableCandidates = primaryCandidates.length > 0
+    ? primaryCandidates
+    : group.every((candidate) => candidate.safeToAutoAccept === 1)
+    ? group
+    : [];
+  const seededOnlySafeGroup = primaryCandidates.length === 0 && promotableCandidates.length > 0;
+  if (promotableCandidates.length === 0) return false;
   if (
-    primaryCandidates.some((candidate) =>
+    promotableCandidates.some((candidate) =>
       AUTO_PROMOTE_KIND_BLOCKLIST.has(candidate.kind) &&
       !AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST.has(candidate.sourceId)
     )
@@ -112,7 +123,8 @@ function groupIsSafeToAutoPromote(
     return false;
   }
   if (
-    primaryCandidates.some((candidate) =>
+    !seededOnlySafeGroup &&
+    promotableCandidates.some((candidate) =>
       typeof candidate.confidence !== "number" || candidate.confidence < AUTO_PROMOTE_MIN_CONFIDENCE
     )
   ) {
@@ -128,10 +140,10 @@ function groupIsSafeToAutoPromote(
     return false;
   }
 
-  const [first] = primaryCandidates;
+  const [first] = promotableCandidates;
   if (!first) return false;
   if (
-    group.some((candidate) =>
+    promotableCandidates.some((candidate) =>
       candidate.normalizedName !== first.normalizedName || candidate.kind !== first.kind
     )
   ) {
@@ -205,6 +217,7 @@ function acceptEntityCandidateDirect(
     "update entity_candidates set review_status = 'accepted' where candidate_id = ?",
     [candidate.candidateId],
   );
+  refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);
   run(
     store.db,
     "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'entity_candidate'",

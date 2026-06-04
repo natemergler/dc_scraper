@@ -86,6 +86,7 @@ export async function importConnectorResult(
         ),
       )
       : [];
+    const needsDerivedStateRefresh = parsedAffectsDerivedState(parsed);
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
@@ -126,11 +127,15 @@ export async function importConnectorResult(
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
-        autoAcceptSafeLegalRefs(store);
-        autoPromoteSafeEntityCandidates(store);
-        reconcileRelationshipCandidates(store);
+        if (needsDerivedStateRefresh) {
+          autoAcceptSafeLegalRefs(store);
+          autoPromoteSafeEntityCandidates(store);
+          reconcileRelationshipCandidates(store);
+        }
         await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
-        autoAcceptSafeRelationshipCandidates(store);
+        if (needsDerivedStateRefresh) {
+          autoAcceptSafeRelationshipCandidates(store);
+        }
       }
       run(
         store.db,
@@ -146,6 +151,15 @@ export async function importConnectorResult(
       throw error;
     }
   }
+}
+
+function parsedAffectsDerivedState(
+  parsed: ConnectorResult["endpointResults"][number]["parsed"],
+): boolean {
+  if (!parsed) return false;
+  return (parsed.entityCandidates?.length ?? 0) > 0 ||
+    (parsed.relationshipCandidates?.length ?? 0) > 0 ||
+    (parsed.legalRefs?.length ?? 0) > 0;
 }
 
 function importParsedOutput(

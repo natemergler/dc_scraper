@@ -183,28 +183,33 @@ function buildDcgisEntityCandidates(
   source: SourceDefinition,
   items: SourceItemInput[],
 ): EntityCandidateInput[] {
+  const agencyTaxonomyOnly = source.sourceId === "dcgis.agencies";
   const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
-    const name = String(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME ?? item.title);
+    const name = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? item.title;
     return {
       candidateId: buildCandidateId(source.sourceId, item.itemKey),
       sourceItemKey: item.itemKey,
-      proposedEntityId: buildEntityId(name),
+      proposedEntityId: buildKnownEntityRef(name),
       name,
       kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
       rawKind: String(row.TYPE ?? "agency"),
-      branch: maybeString(row.BRANCH),
-      cluster: maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
+      branch: agencyTaxonomyOnly ? undefined : maybeString(row.BRANCH),
+      cluster: agencyTaxonomyOnly ? undefined : maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
       officialUrl: maybeString(row.WEB_URL),
       confidence: 0.95,
       duplicateHint: maybeString(row.WEB_URL),
       evidence: [
         fieldEvidence("NAME", row.AGENCY_NAME ?? row.NAME, 1),
         fieldEvidence("TYPE", row.TYPE, 1),
+        fieldEvidence("BRANCH", row.BRANCH, 1),
+        fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, 1),
         fieldEvidence("WEB_URL", row.WEB_URL, 1),
       ],
     };
   });
+  if (agencyTaxonomyOnly) return agencyCandidates;
+
   const branchCandidates: EntityCandidateInput[] = [];
   const seenBranches = new Set<string>();
   for (const item of items) {
@@ -234,8 +239,9 @@ function buildDcgisRelationshipCandidates(
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
-    const name = String(row.AGENCY_NAME ?? row.NAME ?? item.title);
-    const branch = maybeString(row.BRANCH);
+    const name = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
+    const entityRef = buildKnownEntityRef(name);
+    const branch = source.sourceId === "dcgis.agencies" ? undefined : maybeString(row.BRANCH);
     if (branch) {
       relationshipCandidates.push({
         relationshipCandidateId: buildRelationshipCandidateId(
@@ -243,7 +249,7 @@ function buildDcgisRelationshipCandidates(
           `${item.itemKey}-branch`,
         ),
         sourceItemKey: item.itemKey,
-        fromEntityRef: buildEntityId(name),
+        fromEntityRef: entityRef,
         toEntityRef: buildEntityId(`${branch} Branch`),
         relationshipType: "part_of",
         rawValue: branch,
@@ -260,7 +266,7 @@ function buildDcgisRelationshipCandidates(
         `${item.itemKey}-governing-agency`,
       ),
       sourceItemKey: item.itemKey,
-      fromEntityRef: buildEntityId(name),
+      fromEntityRef: entityRef,
       toEntityRef: buildKnownEntityRef(governingAgency),
       relationshipType: "governed_by",
       rawValue: governingAgency,
@@ -278,7 +284,7 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
-    const entityName = String(row.AGENCY_NAME ?? row.NAME ?? item.title);
+    const entityName = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
     legalRefs.push({
       legalRefId: buildLegalRefId(source.sourceId, `${item.itemKey}-legislation`),
       sourceItemKey: item.itemKey,
@@ -288,7 +294,7 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
       url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
       needsReview: parsed.needsReview,
       evidence: [fieldEvidence("LEGISLATION", legislation, 1)],
-      attachEntityRef: buildEntityId(entityName),
+      attachEntityRef: buildKnownEntityRef(entityName),
     });
   }
   return legalRefs;

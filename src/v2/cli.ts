@@ -85,6 +85,10 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     },
     {
       withWorkbench: async (action) => await withWorkbench(dbPath, action),
+      withInteractiveWorkbench: async (action) =>
+        await withWorkbench(dbPath, action, {
+          refreshDerivedState: false,
+        }),
       withReadonlyWorkbench: async (action) =>
         await withWorkbench(dbPath, action, {
           readonly: true,

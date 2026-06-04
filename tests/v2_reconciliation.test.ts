@@ -9,7 +9,6 @@ import {
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
   dcgisMetadataFixture,
-  dcgisRowsFixture,
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
@@ -386,7 +385,7 @@ Deno.test("relationship imports do not seed endpoint candidates when the endpoin
   assertEquals(blockedCount.count, 0);
 });
 
-Deno.test("council oversight imports seed missing direct source bodies as entity candidates", async () => {
+Deno.test("council oversight imports auto-promote safe direct source bodies and accept the relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -420,19 +419,40 @@ Deno.test("council oversight imports seed missing direct source bodies as entity
     proposedEntityId: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.seeded_oversight_direct'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
+  const entityReviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_seeded_oversight_direct",
+  });
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.child_support_guideline_commission");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(blockedCount.count, 0);
+  assertEquals(entityReviewItems.length, 0);
 });
 
 Deno.test("council oversight imports do not seed broad grouped source bodies as entity candidates", async () => {
@@ -476,7 +496,7 @@ Deno.test("council oversight imports do not seed broad grouped source bodies as 
   assertStringIncludes(blocked.detailsJson, '"state":"missing"');
 });
 
-Deno.test("council oversight imports seed scoped grouped source bodies as base entity candidates", async () => {
+Deno.test("council oversight imports auto-promote scoped grouped base entities and reopen deferred relationship review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -513,20 +533,42 @@ Deno.test("council oversight imports seed scoped grouped source bodies as base e
     name: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_the_chief_financial_officer'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.seeded_oversight_scoped_grouped'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
+  const entityReviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_seeded_oversight_scoped_grouped",
+  });
+  const relationshipReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.council.committees.seeded_oversight_scoped_grouped",
+  });
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.office_of_the_chief_financial_officer");
   assertEquals(seededCandidate.name, "Office of the Chief Financial Officer");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.office_of_the_chief_financial_officer");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(blockedCount.count, 0);
+  assertEquals(entityReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length, 1);
+  assertEquals(relationshipReviewItems[0]?.defaultAction, "defer");
+  assertEquals(
+    relationshipReviewItems[0]?.details.rawValue,
+    "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+  );
 });
 
 Deno.test("council oversight scoped grouped bodies reopen as deferred review when the base entity is accepted", async () => {
@@ -577,6 +619,10 @@ Deno.test("council oversight scoped grouped bodies reopen as deferred review whe
   assertEquals(
     reviewItems[0]?.details.rawValue,
     "Office of Planning (including commemorative works)",
+  );
+  assertEquals(
+    reviewItems[0]?.details.whyDeferred,
+    "Scoped oversight text uses including/excluding/jointly wording, so the exact oversight edge still needs a human decision.",
   );
   assertEquals(blockedCount.count, 0);
 });
@@ -629,24 +675,23 @@ Deno.test("seeded committee endpoint candidates do not block stronger source aut
      where subject_id = 'relationship.council.committees.seeded_oversight_overlap'
        and state = 'blocked'`,
   ).get() as { count: number };
-  const relationshipItems = workbench.listReviewItems({
-    mode: "relationships",
-    subjectPrefix: "relationship.council.committees.seeded_oversight_overlap",
-  });
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.adult_career_pathways_task_force:overseen_by:dc.committee_on_executive_administration_and_labor'`,
+  ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
   assertEquals(canonical?.entityId, "dc.adult_career_pathways_task_force");
   assertEquals(canonical?.reviewStatus, "accepted");
   assertEquals(blockedCount.count, 0);
   assertEquals(
-    relationshipItems.some((item) =>
-      item.subjectId === "relationship.council.committees.seeded_oversight_overlap"
-    ),
-    true,
+    acceptedRelationship?.relationshipId,
+    "dc.adult_career_pathways_task_force:overseen_by:dc.committee_on_executive_administration_and_labor",
   );
 });
 
-Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into review-ready work", async () => {
+Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into accepted relationships", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -696,22 +741,21 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
      where subject_id = 'relationship.council.committees.committee_on_housing_oversight_1'
        and state = 'blocked'`,
   ).get() as { count: number };
-  const relationshipItems = workbench.listReviewItems({
-    mode: "relationships",
-    subjectPrefix: "relationship.council.committees.committee_on_housing_oversight_1",
-  });
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.board_of_review_for_anti_deficiency_violations:overseen_by:dc.committee_on_housing'`,
+  ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
   assertEquals(blockedCount.count, 0);
   assertEquals(
-    relationshipItems.some((item) =>
-      item.subjectId === "relationship.council.committees.committee_on_housing_oversight_1"
-    ),
-    true,
+    acceptedRelationship?.relationshipId,
+    "dc.board_of_review_for_anti_deficiency_violations:overseen_by:dc.committee_on_housing",
   );
 });
 
-Deno.test("council oversight legacy exact-name aliases can seed pending candidates for direct bodies", async () => {
+Deno.test("council oversight legacy exact-name aliases can auto-promote direct bodies and accept the relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -763,19 +807,116 @@ Deno.test("council oversight legacy exact-name aliases can seed pending candidat
     proposedEntityId: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.bicycle_advisory_council'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.bicycle_advisory_council:overseen_by:dc.committee_on_transportation_and_the_environment'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.committee_on_transportation_and_the_environment_oversight_1'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.bicycle_advisory_council");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.bicycle_advisory_council");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.bicycle_advisory_council:overseen_by:dc.committee_on_transportation_and_the_environment",
+  );
+  assertEquals(blockedCount.count, 0);
+});
+
+Deno.test("council oversight alias-backed agency names can auto-promote direct bodies and accept the relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-on-health/">Committee on Health</a>
+            </body></html>
+          `;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return `
+            <html><body>
+              <h1>Committee on Health</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Department of Health</li>
+              </ul>
+            </body></html>
+          `;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.council.committees.relationship_council_committees_committee_on_health_oversight_1_from_endpoint'`,
+  ).get() as {
+    candidateId: string;
+    proposedEntityId: string;
+    reviewStatus: string;
+  } | undefined;
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.dc_health'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.dc_health:overseen_by:dc.committee_on_health'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_on_health_oversight_1'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.proposedEntityId, "dc.dc_health");
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.dc_health");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.dc_health:overseen_by:dc.committee_on_health",
+  );
+  assertEquals(blockedCount.count, 0);
 });
 
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
@@ -949,18 +1090,15 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
   for (
-    const [entityId, name] of [
-      ["dc.dc_health", "Department of Health"],
-      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
-    ]
+    const [entityId, name, kind] of [
+      ["dc.office_of_planning", "Office of Planning", "office"],
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+    ] as const
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name);
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
   }
 
   const fetcher = async (url: string) => ({
@@ -968,11 +1106,21 @@ Deno.test("relationship review items are rebuilt from workbench state without co
     text: async () => {
       switch (url) {
         case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
+            </body></html>
+          `;
         case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
+          return `
+            <html><body>
+              <h1>Committee of the Whole</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Office of Planning (including commemorative works)</li>
+              </ul>
+            </body></html>
+          `;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -1005,16 +1153,16 @@ Deno.test("relationship review items are rebuilt from workbench state without co
     relationshipType: "overseen_by",
     subjectPrefix: "relationship.council.committees",
   }).find((reviewItem) =>
-    reviewItem.subjectId === "relationship.council.committees.committee_on_health_oversight_1"
+    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_1"
   );
   workbench.close();
 
   assert(item);
   assertEquals(item.reason, "Review Council committee oversight relationship");
-  assertEquals(item.defaultAction, "accept");
+  assertEquals(item.defaultAction, "defer");
   assertEquals(item.details.relationshipType, "overseen_by");
-  assertEquals(item.details.fromEntityRef, "dc.dc_health");
-  assertEquals(item.details.toEntityRef, "dc.committee_on_health");
+  assertEquals(item.details.fromEntityRef, "dc.office_of_planning");
+  assertEquals(item.details.toEntityRef, "dc.committee_of_the_whole");
 });
 
 Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {
@@ -1154,28 +1302,29 @@ Deno.test("placeholder endpoints keep relationship candidates blocked until the 
   );
 });
 
-Deno.test("relationship review defaults are rebuilt from workbench state without connector relationship review items", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const mixedBranchRowsFixture = {
-    features: [
-      ...dcgisRowsFixture.features,
-      {
-        attributes: {
-          AGENCY_ID: 3001,
-          AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Fund",
-          BRANCH: "Other",
-          MAYORAL_CLUSTER: "",
-          WEB_URL: "",
-          LEGISLATION: "",
-        },
+Deno.test("dcgis agency taxonomy labels stay source evidence instead of canonical fields", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1032,
+        AGENCY_NAME: "Department of Employment Services",
+        TYPE: "Agency",
+        BRANCH: "Executive",
+        MAYORAL_CLUSTER: "Education",
+        WEB_URL: "https://does.dc.gov/",
+        LEGISLATION: "",
       },
-    ],
+    }, {
+      attributes: {
+        AGENCY_ID: 1083,
+        AGENCY_NAME: "Office of the Attorney General",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://oag.dc.gov/",
+        LEGISLATION: "",
+      },
+    }],
   };
 
   const fetcher = async (url: string) => ({
@@ -1185,7 +1334,7 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return JSON.stringify(dcgisMetadataFixture);
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
-          return JSON.stringify(mixedBranchRowsFixture);
+          return JSON.stringify(rowsFixture);
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -1195,7 +1344,7 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return dcgisMetadataFixture as T;
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
-          return mixedBranchRowsFixture as T;
+          return rowsFixture as T;
         default:
           throw new Error(`Unexpected url ${url}`) as T;
       }
@@ -1205,37 +1354,164 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
   const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
   const parsed = result.endpointResults[0]?.parsed;
   if (!parsed) throw new Error("Expected parsed DCGIS output");
-  parsed.reviewItems = (parsed.reviewItems ?? []).filter((item) =>
-    item.itemType !== "relationship_candidate"
+  const doesCandidate = parsed.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1032"
+  );
+  const oagCandidate = parsed.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1083"
   );
 
-  await workbench.importConnectorResult(result, dataDir);
-  for (const item of workbench.listReviewItems({ mode: "entities" })) {
-    await workbench.appendResolutionEvent(
-      {
-        eventType: "accept_entity_candidate",
-        subjectId: item.subjectId,
-        payload: {},
+  assert(doesCandidate);
+  assertEquals(doesCandidate.branch, undefined);
+  assertEquals(doesCandidate.cluster, undefined);
+  assertEquals(
+    doesCandidate.evidence.find((item) => item.fieldPath === "MAYORAL_CLUSTER")?.observedValue,
+    "Education",
+  );
+  assert(oagCandidate);
+  assertEquals(oagCandidate.branch, undefined);
+  assertEquals(oagCandidate.cluster, undefined);
+  assertEquals(
+    oagCandidate.evidence.find((item) => item.fieldPath === "BRANCH")?.observedValue,
+    "Judicial",
+  );
+  assertEquals(parsed.relationshipCandidates?.length ?? 0, 0);
+});
+
+Deno.test("dcgis agency aliases propose shared canonical entity ids", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1014,
+        AGENCY_NAME: "DC Court of Appeals",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://www.dccourts.gov/court-of-appeals",
+        LEGISLATION: "D.C. Code § 11-102",
       },
-      resolutionsDir,
-    );
-  }
-
-  const items = workbench.listReviewItems({
-    mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.dcgis.agencies",
+    }, {
+      attributes: {
+        AGENCY_ID: 1142,
+        AGENCY_NAME: "DC Public Charter School Board ",
+        TYPE: "Board",
+        BRANCH: "Executive",
+        MAYORAL_CLUSTER: "Education",
+        WEB_URL: "https://www.dcpcsb.org/",
+        LEGISLATION: "",
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(rowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return rowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
   });
-  const acceptedRelationships = workbench.db.prepare(
-    "select count(*) as count from canonical_relationships where relationship_type = 'part_of'",
-  ).get() as { count: number };
-  const executiveItem = items.find((item) => item.details.rawValue === "Executive");
-  const otherItem = items.find((item) => item.details.rawValue === "Other");
-  workbench.close();
 
-  assertEquals(executiveItem, undefined);
-  assertEquals(acceptedRelationships.count > 0, true);
-  assertEquals(otherItem?.defaultAction, "defer");
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const candidate = result.endpointResults[0]?.parsed?.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1014"
+  );
+  const branchRelationship = result.endpointResults[0]?.parsed?.relationshipCandidates?.find((
+    item,
+  ) => item.relationshipCandidateId === "relationship.dcgis.agencies.1014_branch");
+  const legalRef = result.endpointResults[0]?.parsed?.legalRefs?.[0];
+  const pcsbCandidate = result.endpointResults[0]?.parsed?.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1142"
+  );
+
+  assert(candidate);
+  assertEquals(candidate.name, "DC Court of Appeals");
+  assertEquals(candidate.proposedEntityId, "dc.court_of_appeals");
+  assertEquals(candidate.branch, undefined);
+  assertEquals(branchRelationship, undefined);
+  assert(legalRef);
+  assertEquals(legalRef.attachEntityRef, "dc.court_of_appeals");
+  assert(pcsbCandidate);
+  assertEquals(pcsbCandidate.name, "DC Public Charter School Board");
+  assertEquals(pcsbCandidate.proposedEntityId, "dc.public_charter_school_board_pcsb");
+});
+
+Deno.test("dcgis agency branch labels do not emit structural relationships", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify({
+            features: [
+              {
+                attributes: {
+                  AGENCY_ID: 3001,
+                  AGENCY_NAME: "Example Residual Agency",
+                  TYPE: "Agency",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+              {
+                attributes: {
+                  AGENCY_ID: 3002,
+                  AGENCY_NAME: "Example Settlement Fund",
+                  TYPE: "Budgetary",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+              {
+                attributes: {
+                  AGENCY_ID: 3003,
+                  AGENCY_NAME: "Example Transit Authority",
+                  TYPE: "Non-DC Government",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+            ],
+          });
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0]?.parsed;
+  if (!parsed) throw new Error("Expected parsed DCGIS output");
+  const otherBranchRelationships = (parsed.relationshipCandidates ?? []).filter((candidate) =>
+    candidate.relationshipType === "part_of"
+  );
+
+  assertEquals(otherBranchRelationships.length, 0);
 });
 
 Deno.test("accepted prerequisite refetch clears stale blocker and reprocesses dependent relationship", async () => {

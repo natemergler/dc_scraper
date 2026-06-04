@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
+import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import {
@@ -119,7 +120,9 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
     stderr: "piped",
   }).spawn();
   const writer = child.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"));
+  await writer.write(
+    new TextEncoder().encode("\nn\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"),
+  );
   await writer.close();
   const output = await child.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -237,7 +240,7 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("a\na\nq\n"));
+  await writer.write(new TextEncoder().encode("\na\na\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -401,7 +404,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -492,6 +495,734 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assert(items.every((item) => item.status === "open"));
 });
 
+Deno.test("interactive review starts with an inbox summary for the current slice", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  seedAcceptedEntity(workbench, "dc.target_agency", "Target Agency", "agency");
+  seedAcceptedEntity(workbench, "dc.alt_agency", "Alt Agency", "agency");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.inbox",
+      relationshipCandidateId: "relationship.test.review_cli.inbox.one",
+      sourceItemKey: "review-cli-inbox-row-one",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Committee on Health",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.inbox",
+      relationshipCandidateId: "relationship.test.review_cli.inbox.two",
+      sourceItemKey: "review-cli-inbox-row-two",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.alt_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Committee on Education",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "relationships",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision inbox");
+  assertStringIncludes(stdout, "Open items in this slice: 2");
+  assertStringIncludes(stdout, "Choose a packet by the decision it will put in front of you:");
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Committee on Health - test.review_cli.inbox overseen_by [default accept; packet 2 open]",
+  );
+});
+
+Deno.test("interactive review gives deferred relationship packets packet-level inbox titles", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.behavioral_health_planning_council",
+    "Behavioral Health Planning Council",
+    "council",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.health_literacy_council",
+    "Health Literacy Council",
+    "council",
+  );
+  seedAcceptedEntity(workbench, "dc.department_of_buildings", "Department of Buildings", "agency");
+  seedAcceptedEntity(workbench, "dc.committee_on_health", "Committee on Health", "committee");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_named.one",
+      sourceItemKey: "review-cli-defer-health-named-one",
+      fromEntityRef: "dc.behavioral_health_planning_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Behavioral Health Planning Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_named.two",
+      sourceItemKey: "review-cli-defer-health-named-two",
+      fromEntityRef: "dc.health_literacy_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Health Literacy Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_scoped",
+      sourceItemKey: "review-cli-defer-health-scoped",
+      fromEntityRef: "dc.department_of_buildings",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Department of Buildings (including construction codes)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "relationships",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision inbox");
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Committee on Health named oversight - council.committees overseen_by [default defer; packet 2 open]",
+  );
+  assertStringIncludes(
+    stdout,
+    "Committee on Health scoped oversight - council.committees overseen_by [default defer; packet 1 open]",
+  );
+});
+
+Deno.test("interactive review gives Quickbase committee-like defer packets subgroup inbox titles", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.advisory_committee_to_the_office_of_administrative_hearings",
+    "Advisory Committee to the Office of Administrative Hearings",
+    "committee",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.child_fatality_review_committee",
+    "Child Fatality Review Committee",
+    "committee",
+  );
+  seedAcceptedEntity(workbench, "dc.public_space_committee", "Public Space Committee", "committee");
+  seedAcceptedEntity(
+    workbench,
+    "dc.council_of_the_district_of_columbia",
+    "Council of the District of Columbia",
+    "council",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.test.review_cli.quickbase.executive",
+      sourceItemKey: "review-cli-quickbase-executive",
+      fromEntityRef: "dc.advisory_committee_to_the_office_of_administrative_hearings",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "overseen_by",
+      rawValue: "Advisory Committee to the Office of Administrative Hearings (OAH)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.test.review_cli.quickbase.review",
+      sourceItemKey: "review-cli-quickbase-review",
+      fromEntityRef: "dc.child_fatality_review_committee",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "overseen_by",
+      rawValue: "Child Fatality Review Committee (CFRC)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.test.review_cli.quickbase.other",
+      sourceItemKey: "review-cli-quickbase-other",
+      fromEntityRef: "dc.public_space_committee",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "overseen_by",
+      rawValue: "Public Space Committee (PSC)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "relationships",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision inbox");
+  assertStringIncludes(
+    stdout,
+    "Executive-anchored committee-like names Council oversight - mota.quickbase overseen_by [default defer; packet 1 open]",
+  );
+  assertStringIncludes(
+    stdout,
+    "Review/fatality committee-like names Council oversight - mota.quickbase overseen_by [default defer; packet 1 open]",
+  );
+  assertStringIncludes(
+    stdout,
+    "Other committee-like names Council oversight - mota.quickbase overseen_by [default defer; packet 1 open]",
+  );
+});
+
+Deno.test("interactive review prioritizes decisions that unblock relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      candidateId: "candidate.test.review_cli.graph_priority.low_impact",
+      sourceItemKey: "graph-priority-low-impact-row",
+      proposedEntityId: "dc.low_impact_board",
+      name: "Low Impact Board",
+      kind: "board",
+      observedName: "Low Impact Board",
+      confidence: 0.4,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      candidateId: "candidate.test.review_cli.graph_priority.unblocking_agency",
+      sourceItemKey: "graph-priority-unblocking-agency-row",
+      proposedEntityId: "dc.unblocking_agency",
+      name: "Unblocking Agency",
+      kind: "agency",
+      observedName: "Unblocking Agency",
+      confidence: 0.4,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.graph_priority",
+      relationshipCandidateId: "relationship.test.review_cli.graph_priority.blocked",
+      sourceItemKey: "graph-priority-blocked-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.unblocking_agency",
+      relationshipType: "overseen_by",
+      rawValue: "Unblocking Agency",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Unblocking Agency - test.review_cli.graph_priority entity candidate [default accept; packet 2 open; unblocks 1]",
+  );
+  assertStringIncludes(stdout, "Lead decision: Unblocking Agency [unblocks 1]");
+  assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
+  assertStringIncludes(stdout, "Review: Unblocking Agency");
+});
+
+Deno.test("interactive review --status deferred does not treat deferred items as actionable impact", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.deferred_priority",
+      candidateId: "candidate.test.review_cli.deferred_priority.target",
+      sourceItemKey: "deferred-priority-target-row",
+      proposedEntityId: "dc.deferred_priority_target",
+      name: "Deferred Priority Target",
+      kind: "agency",
+      observedName: "Deferred Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.deferred_priority",
+      relationshipCandidateId: "relationship.test.review_cli.deferred_priority.blocked",
+      sourceItemKey: "deferred-priority-blocked-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.deferred_priority_target",
+      relationshipType: "overseen_by",
+      rawValue: "Deferred Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId(
+        "candidate.test.review_cli.deferred_priority.target",
+        "entity-review",
+      ),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--status",
+      "deferred",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Review: Deferred Priority Target");
+  assertEquals(stdout.includes("Decision impact:"), false);
+});
+
+Deno.test("interactive review --status all still prioritizes open unblocking work ahead of deferred items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.deferred_priority",
+      candidateId: "candidate.aaa.deferred_priority.only",
+      sourceItemKey: "aaa-deferred-priority-row",
+      proposedEntityId: "dc.aaa_deferred_priority",
+      name: "Deferred First Alphabetically",
+      kind: "board",
+      observedName: "Deferred First Alphabetically",
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "defer_review_item",
+      subjectId: buildReviewItemId("candidate.aaa.deferred_priority.only", "entity-review"),
+      payload: {},
+    },
+    resolutionsDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "zzz.open_priority",
+      candidateId: "candidate.zzz.open_priority.target",
+      sourceItemKey: "zzz-open-priority-target-row",
+      proposedEntityId: "dc.zzz_open_priority_target",
+      name: "Open Priority Target",
+      kind: "agency",
+      observedName: "Open Priority Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "zzz.open_priority",
+      relationshipCandidateId: "relationship.zzz.open_priority.blocked",
+      sourceItemKey: "zzz-open-priority-blocked-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.zzz_open_priority_target",
+      relationshipType: "overseen_by",
+      rawValue: "Open Priority Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--status",
+      "all",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Open Priority Target - zzz.open_priority entity candidate [default accept; packet 1 open; unblocks 1]",
+  );
+  assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
+  assertStringIncludes(stdout, "Review: Open Priority Target");
+  assertEquals(stdout.includes("Review: Deferred First Alphabetically"), false);
+});
+
+Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of larger low-impact packets", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.low_impact",
+      candidateId: "candidate.aaa.low_impact.one",
+      sourceItemKey: "aaa-low-impact-one",
+      proposedEntityId: "dc.aaa_low_impact_one",
+      name: "Aaa Low Impact One",
+      kind: "board",
+      observedName: "Aaa Low Impact One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "aaa.low_impact",
+      candidateId: "candidate.aaa.low_impact.two",
+      sourceItemKey: "aaa-low-impact-two",
+      proposedEntityId: "dc.aaa_low_impact_two",
+      name: "Aaa Low Impact Two",
+      kind: "board",
+      observedName: "Aaa Low Impact Two",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "zzz.high_impact",
+      candidateId: "candidate.zzz.high_impact.target",
+      sourceItemKey: "zzz-high-impact-target",
+      proposedEntityId: "dc.zzz_high_impact_target",
+      name: "Zzz High Impact Target",
+      kind: "agency",
+      observedName: "Zzz High Impact Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "zzz.high_impact",
+      relationshipCandidateId: "relationship.zzz.high_impact.blocked",
+      sourceItemKey: "zzz-high-impact-blocked-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.zzz_high_impact_target",
+      relationshipType: "overseen_by",
+      rawValue: "Zzz High Impact Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assert(
+    stdout.indexOf("1. [recommended] Zzz High Impact Target") <
+      stdout.indexOf("2. Aaa Low Impact One"),
+  );
+});
+
+Deno.test("interactive review stays inside the current packet until it clears", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.zzz_packet",
+      candidateId: "candidate.test.review_cli.zzz_packet.one",
+      sourceItemKey: "review-cli-zzz-packet-one",
+      proposedEntityId: "dc.zzz_packet_one",
+      name: "Zzz Packet One",
+      kind: "board",
+      observedName: "Zzz Packet One",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.zzz_packet",
+      candidateId: "candidate.test.review_cli.zzz_packet.two",
+      sourceItemKey: "review-cli-zzz-packet-two",
+      proposedEntityId: "dc.zzz_packet_two",
+      name: "Zzz Packet Two",
+      kind: "board",
+      observedName: "Zzz Packet Two",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.aaa_other",
+      candidateId: "candidate.test.review_cli.aaa_other.one",
+      sourceItemKey: "review-cli-aaa-other-one",
+      proposedEntityId: "dc.aaa_other_one",
+      name: "Aaa Other One",
+      kind: "board",
+      observedName: "Aaa Other One",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Review: Zzz Packet One");
+  assertStringIncludes(stdout, "Saved resolution.");
+  assertStringIncludes(stdout, "Review: Zzz Packet Two");
+  assertEquals(stdout.includes("Review: Aaa Other One"), false);
+});
+
 Deno.test("interactive review resume command preserves quoted filters", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -544,7 +1275,7 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.write(new TextEncoder().encode("\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -608,6 +1339,77 @@ Deno.test("interactive relationship review quit reports filtered resume command"
   assertStringIncludes(reviewText, "No review items remain.");
 });
 
+Deno.test("interactive review auto-accepts accepted-endpoint additive relationships before rendering", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.superior_court_of_the_district_of_columbia",
+    "Superior Court of the District of Columbia",
+    "court",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.district_of_columbia_courts",
+    "District of Columbia Courts",
+    "court_system",
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dccourts.structure",
+      relationshipCandidateId: "relationship.test.review_cli.auto_accept.dccourts.part_of",
+      sourceItemKey: "review-cli-auto-accept-dccourts-row",
+      fromEntityRef: "dc.superior_court_of_the_district_of_columbia",
+      toEntityRef: "dc.district_of_columbia_courts",
+      relationshipType: "part_of",
+      rawValue: "Superior Court -> DC Courts",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "relationships",
+      "--relationship-type",
+      "part_of",
+      "--subject-prefix",
+      "relationship.test.review_cli.auto_accept.dccourts",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const reviewProcess = reviewRun.spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(reviewText, "No review items remain.");
+  assertEquals(reviewText.includes("Decision inbox"), false);
+});
+
 Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -646,7 +1448,7 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n"));
+  await writer.write(new TextEncoder().encode("\n\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const text = new TextDecoder().decode(output.stdout);

@@ -18,6 +18,7 @@ import {
   artifact,
   buildCandidateReviewItem,
   buildKnownEntityRef,
+  classifyQuickbaseCouncilOversight,
   type ConnectorContext,
   type ConnectorResult,
   fieldEvidence,
@@ -682,7 +683,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
       });
     }
 
-    if (isCommitteeLike(board)) {
+    if (classifyQuickbaseCouncilOversight(board).shouldEmit) {
       const councilEntityRef = buildKnownEntityRef("Council");
       const relationshipKey = `${boardEntityId}>${councilEntityRef}:overseen_by`;
       if (!relationshipKeys.has(relationshipKey)) {
@@ -1032,10 +1033,6 @@ function deriveQuickbaseCluster(board: string): string | undefined {
   if (/commission/i.test(board)) return "Commission";
   if (/board/i.test(board)) return "Board";
   return undefined;
-}
-
-function isCommitteeLike(board: string): boolean {
-  return /\bcommittee\b/i.test(board);
 }
 
 function previewText(input: string): string {

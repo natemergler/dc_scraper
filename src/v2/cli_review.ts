@@ -16,6 +16,7 @@ export interface ReviewCommandOptions {
 
 export interface ReviewCommandDeps {
   withWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
+  withInteractiveWorkbench?<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
   withReadonlyWorkbench<T>(action: (workbench: Workbench) => T | Promise<T>): Promise<T>;
 }
 
@@ -30,7 +31,7 @@ export async function handleReviewCommand(
     return true;
   }
   if (!args[1] || args[1].startsWith("--")) {
-    await deps.withWorkbench(async (workbench) => {
+    await (deps.withInteractiveWorkbench ?? deps.withWorkbench)(async (workbench) => {
       await runInteractiveReview(workbench, readReviewFilters(args), options.resolutionsDir);
     });
     return true;
@@ -40,7 +41,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const { items, summaries } = await deps.withReadonlyWorkbench((workbench) => {
+    const { items, summaries } = await deps.withWorkbench((workbench) => {
       const items = workbench.listReviewItems(readReviewFilters(args));
       return {
         items,
@@ -63,7 +64,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const packets = await deps.withReadonlyWorkbench((workbench) =>
+    const packets = await deps.withWorkbench((workbench) =>
       listReviewPackets(workbench, readReviewFilters(args))
     );
     if (options.json) {
@@ -85,7 +86,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    await deps.withWorkbench(async (workbench) => {
+    await (deps.withInteractiveWorkbench ?? deps.withWorkbench)(async (workbench) => {
       await runInteractiveReview(
         workbench,
         { ...readReviewFilters(args), mode: args[1] },
@@ -101,13 +102,14 @@ export function printReviewHelp(): void {
   console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`${dcCommand("review")}\` for the next open item
-  2. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  3. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
-  4. Run \`${dcCommand("status")}\` for readiness and the next broad surface
-  5. Apply a scoped batch deliberately, like \`${
+  1. Run \`${dcCommand("review")}\` to open the decision inbox
+  2. Press Enter for the recommended packet or choose another ranked decision packet
+  3. Browse a queue slice with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
+  5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
+  6. Apply a scoped batch deliberately, like \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils",
     )
   }\`
 
@@ -143,12 +145,12 @@ Workflow:
   }\`
   2. Accept safe work with \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils",
     )
   }\`
   3. Defer default-defer relationships with \`${
     dcCommand(
-      "review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+      "review batch defer-default --mode relationships --subject-prefix relationship.mota.quickbase --relationship-type overseen_by",
     )
   }\`
 

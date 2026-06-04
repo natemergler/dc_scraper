@@ -1,4 +1,5 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
+import { classifyQuickbaseCouncilOversight } from "../connectors/shared.ts";
 import type { ReviewItemFilters } from "./review.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -14,6 +15,9 @@ export interface ReviewPacketRecord {
   deferredCount: number;
   relationshipType?: string;
   refType?: string;
+  toEntityRef?: string;
+  whyDeferred?: string;
+  deferredGroupLabel?: string;
   subjectPrefix?: string;
   reviewItemIds: string[];
 }
@@ -38,9 +42,17 @@ export function listReviewPackets(
   filters?: ReviewItemFilters,
 ): ReviewPacketRecord[] {
   const { itemFilters, packetLimit } = packetListFilters(filters);
+  const items = store.listReviewItems(itemFilters);
+  return reviewPacketsFromItems(store, items, { limit: packetLimit });
+}
+
+export function reviewPacketsFromItems(
+  store: Pick<WorkbenchStore, "db">,
+  items: ReviewItemRecord[],
+  options: { limit?: number } = {},
+): ReviewPacketRecord[] {
   const packets = new Map<string, ReviewPacketRecord>();
   const packetItems = new Map<string, ReviewItemRecord[]>();
-  const items = store.listReviewItems(itemFilters);
   const sourceIds = reviewSubjectSourceIds(store, items);
   for (const item of items) {
     const sourceId = sourceIds.get(item.reviewItemId) ?? "unknown";
@@ -67,6 +79,13 @@ export function listReviewPackets(
         ? item.details.relationshipType
         : undefined,
       refType: typeof item.details.refType === "string" ? item.details.refType : undefined,
+      toEntityRef: typeof item.details.toEntityRef === "string"
+        ? item.details.toEntityRef
+        : undefined,
+      whyDeferred: typeof item.details.whyDeferred === "string"
+        ? item.details.whyDeferred
+        : undefined,
+      deferredGroupLabel: deferredRelationshipPacketGroupLabel(item, sourceId),
       reviewItemIds: [item.reviewItemId],
     });
     packetItems.set(key, [item]);
@@ -81,7 +100,7 @@ export function listReviewPackets(
     left.itemType.localeCompare(right.itemType) ||
     left.reason.localeCompare(right.reason)
   );
-  return packetLimit === undefined ? sortedPackets : sortedPackets.slice(0, packetLimit);
+  return options.limit === undefined ? sortedPackets : sortedPackets.slice(0, options.limit);
 }
 
 export function reviewPacketDebtSummary(
@@ -105,6 +124,9 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     `status: open=${packet.openCount}, deferred=${packet.deferredCount}`,
     packet.relationshipType ? `relationship_type: ${packet.relationshipType}` : undefined,
     packet.refType ? `ref_type: ${packet.refType}` : undefined,
+    packet.toEntityRef ? `to_entity_ref: ${packet.toEntityRef}` : undefined,
+    packet.whyDeferred ? `why_deferred: ${packet.whyDeferred}` : undefined,
+    packet.deferredGroupLabel ? `deferred_group: ${packet.deferredGroupLabel}` : undefined,
     packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
     `packet_id: ${packet.packetId}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -112,7 +134,9 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
 
 export function renderReviewPacketHeader(packet: ReviewPacketRecord): string {
   const scope = packet.relationshipType
-    ? `${packet.sourceId} ${packet.relationshipType}`
+    ? packet.toEntityRef
+      ? `${packet.sourceId} ${packet.relationshipType} -> ${packet.toEntityRef}`
+      : `${packet.sourceId} ${packet.relationshipType}`
     : packet.refType
     ? `${packet.sourceId} ${packet.refType}`
     : `${packet.sourceId} ${packet.itemType}`;
@@ -127,7 +151,32 @@ function reviewPacketKey(item: ReviewItemRecord, sourceId: string): string {
     item.defaultAction,
     typeof item.details.relationshipType === "string" ? item.details.relationshipType : "",
     typeof item.details.refType === "string" ? item.details.refType : "",
+    ...deferredRelationshipPacketContext(item, sourceId),
   ].join("|");
+}
+
+function deferredRelationshipPacketContext(item: ReviewItemRecord, sourceId?: string): string[] {
+  if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") return [];
+  return [
+    typeof item.details.toEntityRef === "string" ? item.details.toEntityRef : "",
+    typeof item.details.whyDeferred === "string" ? item.details.whyDeferred : "",
+    deferredRelationshipPacketGroupLabel(item, sourceId) ?? "",
+  ];
+}
+
+function deferredRelationshipPacketGroupLabel(
+  item: ReviewItemRecord,
+  sourceId?: string,
+): string | undefined {
+  if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") {
+    return undefined;
+  }
+  const packetSourceId = sourceId ?? "unknown";
+  if (packetSourceId !== "mota.quickbase") return undefined;
+  if (item.details.relationshipType !== "overseen_by") return undefined;
+  return classifyQuickbaseCouncilOversight(
+    typeof item.details.rawValue === "string" ? item.details.rawValue : undefined,
+  ).deferredGroupLabel;
 }
 
 function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(

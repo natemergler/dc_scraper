@@ -1,5 +1,8 @@
 import { buildReviewItemId } from "../domain.ts";
-import { isScopedCouncilOversightTarget } from "../connectors/shared.ts";
+import {
+  councilOversightReviewPolicy,
+  defaultActionForCouncilOversightTarget,
+} from "../connectors/shared.ts";
 
 export interface RelationshipReviewCandidate {
   relationshipCandidateId: string;
@@ -18,53 +21,18 @@ export interface RelationshipReviewDraft {
   details: Record<string, unknown>;
 }
 
-const defaultDeferCouncilOversightTargets = new Set([
-  "Access to Justice Initiative",
-  "Age-Friendly DC Task Force",
-  "Behavioral Health Planning Council",
-  "Cedar Hill Hospital",
-  "Committee on Facilities and Procurement",
-  "Committee on Housing and Neighborhood Revitalization",
-  "Commission and Office on Re-Entry and Returning Citizen Affairs",
-  "Contract Appeals Board",
-  "Corrections Information Council",
-  "Council on Physical Fitness, Health, and Nutrition",
-  "Green Finance Authority",
-  "Health Literacy Council",
-  "Interfaith Council",
-  "Interstate Compact Commissions",
-  "Labor/Management Partnership Council",
-  "Law Revision Commission",
-  "Metropolitan Washington Airports Authority",
-  "Metropolitan Washington Regional Ryan White Planning Council",
-  "Multistate Tax Commission",
-  "OCFO Office of Budget and Planning",
-  "Office and Commission on African Affairs",
-  "Office and Commission on African American Affairs",
-  "Office of and Commission on Human Rights",
-  "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
-  "Other Post-Employment Benefits/Retiree Health Contribution",
-  "Pay-As-You-Go Capital",
-  "Research Practice Partnership",
-  "Robert F. Kennedy Memorial Stadium Community Benefits Oversight Committee",
-  "Soil and Water Conservation District",
-  "Statehood Commission and delegation",
-  "Sustainable Energy Utility",
-  "Universal Paid Leave Fund",
-  "Washington Aqueduct",
-  "Washington Metropolitan Area Transit Authority",
-]);
-
 export function buildRelationshipReviewDraft(
   candidate: RelationshipReviewCandidate,
 ): RelationshipReviewDraft {
+  const defaultAction = reviewDefaultAction(candidate);
+  const whyDeferred = reviewWhyDeferred(candidate, defaultAction);
   return {
     reviewItemId: buildReviewItemId(
       candidate.relationshipCandidateId,
       reviewItemSuffix(candidate),
     ),
     reason: reviewReason(candidate),
-    defaultAction: reviewDefaultAction(candidate),
+    defaultAction,
     details: {
       fromEntityRef: candidate.fromEntityRef,
       toEntityRef: candidate.toEntityRef,
@@ -73,6 +41,7 @@ export function buildRelationshipReviewDraft(
         ? {}
         : { rawValue: candidate.rawValue }),
       ...(candidate.needsReview === 1 ? { needsReview: true } : {}),
+      ...(whyDeferred ? { whyDeferred } : {}),
     },
   };
 }
@@ -136,7 +105,7 @@ function reviewDefaultAction(
   switch (candidate.sourceId) {
     case "council.committees":
       if (candidate.relationshipType !== "overseen_by") return "accept";
-      return shouldDeferCouncilOversight(candidate.rawValue) ? "defer" : "accept";
+      return defaultActionForCouncilOversightTarget(candidate.rawValue);
     case "council.members":
     case "oanc.anc_profiles":
       return "accept";
@@ -155,8 +124,24 @@ function reviewDefaultAction(
   }
 }
 
-function shouldDeferCouncilOversight(rawValue?: string | null): boolean {
-  if (!rawValue) return false;
-  return defaultDeferCouncilOversightTargets.has(rawValue) ||
-    isScopedCouncilOversightTarget(rawValue);
+function reviewWhyDeferred(
+  candidate: RelationshipReviewCandidate,
+  defaultAction: "accept" | "defer",
+): string | undefined {
+  if (defaultAction !== "defer") return undefined;
+  switch (candidate.sourceId) {
+    case "council.committees":
+      if (candidate.relationshipType !== "overseen_by") return undefined;
+      return councilOversightReviewPolicy(candidate.rawValue).whyDeferred ??
+        "This oversight edge stays deferred until a human confirms the committee relationship.";
+    case "dcgis.agencies":
+    case "dcgis.boards_commissions_councils":
+      if (candidate.rawValue !== "Other") return undefined;
+      return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
+    case "mota.quickbase":
+      if (candidate.relationshipType !== "overseen_by") return undefined;
+      return "Quickbase only suggests Council oversight because the public-body name looks committee-like; confirm the oversight edge before accepting.";
+    default:
+      return undefined;
+  }
 }

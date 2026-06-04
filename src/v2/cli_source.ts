@@ -31,6 +31,17 @@ export interface SourceFetchOutcome {
   errorText?: string;
 }
 
+interface SourceFetchProgressEvent {
+  sourceId: string;
+  title: string;
+  index: number;
+  total: number;
+  phase: "start" | "success" | "failed";
+  connectorDurationMs?: number;
+  importDurationMs?: number;
+  totalDurationMs?: number;
+}
+
 export async function handleSourceCommand(
   args: string[],
   options: SourceCommandOptions,
@@ -71,7 +82,12 @@ export async function handleSourceCommand(
       });
       return true;
     }
-    const outcomes = await fetchSources(sourceIds, options, deps);
+    const outcomes = await fetchSources(
+      sourceIds,
+      options,
+      deps,
+      options.json ? undefined : logSourceFetchProgress,
+    );
     if (options.json) {
       console.log(JSON.stringify({ count: outcomes.length, outcomes }, null, 2));
     } else {
@@ -172,6 +188,20 @@ export async function handleSourceCommand(
     for (const row of comparison.rows.filter((row) => row.sourceIds.length > 1)) {
       console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
     }
+    console.log(
+      `Conservative variant matches (review leads, not exact overlaps): ${comparison.conservativeVariantMatchCount}`,
+    );
+    if (comparison.conservativeVariantMatchCount > 0) {
+      console.log(
+        "These rows are conservative name-similarity leads. They do not imply a canonical merge.",
+      );
+    }
+    for (const match of comparison.conservativeVariantMatches) {
+      console.log(`- ${match.variantName} [${match.matchKinds.join(", ")}]`);
+      for (const name of match.names) {
+        console.log(`  - ${name.displayName} (${name.sourceId})`);
+      }
+    }
     return true;
   }
   if (args[1] === "list") {
@@ -216,13 +246,60 @@ export async function fetchSources(
     SourceCommandDeps,
     "getConnector" | "createConnectorContext" | "importConnectorResult"
   >,
+  onProgress?: (event: SourceFetchProgressEvent) => void,
 ): Promise<SourceFetchOutcome[]> {
   const outcomes: SourceFetchOutcome[] = [];
-  for (const sourceId of sourceIds) {
+  for (const [index, sourceId] of sourceIds.entries()) {
     const connector = deps.getConnector(sourceId);
+    const total = sourceIds.length;
+    const sourceIndex = index + 1;
+    onProgress?.({
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      index: sourceIndex,
+      total,
+      phase: "start",
+    });
+    const sourceStartedAt = performance.now();
+    const connectorStartedAt = performance.now();
     try {
       const result = await connector.run(deps.createConnectorContext({ limit: options.limit }));
-      await deps.importConnectorResult(result);
+      const connectorDurationMs = performance.now() - connectorStartedAt;
+      const importStartedAt = performance.now();
+      let importDurationMs = 0;
+      try {
+        await deps.importConnectorResult(result);
+        importDurationMs = performance.now() - importStartedAt;
+      } catch (error) {
+        onProgress?.({
+          sourceId: connector.sourceId,
+          title: connector.source.title,
+          index: sourceIndex,
+          total,
+          phase: "failed",
+          connectorDurationMs,
+          importDurationMs: performance.now() - importStartedAt,
+          totalDurationMs: performance.now() - sourceStartedAt,
+        });
+        outcomes.push({
+          sourceId: connector.sourceId,
+          title: connector.source.title,
+          status: "failed",
+          endpointStatuses: [],
+          errorText: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      onProgress?.({
+        sourceId: connector.sourceId,
+        title: connector.source.title,
+        index: sourceIndex,
+        total,
+        phase: "success",
+        connectorDurationMs,
+        importDurationMs,
+        totalDurationMs: performance.now() - sourceStartedAt,
+      });
       outcomes.push({
         sourceId: connector.sourceId,
         title: connector.source.title,
@@ -232,6 +309,16 @@ export async function fetchSources(
         ),
       });
     } catch (error) {
+      onProgress?.({
+        sourceId: connector.sourceId,
+        title: connector.source.title,
+        index: sourceIndex,
+        total,
+        phase: "failed",
+        connectorDurationMs: performance.now() - connectorStartedAt,
+        importDurationMs: 0,
+        totalDurationMs: performance.now() - sourceStartedAt,
+      });
       outcomes.push({
         sourceId: connector.sourceId,
         title: connector.source.title,
@@ -334,4 +421,37 @@ function readPositionalArg(args: string[], startIndex: number): string | undefin
 
 function flagConsumesValue(value: string): boolean {
   return value === "--db" || value === "--data-dir" || value === "--limit";
+}
+
+function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
+  const prefix = `[${event.index}/${event.total}]`;
+  if (event.phase === "start") {
+    console.log(`${prefix} Starting ${event.sourceId} - ${event.title}`);
+    return;
+  }
+  if (event.phase === "success") {
+    console.log(
+      `${prefix} Finished ${event.sourceId} in ${
+        formatDuration(event.totalDurationMs)
+      } (connector ${formatDuration(event.connectorDurationMs)}, import ${
+        formatDuration(event.importDurationMs)
+      })`,
+    );
+    return;
+  }
+  console.log(
+    `${prefix} Fetch failed ${event.sourceId} after ${formatDuration(event.totalDurationMs)} (${
+      event.importDurationMs && event.importDurationMs > 0
+        ? `connector ${formatDuration(event.connectorDurationMs)}, import ${
+          formatDuration(event.importDurationMs)
+        }`
+        : `connector ${formatDuration(event.connectorDurationMs)}`
+    })`,
+  );
+}
+
+function formatDuration(durationMs: number | undefined): string {
+  if (durationMs === undefined) return "n/a";
+  if (durationMs >= 1000) return `${(durationMs / 1000).toFixed(2)}s`;
+  return `${Math.round(durationMs)}ms`;
 }

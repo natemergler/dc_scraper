@@ -25,13 +25,15 @@ export function run(
 }
 
 export function withTransaction<T>(db: Database, work: () => T): T {
-  db.exec("begin");
+  const savepoint = `dc_tx_${crypto.randomUUID().replaceAll("-", "_")}`;
+  db.exec(`savepoint ${savepoint}`);
   try {
     const result = work();
-    db.exec("commit");
+    db.exec(`release savepoint ${savepoint}`);
     return result;
   } catch (error) {
-    db.exec("rollback");
+    db.exec(`rollback to savepoint ${savepoint}`);
+    db.exec(`release savepoint ${savepoint}`);
     throw error;
   }
 }

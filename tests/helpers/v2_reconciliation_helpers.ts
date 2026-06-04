@@ -77,6 +77,9 @@ export function syntheticCustomEntitySourceResult(input: {
   name: string;
   kind: string;
   observedName: string;
+  branch?: string;
+  cluster?: string;
+  officialUrl?: string;
   confidence?: number;
 }): ConnectorResult {
   return {
@@ -120,6 +123,9 @@ export function syntheticCustomEntitySourceResult(input: {
           proposedEntityId: input.proposedEntityId,
           name: input.name,
           kind: input.kind,
+          branch: input.branch,
+          cluster: input.cluster,
+          officialUrl: input.officialUrl,
           confidence: input.confidence,
           evidence: [{
             fieldPath: "name",
