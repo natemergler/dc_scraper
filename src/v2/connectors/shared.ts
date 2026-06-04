@@ -147,6 +147,13 @@ export function councilOversightReviewPolicy(
         "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
     };
   }
+  if (normalized.toLowerCase() === "council of the district of columbia") {
+    return {
+      defaultAction: "defer",
+      whyDeferred:
+        "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+    };
+  }
   return { defaultAction: "accept" };
 }
 

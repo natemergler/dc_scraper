@@ -179,14 +179,15 @@ function seedableFromRelationshipEndpointName(
   ) {
     return undefined;
   }
+  const safeDirectEndpoint = defaultActionForCouncilOversightTarget(observedName) === "accept";
   if (
     !isGroupedCommitteeOversightTarget(observedName)
   ) {
-    if (buildEntityId(observedName) === relationshipCandidate.fromEntityRef) {
+    if (safeDirectEndpoint && buildEntityId(observedName) === relationshipCandidate.fromEntityRef) {
       return observedName;
     }
     if (
-      defaultActionForCouncilOversightTarget(observedName) === "accept" &&
+      safeDirectEndpoint &&
       buildKnownEntityRef(observedName) === relationshipCandidate.fromEntityRef
     ) {
       return observedName;

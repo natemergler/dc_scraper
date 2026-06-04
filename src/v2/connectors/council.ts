@@ -17,6 +17,7 @@ import {
   buildCandidateReviewItem,
   buildKnownCouncilOversightEntityRef,
   buildKnownEntityRef,
+  councilOversightReviewPolicy,
   defaultActionForCouncilOversightTarget,
   fieldEvidence,
 } from "./shared.ts";
@@ -185,6 +186,7 @@ export const councilCommitteesConnector: SourceConnector = {
           toEntityRef: candidate.toEntityRef,
           relationshipType: candidate.relationshipType,
           rawValue: candidate.rawValue,
+          ...relationshipReviewPolicyDetails(candidate),
         },
       })),
     ];
@@ -213,6 +215,14 @@ export const councilCommitteesConnector: SourceConnector = {
 function defaultActionForRelationship(candidate: RelationshipCandidateInput): "accept" | "defer" {
   if (candidate.relationshipType !== "overseen_by") return "accept";
   return defaultActionForCouncilOversightTarget(candidate.rawValue);
+}
+
+function relationshipReviewPolicyDetails(
+  candidate: RelationshipCandidateInput,
+): Record<string, unknown> {
+  if (candidate.relationshipType !== "overseen_by") return {};
+  const policy = councilOversightReviewPolicy(candidate.rawValue);
+  return policy.whyDeferred ? { whyDeferred: policy.whyDeferred } : {};
 }
 
 function isExplicitOversightTarget(target: string): boolean {

@@ -638,7 +638,7 @@ Deno.test("accepted-endpoint Council oversight relationships auto-accept when de
   assertEquals(reviewItems.length, 0);
 });
 
-Deno.test("accepted-endpoint Council exact, including, and jointly oversight relationships auto-accept", async () => {
+Deno.test("accepted-endpoint Council oversight relationships honor source-specific default actions", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -655,6 +655,12 @@ Deno.test("accepted-endpoint Council exact, including, and jointly oversight rel
         "dc.committee_on_the_judiciary_and_public_safety",
         "Committee on the Judiciary and Public Safety",
         "committee",
+      ],
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+      [
+        "dc.council_of_the_district_of_columbia",
+        "Council of the District of Columbia",
+        "council",
       ],
     ] as const
   ) {
@@ -703,6 +709,19 @@ Deno.test("accepted-endpoint Council exact, including, and jointly oversight rel
     }),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.self_oversight",
+      sourceItemKey: "council-self-oversight-row",
+      fromEntityRef: "dc.council_of_the_district_of_columbia",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Council of the District of Columbia",
+      needsReview: true,
+    }),
+    dataDir,
+  );
 
   const relationships = workbench.db.prepare(
     "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
@@ -712,6 +731,16 @@ Deno.test("accepted-endpoint Council exact, including, and jointly oversight rel
     relationshipType: "overseen_by",
     subjectPrefix: "relationship.test.auto_accept.council",
   });
+  const selfRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole'`,
+  ).get() as { relationshipId: string } | undefined;
+  const selfCandidate = workbench.db.prepare(
+    `select review_status as reviewStatus
+     from relationship_candidates
+     where relationship_candidate_id = 'relationship.test.auto_accept.council.self_oversight'`,
+  ).get() as { reviewStatus: string } | undefined;
   workbench.close();
 
   assertEquals(relationships.map((row) => row.relationshipId), [
@@ -719,7 +748,15 @@ Deno.test("accepted-endpoint Council exact, including, and jointly oversight rel
     "dc.department_of_buildings:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
     "dc.office_of_the_attorney_general:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
   ]);
-  assertEquals(reviewItems.length, 0);
+  assertEquals(selfRelationship, undefined);
+  assertEquals(selfCandidate?.reviewStatus, "pending");
+  assertEquals(reviewItems.length, 1);
+  assertEquals(reviewItems[0]?.subjectId, "relationship.test.auto_accept.council.self_oversight");
+  assertEquals(reviewItems[0]?.defaultAction, "defer");
+  assertEquals(
+    reviewItems[0]?.details.whyDeferred,
+    "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+  );
 });
 
 Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {
