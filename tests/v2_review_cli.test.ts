@@ -355,6 +355,49 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   assert(showJson.legalRefs.some((row) => row.refType === "dc_code"));
 });
 
+Deno.test("entity conflict review rendering explains defer impact", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.conflicted_review_body', 'Conflicted Review Body', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.conflicted_entity",
+      candidateId: "candidate.test.review_cli.conflicted_entity.board",
+      sourceItemKey: "conflicted-review-row",
+      proposedEntityId: "dc.conflicted_review_body",
+      name: "Conflicted Review Body",
+      kind: "board",
+      observedName: "Conflicted Review Body",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+
+  const item = workbench.listReviewItems({ mode: "entities" })[0];
+  const text = renderReviewItem(workbench, item);
+  workbench.close();
+
+  assertStringIncludes(
+    text,
+    "reason: Resolve entity candidate that conflicts with an accepted entity",
+  );
+  assertStringIncludes(
+    text,
+    "why deferred: Candidate kind board conflicts with accepted agency for the same entity id.",
+  );
+  assertStringIncludes(text, "default: defer (Enter or d)");
+  assertStringIncludes(
+    text,
+    "impact: accept attaches this board candidate to existing agency dc.conflicted_review_body; defer keeps the source conflict out of the release until decided.",
+  );
+  assert(!text.includes("accept promotes this candidate into canonical entities"));
+});
+
 Deno.test("interactive review Enter accepts the default action", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

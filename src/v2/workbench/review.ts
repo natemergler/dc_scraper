@@ -223,6 +223,7 @@ export function canBatchAcceptReviewItem(
     return canBatchAcceptLegalItem(store, item, filters);
   }
   if (item.itemType !== "entity_candidate") return false;
+  if (item.defaultAction !== "accept") return false;
   if (item.details.safeToAutoAccept === true) return true;
   const candidate = queryOne<{ confidence?: number; reviewStatus: string }>(
     store.db,

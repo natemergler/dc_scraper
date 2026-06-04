@@ -608,6 +608,13 @@ function renderDefaultAction(item: ReviewItemRecord): string {
 
 function renderDecisionOutcome(item: ReviewItemRecord): string | undefined {
   if (item.itemType === "entity_candidate") {
+    if (
+      typeof item.details.existingEntityId === "string" &&
+      typeof item.details.existingKind === "string" &&
+      typeof item.details.candidateKind === "string"
+    ) {
+      return `impact: accept attaches this ${item.details.candidateKind} candidate to existing ${item.details.existingKind} ${item.details.existingEntityId}; defer keeps the source conflict out of the release until decided.`;
+    }
     return "impact: accept promotes this candidate into canonical entities; reject or defer keeps it out of the release for now.";
   }
   if (item.itemType === "relationship_candidate") {

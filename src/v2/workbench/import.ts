@@ -1,4 +1,10 @@
-import { buildReviewItemId, type ConnectorResult, type LegalRefInput, nowIso } from "../domain.ts";
+import {
+  buildReviewItemId,
+  type ConnectorResult,
+  type LegalRefInput,
+  nowIso,
+  type ReviewItemInput,
+} from "../domain.ts";
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
@@ -412,23 +418,69 @@ function importParsedOutput(
       // Relationship review visibility is derived from reconciled candidate state.
       continue;
     }
+    const resolvedReviewItem = reviewItemWithWorkbenchContext(store, reviewItem);
     run(
       store.db,
       "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
       [
-        reviewItem.reviewItemId,
-        reviewItem.itemType,
-        reviewItem.subjectId,
-        reviewItem.reason,
-        reviewItem.defaultAction,
-        reviewItem.reviewItemId,
-        JSON.stringify(reviewItem.details),
-        reviewItem.reviewItemId,
+        resolvedReviewItem.reviewItemId,
+        resolvedReviewItem.itemType,
+        resolvedReviewItem.subjectId,
+        resolvedReviewItem.reason,
+        resolvedReviewItem.defaultAction,
+        resolvedReviewItem.reviewItemId,
+        JSON.stringify(resolvedReviewItem.details),
+        resolvedReviewItem.reviewItemId,
         nowIso(),
         nowIso(),
       ],
     );
   }
+}
+
+function reviewItemWithWorkbenchContext(
+  store: WorkbenchStore,
+  reviewItem: ReviewItemInput,
+): ReviewItemInput {
+  if (reviewItem.itemType !== "entity_candidate" || reviewItem.defaultAction === "defer") {
+    return reviewItem;
+  }
+  const conflict = queryOne<{
+    candidateKind: string;
+    candidateName: string;
+    existingEntityId: string;
+    existingName: string;
+    existingKind: string;
+  }>(
+    store.db,
+    `select entity_candidates.kind as candidateKind,
+            entity_candidates.name as candidateName,
+            canonical_entities.entity_id as existingEntityId,
+            canonical_entities.name as existingName,
+            canonical_entities.kind as existingKind
+     from entity_candidates
+     join canonical_entities
+       on canonical_entities.entity_id = entity_candidates.proposed_entity_id
+     where entity_candidates.candidate_id = ?
+       and canonical_entities.review_status = 'accepted'
+       and canonical_entities.kind != entity_candidates.kind`,
+    [reviewItem.subjectId],
+  );
+  if (!conflict) return reviewItem;
+  return {
+    ...reviewItem,
+    reason: "Resolve entity candidate that conflicts with an accepted entity",
+    defaultAction: "defer",
+    details: {
+      ...reviewItem.details,
+      existingEntityId: conflict.existingEntityId,
+      existingName: conflict.existingName,
+      existingKind: conflict.existingKind,
+      candidateKind: conflict.candidateKind,
+      whyDeferred:
+        `Candidate kind ${conflict.candidateKind} conflicts with accepted ${conflict.existingKind} for the same entity id.`,
+    },
+  };
 }
 
 function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
