@@ -87,10 +87,13 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 16);
-  assertEquals(second.schemaVersion, 16);
-  assertEquals(second.schemaMarkers.length, 1);
-  assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
+  assertEquals(first.schema.version, 16);
+  assertEquals(second.schema.version, 16);
+  assertEquals(second.schema, {
+    version: 16,
+    name: "v2_current_workbench_schema",
+    initializedAt: second.schema.initializedAt,
+  });
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
   assertEquals(journalMode, "wal");
   for (
@@ -482,12 +485,12 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(unfetchedInspectJson.itemCount, 0);
 });
 
-Deno.test("source list fails fast for unsupported older workbench schemas", async () => {
+Deno.test("source list fails fast for unsupported non-current workbench schemas", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.exec("update schema_markers set name = 'v2_old_schema_marker'");
+  workbench.db.exec("update workbench_schema set name = 'v2_old_schema'");
   workbench.close();
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
@@ -513,7 +516,54 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   );
 });
 
-Deno.test("source list rejects a current schema marker when required tables are missing", async () => {
+Deno.test("source list does not mutate unsupported non-current databases", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  await ensureDir(join(dir, "data"));
+  const db = new Database(dbPath);
+  db.exec(`
+    create table old_workbench_state (
+      id text primary key,
+      value text not null
+    );
+    insert into old_workbench_state(id, value)
+    values('schema', 'not current');
+  `);
+  db.close();
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(sourceListOutput.code, 1);
+  assertStringIncludes(
+    new TextDecoder().decode(sourceListOutput.stderr),
+    "Unsupported local workbench schema version 0. Rebuild this ignored local DB or point --db at a current workbench.",
+  );
+
+  const reopened = new Database(dbPath);
+  const tables = new Set(
+    reopened.prepare("select name from sqlite_master where type = 'table'").all().map((row) =>
+      (row as { name: string }).name
+    ),
+  );
+  reopened.close();
+  assertEquals(tables.has("old_workbench_state"), true);
+  assertEquals(tables.has("workbench_schema"), false);
+});
+
+Deno.test("source list rejects a current schema record when required tables are missing", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);

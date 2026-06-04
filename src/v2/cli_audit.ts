@@ -67,14 +67,16 @@ async function renderAuditSnapshot(
 ): Promise<void> {
   const { meta, status } = await deps.readWorkbenchStatus();
   if (options.json) {
-    console.log(JSON.stringify({ ...meta, ...status }, null, 2));
+    console.log(
+      JSON.stringify({ ...meta, ...status, schemaVersion: meta.schema.version }, null, 2),
+    );
     return;
   }
   console.log(`DB: ${meta.dbPath}`);
-  console.log(`Schema version: ${meta.schemaVersion}`);
-  for (const marker of meta.schemaMarkers) {
-    console.log(`Schema marker: ${marker.version} ${marker.name} (${marker.appliedAt})`);
-  }
+  console.log(`Schema version: ${meta.schema.version}`);
+  console.log(
+    `Schema: ${meta.schema.version} ${meta.schema.name} (${meta.schema.initializedAt})`,
+  );
   console.log(mode === "status" ? renderWorkbenchStatus(status) : renderWorkbenchAudit(status));
 }
 

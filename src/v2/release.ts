@@ -246,7 +246,7 @@ export async function buildV2Release(
     tool_version: toolVersion,
     git_commit: gitCommit,
     source_profile: sourceProfile,
-    schema_version: workbench.meta().schemaVersion,
+    schema_version: workbench.meta().schema.version,
     generated_at: generatedAt,
     files: await Promise.all(
       ["README.md", "dcgov.sqlite", ...files.keys()].map(async (name) => ({
