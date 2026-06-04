@@ -127,8 +127,10 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   assertEquals(imported, ["alpha.source", "beta.source"]);
   const output = lines.join("\n");
   assertMatch(output, /\[1\/2\] Starting alpha\.source - Alpha Source/);
+  assertMatch(output, /\[1\/2\] Importing alpha\.source after connector .*/);
   assertMatch(output, /\[1\/2\] Finished alpha\.source in .* \(connector .*, import .*\)/);
   assertMatch(output, /\[2\/2\] Starting beta\.source - Beta Source/);
+  assertMatch(output, /\[2\/2\] Importing beta\.source after connector .*/);
   assertMatch(output, /\[2\/2\] Finished beta\.source in .* \(connector .*, import .*\)/);
   assertStringIncludes(output, "Fetched alpha.source");
   assertStringIncludes(output, "Fetched beta.source");

@@ -131,6 +131,10 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   assertEquals(stderr, "");
   assertStringIncludes(stdout, "Review: DC Register / DCMR");
   assertStringIncludes(stdout, "legal ref | dc register | open");
+  assertStringIncludes(
+    stdout,
+    "impact: accept keeps this citation as source-backed legal context; reject drops it; defer keeps it pending.",
+  );
   assertStringIncludes(stdout, "n normalize and accept");
   assertStringIncludes(stdout, "Saved resolution.");
   assertStringIncludes(stdout, "No review items remain.");
@@ -249,6 +253,10 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
   assertStringIncludes(reviewText, "source: test.review_cli.entities / Custom entity row");
   assertStringIncludes(reviewText, "reason: Review fixture entity candidate");
   assertStringIncludes(reviewText, "default: accept (Enter or a)");
+  assertStringIncludes(
+    reviewText,
+    "impact: accept promotes this candidate into canonical entities; reject or defer keeps it out of the release for now.",
+  );
   assertStringIncludes(
     reviewText,
     "actions: Enter accept, a accept, r reject, m merge, d defer, q quit",

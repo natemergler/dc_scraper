@@ -189,6 +189,7 @@ export function isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(
   candidateId: string,
 ): boolean {
   return isSafeCouncilSeededEndpointCandidate(candidateId) ||
+    isSafeCouncilMemberContainerEndpointCandidate(candidateId) ||
     isSafeDcgisGoverningEndpointCandidate(candidateId);
 }
 
@@ -199,6 +200,11 @@ function isSafeCouncilSeededEndpointCandidate(candidateId: string): boolean {
 
 function isSafeDcgisGoverningEndpointCandidate(candidateId: string): boolean {
   return candidateId.startsWith("candidate.dcgis.boards_commissions_councils.relationship_") &&
+    candidateId.endsWith("_to_endpoint");
+}
+
+function isSafeCouncilMemberContainerEndpointCandidate(candidateId: string): boolean {
+  return candidateId.startsWith("candidate.council.members.relationship_") &&
     candidateId.endsWith("_to_endpoint");
 }
 
