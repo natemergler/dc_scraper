@@ -171,7 +171,7 @@ order by
 
 export function isHumanDecisionReviewItem(item: ReviewItemRecord): boolean {
   if (item.status !== "open") return false;
-  if (item.itemType === "source_status") return false;
+  if (item.itemType === "source_status") return item.details.needsReview === true;
   if (item.defaultAction !== "accept") return true;
   if (item.details.stalePriorDecision === true) return true;
   if (item.details.replayConflict === true) return true;
