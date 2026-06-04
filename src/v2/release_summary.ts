@@ -15,16 +15,6 @@ export interface RefTypeCount {
 export interface ReleaseSummary {
   entities_by_review_status: ReviewStatusCount[];
   relationships_by_review_status: ReviewStatusCount[];
-  review_debt_by_type: Array<{
-    item_type: string;
-    open_count: number;
-    deferred_count: number;
-  }>;
-  review_debt_by_source: Array<{
-    source_id: string;
-    open_count: number;
-    deferred_count: number;
-  }>;
   open_review_item_count: number;
   open_human_decision_review_item_count: number;
   browse_only_open_review_item_count: number;
@@ -72,16 +62,6 @@ export function buildReleaseSummaryFromStatus(
       rows.relationships,
       (row) => row.review_status,
     ),
-    review_debt_by_type: status.review.byType.map((row) => ({
-      item_type: row.itemType,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
-    review_debt_by_source: status.review.bySource.map((row) => ({
-      source_id: row.sourceId,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
     open_review_item_count: status.review.open,
     open_human_decision_review_item_count: status.review.humanDecisionOpen,
     browse_only_open_review_item_count: status.review.browseOnlyOpen,

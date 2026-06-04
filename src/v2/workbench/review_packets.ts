@@ -26,19 +26,6 @@ export type ReviewPacketJsonRecord = Omit<ReviewPacketRecord, "reviewItemIds"> &
   reviewItemIds?: string[];
 };
 
-export interface ReviewDebtSummary {
-  byType: Array<{
-    itemType: ReviewItemRecord["itemType"];
-    openCount: number;
-    deferredCount: number;
-  }>;
-  bySource: Array<{
-    sourceId: string;
-    openCount: number;
-    deferredCount: number;
-  }>;
-}
-
 export function listReviewPackets(
   store: Pick<WorkbenchStore, "db"> & {
     listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
@@ -131,19 +118,6 @@ export function reviewPacketJsonRecord(
   return compactPacket;
 }
 
-export function reviewPacketDebtSummary(
-  store: Pick<WorkbenchStore, "db"> & {
-    listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
-  },
-): ReviewDebtSummary {
-  const packets = listReviewPackets(store, { status: "all" })
-    .filter((packet) => packet.openCount > 0 || packet.deferredCount > 0);
-  return {
-    byType: countPacketDebt(packets, "itemType", "itemType"),
-    bySource: countPacketDebt(packets, "sourceId", "sourceId"),
-  };
-}
-
 export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
   return [
     `[${packet.count}] ${packet.sourceId} ${packet.itemType}`,
@@ -215,34 +189,6 @@ function deferredRelationshipPacketContext(item: ReviewItemRecord): string[] {
     typeof item.details.toEntityRef === "string" ? item.details.toEntityRef : "",
     typeof item.details.whyDeferred === "string" ? item.details.whyDeferred : "",
   ];
-}
-
-function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(
-  packets: ReviewPacketRecord[],
-  packetKey: K,
-  outputKey: P,
-): Array<{ [Q in P]: ReviewPacketRecord[K] } & { openCount: number; deferredCount: number }> {
-  const counts = new Map<ReviewPacketRecord[K], { openCount: number; deferredCount: number }>();
-  for (const packet of packets) {
-    const key = packet[packetKey];
-    const existing = counts.get(key) ?? { openCount: 0, deferredCount: 0 };
-    existing.openCount += packet.openCount;
-    existing.deferredCount += packet.deferredCount;
-    counts.set(key, existing);
-  }
-  return [...counts.entries()]
-    .sort(([leftKey, left], [rightKey, right]) =>
-      (right.openCount + right.deferredCount) - (left.openCount + left.deferredCount) ||
-      String(leftKey).localeCompare(String(rightKey))
-    )
-    .map(([key, count]) => ({
-      [outputKey]: key,
-      openCount: count.openCount,
-      deferredCount: count.deferredCount,
-    } as { [Q in P]: ReviewPacketRecord[K] } & {
-      openCount: number;
-      deferredCount: number;
-    }));
 }
 
 function packetListFilters(filters?: ReviewItemFilters): {

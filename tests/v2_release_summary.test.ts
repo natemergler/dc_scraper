@@ -313,7 +313,7 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
   );
 });
 
-Deno.test("release summary surfaces unresolved review debt by source and type", async () => {
+Deno.test("release summary keeps decision counts without serializing review ledgers", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -358,16 +358,8 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
       browse_only_open_review_item_count: number;
       deferred_review_item_count: number;
       failed_source_count: number;
-      review_debt_by_type: Array<{
-        item_type: string;
-        open_count: number;
-        deferred_count: number;
-      }>;
-      review_debt_by_source: Array<{
-        source_id: string;
-        open_count: number;
-        deferred_count: number;
-      }>;
+      review_debt_by_type?: unknown;
+      review_debt_by_source?: unknown;
       top_unresolved_review_items?: unknown;
       review_items_by_status?: unknown;
       review_items_by_type?: unknown;
@@ -388,44 +380,8 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   );
   assertEquals(manifest.release_summary.deferred_review_item_count, status.review.deferred);
   assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
-  assertEquals(
-    manifest.release_summary.review_debt_by_type,
-    status.review.byType.map((row) => ({
-      item_type: row.itemType,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
-  );
-  assertEquals(
-    manifest.release_summary.review_debt_by_source,
-    status.review.bySource.map((row) => ({
-      source_id: row.sourceId,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
-  );
-  assert(
-    manifest.release_summary.review_debt_by_type.some((row) =>
-      row.item_type === "entity_candidate" && row.open_count === 1 && row.deferred_count === 0
-    ),
-  );
-  assert(
-    manifest.release_summary.review_debt_by_type.some((row) =>
-      row.item_type === "legal_ref" && row.open_count === 0 && row.deferred_count === 1
-    ),
-  );
-  assert(
-    manifest.release_summary.review_debt_by_source.some((row) =>
-      row.source_id === "test.signature.entities" && row.open_count === 1 &&
-      row.deferred_count === 0
-    ),
-  );
-  assert(
-    manifest.release_summary.review_debt_by_source.some((row) =>
-      row.source_id === "test.signature.legal_refs" && row.open_count === 0 &&
-      row.deferred_count === 1
-    ),
-  );
+  assertEquals(manifest.release_summary.review_debt_by_type, undefined);
+  assertEquals(manifest.release_summary.review_debt_by_source, undefined);
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
   assertEquals(manifest.release_summary.top_unresolved_review_items, undefined);
   assertEquals(manifest.release_summary.review_items_by_status, undefined);
@@ -477,41 +433,13 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   }).output();
   const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
     releaseSummary: {
-      review_debt_by_type: Array<{
-        item_type: string;
-        open_count: number;
-        deferred_count: number;
-      }>;
-      review_debt_by_source: Array<{
-        source_id: string;
-        open_count: number;
-        deferred_count: number;
-      }>;
+      review_debt_by_type?: unknown;
+      review_debt_by_source?: unknown;
       top_unresolved_review_items?: unknown;
     };
   };
   assertEquals(inspectJsonOutput.code, 0);
-  assert(
-    inspectJson.releaseSummary.review_debt_by_type.some((row) =>
-      row.item_type === "entity_candidate" && row.open_count === 1 && row.deferred_count === 0
-    ),
-  );
-  assert(
-    inspectJson.releaseSummary.review_debt_by_type.some((row) =>
-      row.item_type === "legal_ref" && row.open_count === 0 && row.deferred_count === 1
-    ),
-  );
-  assert(
-    inspectJson.releaseSummary.review_debt_by_source.some((row) =>
-      row.source_id === "test.signature.entities" && row.open_count === 1 &&
-      row.deferred_count === 0
-    ),
-  );
-  assert(
-    inspectJson.releaseSummary.review_debt_by_source.some((row) =>
-      row.source_id === "test.signature.legal_refs" && row.open_count === 0 &&
-      row.deferred_count === 1
-    ),
-  );
+  assertEquals(inspectJson.releaseSummary.review_debt_by_type, undefined);
+  assertEquals(inspectJson.releaseSummary.review_debt_by_source, undefined);
   assertEquals(inspectJson.releaseSummary.top_unresolved_review_items, undefined);
 });
