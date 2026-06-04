@@ -1335,15 +1335,11 @@ Deno.test("imports representative connector results and source inspection stays 
       JSON.stringify(enterpriseDatasetInventoryMetadataFixture),
     ],
     [
-      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json",
-      JSON.stringify({ count: 3 }),
-    ],
-    [
-      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json",
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json",
       JSON.stringify(enterpriseDatasetInventoryRowsPageOneFixture),
     ],
     [
-      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json",
+      "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=2&f=json",
       JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture),
     ],
     ["https://www.dccourts.gov/", dcCourtsHomeFixture],
@@ -7164,11 +7160,9 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
               return JSON.stringify(governmentOperationsCatalogFixture);
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
               return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
-              return JSON.stringify({ count: 3 });
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json":
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageOneFixture);
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=2&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture);
             default:
               throw new Error(`Unexpected url ${url}`);
@@ -7184,9 +7178,8 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
   assertEquals(progressMessages, [
     "Fetching Government Operations catalog metadata",
     "Fetching Enterprise Dataset Inventory table metadata",
-    "Counting Enterprise Dataset Inventory rows",
-    "Fetching Enterprise Dataset Inventory rows 1-2 of 3 (page 1/2)",
-    "Fetching Enterprise Dataset Inventory rows 3-3 of 3 (page 2/2)",
+    "Fetching Enterprise Dataset Inventory rows starting at 1 (page 1, up to 2)",
+    "Fetching Enterprise Dataset Inventory rows starting at 3 (page 2, up to 2)",
   ]);
   assert(result.endpointResults.every((endpoint) => endpoint.status === "success"));
   const catalogParsed = result.endpointResults[0].parsed;
