@@ -45,7 +45,14 @@ export interface SourceFetchProgressEvent {
   title: string;
   index: number;
   total: number;
-  phase: "start" | "connector-progress" | "import" | "import-progress" | "success" | "failed";
+  phase:
+    | "start"
+    | "connector-progress"
+    | "connector-ready"
+    | "import"
+    | "import-progress"
+    | "success"
+    | "failed";
   message?: string;
   importProgress?: ImportProgressEvent;
   connectorDurationMs?: number;
@@ -411,12 +418,22 @@ async function fetchConnectorResult(
           : undefined,
       }),
     );
+    const connectorDurationMs = performance.now() - connectorStartedAt;
+    onProgress?.({
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      index: sourceIndex,
+      total,
+      phase: "connector-ready",
+      connectorDurationMs,
+      totalDurationMs: performance.now() - sourceStartedAt,
+    });
     return {
       status: "success",
       connector,
       sourceIndex,
       sourceStartedAt,
-      connectorDurationMs: performance.now() - connectorStartedAt,
+      connectorDurationMs,
       result,
     };
   } catch (error) {
@@ -576,6 +593,14 @@ export function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
       ? ""
       : ` (${formatDuration(event.connectorDurationMs)})`;
     console.error(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}${elapsed}`);
+    return;
+  }
+  if (event.phase === "connector-ready") {
+    console.error(
+      `${prefix} Connector ready ${event.sourceId}; queued for ordered import (${
+        formatDuration(event.connectorDurationMs)
+      })`,
+    );
     return;
   }
   if (event.phase === "import") {

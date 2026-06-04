@@ -269,6 +269,54 @@ Deno.test("source fetch --all prefetches connectors while importing in requested
   assertEquals(imported, ["alpha.source", "beta.source"]);
 });
 
+Deno.test("source fetch --all reports connector completion before ordered import", async () => {
+  const alphaReady = deferred<ConnectorResult>();
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => await alphaReady.promise),
+    fixtureConnector(
+      "beta.source",
+      "Beta Source",
+      async () => fixtureResult("beta.source", "Beta Source"),
+    ),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async () => {},
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const command = captureConsole(async () =>
+    await handleSourceCommand(["source", "fetch", "--all"], {}, deps)
+  );
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  alphaReady.resolve(fixtureResult("alpha.source", "Alpha Source"));
+
+  const { result, stderr } = await command;
+
+  assertEquals(result, true);
+  assertStringIncludes(
+    stderr.join("\n"),
+    "[2/2] Connector ready beta.source; queued for ordered import",
+  );
+});
+
 Deno.test("source fetch --all continues through failures and throws a summary error", async () => {
   const imported: string[] = [];
   const connectors = [
