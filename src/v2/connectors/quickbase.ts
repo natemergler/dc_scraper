@@ -51,12 +51,6 @@ const quickbaseColumns = {
   appointee: "appointee designation",
 };
 
-const quickbaseSafeSeededAuthorityEndpoints = new Set([
-  "university of the district of columbia community college",
-  "office of budget and performance management",
-  "office of the chief of staff",
-]);
-
 export const quickbaseConnector: SourceConnector = {
   sourceId: quickbaseSource.sourceId,
   source: quickbaseSource,
@@ -970,8 +964,8 @@ function isSafeQuickbaseSeededAuthorityEndpoint(
   appointeeDesignation: string,
 ): boolean {
   if (resolvesToExplicitKnownEntityRef(name)) return true;
-  if (!/\bDC Agency Representative\b/i.test(appointeeDesignation)) return false;
-  return quickbaseSafeSeededAuthorityEndpoints.has(normalizeQuickbasePolicyName(name));
+  if (!isQuickbaseDcAgencyRepresentative(appointeeDesignation)) return false;
+  return isLikelyQuickbaseOrganization(name);
 }
 
 function resolvesToExplicitKnownEntityRef(value: string): boolean {
@@ -981,8 +975,8 @@ function resolvesToExplicitKnownEntityRef(value: string): boolean {
   return knownRef !== buildEntityId(acronymStripped);
 }
 
-function normalizeQuickbasePolicyName(name: string): string {
-  return name.trim().toLowerCase();
+function isQuickbaseDcAgencyRepresentative(value: string): boolean {
+  return /\bDC Agency Representative\b/i.test(value);
 }
 
 function deriveQuickbaseCluster(board: string): string | undefined {

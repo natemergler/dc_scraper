@@ -544,6 +544,7 @@ async function makeMinimalReleaseDir(): Promise<string> {
 }
 
 function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
+  const normalized = readme.toLowerCase();
   for (
     const snippet of [
       "review_status",
@@ -552,7 +553,7 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "review items by",
       "review debt by",
       "unresolved",
-      "Unresolved workbench state:",
+      "unresolved workbench state:",
       "deferred",
       "blocked",
       "open review",
@@ -564,19 +565,23 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "candidate.",
       "relationship.",
       "legal.",
-      "Blocked and stale counts report unresolved work",
+      "blocked and stale counts report unresolved work",
       "stay review-first",
       "caveat",
       "gap",
       "incomplete",
       "does not claim complete",
       "current-schema",
+      "local db",
+      "local database",
+      "contract",
+      "workbench",
       "legacy",
       "migration",
       "schema_migrations",
     ]
   ) {
-    assert(!readme.includes(snippet), `README should not include ${snippet}`);
+    assert(!normalized.includes(snippet), `README should not include ${snippet}`);
   }
 }
 

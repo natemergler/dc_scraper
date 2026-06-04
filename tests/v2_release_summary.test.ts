@@ -455,6 +455,7 @@ function releaseStatusNote(status: ReturnType<typeof buildWorkbenchStatus>): str
 }
 
 function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
+  const normalized = readme.toLowerCase();
   for (
     const snippet of [
       "review_status",
@@ -463,13 +464,13 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "review items by",
       "review debt by",
       "unresolved",
-      "Unresolved workbench state:",
+      "unresolved workbench state:",
       "unresolved rows",
       "deferred",
       "blocked",
       "stale review:",
       "blocked by source:",
-      "Blocked and stale counts report unresolved work",
+      "blocked and stale counts report unresolved work",
       "stay review-first",
       "caveat",
       "gap",
@@ -477,11 +478,15 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "coverage note",
       "does not claim complete",
       "current-schema",
+      "local db",
+      "local database",
+      "contract",
+      "workbench",
       "legacy",
       "migration",
       "schema_migrations",
     ]
   ) {
-    assert(!readme.includes(snippet), `README should not include ${snippet}`);
+    assert(!normalized.includes(snippet), `README should not include ${snippet}`);
   }
 }

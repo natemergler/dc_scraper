@@ -333,6 +333,98 @@ Deno.test("relationship imports seed safe endpoint candidates from Quickbase sea
   assertEquals(blockedCount.count, 0);
 });
 
+Deno.test("relationship endpoint refetch can upgrade pending seeded candidates to safe", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_seat', 'Source Seat', 'seat', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.mota.quickbase.refetch_safe_endpoint",
+      sourceItemKey: "refetch-safe-endpoint-row",
+      fromEntityRef: "dc.source_seat",
+      toEntityRef: "dc.office_of_refetch_policy",
+      toEntityName: "Office of Refetch Policy",
+      relationshipType: "designated_by",
+      rawValue: "Office of Refetch Policy (ORP) Designee",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const pendingBefore = workbench.db.prepare(
+    `select entity_candidates.review_status as candidateStatus,
+            review_items.status as reviewStatus,
+            json_extract(review_items.details_json, '$.safeToAutoAccept') as safeToAutoAccept
+     from entity_candidates
+     join review_items on review_items.subject_id = entity_candidates.candidate_id
+     where entity_candidates.proposed_entity_id = 'dc.office_of_refetch_policy'`,
+  ).get() as
+    | { candidateStatus: string; reviewStatus: string; safeToAutoAccept?: number | null }
+    | undefined;
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.mota.quickbase.refetch_safe_endpoint",
+      sourceItemKey: "refetch-safe-endpoint-row",
+      fromEntityRef: "dc.source_seat",
+      toEntityRef: "dc.office_of_refetch_policy",
+      toEntityName: "Office of Refetch Policy",
+      toEntitySafeToAutoAccept: true,
+      relationshipType: "designated_by",
+      rawValue: "Office of Refetch Policy (ORP) Designee",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const acceptedEntity = workbench.db.prepare(
+    `select name,
+            kind,
+            review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_refetch_policy'`,
+  ).get() as { name: string; kind: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.source_seat:designated_by:dc.office_of_refetch_policy'`,
+  ).get() as { relationshipId: string } | undefined;
+  const seededReview = workbench.db.prepare(
+    `select status,
+            json_extract(details_json, '$.safeToAutoAccept') as safeToAutoAccept
+     from review_items
+     where subject_id = 'candidate.mota.quickbase.relationship_mota_quickbase_refetch_safe_endpoint_to_endpoint'`,
+  ).get() as { status: string; safeToAutoAccept?: number | null } | undefined;
+  workbench.close();
+
+  assertEquals(pendingBefore, {
+    candidateStatus: "pending",
+    reviewStatus: "open",
+    safeToAutoAccept: null,
+  });
+  assertEquals(acceptedEntity, {
+    name: "Office of Refetch Policy",
+    kind: "office",
+    reviewStatus: "accepted",
+  });
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.source_seat:designated_by:dc.office_of_refetch_policy",
+  );
+  assertEquals(seededReview, {
+    status: "resolved",
+    safeToAutoAccept: 1,
+  });
+});
+
 function countReconciliationPrepares(workbench: Workbench): {
   prepareCount: number;
   endpointCandidateStatusQueries: number;

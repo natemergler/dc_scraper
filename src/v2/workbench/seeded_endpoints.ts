@@ -276,11 +276,7 @@ function endpointAlreadyKnown(
     `select 1 as found
      from canonical_entities
      where entity_id = ?
-     union all
-     select 1 as found
-     from entity_candidates
-     where proposed_entity_id = ?
      limit 1`,
-    [entityId, entityId],
+    [entityId],
   ));
 }

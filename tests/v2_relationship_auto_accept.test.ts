@@ -413,6 +413,71 @@ Deno.test("Quickbase designating-only authority seats do not create board govern
   assertEquals(remainingGovernanceReviewItems.length, 0);
 });
 
+Deno.test("Quickbase DC agency representative authority endpoints auto-materialize from organization text", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Example Agency Representative Board","Office of Example Policy (OEP) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`.trim();
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return csv;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const seatId = buildEntityId(
+    "Example Agency Representative Board Office of Example Policy Designee",
+  );
+  const examplePolicyOffice = workbench.db.prepare(
+    "select entity_id as entityId, name, kind, review_status as reviewStatus from canonical_entities where entity_id = 'dc.office_of_example_policy'",
+  ).get() as { entityId: string; name: string; kind: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
+  ).get(`${seatId}:designated_by:dc.office_of_example_policy`) as
+    | { relationshipId: string }
+    | undefined;
+  const remainingAuthorityReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.mota.quickbase",
+    relationshipType: "designated_by",
+  });
+  workbench.close();
+
+  assertEquals(examplePolicyOffice, {
+    entityId: "dc.office_of_example_policy",
+    name: "Office of Example Policy",
+    kind: "office",
+    reviewStatus: "accepted",
+  });
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    `${seatId}:designated_by:dc.office_of_example_policy`,
+  );
+  assertEquals(remainingAuthorityReviewItems.length, 0);
+});
+
 Deno.test("Quickbase accepted-endpoint appointee observation relationships auto-accept during import", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
