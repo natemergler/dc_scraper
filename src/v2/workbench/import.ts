@@ -268,19 +268,13 @@ function importParsedOutput(
   parsed: ConnectorResult["endpointResults"][number]["parsed"],
 ): void {
   if (!parsed) return;
-  const insertSourceItem = store.db.prepare(
-    "insert or replace into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  );
-  const insertEntityCandidate = store.db.prepare(
-    "insert or replace into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, branch, cluster, official_url, confidence, duplicate_hint, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from entity_candidates where candidate_id = ?), 'pending'))",
-  );
-  const insertRelationshipCandidate = store.db.prepare(
-    "insert or replace into relationship_candidates(relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from relationship_candidates where relationship_candidate_id = ?), 'pending'))",
-  );
   const insertReviewItem = store.db.prepare(
     "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
   );
+  const sourceItemRows: unknown[][] = [];
+  const entityCandidateRows: unknown[][] = [];
   const entityCandidateEvidenceRows: unknown[][] = [];
+  const relationshipCandidateRows: unknown[][] = [];
   const relationshipCandidateEvidenceRows: unknown[][] = [];
   for (const field of parsed.fields ?? []) {
     const artifactRecord = artifactAt(artifactRecords, field.artifactIndex);
@@ -307,21 +301,34 @@ function importParsedOutput(
       artifactIndex: item.artifactIndex ?? 0,
       artifactPath: artifactRecord.artifactPath,
     });
-    runPrepared(
-      insertSourceItem,
-      [
-        sourceItemId,
-        sourceId,
-        endpointId,
-        runId,
-        artifactRecord.artifactId,
-        item.itemKey,
-        item.itemType,
-        item.title,
-        JSON.stringify(item.body),
-      ],
-    );
+    sourceItemRows.push([
+      sourceItemId,
+      sourceId,
+      endpointId,
+      runId,
+      artifactRecord.artifactId,
+      item.itemKey,
+      item.itemType,
+      item.title,
+      JSON.stringify(item.body),
+    ]);
   }
+  bulkInsertRows(
+    store.db,
+    "source_items",
+    [
+      "source_item_id",
+      "source_id",
+      "endpoint_id",
+      "run_id",
+      "artifact_id",
+      "item_key",
+      "item_type",
+      "title",
+      "body_json",
+    ],
+    sourceItemRows,
+  );
   deleteStaleLegalRefsForParsedItems(
     store,
     sourceId,
@@ -331,24 +338,21 @@ function importParsedOutput(
   );
   for (const candidate of parsed.entityCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
-    runPrepared(
-      insertEntityCandidate,
-      [
-        candidate.candidateId,
-        sourceItem.sourceItemId,
-        candidate.proposedEntityId,
-        candidate.name,
-        candidate.name.toLowerCase(),
-        candidate.kind,
-        candidate.rawKind ?? null,
-        candidate.branch ?? null,
-        candidate.cluster ?? null,
-        candidate.officialUrl ?? null,
-        candidate.confidence ?? null,
-        candidate.duplicateHint ?? null,
-        candidate.candidateId,
-      ],
-    );
+    entityCandidateRows.push([
+      candidate.candidateId,
+      sourceItem.sourceItemId,
+      candidate.proposedEntityId,
+      candidate.name,
+      candidate.name.toLowerCase(),
+      candidate.kind,
+      candidate.rawKind ?? null,
+      candidate.branch ?? null,
+      candidate.cluster ?? null,
+      candidate.officialUrl ?? null,
+      candidate.confidence ?? null,
+      candidate.duplicateHint ?? null,
+      candidate.candidateId,
+    ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
       const artifactRecord = artifactAt(
         artifactRecords,
@@ -367,6 +371,27 @@ function importParsedOutput(
   }
   bulkInsertRows(
     store.db,
+    "entity_candidates",
+    [
+      "candidate_id",
+      "source_item_id",
+      "proposed_entity_id",
+      "name",
+      "normalized_name",
+      "kind",
+      "raw_kind",
+      "branch",
+      "cluster",
+      "official_url",
+      "confidence",
+      "duplicate_hint",
+      "review_status",
+    ],
+    entityCandidateRows,
+    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from entity_candidates where candidate_id = ?), 'pending'))",
+  );
+  bulkInsertRows(
+    store.db,
     "entity_candidate_evidence",
     [
       "evidence_id",
@@ -381,19 +406,16 @@ function importParsedOutput(
   );
   for (const candidate of parsed.relationshipCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
-    runPrepared(
-      insertRelationshipCandidate,
-      [
-        candidate.relationshipCandidateId,
-        sourceItem.sourceItemId,
-        candidate.fromEntityRef,
-        candidate.toEntityRef,
-        candidate.relationshipType,
-        candidate.rawValue ?? null,
-        candidate.needsReview ? 1 : 0,
-        candidate.relationshipCandidateId,
-      ],
-    );
+    relationshipCandidateRows.push([
+      candidate.relationshipCandidateId,
+      sourceItem.sourceItemId,
+      candidate.fromEntityRef,
+      candidate.toEntityRef,
+      candidate.relationshipType,
+      candidate.rawValue ?? null,
+      candidate.needsReview ? 1 : 0,
+      candidate.relationshipCandidateId,
+    ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
       const artifactRecord = artifactAt(
         artifactRecords,
@@ -410,6 +432,22 @@ function importParsedOutput(
       ]);
     }
   }
+  bulkInsertRows(
+    store.db,
+    "relationship_candidates",
+    [
+      "relationship_candidate_id",
+      "source_item_id",
+      "from_entity_ref",
+      "to_entity_ref",
+      "relationship_type",
+      "raw_value",
+      "needs_review",
+      "review_status",
+    ],
+    relationshipCandidateRows,
+    "(?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from relationship_candidates where relationship_candidate_id = ?), 'pending'))",
+  );
   bulkInsertRows(
     store.db,
     "relationship_candidate_evidence",
@@ -615,13 +653,13 @@ function bulkInsertRows(
   tableName: string,
   columnNames: string[],
   rows: unknown[][],
+  rowValueSql = `(${columnNames.map(() => "?").join(", ")})`,
 ): void {
   if (rows.length === 0) return;
-  const rowPlaceholder = `(${columnNames.map(() => "?").join(", ")})`;
   const columns = columnNames.join(", ");
   for (let offset = 0; offset < rows.length; offset += BULK_INSERT_ROW_LIMIT) {
     const chunk = rows.slice(offset, offset + BULK_INSERT_ROW_LIMIT);
-    const placeholders = chunk.map(() => rowPlaceholder).join(", ");
+    const placeholders = chunk.map(() => rowValueSql).join(", ");
     const params = chunk.flat();
     run(
       db,
