@@ -61,9 +61,9 @@ export async function renderReleaseInspection(
     `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
-    `Decision status: open=${summary.open_review_item_count ?? 0} (human decisions=${
+    `Decision status: open=${
       summary.open_human_decision_review_item_count ?? summary.open_review_item_count ?? 0
-    }, browse-only=${summary.browse_only_open_review_item_count ?? 0}), deferred=${
+    }, browse rows=${summary.browse_only_open_review_item_count ?? 0}, deferred=${
       summary.deferred_review_item_count ?? 0
     }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
       summary.blocked_reconciliation_count ?? 0

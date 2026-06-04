@@ -26,6 +26,8 @@ Deno.test("release readiness projection uses canonical release summary fields", 
     source_count: 1,
     failed_source_count: 0,
     open_review_item_count: 2,
+    open_human_decision_review_item_count: 1,
+    browse_only_open_review_item_count: 1,
     deferred_review_item_count: 0,
     stale_review_item_count: 0,
     blocked_reconciliation_count: 0,
@@ -35,7 +37,7 @@ Deno.test("release readiness projection uses canonical release summary fields", 
   assertEquals(releaseReadinessInputFromSummary(summary), {
     sourceCount: 1,
     failedSourceCount: 0,
-    openReviewItemCount: 2,
+    openReviewItemCount: 1,
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
     blockedReconciliationCount: 0,
@@ -45,6 +47,15 @@ Deno.test("release readiness projection uses canonical release summary fields", 
   assertEquals(
     classifyReleaseReadiness(releaseReadinessInputFromSummary(summary)),
     "usable-with-warnings",
+  );
+  assertEquals(
+    classifyReleaseReadiness(
+      releaseReadinessInputFromSummary({
+        ...summary,
+        open_human_decision_review_item_count: 0,
+      }),
+    ),
+    "usable",
   );
   assertEquals(
     classifyReleaseReadiness(
@@ -442,10 +453,10 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(
     inspectText,
-    "Decision status: open=1 (human decisions=0, browse-only=1), deferred=1",
+    "Decision status: open=0, browse rows=1, deferred=1",
   );
-  assert(!inspectText.includes("Review debt by type:"));
-  assert(!inspectText.includes("Review debt by source:"));
+  assert(!inspectText.includes("Review ledger by type:"));
+  assert(!inspectText.includes("Review ledger by source:"));
   assert(!inspectText.includes("test.signature.entities(open=1,deferred=0)"));
   assert(!inspectText.includes("test.signature.legal_refs(open=0,deferred=1)"));
 
