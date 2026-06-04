@@ -158,7 +158,7 @@ Deno.test("release build CLI keeps final success on stdout and progress on stder
   const stderr = new TextDecoder().decode(output.stderr);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, `Built v2 release ${outDir}`);
+  assertStringIncludes(stdout, `Built release ${outDir}`);
   assert(!stdout.includes("Writing dcgov.sqlite"));
   assertStringIncludes(stderr, "Release build: Preparing release directory");
   assertStringIncludes(stderr, "Release build: Writing dcgov.sqlite");
@@ -193,7 +193,7 @@ Deno.test("release build CLI accepts --output as an alias for --out", async () =
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, `Built v2 release ${outDir}`);
+  assertStringIncludes(stdout, `Built release ${outDir}`);
   assertEquals(await exists(join(outDir, "manifest.json")), true);
 });
 
@@ -386,7 +386,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assert(!manifestText.includes("202-555-0100"));
   assertEquals(releaseDbContactHits.count, 0);
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
-  assertStringIncludes(readme, "DCGov v2 Release");
+  assertStringIncludes(readme, "DCGov Release");
   assertStringIncludes(
     readme,
     "`README.md`: package overview, model semantics, and release counts",

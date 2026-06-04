@@ -45,7 +45,7 @@ export async function handleReleaseCommand(
           },
         }),
     );
-    console.log(`Built v2 release ${result.outDir}`);
+    console.log(`Built release ${result.outDir}`);
     return true;
   }
   if (args[1] === "verify") {

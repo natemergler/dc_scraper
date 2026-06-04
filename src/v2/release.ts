@@ -543,7 +543,7 @@ async function buildReleaseSqlite(
 function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
   const legalByType =
     summary.legal_refs_by_type.map((item) => `${item.ref_type}=${item.count}`).join(", ") || "none";
-  return `# DCGov v2 Release
+  return `# DCGov Release
 
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
 
