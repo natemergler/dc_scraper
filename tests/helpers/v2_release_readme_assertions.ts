@@ -9,6 +9,7 @@ export function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) 
       "review status note:",
       "review items by",
       "review debt by",
+      "debt",
       "unresolved",
       "unresolved workbench state:",
       "deferred",
