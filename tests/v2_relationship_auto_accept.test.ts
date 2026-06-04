@@ -235,7 +235,7 @@ Deno.test("accepting a legal ref can auto-accept a newly safe Open DC authority 
   assertEquals(reviewItems.length, 0);
 });
 
-Deno.test("Quickbase trusted governing-agency seat relationships auto-accept when endpoints are accepted", async () => {
+Deno.test("Quickbase trusted designee authority relationships auto-accept when endpoints are accepted", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -295,14 +295,20 @@ Deno.test("Quickbase trusted governing-agency seat relationships auto-accept whe
      )
      order by relationship_id`,
   ).all(
-    `${buildEntityId("Example Charter Board")}:governed_by:dc.public_charter_school_board_pcsb`,
     `${
-      buildEntityId("Example Licensing Board")
-    }:governed_by:dc.department_of_licensing_and_consumer_protection`,
-    `${buildEntityId("Example Role Board")}:governed_by:dc.department_of_employment_services`,
+      buildEntityId("Example Charter Board Public Charter School Board Designee")
+    }:designated_by:dc.public_charter_school_board_pcsb`,
+    `${
+      buildEntityId(
+        "Example Licensing Board Department of Consumer and Regulatory Affairs Designee",
+      )
+    }:designated_by:dc.department_of_licensing_and_consumer_protection`,
+    `${
+      buildEntityId("Example Role Board Director of the Department of Employment Services Designee")
+    }:designated_by:dc.department_of_employment_services`,
   ) as Array<{ relationshipId: string }>;
   const pendingGoverningRelationships = workbench.db.prepare(
-    "select count(*) as count from relationship_candidates where relationship_type = 'governed_by' and review_status = 'pending'",
+    "select count(*) as count from relationship_candidates where relationship_type = 'governed_by'",
   ).get() as { count: number };
   const reviewItems = workbench.listReviewItems({
     mode: "relationships",
@@ -375,10 +381,16 @@ Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts un
     mode: "relationships",
     subjectPrefix: "relationship.mota.quickbase",
   });
+  const quickbaseGovernedByCandidates = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     join source_items using(source_item_id)
+     where source_items.source_id = 'mota.quickbase'
+       and relationship_candidates.relationship_type = 'governed_by'`,
+  ).get() as { count: number };
   workbench.close();
 
   assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
-    "dc.commission_on_nightlife_and_culture_cnc:governed_by:dc.alcoholic_beverage_and_cannabis_administration",
     "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
@@ -397,6 +409,7 @@ Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts un
     observedValue: "Mayoral Appointee",
   });
   assertEquals(remainingReviewItems.length, 0);
+  assertEquals(quickbaseGovernedByCandidates.count, 0);
 });
 
 Deno.test("Quickbase designating-only authority seats do not create board governance review work", async () => {

@@ -1676,7 +1676,7 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
   assert(!publicFacts.includes("private contact metadata"));
 });
 
-Deno.test("quickbase governing-agency parsing normalizes trusted designee seats and skips unsupported role/category seats", async () => {
+Deno.test("quickbase designee authority parsing normalizes trusted seats and skips unsupported role/category seats", async () => {
   const parserResidueSeats = [
     "Chief Information Security Officer (CISO) Designee",
     "Senior Advisor to the Mayor designee",
@@ -1790,25 +1790,30 @@ ${
   );
 
   const relationships = result.endpointResults[1].parsed?.relationshipCandidates ?? [];
+  assertEquals(
+    relationships.some((candidate) => candidate.relationshipType === "governed_by"),
+    false,
+    "Quickbase seat designations should not emit body-level governed_by relationships",
+  );
   assert(
     relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
       candidate.rawValue === "Director of the Department of Employment Services (DOES) Designee" &&
-      candidate.toEntityRef === "dc.department_of_employment_services" &&
-      candidate.needsReview === false
+      candidate.toEntityRef === "dc.department_of_employment_services"
     ),
   );
   assert(
     relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
       candidate.rawValue === "Public Charter School Board (PCSB) Designee" &&
-      candidate.toEntityRef === "dc.public_charter_school_board_pcsb" &&
-      candidate.needsReview === false
+      candidate.toEntityRef === "dc.public_charter_school_board_pcsb"
     ),
   );
   assert(
     relationships.some((candidate) =>
+      candidate.relationshipType === "designated_by" &&
       candidate.rawValue === "Department of Consumer and Regulatory Affairs (DCRA) Designee" &&
-      candidate.toEntityRef === "dc.department_of_licensing_and_consumer_protection" &&
-      candidate.needsReview === false
+      candidate.toEntityRef === "dc.department_of_licensing_and_consumer_protection"
     ),
   );
   assert(
@@ -1872,14 +1877,6 @@ ${
   for (const { seat, parent } of parentAgencySubunitSeats) {
     assert(
       relationships.some((candidate) =>
-        candidate.relationshipType === "governed_by" &&
-        candidate.rawValue === seat &&
-        candidate.toEntityRef === parent
-      ),
-      `${seat} should emit governed_by ${parent}`,
-    );
-    assert(
-      relationships.some((candidate) =>
         candidate.relationshipType === "designated_by" &&
         candidate.rawValue === seat &&
         candidate.toEntityRef === parent
@@ -1898,16 +1895,6 @@ ${
     );
   }
   for (const { seat, parent, name } of safeSourceBackedAuthoritySeats) {
-    assert(
-      relationships.some((candidate) =>
-        candidate.relationshipType === "governed_by" &&
-        candidate.rawValue === seat &&
-        candidate.toEntityRef === parent &&
-        candidate.toEntityName === name &&
-        candidate.toEntitySafeToAutoAccept === true
-      ),
-      `${seat} should emit safe governed_by ${parent}`,
-    );
     assert(
       relationships.some((candidate) =>
         candidate.relationshipType === "designated_by" &&
@@ -5397,11 +5384,6 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
   });
   reopened.close();
   const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
-  assert(
-    relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture_cnc:governed_by:dc.alcoholic_beverage_and_cannabis_administration",
-    ),
-  );
   assert(
     relationshipIds.includes(
       "dc.commission_on_nightlife_and_culture_cnc:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",

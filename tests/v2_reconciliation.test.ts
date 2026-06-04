@@ -277,14 +277,14 @@ Deno.test("relationship imports seed reviewable endpoint candidates for missing 
   assertEquals(blockedAfter.count, 0);
 });
 
-Deno.test("relationship imports seed safe endpoint candidates from parsed endpoint names", async () => {
+Deno.test("relationship imports seed safe endpoint candidates from Quickbase seat authorities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_seat', 'Source Seat', 'seat', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
 
   await workbench.importConnectorResult(
@@ -292,13 +292,13 @@ Deno.test("relationship imports seed safe endpoint candidates from parsed endpoi
       sourceId: "mota.quickbase",
       relationshipCandidateId: "relationship.mota.quickbase.safe_endpoint_hint",
       sourceItemKey: "safe-endpoint-hint-row",
-      fromEntityRef: "dc.source_board",
+      fromEntityRef: "dc.source_seat",
       toEntityRef: "dc.office_of_budget_and_performance_management",
       toEntityName: "Office of Budget and Performance Management",
       toEntitySafeToAutoAccept: true,
-      relationshipType: "governed_by",
+      relationshipType: "designated_by",
       rawValue: "Director of the Office of Budget and Performance Management (OBPM) Designee",
-      needsReview: false,
+      needsReview: true,
     }),
     dataDir,
   );
@@ -313,7 +313,7 @@ Deno.test("relationship imports seed safe endpoint candidates from parsed endpoi
   const acceptedRelationship = workbench.db.prepare(
     `select relationship_id as relationshipId
      from canonical_relationships
-     where relationship_id = 'dc.source_board:governed_by:dc.office_of_budget_and_performance_management'`,
+     where relationship_id = 'dc.source_seat:designated_by:dc.office_of_budget_and_performance_management'`,
   ).get() as { relationshipId: string } | undefined;
   const seededReviewCount = workbench.db.prepare(
     `select count(*) as count
@@ -336,7 +336,7 @@ Deno.test("relationship imports seed safe endpoint candidates from parsed endpoi
   });
   assertEquals(
     acceptedRelationship?.relationshipId,
-    "dc.source_board:governed_by:dc.office_of_budget_and_performance_management",
+    "dc.source_seat:designated_by:dc.office_of_budget_and_performance_management",
   );
   assertEquals(seededReviewCount.count, 1);
   assertEquals(blockedCount.count, 0);
