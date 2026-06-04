@@ -170,7 +170,8 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(inspectText, "Release readiness: not-ready");
-  assertStringIncludes(inspectText, "Decision status: open=");
+  assertStringIncludes(inspectText, "Decisions: open=");
+  assertStringIncludes(inspectText, "Browse: source-backed rows=");
   assert(!inspectText.includes("Blocked by source: council.committees="));
 
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -409,8 +410,9 @@ Deno.test("release summary keeps decision counts without serializing review ledg
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(
     inspectText,
-    "Decision status: open=0, browse rows=1, deferred=1",
+    "Decisions: open=0, deferred=1, stale=0, blocked=0, placeholders=0",
   );
+  assertStringIncludes(inspectText, "Browse: source-backed rows=1");
   assert(!inspectText.includes("Review ledger by type:"));
   assert(!inspectText.includes("Review ledger by source:"));
   assert(!inspectText.includes("test.signature.entities(open=1,deferred=0)"));

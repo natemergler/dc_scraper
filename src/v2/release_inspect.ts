@@ -61,13 +61,14 @@ export async function renderReleaseInspection(
     `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
-    `Decision status: open=${
+    `Decisions: open=${
       summary.open_human_decision_review_item_count ?? summary.open_review_item_count ?? 0
-    }, browse rows=${summary.browse_only_open_review_item_count ?? 0}, deferred=${
-      summary.deferred_review_item_count ?? 0
-    }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
-      summary.blocked_reconciliation_count ?? 0
-    }, placeholders=${summary.placeholder_entity_count ?? 0}`,
+    }, deferred=${summary.deferred_review_item_count ?? 0}, stale=${
+      summary.stale_review_item_count ?? 0
+    }, blocked=${summary.blocked_reconciliation_count ?? 0}, placeholders=${
+      summary.placeholder_entity_count ?? 0
+    }`,
+    `Browse: source-backed rows=${summary.browse_only_open_review_item_count ?? 0}`,
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
