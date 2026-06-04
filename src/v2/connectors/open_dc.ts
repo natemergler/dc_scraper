@@ -318,7 +318,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
       }),
     );
     const governingAgencyRef = detail.governingAgency
-      ? openDcRelationshipEndpointRef(detail.governingAgency, proposedEntityId)
+      ? openDcRelationshipEndpointRef(detail.governingAgency, proposedEntityId, identity.name)
       : undefined;
     if (detail.governingAgency && governingAgencyRef) {
       const relationshipCandidateId = buildRelationshipCandidateId(
@@ -359,7 +359,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
       );
     }
     const administeringAgencyRef = detail.administeringAgency
-      ? openDcRelationshipEndpointRef(detail.administeringAgency, proposedEntityId)
+      ? openDcRelationshipEndpointRef(detail.administeringAgency, proposedEntityId, identity.name)
       : undefined;
     if (detail.administeringAgency && administeringAgencyRef) {
       const relationshipCandidateId = buildRelationshipCandidateId(
@@ -435,10 +435,10 @@ function resolveOpenDcCandidateIdentity(
   if (aliasName) {
     const knownAliasEntityRef = resolveKnownEntityRef(aliasName);
     if (knownAliasEntityRef) {
-      return { name: aliasName, proposedEntityId: knownAliasEntityRef };
+      return { name: normalized, proposedEntityId: knownAliasEntityRef };
     }
   }
-  return { name: normalized, proposedEntityId: buildEntityId(normalized) };
+  return { name: normalized, proposedEntityId: buildKnownEntityRef(normalized) };
 }
 
 function extractOpenDcParentheticalParts(
@@ -460,6 +460,7 @@ function isAcronymLike(value: string): boolean {
 function openDcRelationshipEndpointRef(
   label: string,
   subjectEntityRef: string,
+  subjectName: string,
 ): string | undefined {
   const normalizedLabel = normalizeName(label).toLowerCase();
   if (
@@ -468,8 +469,19 @@ function openDcRelationshipEndpointRef(
   ) {
     return undefined;
   }
+  if (matchesSubjectParentheticalAlias(label, subjectName)) return undefined;
   const endpointRef = buildKnownEntityRef(label);
   return endpointRef === subjectEntityRef ? undefined : endpointRef;
+}
+
+function matchesSubjectParentheticalAlias(label: string, subjectName: string): boolean {
+  const parenthetical = extractOpenDcParentheticalParts(subjectName);
+  if (!parenthetical) return false;
+  return compactAliasKey(label) === compactAliasKey(parenthetical.aliasName);
+}
+
+function compactAliasKey(value: string): string {
+  return normalizeName(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function shouldReviewOpenDcAgencyLabel(label: string): boolean {
