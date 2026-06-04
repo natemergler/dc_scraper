@@ -120,6 +120,10 @@ Deno.test("release builder reports progress phases for long package builds", asy
   assertEquals(events.find((event) => event.phase === "write-manifest")?.fileCount, 17);
 
   assertStringIncludes(
+    renderReleaseBuildProgress(events.find((event) => event.phase === "read-workbench")!),
+    "Release build: Reading accepted release rows",
+  );
+  assertStringIncludes(
     renderReleaseBuildProgress(events.find((event) => event.phase === "write-sqlite")!),
     "Release build: Writing dcgov.sqlite",
   );

@@ -92,7 +92,7 @@ export function printReleaseHelp(): void {
   console.log(`${dcCommand("release")}
 
 Workflow:
-  1. Verify the current workbench readiness and provenance before building
+  1. Verify package readiness and provenance before building
   2. Build the current release package
   3. Inspect the built package
   4. Use JSON output for scriptable release summary checks
