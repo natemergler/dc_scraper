@@ -299,7 +299,7 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
-Deno.test("batch accept-safe does not own source-specific needs-review relationship policy", async () => {
+Deno.test("batch accept-safe skips generic relationship candidates marked needs-review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -316,7 +316,7 @@ Deno.test("batch accept-safe does not own source-specific needs-review relations
     ).run(entityId, name);
   }
 
-  const relationshipCandidateId = "relationship.council.committees.manual_fallback_oversight";
+  const relationshipCandidateId = "relationship.test.batch_relationships.manual_fallback_oversight";
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
       sourceId: "test.batch_relationships",
@@ -334,18 +334,18 @@ Deno.test("batch accept-safe does not own source-specific needs-review relations
   const item = workbench.listReviewItems({
     mode: "relationships",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.council.committees.manual_fallback",
+    subjectPrefix: "relationship.test.batch_relationships.manual_fallback",
   })[0];
   assert(item);
   const canAccept = canBatchAcceptReviewItem(workbench, item, {
     mode: "relationships",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.council.committees.manual_fallback",
+    subjectPrefix: "relationship.test.batch_relationships.manual_fallback",
   });
   workbench.close();
 
   assertEquals(item.subjectId, relationshipCandidateId);
-  assertEquals(item.defaultAction, "accept");
+  assertEquals(item.defaultAction, "defer");
   assertEquals(canAccept, false);
 });
 

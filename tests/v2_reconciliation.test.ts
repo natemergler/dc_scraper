@@ -1397,6 +1397,71 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   assertEquals(item.details.toEntityRef, "dc.committee_of_the_whole");
 });
 
+Deno.test("generic relationship review defaults source-backed facts to accept and ambiguous facts to defer", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.source_board", "Source Board", "board"],
+      ["dc.target_agency", "Target Agency", "agency"],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.generic.relationships",
+      relationshipCandidateId: "relationship.test.generic.source_backed",
+      sourceItemKey: "source-backed-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "governed_by",
+      rawValue: "Target Agency",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.generic.relationships",
+      relationshipCandidateId: "relationship.test.generic.ambiguous",
+      sourceItemKey: "ambiguous-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "governed_by",
+      rawValue: "Ambiguous Target Agency",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const items = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.test.generic",
+  });
+  const sourceBackedCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
+  ).get("relationship.test.generic.source_backed") as { reviewStatus: string };
+  const acceptedRelationship = workbench.db.prepare(
+    `select count(*) as count
+     from canonical_relationships
+     where relationship_id = 'dc.source_board:governed_by:dc.target_agency'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  const actions = new Map(items.map((item) => [item.subjectId, item.defaultAction]));
+  assertEquals(sourceBackedCandidate.reviewStatus, "accepted");
+  assertEquals(acceptedRelationship.count, 1);
+  assertEquals(actions.has("relationship.test.generic.source_backed"), false);
+  assertEquals(actions.get("relationship.test.generic.ambiguous"), "defer");
+});
+
 Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

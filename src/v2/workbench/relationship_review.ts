@@ -109,6 +109,8 @@ function reviewDefaultAction(
       if (candidate.relationshipType !== "overseen_by") return "accept";
       return defaultActionForCouncilOversightTarget(candidate.rawValue);
     case "council.members":
+    case "bega.structure":
+    case "dccourts.structure":
     case "oanc.anc_profiles":
       return "accept";
     case "dcgis.agencies":
@@ -119,7 +121,7 @@ function reviewDefaultAction(
     case "open_dc.public_bodies":
       return "accept";
     default:
-      return candidate.needsReview === 1 ? "accept" : "defer";
+      return candidate.needsReview === 1 ? "defer" : "accept";
   }
 }
 
@@ -141,6 +143,9 @@ function reviewWhyDeferred(
       if (candidate.rawValue !== "Other") return undefined;
       return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
     default:
+      if (candidate.needsReview === 1) {
+        return "The source marked this relationship candidate as needing review.";
+      }
       return undefined;
   }
 }
