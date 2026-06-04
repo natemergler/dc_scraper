@@ -194,6 +194,91 @@ Deno.test("refetched accepted entity candidates move to corrected proposed entit
   );
 });
 
+Deno.test("refetched accepted entity candidates move dependent relationships after identity correction", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const candidateId = "candidate.test.identity.old_body";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId,
+      sourceItemKey: "old-body",
+      proposedEntityId: "dc.old_body",
+      name: "Old Body",
+      kind: "board",
+      observedName: "Old Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.target_body', 'Target Body', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.governing_body', 'Governing Body', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('resolution.test.identity.moved_relationship', 'accept_relationship_candidate', 'relationship.test.identity.old_body_governing_body', '{\"resolvedFromEntityId\":\"dc.old_body\",\"resolvedRelationshipType\":\"governed_by\",\"resolvedToEntityId\":\"dc.governing_body\"}', 'inline', 1, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('resolution.test.identity.self_relationship', 'accept_relationship_candidate', 'relationship.test.identity.old_body_target', '{\"resolvedFromEntityId\":\"dc.old_body\",\"resolvedRelationshipType\":\"part_of\",\"resolvedToEntityId\":\"dc.target_body\"}', 'inline', 2, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.old_body:governed_by:dc.governing_body', 'dc.old_body', 'governed_by', 'dc.governing_body', 'accepted', 'resolution.test.identity.moved_relationship', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.old_body:part_of:dc.target_body', 'dc.old_body', 'part_of', 'dc.target_body', 'accepted', 'resolution.test.identity.self_relationship', datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId,
+      sourceItemKey: "old-body",
+      proposedEntityId: "dc.target_body",
+      name: "Old Body",
+      kind: "board",
+      observedName: "Old Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const oldCanonical = workbench.db.prepare(
+    "select entity_id as entityId from canonical_entities where entity_id = 'dc.old_body'",
+  ).get() as { entityId: string } | undefined;
+  const targetCanonical = workbench.db.prepare(
+    "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.target_body'",
+  ).get() as { mergedCandidateIds: string };
+  const staleRelationships = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where from_entity_id = 'dc.old_body' or to_entity_id = 'dc.old_body' or from_entity_id = to_entity_id",
+  ).get() as { count: number };
+  const movedRelationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.target_body:governed_by:dc.governing_body'",
+  ).get() as { relationshipId: string } | undefined;
+  const movedPayload = workbench.db.prepare(
+    "select payload_json as payloadJson from resolution_events where event_id = 'resolution.test.identity.moved_relationship'",
+  ).get() as { payloadJson: string };
+  workbench.close();
+
+  assertEquals(oldCanonical, undefined);
+  assertEquals(
+    JSON.parse(targetCanonical.mergedCandidateIds) as string[],
+    [candidateId],
+  );
+  assertEquals(staleRelationships.count, 0);
+  assertEquals(movedRelationship?.relationshipId, "dc.target_body:governed_by:dc.governing_body");
+  assertEquals(JSON.parse(movedPayload.payloadJson), {
+    resolvedFromEntityId: "dc.target_body",
+    resolvedRelationshipType: "governed_by",
+    resolvedToEntityId: "dc.governing_body",
+  });
+});
+
 Deno.test("accepting a stronger entity candidate refreshes canonical fields", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
