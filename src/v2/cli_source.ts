@@ -37,7 +37,7 @@ export interface SourceFetchOutcome {
   errorText?: string;
 }
 
-interface SourceFetchProgressEvent {
+export interface SourceFetchProgressEvent {
   sourceId: string;
   title: string;
   index: number;
@@ -456,7 +456,7 @@ function flagConsumesValue(value: string): boolean {
   return value === "--db" || value === "--data-dir" || value === "--limit";
 }
 
-function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
+export function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
   const prefix = `[${event.index}/${event.total}]`;
   if (event.phase === "start") {
     console.log(`${prefix} Starting ${event.sourceId} - ${event.title}`);
@@ -473,7 +473,10 @@ function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
     return;
   }
   if (event.phase === "connector-progress") {
-    console.log(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}`);
+    const elapsed = event.connectorDurationMs === undefined
+      ? ""
+      : ` (${formatDuration(event.connectorDurationMs)})`;
+    console.log(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}${elapsed}`);
     return;
   }
   if (event.phase === "import") {

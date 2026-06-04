@@ -59,6 +59,7 @@ export const oancAncProfilesConnector: SourceConnector = {
       method: "GET",
       captureMode: "page",
     };
+    context.onProgress?.({ message: "Fetching OANC ANC listing page" });
     const response = await context.fetcher(oancSource.baseUrl);
     const listingHtml = await response.text();
     const listing = parseAncListingPage(listingHtml).slice(
@@ -66,7 +67,10 @@ export const oancAncProfilesConnector: SourceConnector = {
       context.limit ?? Number.POSITIVE_INFINITY,
     );
     const profileRecords: AncProfileRecord[] = [];
-    for (const entry of listing) {
+    for (const [index, entry] of listing.entries()) {
+      context.onProgress?.({
+        message: `Fetching OANC ANC profile ${index + 1}/${listing.length}: ${entry.label}`,
+      });
       const profileResponse = await context.fetcher(entry.url);
       const profileHtml = await profileResponse.text();
       profileRecords.push({

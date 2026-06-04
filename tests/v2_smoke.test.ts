@@ -108,7 +108,7 @@ Deno.test("smoke runs always use temp workspace paths and fetch only the request
     makeTempDir: async () => "/tmp/dc-smoke-fixture",
     fetchSources: async (
       sourceIds: string[],
-      options: { limit?: number },
+      options: { limit?: number; onProgress?: () => void },
       paths: SmokeWorkspacePaths,
     ) => {
       observed.sourceIds = sourceIds;

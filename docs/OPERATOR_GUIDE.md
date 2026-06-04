@@ -35,6 +35,9 @@ deno task dc -- smoke structure
 deno task dc -- smoke inventory
 ```
 
+Smoke profiles always create a fresh temp workspace and print the DB path they used. Use
+`source fetch --all --db <path> --data-dir <path>` when you need to fetch into explicit local paths.
+
 ## Audit And Review
 
 Check the current state before opening the manual decision inbox:
