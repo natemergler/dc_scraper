@@ -93,6 +93,48 @@ Deno.test("relationship legal refs stay unattached while the relationship is blo
   workbench.close();
 });
 
+Deno.test("entity legal refs attach after a conflicting candidate is rejected", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+
+  await workbench.importConnectorResult(
+    conflictedEntityLegalAttachmentSourceResult({
+      legalRefId: "legal.test.attachments.entity_authority",
+      candidateId: "candidate.test.attachments.source_board_conflict",
+      attachEntityRef: "dc.source_board",
+    }),
+    dataDir,
+  );
+
+  assertEquals(workbench.entityLegalRefs(), []);
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "reject_entity_candidate",
+      subjectId: "candidate.test.attachments.source_board_conflict",
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  assertEquals(workbench.entityLegalRefs(), [{
+    entity_id: "dc.source_board",
+    entity_name: "Source Board",
+    legal_ref_id: "legal.test.attachments.entity_authority",
+    ref_type: "dc_code",
+    citation_text: "D.C. Code § 1-204.04",
+    normalized_citation: "D.C. Code 1-204.04",
+    url: "https://code.dccouncil.gov/us/dc/council/code/sections/1-204.04",
+    review_status: "accepted",
+  }]);
+  workbench.close();
+});
+
 function seedAcceptedEntity(
   workbench: Workbench,
   entityId: string,
@@ -161,6 +203,85 @@ function legalAttachmentSourceResult(input: {
             fieldPath: "citation",
             observedValue: "D.C. Code § 1-204.04",
           }],
+        }],
+      },
+    }],
+  };
+}
+
+function conflictedEntityLegalAttachmentSourceResult(input: {
+  legalRefId: string;
+  candidateId: string;
+  attachEntityRef: string;
+}): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.legal_ref_attachments",
+      title: "Test Legal Ref Attachments",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/legal-ref-attachments",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.legal_ref_attachments.entity",
+        sourceId: "test.legal_ref_attachments",
+        title: "Entity legal ref attachment rows",
+        kind: "fixture",
+        url: "https://example.com/legal-ref-attachments/entity",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/legal-ref-attachments/entity",
+        contentText: JSON.stringify(input),
+      }],
+      parsed: {
+        items: [{
+          itemKey: input.legalRefId,
+          itemType: "fixture_legal_ref",
+          title: "Conflicting entity legal ref row",
+          body: input,
+        }],
+        entityCandidates: [{
+          candidateId: input.candidateId,
+          sourceItemKey: input.legalRefId,
+          proposedEntityId: input.attachEntityRef,
+          name: "Source Board",
+          kind: "board",
+          confidence: 0.99,
+          evidence: [{
+            fieldPath: "name",
+            observedValue: "Source Board",
+          }],
+        }],
+        legalRefs: [{
+          legalRefId: input.legalRefId,
+          sourceItemKey: input.legalRefId,
+          refType: "dc_code",
+          citationText: "D.C. Code § 1-204.04",
+          normalizedCitation: "D.C. Code 1-204.04",
+          url: "https://code.dccouncil.gov/us/dc/council/code/sections/1-204.04",
+          needsReview: false,
+          attachEntityRef: input.attachEntityRef,
+          evidence: [{
+            fieldPath: "citation",
+            observedValue: "D.C. Code § 1-204.04",
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: "review.test.attachments.source_board_conflict",
+          itemType: "entity_candidate",
+          subjectId: input.candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "reject",
+          details: {
+            name: "Source Board",
+            kind: "board",
+          },
         }],
       },
     }],
