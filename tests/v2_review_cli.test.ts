@@ -5,6 +5,9 @@ import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import {
+  dcgisBoardsCommissionsCouncilsMetadataFixture,
+  dcgisMetadataFixture,
+  dcgisRowsFixture,
   openDcBoardFixture,
   openDcIndexFixture,
   openDcTaskForceFixture,
@@ -397,6 +400,84 @@ Deno.test("entity conflict review rendering explains defer impact", async () => 
     "impact: accept attaches this board candidate to existing agency dc.conflicted_review_body; defer keeps the source conflict out of the release until decided.",
   );
   assert(!text.includes("accept promotes this candidate into canonical entities"));
+});
+
+Deno.test("DCGIS public-body agency-name conflict review asks the source identity question", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const bccRows = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 26,
+        NAME: "Alcoholic Beverage and Cannabis Administration",
+        SHORT_NAME: "ABC Board",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Alcoholic Beverage and Cannabis Administration",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://abca.dc.gov/page/abc-board",
+        AUTHORIZING_ORDER_LAW: "D.C. Code § 25-201",
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(dcgisRowsFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(bccRows);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+
+  const item = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.dcgis.boards_commissions_councils.26",
+  })[0];
+  const text = renderReviewItem(workbench, item);
+  workbench.close();
+
+  assertStringIncludes(
+    text,
+    "question: Is this source row naming a distinct public body from the governing agency?",
+  );
+  assertStringIncludes(
+    text,
+    "sourceGoverningAgency: Alcoholic Beverage and Cannabis Administration",
+  );
+  assertStringIncludes(text, "sourceShortName: ABC Board");
+  assertStringIncludes(text, "sourceUrl: https://abca.dc.gov/page/abc-board");
+  assertStringIncludes(
+    text,
+    "impact: decide whether this board source row is a distinct public body before attaching it to existing agency dc.alcoholic_beverage_and_cannabis_administration.",
+  );
+  assertStringIncludes(text, "evidence:");
+  assertStringIncludes(text, "GOVERNING_AGENCY <- Alcoholic Beverage and Cannabis Administration");
 });
 
 Deno.test("interactive review Enter accepts the default action for an explicit entity decision", async () => {
