@@ -87,6 +87,20 @@ export async function handleSourceCommand(
     return true;
   }
   if (args[1] === "fetch") {
+    if (hasHelpFlag(args, 2)) {
+      printSourceHelp({
+        tips: [
+          `run \`${
+            dcCommand("source fetch --all")
+          }\` to fetch every configured source into this workbench or \`${
+            dcCommand("source fetch dcgis.agencies")
+          }\` for one source`,
+        ],
+        showAvailableSources: true,
+        connectors: deps.connectors,
+      });
+      return true;
+    }
     const sourceIds = requestedSourceIds(args, deps.connectors);
     if (!sourceIds) {
       printSourceHelp({

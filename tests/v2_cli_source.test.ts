@@ -207,6 +207,51 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   );
 });
 
+Deno.test("source fetch help exits before connector execution", async () => {
+  let connectorRuns = 0;
+  let imports = 0;
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => {
+      connectorRuns += 1;
+      return fixtureResult("alpha.source", "Alpha Source");
+    }),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async () => {
+      imports += 1;
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "fetch", "alpha.source", "--help"], {}, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(connectorRuns, 0);
+  assertEquals(imports, 0);
+  assertEquals(stderr, []);
+  assertStringIncludes(stdout.join("\n"), "source fetch <source-id>");
+});
+
 Deno.test("source fetch --all prefetches connectors while importing in requested order", async () => {
   const events: string[] = [];
   const imported: string[] = [];
