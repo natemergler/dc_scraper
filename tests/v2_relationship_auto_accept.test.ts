@@ -533,6 +533,60 @@ Deno.test("accepted-endpoint Council oversight relationships auto-accept when de
   assertEquals(reviewItems.length, 0);
 });
 
+Deno.test("accepted-endpoint Council oversight relationships stay in review when default action is defer", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      [
+        "dc.committee_on_facilities_and_procurement",
+        "Committee on Facilities and Procurement",
+        "committee",
+      ],
+      [
+        "dc.committee_on_the_judiciary_and_public_safety",
+        "Committee on the Judiciary and Public Safety",
+        "committee",
+      ],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.defer_oversight",
+      sourceItemKey: "council-defer-oversight-row",
+      fromEntityRef: "dc.committee_on_facilities_and_procurement",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Committee on Facilities and Procurement",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const relationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.committee_on_facilities_and_procurement:overseen_by:dc.committee_on_the_judiciary_and_public_safety'",
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.test.auto_accept.council.defer_oversight",
+  });
+  workbench.close();
+
+  assertEquals(relationship, undefined);
+  assertEquals(reviewItems.length, 1);
+  assertEquals(reviewItems[0]?.defaultAction, "defer");
+});
+
 Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

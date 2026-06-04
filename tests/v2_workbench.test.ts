@@ -3271,6 +3271,7 @@ Deno.test("Council classified remaining oversight endpoints default to defer", a
             <ul>
               <li>Department of Health</li>
               <li>Cedar Hill Hospital</li>
+              <li>Committee on Facilities and Procurement</li>
               <li>All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health</li>
             </ul>
           </body></html>`;
@@ -3289,6 +3290,9 @@ Deno.test("Council classified remaining oversight endpoints default to defer", a
     item.subjectId.includes("committee_on_health_oversight")
   );
   const cedarHillItem = items.find((item) => item.details.rawValue === "Cedar Hill Hospital");
+  const facilitiesItem = items.find((item) =>
+    item.details.rawValue === "Committee on Facilities and Procurement"
+  );
   const groupedItem = items.find((item) =>
     item.details.rawValue ===
       "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health"
@@ -3296,6 +3300,7 @@ Deno.test("Council classified remaining oversight endpoints default to defer", a
 
   assertEquals(healthItem?.defaultAction, "accept");
   assertEquals(cedarHillItem?.defaultAction, "defer");
+  assertEquals(facilitiesItem?.defaultAction, "defer");
   assertEquals(groupedItem?.defaultAction, "defer");
 });
 

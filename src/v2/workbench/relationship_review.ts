@@ -1,5 +1,5 @@
 import { buildReviewItemId } from "../domain.ts";
-import { isScopedCouncilOversightTarget } from "../connectors/shared.ts";
+import { defaultActionForCouncilOversightTarget } from "../connectors/shared.ts";
 
 export interface RelationshipReviewCandidate {
   relationshipCandidateId: string;
@@ -17,43 +17,6 @@ export interface RelationshipReviewDraft {
   defaultAction: "accept" | "defer";
   details: Record<string, unknown>;
 }
-
-const defaultDeferCouncilOversightTargets = new Set([
-  "Access to Justice Initiative",
-  "Age-Friendly DC Task Force",
-  "Behavioral Health Planning Council",
-  "Cedar Hill Hospital",
-  "Committee on Facilities and Procurement",
-  "Committee on Housing and Neighborhood Revitalization",
-  "Commission and Office on Re-Entry and Returning Citizen Affairs",
-  "Contract Appeals Board",
-  "Corrections Information Council",
-  "Council on Physical Fitness, Health, and Nutrition",
-  "Green Finance Authority",
-  "Health Literacy Council",
-  "Interfaith Council",
-  "Interstate Compact Commissions",
-  "Labor/Management Partnership Council",
-  "Law Revision Commission",
-  "Metropolitan Washington Airports Authority",
-  "Metropolitan Washington Regional Ryan White Planning Council",
-  "Multistate Tax Commission",
-  "OCFO Office of Budget and Planning",
-  "Office and Commission on African Affairs",
-  "Office and Commission on African American Affairs",
-  "Office of and Commission on Human Rights",
-  "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
-  "Other Post-Employment Benefits/Retiree Health Contribution",
-  "Pay-As-You-Go Capital",
-  "Research Practice Partnership",
-  "Robert F. Kennedy Memorial Stadium Community Benefits Oversight Committee",
-  "Soil and Water Conservation District",
-  "Statehood Commission and delegation",
-  "Sustainable Energy Utility",
-  "Universal Paid Leave Fund",
-  "Washington Aqueduct",
-  "Washington Metropolitan Area Transit Authority",
-]);
 
 export function buildRelationshipReviewDraft(
   candidate: RelationshipReviewCandidate,
@@ -136,7 +99,7 @@ function reviewDefaultAction(
   switch (candidate.sourceId) {
     case "council.committees":
       if (candidate.relationshipType !== "overseen_by") return "accept";
-      return shouldDeferCouncilOversight(candidate.rawValue) ? "defer" : "accept";
+      return defaultActionForCouncilOversightTarget(candidate.rawValue);
     case "council.members":
     case "oanc.anc_profiles":
       return "accept";
@@ -153,10 +116,4 @@ function reviewDefaultAction(
     default:
       return candidate.needsReview === 1 ? "accept" : "defer";
   }
-}
-
-function shouldDeferCouncilOversight(rawValue?: string | null): boolean {
-  if (!rawValue) return false;
-  return defaultDeferCouncilOversightTargets.has(rawValue) ||
-    isScopedCouncilOversightTarget(rawValue);
 }
