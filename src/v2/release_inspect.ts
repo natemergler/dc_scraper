@@ -88,18 +88,6 @@ export async function renderReleaseInspection(
     }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
       summary.blocked_reconciliation_count ?? 0
     }, placeholders=${summary.placeholder_entity_count ?? 0}`,
-    `Review debt by type: ${
-      renderReviewDebtCounts(summary.review_debt_by_type ?? [], "item_type")
-    }`,
-    `Review debt by source: ${
-      renderReviewDebtCounts(summary.review_debt_by_source ?? [], "source_id")
-    }`,
-    `Blocked by source: ${
-      renderNamedCounts(summary.blocked_reconciliation_by_source ?? [], "source_id")
-    }`,
-    `Stale by prior decision: ${
-      renderNamedCounts(summary.stale_review_by_prior_decision_state ?? [], "prior_decision_state")
-    }`,
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
@@ -249,12 +237,4 @@ function renderNamedCounts<T extends string>(
   nameKey: T,
 ): string {
   return rows.map((row) => `${row[nameKey]}=${row.count}`).join(", ") || "none";
-}
-
-function renderReviewDebtCounts<T extends string>(
-  rows: Array<Record<T, string> & { open_count: number; deferred_count: number }>,
-  nameKey: T,
-): string {
-  return rows.map((row) => `${row[nameKey]}(open=${row.open_count},deferred=${row.deferred_count})`)
-    .join(", ") || "none";
 }

@@ -101,7 +101,8 @@ integrity plus release readiness.
 - `dc audit` answers "what is blocked and why?"
 - `dc release verify` answers "is this workbench ready to hand off, and do accepted release rows
   still trace to source-backed decisions?"
-- `dc release inspect` answers "does the built release package still match its manifest?"
+- `dc release inspect` answers "does the built release package still match its manifest?" Use
+  `dc release inspect --json` when you need aggregate review/readiness drilldowns from the manifest.
 
 If a command fails, keep the smallest real surface in mind: inspect one source, one review slice, or
 one release verification reason before widening again.
