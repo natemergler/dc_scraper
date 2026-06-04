@@ -1665,6 +1665,13 @@ Deno.test("quickbase governing-agency parsing normalizes trusted designee seats 
       name: "Office of Budget and Performance Management",
     },
   ];
+  const safeDesignatingOnlyAuthoritySeats = [
+    {
+      seat: "Office of the Chief of Staff (COS) Designee",
+      parent: "dc.office_of_the_chief_of_staff",
+      name: "Office of the Chief of Staff",
+    },
+  ];
   const csv = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
 "Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
@@ -1692,6 +1699,13 @@ ${
 ${
     safeSourceBackedAuthoritySeats.map(({ seat }, index) =>
       `"Example Source Backed Board ${
+        index + 1
+      }","${seat}","Filled","Mayoral Appointee, DC Agency Representative","Active"`
+    ).join("\n")
+  }
+${
+    safeDesignatingOnlyAuthoritySeats.map(({ seat }, index) =>
+      `"Example Designating Only Board ${
         index + 1
       }","${seat}","Filled","Mayoral Appointee, DC Agency Representative","Active"`
     ).join("\n")
@@ -1837,6 +1851,26 @@ ${
         candidate.toEntitySafeToAutoAccept === true
       ),
       `${seat} should emit safe governed_by ${parent}`,
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "designated_by" &&
+        candidate.rawValue === seat &&
+        candidate.toEntityRef === parent &&
+        candidate.toEntityName === name &&
+        candidate.toEntitySafeToAutoAccept === true
+      ),
+      `${seat} should emit safe designated_by ${parent}`,
+    );
+  }
+  for (const { seat, parent, name } of safeDesignatingOnlyAuthoritySeats) {
+    assertEquals(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "governed_by" &&
+        candidate.rawValue === seat
+      ),
+      false,
+      `${seat} should not emit governed_by`,
     );
     assert(
       relationships.some((candidate) =>

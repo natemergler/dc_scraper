@@ -53,6 +53,32 @@ const quickbaseColumns = {
   appointee: "appointee designation",
 };
 
+type QuickbaseAuthorityEndpointPolicy = {
+  safeToSeed: boolean;
+  designatingOnly: boolean;
+};
+
+const quickbaseAuthorityEndpointPolicies = new Map<string, QuickbaseAuthorityEndpointPolicy>([
+  [
+    "university of the district of columbia community college",
+    { safeToSeed: true, designatingOnly: false },
+  ],
+  [
+    "office of budget and performance management",
+    { safeToSeed: true, designatingOnly: false },
+  ],
+  [
+    "office of the chief of staff",
+    { safeToSeed: true, designatingOnly: true },
+  ],
+]);
+
+function getQuickbaseAuthorityEndpointPolicy(
+  name: string,
+): QuickbaseAuthorityEndpointPolicy | undefined {
+  return quickbaseAuthorityEndpointPolicies.get(normalizeQuickbasePolicyName(name));
+}
+
 export const quickbaseConnector: SourceConnector = {
   sourceId: quickbaseSource.sourceId,
   source: quickbaseSource,
@@ -407,7 +433,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     }
 
     const governingAgency = parseGoverningAgencyFromSeat(seat);
-    if (governingAgency) {
+    if (governingAgency && !suppressesQuickbaseBoardGovernanceEdge(governingAgency)) {
       const governingAgencyEntityId = buildKnownEntityRef(governingAgency);
       const relationshipKey = `${boardEntityId}>${governingAgencyEntityId}:governed_by`;
       if (!relationshipKeys.has(relationshipKey)) {
@@ -1051,9 +1077,7 @@ function isSafeQuickbaseSeededAuthorityEndpoint(
   appointeeDesignation: string,
 ): boolean {
   if (!/\bDC Agency Representative\b/i.test(appointeeDesignation)) return false;
-  const normalized = name.trim().toLowerCase();
-  return normalized === "university of the district of columbia community college" ||
-    normalized === "office of budget and performance management";
+  return getQuickbaseAuthorityEndpointPolicy(name)?.safeToSeed === true;
 }
 
 function resolvesToExplicitKnownEntityRef(value: string): boolean {
@@ -1061,6 +1085,14 @@ function resolvesToExplicitKnownEntityRef(value: string): boolean {
   if (knownRef === buildEntityId(value)) return false;
   const acronymStripped = stripSeatAcronymParens(value);
   return knownRef !== buildEntityId(acronymStripped);
+}
+
+function suppressesQuickbaseBoardGovernanceEdge(name: string): boolean {
+  return getQuickbaseAuthorityEndpointPolicy(name)?.designatingOnly === true;
+}
+
+function normalizeQuickbasePolicyName(name: string): string {
+  return name.trim().toLowerCase();
 }
 
 function deriveQuickbaseCluster(board: string): string | undefined {
