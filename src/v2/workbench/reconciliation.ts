@@ -212,6 +212,10 @@ function upsertRelationshipReviewItem(
   candidate: RelationshipCandidateRow,
   sameFactReviewKeys: Set<string>,
 ): void {
+  if (shouldHideCorroboratingSameFactReview(candidate, sameFactReviewKeys)) {
+    statements.deleteReviewItem.run(candidate.relationshipCandidateId);
+    return;
+  }
   const review = applySameFactReviewContext(
     buildRelationshipReviewDraft(candidate),
     candidate,
@@ -229,6 +233,16 @@ function upsertRelationshipReviewItem(
     now,
     now,
   );
+}
+
+function shouldHideCorroboratingSameFactReview(
+  candidate: RelationshipCandidateRow,
+  sameFactReviewKeys: Set<string>,
+): boolean {
+  const review = buildRelationshipReviewDraft(candidate);
+  if (review.defaultAction === "defer") return false;
+  if (candidate.needsReview === 1) return false;
+  return sameFactReviewKeys.has(relationshipFactKey(candidate));
 }
 
 function applySameFactReviewContext(
