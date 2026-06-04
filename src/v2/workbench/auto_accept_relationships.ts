@@ -1,5 +1,6 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
-import { queryAll, withTransaction } from "./db.ts";
+import { buildKnownEntityRef, extractExcludedCouncilOversightNames } from "../connectors/shared.ts";
+import { queryAll, queryOne, withTransaction } from "./db.ts";
 import { endpointStatusMap } from "./endpoint_status.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
@@ -18,6 +19,7 @@ interface AutoAcceptRelationshipRow {
   fromEntityRef: string;
   toEntityRef: string;
   relationshipType: RelationshipType;
+  rawValue?: string | null;
   needsReview: number;
   reviewItemStatus: string;
   defaultAction: string;
@@ -44,6 +46,7 @@ export function autoAcceptSafeRelationshipCandidates(
             relationship_candidates.from_entity_ref as fromEntityRef,
             relationship_candidates.to_entity_ref as toEntityRef,
             relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.raw_value as rawValue,
             relationship_candidates.needs_review as needsReview,
             review_items.status as reviewItemStatus,
             review_items.default_action as defaultAction,
@@ -66,7 +69,7 @@ export function autoAcceptSafeRelationshipCandidates(
   let acceptedCount = 0;
   withTransaction(store.db, () => {
     for (const candidate of candidates) {
-      if (!isSafeToAutoAccept(endpointStatuses, candidate)) continue;
+      if (!isSafeToAutoAccept(store, endpointStatuses, candidate)) continue;
       acceptRelationshipCandidateDirect(statements, candidate);
       acceptedCount += 1;
     }
@@ -104,17 +107,70 @@ function prepareAutoAcceptRelationshipStatements(
 }
 
 function isSafeToAutoAccept(
+  store: Pick<WorkbenchStore, "db">,
   endpointStatuses: ReturnType<typeof endpointStatusMap>,
   candidate: AutoAcceptRelationshipRow,
 ): boolean {
   if (candidate.reviewItemStatus !== "open") return false;
-  if (candidate.defaultAction !== "accept") return false;
   if (candidate.stalePriorDecision === 1) return false;
   if (candidate.replayConflict === 1) return false;
+  if (isSafeCouncilOversightExclusion(store, endpointStatuses, candidate)) return true;
+  if (candidate.defaultAction !== "accept") return false;
   if (candidate.whyDeferred) return false;
   if (candidate.needsReview !== 0 && !allowsNeedsReviewAutoAccept(candidate)) return false;
   return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
     endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
+}
+
+function isSafeCouncilOversightExclusion(
+  store: Pick<WorkbenchStore, "db">,
+  endpointStatuses: ReturnType<typeof endpointStatusMap>,
+  candidate: AutoAcceptRelationshipRow,
+): boolean {
+  if (candidate.sourceId !== "council.committees") return false;
+  if (candidate.relationshipType !== "overseen_by") return false;
+  const excludedRefs = extractExcludedCouncilOversightNames(candidate.rawValue ?? "")
+    .map((name) => buildKnownEntityRef(name));
+  if (excludedRefs.length === 0) return false;
+  if (endpointStatuses.get(candidate.fromEntityRef)?.state !== "accepted") return false;
+  if (endpointStatuses.get(candidate.toEntityRef)?.state !== "accepted") return false;
+  return excludedRefs.every((entityRef) =>
+    excludedEndpointIsAccepted(store, entityRef) &&
+    excludedEndpointHasSeparateCommitteeOversight(store, entityRef, candidate.toEntityRef)
+  );
+}
+
+function excludedEndpointIsAccepted(store: Pick<WorkbenchStore, "db">, entityRef: string): boolean {
+  const row = queryOne<{ reviewStatus: string; isPlaceholder: number }>(
+    store.db,
+    `select review_status as reviewStatus,
+            is_placeholder as isPlaceholder
+     from canonical_entities
+     where entity_id = ?`,
+    [entityRef],
+  );
+  return row?.reviewStatus === "accepted" && row.isPlaceholder === 0;
+}
+
+function excludedEndpointHasSeparateCommitteeOversight(
+  store: Pick<WorkbenchStore, "db">,
+  entityRef: string,
+  scopedCommitteeRef: string,
+): boolean {
+  const row = queryOne<{ count: number }>(
+    store.db,
+    `select count(*) as count
+     from canonical_relationships
+     join canonical_entities as oversight_committee
+       on oversight_committee.entity_id = canonical_relationships.to_entity_id
+     where canonical_relationships.from_entity_id = ?
+       and canonical_relationships.relationship_type = 'overseen_by'
+       and canonical_relationships.to_entity_id != ?
+       and canonical_relationships.review_status = 'accepted'
+       and oversight_committee.kind = 'committee'`,
+    [entityRef, scopedCommitteeRef],
+  );
+  return (row?.count ?? 0) > 0;
 }
 
 function allowsNeedsReviewAutoAccept(candidate: AutoAcceptRelationshipRow): boolean {

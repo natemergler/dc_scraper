@@ -3553,7 +3553,7 @@ Deno.test("Council committee oversight extraction only emits explicit source-bac
   );
 });
 
-Deno.test("Council oversight targets default to accept except exclusion and circular Council targets", async () => {
+Deno.test("Council oversight targets default to accept except exclusion targets", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -3626,11 +3626,7 @@ Deno.test("Council oversight targets default to accept except exclusion and circ
     excludingItem?.details.whyDeferred,
     "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
   );
-  assertEquals(councilItem?.defaultAction, "defer");
-  assertEquals(
-    councilItem?.details.whyDeferred,
-    "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
-  );
+  assertEquals(councilItem?.defaultAction, "accept");
   assertEquals(groupedItem, undefined);
 });
 
@@ -3685,22 +3681,21 @@ Deno.test("entity show review context explains deferred relationship candidates"
   const circularReview = councilView.reviewItems.find((item) =>
     item.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_3"
   );
+  const acceptedCircularRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole'`,
+  ).get() as { relationshipId: string } | undefined;
   const ocfoView = workbench.entityView("dc.office_of_the_chief_financial_officer");
   const exclusionReview = ocfoView.reviewItems.find((item) =>
     item.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_4"
   );
   workbench.close();
 
-  assertEquals(circularReview?.defaultAction, "defer");
-  assertEquals(circularReview?.subject?.sourceId, "council.committees");
-  assertEquals(circularReview?.subject?.itemTitle, "Committee of the Whole oversight detail");
-  assertEquals(circularReview?.subject?.relationshipType, "overseen_by");
-  assertEquals(circularReview?.subject?.fromEntityRef, "dc.council_of_the_district_of_columbia");
-  assertEquals(circularReview?.subject?.toEntityRef, "dc.committee_of_the_whole");
-  assertEquals(circularReview?.subject?.rawValue, "Council of the District of Columbia");
+  assertEquals(circularReview, undefined);
   assertEquals(
-    circularReview?.details.whyDeferred,
-    "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+    acceptedCircularRelationship?.relationshipId,
+    "dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole",
   );
   assertEquals(exclusionReview?.defaultAction, "defer");
   assertEquals(
@@ -3725,7 +3720,7 @@ Deno.test("entity show review context explains deferred relationship candidates"
       "scripts/dc.ts",
       "entity",
       "show",
-      "dc.council_of_the_district_of_columbia",
+      "dc.office_of_the_chief_financial_officer",
       "--db",
       dbPath,
     ],
@@ -3739,16 +3734,19 @@ Deno.test("entity show review context explains deferred relationship candidates"
   );
   assertStringIncludes(
     entityShowText,
-    "relationship: dc.council_of_the_district_of_columbia --overseen_by--> dc.committee_of_the_whole",
-  );
-  assertStringIncludes(entityShowText, "raw value: Council of the District of Columbia");
-  assertStringIncludes(
-    entityShowText,
-    "why: Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+    "relationship: dc.office_of_the_chief_financial_officer --overseen_by--> dc.committee_of_the_whole",
   );
   assertStringIncludes(
     entityShowText,
-    "review: deno task dc -- review --source council.committees --subject-prefix relationship.council.committees.committee_of_the_whole_oversight_3",
+    "raw value: Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+  );
+  assertStringIncludes(
+    entityShowText,
+    "why: Oversight text uses exclusion wording, so the compact edge needs a human decision.",
+  );
+  assertStringIncludes(
+    entityShowText,
+    "review: deno task dc -- review --source council.committees --subject-prefix relationship.council.committees.committee_of_the_whole_oversight_4",
   );
 });
 
@@ -5236,7 +5234,7 @@ Deno.test("safe seeded Council oversight endpoints auto-promote and auto-accept 
   assertEquals(remainingOversight.length, 0);
 });
 
-Deno.test("Council self-oversight endpoint is not safe-seeded from relationship endpoint text", async () => {
+Deno.test("Council oversight endpoint can seed Council and auto-accept the explicit edge", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -5275,9 +5273,15 @@ Deno.test("Council self-oversight endpoint is not safe-seeded from relationship 
   ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
-  assertEquals(seededEndpointCandidates, []);
+  assertEquals(seededEndpointCandidates, [{
+    candidateId:
+      "candidate.council.committees.relationship_council_committees_self_seeded_oversight_from_endpoint",
+  }]);
   assertEquals(seededEntityReview.length, 0);
-  assertEquals(acceptedRelationship, undefined);
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole",
+  );
 });
 
 Deno.test("safe seeded Council member container endpoint auto-promotes and unblocks seat structure", async () => {
@@ -6493,7 +6497,7 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Deferred 2 default-defer review item(s).");
+  assertStringIncludes(batchText, "Deferred 1 default-defer review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -6517,7 +6521,7 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
   ).get() as { count: number };
   reopened.close();
   assertEquals(openOversight.length, 0);
-  assertEquals(deferredOversight.length, 2);
+  assertEquals(deferredOversight.length, 1);
   assertEquals(blockedOversight.count, 0);
 });
 

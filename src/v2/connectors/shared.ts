@@ -129,6 +129,17 @@ export function isExcludedCouncilOversightTarget(rawValue: string): boolean {
   return /\bexcluding\b/i.test(normalizeName(rawValue));
 }
 
+export function extractExcludedCouncilOversightNames(rawValue: string): string[] {
+  const normalized = normalizeName(rawValue);
+  const parenthetical = normalized.match(/\(\s*excluding\s+(?:the\s+)?([^)]+)\)/i);
+  const commaScoped = normalized.match(/,\s*excluding\s+(?:the\s+)?(.+)$/i);
+  const excludedText = parenthetical?.[1] ?? commaScoped?.[1];
+  if (!excludedText) return [];
+  return excludedText.split(";").map((value) => value.replace(/^the\s+/i, "").trim()).filter((
+    value,
+  ) => value.length > 0);
+}
+
 export function defaultActionForCouncilOversightTarget(
   rawValue?: string | null,
 ): "accept" | "defer" {
@@ -145,13 +156,6 @@ export function councilOversightReviewPolicy(
       defaultAction: "defer",
       whyDeferred:
         "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
-    };
-  }
-  if (normalized.toLowerCase() === "council of the district of columbia") {
-    return {
-      defaultAction: "defer",
-      whyDeferred:
-        "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
     };
   }
   return { defaultAction: "accept" };
