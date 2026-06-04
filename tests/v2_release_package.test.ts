@@ -254,13 +254,31 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.board_accountancy', 'Board of Accountancy', 'board', 'https://www.open-dc.gov/public-bodies/board-accountancy', 'accepted', '[\"candidate.open_dc.public_bodies.board_accountancy\"]', datetime('now'), datetime('now'))",
   ).run();
   workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.139', '139', 'budgetary', 'accepted', '[\"candidate.dcgis.agencies.1160\"]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.april_board_of_accountancy', 'April Board of Accountancy -', 'board', 'https://www.open-dc.gov/public-bodies/april-board-accountancy-recess', 'accepted', '[\"candidate.open_dc.public_bodies.april_board_accountancy_recess\"]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, is_placeholder, placeholder_reason, created_at, updated_at) values('dc.pending_body', 'Pending Body', 'placeholder', 'placeholder', '[]', 1, 'fixture placeholder', datetime('now'), datetime('now'))",
   ).run();
   workbench.db.prepare(
     "insert into resolution_events(event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at) values('event.1', 'accept_relationship_candidate', 'relationship.fixture', '{}', 'fixture.jsonl', 1, datetime('now'))",
   ).run();
   workbench.db.prepare(
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:part_of:dc.council', 'dc.board_accountancy', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.april_board_of_accountancy:part_of:dc.council', 'dc.april_board_of_accountancy', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:part_of:dc.pending_body', 'dc.board_accountancy', 'part_of', 'dc.pending_body', 'accepted', 'event.1', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:overseen_by:dc.council', 'dc.board_accountancy', 'overseen_by', 'dc.council', 'rejected', 'event.1', datetime('now'))",
   ).run();
   workbench.upsertSource(
     "open_dc.public_bodies",
@@ -350,6 +368,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   await Deno.writeTextFile(staleFile, "stale");
   const result = await buildV2Release(workbench, outDir);
   const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
+  const relationshipsCsv = await Deno.readTextFile(join(outDir, "relationships.csv"));
   const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
   const relationshipLegalRefsCsv = await Deno.readTextFile(
     join(outDir, "relationship_legal_refs.csv"),
@@ -398,6 +417,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "id,name,kind,branch,cluster,official_url,review_status",
   );
   assert(!entityCsv.includes("source_item_id"));
+  assert(!entityCsv.includes("dc.139,139,budgetary"));
+  assert(!entityCsv.includes("dc.april_board_of_accountancy"));
+  assert(!entityCsv.includes("dc.pending_body"));
   assert(!entityCsv.includes("not-for-release@example.com"));
   assertStringIncludes(
     entityLegalRefsCsv,
@@ -410,6 +432,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "relationship_id,from_entity_id,from_entity_name,relationship_type,to_entity_id,to_entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
   );
   assertStringIncludes(relationshipLegalRefsCsv, "dc.board_accountancy:part_of:dc.council");
+  assert(!relationshipsCsv.includes("dc.april_board_of_accountancy"));
+  assert(!relationshipsCsv.includes("dc.board_accountancy:part_of:dc.pending_body"));
+  assert(!relationshipsCsv.includes("dc.board_accountancy:overseen_by:dc.council"));
   assert(!legalRefsCsv.includes("not-for-release@example.com"));
   assert(!manifestText.includes("not-for-release@example.com"));
   assert(!manifestText.includes("202-555-0100"));
@@ -541,7 +566,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   }
 });
 
-Deno.test("release builder excludes pending unknown legal refs from public package rows", async () => {
+Deno.test("release builder excludes unknown legal refs from public package rows", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const workbench = new Workbench(dbPath);
@@ -584,7 +609,7 @@ Deno.test("release builder excludes pending unknown legal refs from public packa
     "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values('item.pending_unknown_legal_ref', 'test.pending_unknown_legal_refs', 'test.pending_unknown_legal_refs.main', 'run.pending_unknown_legal_refs', 'artifact.pending_unknown_legal_refs', 'pending-unknown', 'fixture_legal_ref', 'Organizational ByLaws', '{}')",
   ).run();
   workbench.db.prepare(
-    "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values('legal.pending_unknown.by_laws', 'item.pending_unknown_legal_ref', 'unknown', 'Organizational ByLaws', null, null, 'pending')",
+    "insert into legal_refs(legal_ref_id, source_item_id, ref_type, citation_text, normalized_citation, url, review_status) values('legal.pending_unknown.by_laws', 'item.pending_unknown_legal_ref', 'unknown', 'Organizational ByLaws', null, null, 'accepted')",
   ).run();
   workbench.db.prepare(
     "insert into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values('entity_legal_ref.pending_unknown.by_laws', 'dc.legal_unknown_body', 'legal.pending_unknown.by_laws')",

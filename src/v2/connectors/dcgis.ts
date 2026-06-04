@@ -274,11 +274,12 @@ function buildDcgisEntityCandidates(
   items: SourceItemInput[],
 ): EntityCandidateInput[] {
   const agencyTaxonomyOnly = source.sourceId === "dcgis.agencies";
-  const agencyCandidates = items.map((item) => {
+  const agencyCandidates = items.flatMap((item) => {
     const row = item.body as Record<string, unknown>;
-    const identity = dcgisEntityIdentity(row, item.title, agencyTaxonomyOnly);
+    const identity = dcgisEntityIdentity(row, agencyTaxonomyOnly);
+    if (!identity) return [];
     const artifactIndex = dcgisRowArtifactIndex(item);
-    return {
+    return [{
       candidateId: buildCandidateId(source.sourceId, item.itemKey),
       sourceItemKey: item.itemKey,
       proposedEntityId: identity.entityRef,
@@ -302,7 +303,7 @@ function buildDcgisEntityCandidates(
         fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, artifactIndex),
         fieldEvidence("WEB_URL", row.WEB_URL, artifactIndex),
       ],
-    };
+    }];
   });
   if (agencyTaxonomyOnly) return agencyCandidates;
 
@@ -338,10 +339,10 @@ interface DcgisEntityIdentity {
 
 function dcgisEntityIdentity(
   row: Record<string, unknown>,
-  itemTitle: string,
   agencyTaxonomyOnly: boolean,
-): DcgisEntityIdentity {
-  const rawName = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? itemTitle;
+): DcgisEntityIdentity | undefined {
+  const rawName = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME);
+  if (!rawName) return undefined;
   const name = agencyTaxonomyOnly ? rawName : publicBodyCandidateName(row, rawName);
   const governingAgency = maybeString(row.GOVERNING_AGENCY);
   const governingAgencyNeedsReview = !agencyTaxonomyOnly &&
@@ -413,7 +414,8 @@ function buildDcgisRelationshipCandidates(
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
-    const identity = dcgisEntityIdentity(row, item.title, source.sourceId === "dcgis.agencies");
+    const identity = dcgisEntityIdentity(row, source.sourceId === "dcgis.agencies");
+    if (!identity) continue;
     const entityRef = identity.entityRef;
     const branch = source.sourceId === "dcgis.agencies" ? undefined : maybeString(row.BRANCH);
     if (branch) {
@@ -503,7 +505,8 @@ function buildDcgisLegalRefs(
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     const citationParts = splitDcgisLegalAuthority(legislation);
-    const identity = dcgisEntityIdentity(row, item.title, source.sourceId === "dcgis.agencies");
+    const identity = dcgisEntityIdentity(row, source.sourceId === "dcgis.agencies");
+    if (!identity) continue;
     citationParts.forEach((citationText, index) => {
       const parsed = parseLegalReference(citationText);
       const lawTitleMatch = parsed.refType === "unknown"

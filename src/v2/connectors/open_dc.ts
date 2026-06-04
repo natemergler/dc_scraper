@@ -287,6 +287,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         body: { label: link.label, href: link.href, parentItemKey: itemKey },
       });
     }
+    if (isOpenDcNonBodyDetailTitle(detail.name)) continue;
     const candidateId = buildCandidateId(openDcSource.sourceId, itemKey);
     const identity = resolveOpenDcCandidateIdentity(detail.name);
     const proposedEntityId = identity.proposedEntityId;
@@ -450,10 +451,18 @@ function extractOpenDcParentheticalParts(
   const normalized = normalizeName(name);
   const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
   if (!parentheticalMatch) return undefined;
-  const baseName = normalizeName(parentheticalMatch[1] ?? "");
+  const baseName = normalizeOpenDcBaseName(parentheticalMatch[1] ?? "");
   const aliasName = normalizeName(parentheticalMatch[2] ?? "");
   if (!baseName || !aliasName) return undefined;
   return { baseName, aliasName };
+}
+
+function normalizeOpenDcBaseName(value: string): string {
+  return normalizeName(value).replace(/\s*[-–—:|]+$/, "").trim();
+}
+
+function isOpenDcNonBodyDetailTitle(value: string): boolean {
+  return /\((?:RECESS|DUPLICATE)\)\s*$/i.test(normalizeName(value));
 }
 
 function isAcronymLike(value: string): boolean {
