@@ -8,7 +8,7 @@ package.
 The product shape is deliberately small:
 
 ```text
-source connector -> local artifact -> SQLite workbench -> audit/review -> release package
+source connector -> local artifact -> SQLite workbench -> audit/browse -> decide when needed -> release package
 ```
 
 Local state lives under `data/`, `resolutions/`, and `releases/`. Those paths are ignored. Do not

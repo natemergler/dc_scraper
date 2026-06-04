@@ -245,7 +245,8 @@ Workflow:
   Audit:   ${dcCommand("audit")} | ${dcCommand("status --json")} | ${
     dcCommand("source inspect dcgis.agencies")
   }
-  Review:  ${dcCommand("review")} | ${dcCommand("review list --mode entities")}
+  Browse:  ${dcCommand("entity search accountancy")} | ${dcCommand("review list --status all")}
+  Decide:  ${dcCommand("review")} | ${dcCommand("review packets --mode relationships")}
   Release: ${dcCommand("release build")} | ${dcCommand("release inspect")}
 
 Usage:
