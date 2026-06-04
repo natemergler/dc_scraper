@@ -1,6 +1,5 @@
 import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
-import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
 import { renderReviewCommand } from "./workbench/review_command_args.ts";
 import { reviewDecisionSummary } from "./workbench/review.ts";
@@ -86,6 +85,26 @@ export interface WorkbenchStatusSnapshot {
   unresolvedStateNote: string;
 }
 
+interface WorkbenchUnresolvedCounts {
+  openReviewItemCount: number;
+  humanDecisionOpenReviewItemCount?: number;
+  browseOnlyOpenReviewItemCount?: number;
+  deferredReviewItemCount: number;
+  staleReviewItemCount: number;
+  blockedReconciliationCount: number;
+  placeholderEntityCount: number;
+}
+
+interface WorkbenchStatusPlanInput extends WorkbenchUnresolvedCounts {
+  fetchedSources: number;
+  failedSourceId?: string;
+}
+
+interface WorkbenchStatusPlan {
+  nextCommand: string;
+  unresolvedStateNote: string;
+}
+
 export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnapshot {
   const sourceRows = workbench.listSources();
   const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
@@ -99,7 +118,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const reconciliation = summarizeUnresolvedReconciliation(unresolvedWork);
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
-  const operatorPlan = buildOperatorPlan({
+  const statusPlan = buildWorkbenchStatusPlan({
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
     openReviewItemCount: reviewDecisions.open,
@@ -148,9 +167,45 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       entities,
       relationships,
     },
-    nextCommand: operatorPlan.nextCommand,
-    unresolvedStateNote: operatorPlan.unresolvedStateNote,
+    nextCommand: statusPlan.nextCommand,
+    unresolvedStateNote: statusPlan.unresolvedStateNote,
   };
+}
+
+function buildWorkbenchStatusPlan(input: WorkbenchStatusPlanInput): WorkbenchStatusPlan {
+  return {
+    nextCommand: nextWorkbenchCommand(input),
+    unresolvedStateNote: unresolvedStateNote(input),
+  };
+}
+
+function unresolvedStateNote(counts: WorkbenchUnresolvedCounts): string {
+  const openReviewDetail = typeof counts.humanDecisionOpenReviewItemCount === "number" ||
+      typeof counts.browseOnlyOpenReviewItemCount === "number"
+    ? ` (human decisions=${
+      counts.humanDecisionOpenReviewItemCount ?? counts.openReviewItemCount
+    }, browse-only=${counts.browseOnlyOpenReviewItemCount ?? 0})`
+    : "";
+  if (
+    counts.openReviewItemCount === 0 &&
+    counts.deferredReviewItemCount === 0 &&
+    counts.staleReviewItemCount === 0 &&
+    counts.blockedReconciliationCount === 0 &&
+    counts.placeholderEntityCount === 0
+  ) {
+    return "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.";
+  }
+  return `Unresolved workbench state: open review=${counts.openReviewItemCount}${openReviewDetail}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
+}
+
+function nextWorkbenchCommand(input: WorkbenchStatusPlanInput): string {
+  if (input.failedSourceId) return dcCommand(`source inspect ${input.failedSourceId}`);
+  if ((input.humanDecisionOpenReviewItemCount ?? input.openReviewItemCount) > 0) {
+    return dcCommand("review");
+  }
+  if (input.blockedReconciliationCount > 0) return dcCommand("audit");
+  if (input.fetchedSources < connectors.length) return dcCommand("source list");
+  return dcCommand("release build");
 }
 
 export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
