@@ -737,18 +737,227 @@ Deno.test("accepted-endpoint Council oversight relationships honor source-specif
 
   assertEquals(relationships.map((row) => row.relationshipId), [
     "dc.committee_on_facilities_and_procurement:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+    "dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole",
     "dc.department_of_buildings:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
     "dc.office_of_the_attorney_general:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
   ]);
-  assertEquals(selfRelationship, undefined);
-  assertEquals(selfCandidate?.reviewStatus, "pending");
-  assertEquals(reviewItems.length, 1);
-  assertEquals(reviewItems[0]?.subjectId, "relationship.test.auto_accept.council.self_oversight");
-  assertEquals(reviewItems[0]?.defaultAction, "defer");
   assertEquals(
-    reviewItems[0]?.details.whyDeferred,
-    "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+    selfRelationship?.relationshipId,
+    "dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole",
   );
+  assertEquals(selfCandidate?.reviewStatus, "accepted");
+  assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("accepted-endpoint Council exclusion oversight auto-accepts when excluded body is separately overseen", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+      ["dc.committee_on_human_services", "Committee on Human Services", "committee"],
+      [
+        "dc.office_of_the_chief_financial_officer",
+        "Office of the Chief Financial Officer",
+        "office",
+      ],
+      ["dc.office_of_lottery_and_gaming", "Office of Lottery and Gaming", "office"],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.olg_oversight",
+      sourceItemKey: "council-olg-oversight-row",
+      fromEntityRef: "dc.office_of_lottery_and_gaming",
+      toEntityRef: "dc.committee_on_human_services",
+      relationshipType: "overseen_by",
+      rawValue: "Office of Lottery and Gaming",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.ocfo_excluding_olg",
+      sourceItemKey: "council-ocfo-excluding-olg-row",
+      fromEntityRef: "dc.office_of_the_chief_financial_officer",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue:
+        "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const relationships = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.test.auto_accept.council.ocfo_excluding_olg",
+  });
+  const ocfoCandidate = workbench.db.prepare(
+    `select review_status as reviewStatus
+     from relationship_candidates
+     where relationship_candidate_id = 'relationship.test.auto_accept.council.ocfo_excluding_olg'`,
+  ).get() as { reviewStatus: string } | undefined;
+  workbench.close();
+
+  assertEquals(relationships.map((row) => row.relationshipId), [
+    "dc.office_of_lottery_and_gaming:overseen_by:dc.committee_on_human_services",
+    "dc.office_of_the_chief_financial_officer:overseen_by:dc.committee_of_the_whole",
+  ]);
+  assertEquals(ocfoCandidate?.reviewStatus, "accepted");
+  assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("accepted-endpoint Council exclusion oversight stays reviewable without separate accepted committee proof", async () => {
+  for (
+    const scenario of [
+      {
+        name: "missing separate oversight",
+        excludedEntityKind: "office",
+        excludedEntityStatus: "accepted",
+        separateOversightTargetKind: "committee",
+        separateOversightTargetRef: undefined,
+      },
+      {
+        name: "placeholder excluded body",
+        excludedEntityKind: "office",
+        excludedEntityStatus: "accepted",
+        excludedEntityPlaceholder: true,
+        separateOversightTargetKind: "committee",
+        separateOversightTargetRef: "dc.committee_on_human_services",
+      },
+      {
+        name: "same scoped committee",
+        excludedEntityKind: "office",
+        excludedEntityStatus: "accepted",
+        separateOversightTargetKind: "committee",
+        separateOversightTargetRef: "dc.committee_of_the_whole",
+      },
+      {
+        name: "non-committee separate target",
+        excludedEntityKind: "office",
+        excludedEntityStatus: "accepted",
+        separateOversightTargetKind: "agency",
+        separateOversightTargetRef: "dc.department_of_human_services",
+      },
+    ] as const
+  ) {
+    const dir = await Deno.makeTempDir();
+    const dbPath = join(dir, "workbench.sqlite");
+    const dataDir = join(dir, "artifacts");
+    const workbench = new Workbench(dbPath);
+    workbench.init();
+    for (
+      const [entityId, name, kind, isPlaceholder] of [
+        ["dc.committee_of_the_whole", "Committee of the Whole", "committee", 0],
+        [
+          "dc.office_of_the_chief_financial_officer",
+          "Office of the Chief Financial Officer",
+          "office",
+          0,
+        ],
+        [
+          "dc.office_of_lottery_and_gaming",
+          "Office of Lottery and Gaming",
+          scenario.excludedEntityKind,
+          scenario.excludedEntityPlaceholder ? 1 : 0,
+        ],
+        [
+          "dc.committee_on_human_services",
+          "Committee on Human Services",
+          scenario.separateOversightTargetKind,
+          0,
+        ],
+        [
+          "dc.department_of_human_services",
+          "Department of Human Services",
+          scenario.separateOversightTargetKind,
+          0,
+        ],
+      ] as const
+    ) {
+      workbench.db.prepare(
+        "insert into canonical_entities(entity_id, name, kind, review_status, is_placeholder, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, ?, ?, '[]', datetime('now'), datetime('now'))",
+      ).run(entityId, name, kind, scenario.excludedEntityStatus, isPlaceholder);
+    }
+
+    if (scenario.separateOversightTargetRef) {
+      await workbench.importConnectorResult(
+        syntheticCustomRelationshipSourceResult({
+          sourceId: "council.committees",
+          relationshipCandidateId: `relationship.test.auto_accept.council.${
+            scenario.name.replaceAll(" ", "_")
+          }_proof`,
+          sourceItemKey: `council-${scenario.name.replaceAll(" ", "-")}-proof-row`,
+          fromEntityRef: "dc.office_of_lottery_and_gaming",
+          toEntityRef: scenario.separateOversightTargetRef,
+          relationshipType: "overseen_by",
+          rawValue: "Office of Lottery and Gaming",
+          needsReview: true,
+        }),
+        dataDir,
+      );
+    }
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "council.committees",
+        relationshipCandidateId: `relationship.test.auto_accept.council.${
+          scenario.name.replaceAll(" ", "_")
+        }_ocfo_excluding_olg`,
+        sourceItemKey: `council-${scenario.name.replaceAll(" ", "-")}-ocfo-excluding-olg-row`,
+        fromEntityRef: "dc.office_of_the_chief_financial_officer",
+        toEntityRef: "dc.committee_of_the_whole",
+        relationshipType: "overseen_by",
+        rawValue:
+          "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+        needsReview: true,
+      }),
+      dataDir,
+    );
+
+    const ocfoRelationship = workbench.db.prepare(
+      `select relationship_id as relationshipId
+       from canonical_relationships
+       where relationship_id = 'dc.office_of_the_chief_financial_officer:overseen_by:dc.committee_of_the_whole'`,
+    ).get() as { relationshipId: string } | undefined;
+    const ocfoCandidate = workbench.db.prepare(
+      `select review_status as reviewStatus
+       from relationship_candidates
+       where relationship_candidate_id = ?`,
+    ).get(
+      `relationship.test.auto_accept.council.${
+        scenario.name.replaceAll(" ", "_")
+      }_ocfo_excluding_olg`,
+    ) as { reviewStatus: string } | undefined;
+    const reviewItems = workbench.listReviewItems({
+      mode: "relationships",
+      relationshipType: "overseen_by",
+      subjectPrefix: `relationship.test.auto_accept.council.${
+        scenario.name.replaceAll(" ", "_")
+      }_ocfo_excluding_olg`,
+    });
+    workbench.close();
+
+    assertEquals(ocfoRelationship, undefined, scenario.name);
+    assertEquals(ocfoCandidate?.reviewStatus, "pending", scenario.name);
+    assertEquals(reviewItems.length, 1, scenario.name);
+    assertEquals(reviewItems[0]?.defaultAction, "defer", scenario.name);
+  }
 });
 
 Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {
