@@ -47,7 +47,8 @@ export interface PublicBodyComparisonRow {
 
 export type PublicBodyVariantMatchKind =
   | "acronym_parenthetical"
-  | "parenthetical_alias";
+  | "parenthetical_alias"
+  | "governance_suffix";
 
 export interface PublicBodyVariantMatchName {
   normalizedName: string;
@@ -184,6 +185,7 @@ export function listSources(store: WorkbenchStore): SourceListRow[] {
 
 export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparisonReport {
   const sourceIds = [
+    "council.committees",
     "dcgis.boards_commissions_councils",
     "open_dc.public_bodies",
     "mota.quickbase",
@@ -202,7 +204,7 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
      from entity_candidates
      join source_items on source_items.source_item_id = entity_candidates.source_item_id
      join sources on sources.source_id = source_items.source_id
-     where sources.source_id in (?, ?, ?, ?)
+     where sources.source_id in (?, ?, ?, ?, ?)
      order by entity_candidates.normalized_name, sources.source_id, entity_candidates.name`,
     [...sourceIds],
   ).filter((row) =>
@@ -302,7 +304,10 @@ function buildConservativeVariantMatches(
   }
   return [...grouped.values()]
     .filter((group) =>
-      group.matchKinds.size > 0 && group.sourceTitles.size > 1 && group.normalizedNames.size > 1
+      group.matchKinds.size > 0 &&
+      group.sourceTitles.size > 1 &&
+      group.normalizedNames.size > 1 &&
+      group.normalizedNames.has(normalizedComparisonKey(group.variantName))
     )
     .map((group) => ({
       variantName: group.variantName,
@@ -342,14 +347,28 @@ function conservativeVariantKeys(
   const normalized = normalizeName(displayName);
   const variants: Array<{ variantName: string; matchKind: PublicBodyVariantMatchKind }> = [];
   const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
+  const nameWithoutParenthetical = parentheticalMatch?.[1]
+    ? normalizeName(parentheticalMatch[1])
+    : normalized;
   if (parentheticalMatch?.[1]) {
-    const variantName = normalizeName(parentheticalMatch[1]);
-    if (variantName && variantName !== normalized) {
+    if (nameWithoutParenthetical && nameWithoutParenthetical !== normalized) {
       variants.push({
-        variantName,
+        variantName: nameWithoutParenthetical,
         matchKind: isAcronymLike(parentheticalMatch[2])
           ? "acronym_parenthetical"
           : "parenthetical_alias",
+      });
+    }
+  }
+  const governanceSuffixMatch = nameWithoutParenthetical.match(
+    /^(.+?)\s+(?:advisory\s+board|board(?:\s+of\s+directors)?)$/i,
+  );
+  if (governanceSuffixMatch?.[1]) {
+    const variantName = normalizeName(governanceSuffixMatch[1]);
+    if (variantName && variantName !== normalized) {
+      variants.push({
+        variantName,
+        matchKind: "governance_suffix",
       });
     }
   }
@@ -378,6 +397,7 @@ function compareVariantMatchKinds(
   const order: PublicBodyVariantMatchKind[] = [
     "acronym_parenthetical",
     "parenthetical_alias",
+    "governance_suffix",
   ];
   return order.indexOf(a) - order.indexOf(b);
 }

@@ -2,7 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { connectors } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
-import { buildWorkbenchStatus } from "../src/v2/status.ts";
+import { buildWorkbenchStatus, renderWorkbenchStatus } from "../src/v2/status.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   syntheticCustomEntitySourceResult,
@@ -631,6 +631,51 @@ Deno.test("status routes human decisions to review but browse-only additions to 
     statusFour.nextCommand,
     "deno task dc -- source list",
   );
+});
+
+Deno.test("status surfaces public-body governance suffix leads without treating them as decisions", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.committees",
+      candidateId: "candidate.council.committees.mwaa",
+      sourceItemKey: "mwaa-council",
+      proposedEntityId: "dc.metropolitan_washington_airports_authority",
+      name: "Metropolitan Washington Airports Authority",
+      kind: "public_body",
+      observedName: "Metropolitan Washington Airports Authority",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      candidateId: "candidate.dcgis.boards_commissions_councils.mwaa_board",
+      sourceItemKey: "mwaa-board-dcgis",
+      proposedEntityId: "dc.metropolitan_washington_airports_authority_board_of_directors",
+      name: "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+      kind: "board",
+      observedName: "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    }),
+    dataDir,
+  );
+
+  const status = buildWorkbenchStatus(workbench);
+  workbench.close();
+
+  assertEquals(status.publicBodies.governanceSuffixLeads, 1);
+  assertEquals(
+    status.publicBodies.firstGovernanceSuffixLead?.variantName,
+    "Metropolitan Washington Airports Authority",
+  );
+  assertEquals(status.review.humanDecisionOpen, 0);
+  const statusText = renderWorkbenchStatus(status);
+  assertStringIncludes(statusText, "Public-body linkage leads: 1 governance-suffix lead");
+  assertStringIncludes(statusText, "Inspect leads: deno task dc -- source compare public-bodies");
 });
 
 Deno.test("status points to audit when blocked reconciliation is the only remaining work", async () => {

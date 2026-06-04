@@ -78,6 +78,15 @@ export interface WorkbenchStatusSnapshot {
     entities: number;
     relationships: number;
   };
+  publicBodies: {
+    conservativeVariantLeads: number;
+    governanceSuffixLeads: number;
+    firstGovernanceSuffixLead?: {
+      variantName: string;
+      sourceIds: string[];
+      names: string[];
+    };
+  };
   nextCommand: string;
   unresolvedStateNote: string;
 }
@@ -112,6 +121,10 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const placeholders = workbench.placeholderSummary();
   const unresolvedWork = workbench.unresolvedWorkGraph();
   const reconciliation = summarizeUnresolvedReconciliation(unresolvedWork);
+  const publicBodyComparison = workbench.comparePublicBodies();
+  const governanceSuffixLeads = publicBodyComparison.conservativeVariantMatches.filter((match) =>
+    match.matchKinds.includes("governance_suffix")
+  );
   const entities = workbench.canonicalEntities().length;
   const relationships = workbench.canonicalRelationships().length;
   const statusPlan = buildWorkbenchStatusPlan({
@@ -160,6 +173,17 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
     canonical: {
       entities,
       relationships,
+    },
+    publicBodies: {
+      conservativeVariantLeads: publicBodyComparison.conservativeVariantMatchCount,
+      governanceSuffixLeads: governanceSuffixLeads.length,
+      firstGovernanceSuffixLead: governanceSuffixLeads[0]
+        ? {
+          variantName: governanceSuffixLeads[0].variantName,
+          sourceIds: governanceSuffixLeads[0].sourceIds,
+          names: governanceSuffixLeads[0].names.map((name) => name.displayName),
+        }
+        : undefined,
     },
     nextCommand: statusPlan.nextCommand,
     unresolvedStateNote: statusPlan.unresolvedStateNote,
@@ -251,10 +275,25 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
     ...(blockedFamilySummary ? [`Blocked families: ${blockedFamilySummary}`] : []),
     ...renderTopUnblockerSummary(status.reconciliation.topUnblocker),
     ...renderFirstBlockedSummary(status.reconciliation.firstBlocked),
+    ...renderPublicBodyLinkageSummary(status.publicBodies),
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Readiness: ${status.unresolvedStateNote}`,
     `Next: ${status.nextCommand}`,
   ].join("\n");
+}
+
+function renderPublicBodyLinkageSummary(status: WorkbenchStatusSnapshot["publicBodies"]): string[] {
+  if (status.governanceSuffixLeads === 0) return [];
+  return [
+    `Public-body linkage leads: ${status.governanceSuffixLeads} governance-suffix lead${
+      status.governanceSuffixLeads === 1 ? "" : "s"
+    }${
+      status.firstGovernanceSuffixLead
+        ? `, first ${status.firstGovernanceSuffixLead.variantName}`
+        : ""
+    }`,
+    `Inspect leads: ${dcCommand("source compare public-bodies")}`,
+  ];
 }
 
 export function renderWorkbenchAudit(status: WorkbenchStatusSnapshot): string {

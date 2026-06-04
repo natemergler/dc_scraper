@@ -223,7 +223,7 @@ export async function handleSourceCommand(
       console.log(`- ${row.displayName} [${row.sourceIds.join(", ")}]`);
     }
     console.log(
-      `Conservative variant matches (review leads, not exact overlaps): ${comparison.conservativeVariantMatchCount}`,
+      `Conservative variant matches (linkage leads, not exact overlaps): ${comparison.conservativeVariantMatchCount}`,
     );
     if (comparison.conservativeVariantMatchCount > 0) {
       console.log(
