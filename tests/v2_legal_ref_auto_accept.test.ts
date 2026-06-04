@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { legalEntrypointsFixture } from "./helpers/v2_fixtures.ts";
+import { syntheticLegalRefSourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 
 Deno.test("recognized legal entrypoints auto-accept without generic navigation review", async () => {
   const dir = await Deno.makeTempDir();
@@ -38,4 +39,49 @@ Deno.test("recognized legal entrypoints auto-accept without generic navigation r
   assertEquals(statusCounts.get("accepted"), 3);
   assertEquals(statusCounts.get("pending"), undefined);
   assertEquals(openItems.length, 0);
+});
+
+Deno.test("recognized statute citation families auto-accept on current schema", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  for (
+    const [legalRefId, citationText] of [
+      ["legal.test.signature.legal_refs.dc_law", "D.C. Law 22-155"],
+      ["legal.test.signature.legal_refs.dc_act", "REACH Act (D.C. Act 23-521)"],
+      ["legal.test.signature.legal_refs.public_law", "Public Law 89-774"],
+      [
+        "legal.test.signature.legal_refs.reorganization_plan",
+        "DC ST D.I, T. 1, Ch.15, Subch. XIV, Pt. A, 1996 Plan 4",
+      ],
+    ] as const
+  ) {
+    await workbench.importConnectorResult(
+      syntheticLegalRefSourceResult(legalRefId, citationText, "https://example.com/legal", {
+        needsReview: false,
+      }),
+      dataDir,
+    );
+  }
+
+  const rows = workbench.db.prepare(
+    "select ref_type as refType, review_status as reviewStatus, normalized_citation as normalizedCitation from legal_refs order by ref_type",
+  ).all() as Array<{ refType: string; reviewStatus: string; normalizedCitation: string }>;
+  const openItems = workbench.listReviewItems({ mode: "legal", status: "open" });
+  workbench.close();
+
+  assertEquals(openItems.length, 0);
+  assertEquals(rows, [
+    { refType: "dc_act", reviewStatus: "accepted", normalizedCitation: "D.C. Act 23-521" },
+    { refType: "dc_law", reviewStatus: "accepted", normalizedCitation: "D.C. Law 22-155" },
+    { refType: "public_law", reviewStatus: "accepted", normalizedCitation: "Public Law 89-774" },
+    {
+      refType: "reorganization_plan",
+      reviewStatus: "accepted",
+      normalizedCitation: "Reorganization Plan No. 4 of 1996",
+    },
+  ]);
 });

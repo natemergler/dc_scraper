@@ -152,6 +152,7 @@ export function syntheticLegalRefSourceResult(
   legalRefId: string,
   citationText: string,
   url: string,
+  options: { needsReview?: boolean } = {},
 ): ConnectorResult {
   const parsed = parseLegalReference(citationText, url);
   return {
@@ -193,7 +194,7 @@ export function syntheticLegalRefSourceResult(
           citationText,
           normalizedCitation: parsed.normalizedCitation,
           url,
-          needsReview: true,
+          needsReview: options.needsReview ?? true,
           evidence: [{
             fieldPath: "citation",
             observedValue: citationText,
