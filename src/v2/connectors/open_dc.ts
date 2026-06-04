@@ -19,6 +19,7 @@ import {
   buildKnownEntityRef,
   captureSingle,
   fieldEvidence,
+  resolveKnownEntityRef,
   toAbsoluteUrl,
   toPublicHttpUrl,
 } from "./shared.ts";
@@ -45,6 +46,8 @@ const priorityPublicBodySlugs = new Set([
   "juvenile-abscondence-review-committee",
   "tax-revision-commission",
 ]);
+const defaultOpenDcDetailLimit = 16;
+const openDcDetailFetchConcurrency = 6;
 
 export const openDcConnector: SourceConnector = {
   sourceId: openDcSource.sourceId,
@@ -72,7 +75,7 @@ export const openDcConnector: SourceConnector = {
     const indexHtml = await indexResponse.text();
     const links = selectOpenDcLinks(
       parseOpenDcIndex(indexHtml),
-      context.limit ?? Number.POSITIVE_INFINITY,
+      context.limit ?? defaultOpenDcDetailLimit,
     );
     const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
     const detailParsed = deriveOpenDcDetailParsed(detailRecords);
@@ -108,19 +111,64 @@ export const openDcConnector: SourceConnector = {
 
 function selectOpenDcLinks(
   links: Array<{ href: string; text: string; slug: string }>,
-  limit: number,
+  limit?: number,
 ): Array<{ href: string; text: string; slug: string }> {
+  const canonicalLinks = canonicalizeOpenDcLinks(links);
+  if (limit === undefined) {
+    return canonicalLinks;
+  }
   const selected = new Map<string, { href: string; text: string; slug: string }>();
-  const limitedLinks = Number.isFinite(limit) ? links.slice(0, Math.max(0, limit)) : links;
+  const limitedLinks = Number.isFinite(limit)
+    ? canonicalLinks.slice(0, Math.max(0, limit))
+    : canonicalLinks;
   for (const link of limitedLinks) {
     selected.set(link.href, link);
   }
-  for (const link of links) {
+  for (const link of canonicalLinks) {
     if (priorityPublicBodySlugs.has(link.slug)) {
       selected.set(link.href, link);
     }
   }
   return [...selected.values()];
+}
+
+function canonicalizeOpenDcLinks(
+  links: Array<{ href: string; text: string; slug: string }>,
+): Array<{ href: string; text: string; slug: string }> {
+  const bestByText = new Map<string, { href: string; text: string; slug: string }>();
+  const order: string[] = [];
+  for (const link of links) {
+    const key = normalizeName(link.text).toLowerCase();
+    if (!key) continue;
+    const existing = bestByText.get(key);
+    if (!existing) {
+      bestByText.set(key, link);
+      order.push(key);
+      continue;
+    }
+    if (compareOpenDcLinkQuality(link, existing) < 0) {
+      bestByText.set(key, link);
+    }
+  }
+  return order.map((key) => bestByText.get(key)!);
+}
+
+function compareOpenDcLinkQuality(
+  left: { href: string; text: string; slug: string },
+  right: { href: string; text: string; slug: string },
+): number {
+  const leftScore = scoreOpenDcSlug(left.slug);
+  const rightScore = scoreOpenDcSlug(right.slug);
+  if (leftScore !== rightScore) return leftScore - rightScore;
+  if (left.slug.length !== right.slug.length) return left.slug.length - right.slug.length;
+  return left.href.localeCompare(right.href);
+}
+
+function scoreOpenDcSlug(slug: string): number {
+  let score = 0;
+  if (/-\d+$/.test(slug)) score += 10;
+  if (/--/.test(slug)) score += 5;
+  return score;
 }
 
 function parseOpenDcIndex(html: string): Array<{ href: string; text: string; slug: string }> {
@@ -152,16 +200,23 @@ async function fetchOpenDcDetailRecords(
   links: Array<{ href: string; text: string; slug: string }>,
 ): Promise<OpenDcDetailRecord[]> {
   const records: OpenDcDetailRecord[] = [];
-  for (const [artifactIndex, link] of links.entries()) {
-    const detailUrl = toAbsoluteUrl(openDcSource.baseUrl, link.href);
-    const detailResponse = await fetcher(detailUrl);
-    const detailHtml = await detailResponse.text();
-    records.push({
-      artifactIndex,
-      detailUrl,
-      detailHtml,
-      detail: parseOpenDcDetail(detailHtml, detailUrl),
-    });
+  for (let start = 0; start < links.length; start += openDcDetailFetchConcurrency) {
+    const batch = links.slice(start, start + openDcDetailFetchConcurrency);
+    const batchRecords = await Promise.all(
+      batch.map(async (link, offset) => {
+        const artifactIndex = start + offset;
+        const detailUrl = toAbsoluteUrl(openDcSource.baseUrl, link.href);
+        const detailResponse = await fetcher(detailUrl);
+        const detailHtml = await detailResponse.text();
+        return {
+          artifactIndex,
+          detailUrl,
+          detailHtml,
+          detail: parseOpenDcDetail(detailHtml, detailUrl),
+        };
+      }),
+    );
+    records.push(...batchRecords);
   }
   return records;
 }
@@ -216,13 +271,14 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
       });
     }
     const candidateId = buildCandidateId(openDcSource.sourceId, itemKey);
-    const proposedEntityId = buildEntityId(detail.name);
+    const identity = resolveOpenDcCandidateIdentity(detail.name);
+    const proposedEntityId = identity.proposedEntityId;
     entityCandidates.push({
       candidateId,
       sourceItemKey: itemKey,
       proposedEntityId,
-      name: detail.name,
-      kind: detectEntityKind(undefined, detail.name),
+      name: identity.name,
+      kind: detectEntityKind(undefined, identity.name),
       rawKind: "public_body",
       officialUrl: detailUrl,
       confidence: 0.92,
@@ -235,8 +291,8 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
     });
     reviewItems.push(
       buildCandidateReviewItem(candidateId, "Review Open DC public body candidate", "accept", {
-        name: detail.name,
-        kind: detectEntityKind(undefined, detail.name),
+        name: identity.name,
+        kind: detectEntityKind(undefined, identity.name),
         confidence: 0.92,
         officialUrl: detailUrl,
         duplicateHint: detailUrl,
@@ -344,6 +400,32 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
     }
   }
   return { items, entityCandidates, relationshipCandidates, legalRefs, reviewItems };
+}
+
+function resolveOpenDcCandidateIdentity(
+  name: string,
+): { name: string; proposedEntityId: string } {
+  const normalized = normalizeName(name);
+  const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
+  if (!parentheticalMatch) {
+    return { name: normalized, proposedEntityId: buildEntityId(normalized) };
+  }
+  const baseName = normalizeName(parentheticalMatch[1] ?? "");
+  const aliasName = normalizeName(parentheticalMatch[2] ?? "");
+  if (baseName && aliasName && isAcronymLike(aliasName)) {
+    return { name: baseName, proposedEntityId: buildEntityId(baseName) };
+  }
+  if (aliasName) {
+    const knownAliasEntityRef = resolveKnownEntityRef(aliasName);
+    if (knownAliasEntityRef) {
+      return { name: aliasName, proposedEntityId: knownAliasEntityRef };
+    }
+  }
+  return { name: normalized, proposedEntityId: buildEntityId(normalized) };
+}
+
+function isAcronymLike(value: string): boolean {
+  return /^[A-Z0-9][A-Z0-9/&.\-\s]{1,11}$/.test(normalizeName(value));
 }
 
 function openDcRelationshipEndpointRef(

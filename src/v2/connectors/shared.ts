@@ -92,6 +92,17 @@ export function toAbsoluteUrl(baseUrl: string, maybeRelative: string): string {
 }
 
 export function buildKnownEntityRef(name: string): string {
+  const directAlias = resolveKnownEntityRef(name);
+  if (directAlias) return directAlias;
+  const variants = acceptedStyleEntityVariants(name);
+  for (const variant of variants) {
+    if (looksLikeAgencyStyleEndpoint(variant)) return buildEntityId(variant);
+  }
+  if (variants[0]) return buildEntityId(variants[0]);
+  return buildEntityId(name);
+}
+
+export function resolveKnownEntityRef(name: string): string | undefined {
   const directAlias = knownEntityRefs.get(entityAliasKey(name));
   if (directAlias) return directAlias;
   const variants = acceptedStyleEntityVariants(name);
@@ -99,11 +110,7 @@ export function buildKnownEntityRef(name: string): string {
     const alias = knownEntityRefs.get(entityAliasKey(variant));
     if (alias) return alias;
   }
-  for (const variant of variants) {
-    if (looksLikeAgencyStyleEndpoint(variant)) return buildEntityId(variant);
-  }
-  if (variants[0]) return buildEntityId(variants[0]);
-  return buildEntityId(name);
+  return undefined;
 }
 
 export function buildKnownCouncilOversightEntityRef(rawValue: string): string {

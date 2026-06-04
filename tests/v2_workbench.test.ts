@@ -1374,39 +1374,217 @@ Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyo
   );
 });
 
-Deno.test("Open DC unbounded fetch follows every public-body detail link", async () => {
-  const detailLinks = Array.from({ length: 10 }, (_, index) => ({
-    slug: `public-body-${index + 1}`,
-    name: `Public Body ${index + 1}`,
-  }));
-  const indexFixture = `<html><body>${
-    detailLinks.map((link) => `<a href="/public-bodies/${link.slug}">${link.name}</a>`).join("\n")
-  }</body></html>`;
+Deno.test("Open DC default fetch reaches beyond the old bounded sample", async () => {
+  const slugs = Array.from({ length: 12 }, (_, index) => `body-${index + 1}`);
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
-      if (url === "https://www.open-dc.gov/public-bodies") return indexFixture;
+      if (url === "https://www.open-dc.gov/public-bodies") {
+        return `<html><body>${
+          slugs.map((slug, index) => `<a href="/public-bodies/${slug}">Body ${index + 1}</a>`).join(
+            "",
+          )
+        }</body></html>`;
+      }
       const slug = url.split("/").pop();
-      const link = detailLinks.find((candidate) => candidate.slug === slug);
-      if (!link) throw new Error(`Unexpected url ${url}`);
-      return `<html><body><h1 class="page-title">${link.name}</h1></body></html>`;
+      if (slug && slugs.includes(slug)) {
+        const name = slug.replace("body-", "Body ");
+        return `<html><body><h1 class="page-title">${name}</h1></body></html>`;
+      }
+      throw new Error(`Unexpected url ${url}`);
     },
     json: async <T>() => {
       throw new Error(`No json fixture for ${url}`) as T;
     },
   });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  assertEquals(result.endpointResults[1].artifacts.length, 12);
+});
 
-  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({
-    fetcher,
-  }));
+Deno.test("Open DC default fetch keeps all canonical detail pages and prefers cleaner duplicate slugs", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/board-accountancy-0">Board of Accountancy</a>
+            <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
+            <a href="/public-bodies/adult-career-pathways-task-force">Adult Career Pathways Task Force</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force":
+          return openDcTaskForceFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  assertEquals(result.endpointResults[1].artifacts.length, 2);
+  assertEquals(
+    result.endpointResults[1].artifacts.map((item) => item.fetchedUrl),
+    [
+      "https://www.open-dc.gov/public-bodies/board-accountancy",
+      "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force",
+    ],
+  );
   const detail = result.endpointResults[1].parsed;
-  assertEquals(detail?.entityCandidates?.length, 10);
+  assert(detail);
+  assertEquals(detail.entityCandidates?.length, 2);
   assert(
-    detail?.entityCandidates?.some((candidate) =>
-      candidate.candidateId === "candidate.open_dc.public_bodies.public_body_10" &&
-      candidate.officialUrl === "https://www.open-dc.gov/public-bodies/public-body-10"
+    detail.entityCandidates?.some((candidate) =>
+      candidate.candidateId === "candidate.open_dc.public_bodies.board_accountancy" &&
+      candidate.officialUrl === "https://www.open-dc.gov/public-bodies/board-accountancy"
     ),
   );
+  assert(
+    detail.entityCandidates?.some((candidate) =>
+      candidate.candidateId ===
+        "candidate.open_dc.public_bodies.adult_career_pathways_task_force"
+    ),
+  );
+});
+
+Deno.test("Open DC acronym parentheticals reuse the base public-body identity", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/juvenile-justice-advisory-group-jjag">Juvenile Justice Advisory Group (JJAG)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/juvenile-justice-advisory-group-jjag":
+          return `<html><body><h1 class="page-title">Juvenile Justice Advisory Group (JJAG)</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assertEquals(detail.entityCandidates?.[0]?.name, "Juvenile Justice Advisory Group");
+  assertEquals(
+    detail.entityCandidates?.[0]?.proposedEntityId,
+    "dc.juvenile_justice_advisory_group",
+  );
+});
+
+Deno.test("Open DC known alias parentheticals reuse the known public-body identity", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc">Washington D.C. Convention and Tourism Corporation (Destination DC)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc":
+          return `<html><body><h1 class="page-title">Washington D.C. Convention and Tourism Corporation (Destination DC)</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assertEquals(detail.entityCandidates?.[0]?.name, "Destination DC");
+  assertEquals(detail.entityCandidates?.[0]?.proposedEntityId, "dc.destination_dc");
+});
+
+Deno.test("Open DC known alias refinements fill official URLs on existing public-body entities", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.committees",
+      candidateId:
+        "candidate.council.committees.relationship_council_committees_committee_on_executive_administration_and_labor_oversight_11_from_endpoint",
+      sourceItemKey: "committee-on-executive-administration-and-labor:oversight",
+      proposedEntityId: "dc.destination_dc",
+      name: "Destination DC",
+      kind: "public_body",
+      observedName: "Destination DC",
+    }),
+    dataDir,
+  );
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc">Washington D.C. Convention and Tourism Corporation (Destination DC)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc":
+          return `<html><body><h1 class="page-title">Washington D.C. Convention and Tourism Corporation (Destination DC)</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  await workbench.importConnectorResult(result, dataDir);
+
+  const canonical = workbench.db.prepare(
+    `select name,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.destination_dc'`,
+  ).get() as {
+    name: string;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.open_dc.public_bodies.washington_dc_convention_and_tourism_corporation_destination_dc",
+  });
+  workbench.close();
+
+  assertEquals(canonical.name, "Destination DC");
+  assertEquals(
+    canonical.officialUrl,
+    "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc",
+  );
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [
+    "candidate.council.committees.relationship_council_committees_committee_on_executive_administration_and_labor_oversight_11_from_endpoint",
+    "candidate.open_dc.public_bodies.washington_dc_convention_and_tourism_corporation_destination_dc",
+  ]);
+  assertEquals(openReview.length, 0);
 });
 
 Deno.test("Open DC keeps taxonomy-only agency labels as evidence instead of relationship endpoints", async () => {
