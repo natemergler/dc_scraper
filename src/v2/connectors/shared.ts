@@ -293,9 +293,9 @@ const knownEntityRefs = new Map<string, string>([
   ["housing finance agency", "dc.dc_housing_finance_agency"],
   ["inspector general", "dc.office_of_the_inspector_general"],
   ["mpd", "dc.metropolitan_police_department"],
-  ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor's office of veterans affairs (mova)", "dc.office_of_veterans_affairs"],
   ["mayor", "dc.mayor"],
-  ["mayor's office of veteran's affairs", "dc.mayor_s_office_of_veterans_affairs"],
+  ["mayor's office of veteran's affairs", "dc.office_of_veterans_affairs"],
   ["national capital planning commission", "dc.national_capital_planning_commission_ncpc"],
   [
     "office of the attorney general for the district of columbia",

@@ -4087,7 +4087,11 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   assertEquals(buildKnownEntityRef("Mayor"), "dc.mayor");
   assertEquals(
     buildKnownEntityRef("Mayor's Office of Veterans Affairs (MOVA)"),
-    "dc.mayor_s_office_of_veterans_affairs",
+    "dc.office_of_veterans_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office of Veteran's Affairs"),
+    "dc.office_of_veterans_affairs",
   );
   assertEquals(
     buildKnownEntityRef("DC Department of Licensing and Consumer Protection"),
