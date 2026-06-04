@@ -297,10 +297,6 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
     }
     if (detail.enablingAuthority) {
       const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
-      const relationshipCandidateId = buildRelationshipCandidateId(
-        openDcSource.sourceId,
-        `${itemKey}-authorized-by`,
-      );
       const legalRefId = buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`);
       legalRefs.push({
         legalRefId,
@@ -312,35 +308,6 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         needsReview: parsed.needsReview,
         evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
         attachEntityRef: proposedEntityId,
-        attachRelationshipRef: relationshipCandidateId,
-      });
-      const authorityEntityRef = buildEntityId(
-        parsed.normalizedCitation ?? parsed.citationText,
-        "legal",
-      );
-      relationshipCandidates.push({
-        relationshipCandidateId,
-        sourceItemKey: itemKey,
-        fromEntityRef: proposedEntityId,
-        toEntityRef: authorityEntityRef,
-        relationshipType: "authorized_by",
-        rawValue: detail.enablingAuthority,
-        needsReview: parsed.needsReview,
-        evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
-      });
-      reviewItems.push({
-        reviewItemId: buildReviewItemId(relationshipCandidateId, "authorized-by"),
-        itemType: "relationship_candidate",
-        subjectId: relationshipCandidateId,
-        reason: "Review legal authority relationship from Open DC enabling authority",
-        defaultAction: "defer",
-        details: {
-          fromEntityRef: proposedEntityId,
-          toEntityRef: authorityEntityRef,
-          relationshipType: "authorized_by",
-          rawValue: detail.enablingAuthority,
-          legalRefId,
-        },
       });
     }
   }

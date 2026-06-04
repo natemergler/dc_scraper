@@ -2174,7 +2174,7 @@ Deno.test("Open DC detail evidence points to the detail artifact rather than the
   assertEquals(endpointAliases.get("DOES"), "dc.department_of_employment_services");
 });
 
-Deno.test("Open DC second detail-page shape yields administered and legal-authority relationship candidates plus document links", async () => {
+Deno.test("Open DC second detail-page shape yields administered relationship, legal ref, and document links", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -2207,18 +2207,18 @@ Deno.test("Open DC second detail-page shape yields administered and legal-author
       candidate.rawValue === "Office of the City Administrator"
     ),
   );
-  assert(
+  assertEquals(
     detail.relationshipCandidates?.some((candidate) =>
-      candidate.relationshipType === "authorized_by" &&
-      candidate.rawValue === "Mayor's Order 2019-010"
+      candidate.relationshipType === "authorized_by"
     ),
+    false,
   );
   assert(
     detail.legalRefs?.some((legalRef) =>
       legalRef.legalRefId ===
         "legal.open_dc.public_bodies.commission_on_example_services_authority" &&
-      legalRef.attachRelationshipRef ===
-        "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by"
+      legalRef.attachEntityRef === "dc.commission_on_example_services" &&
+      legalRef.attachRelationshipRef === undefined
     ),
   );
 });
@@ -2531,8 +2531,7 @@ Deno.test("Open DC public bodies can be safely accepted before relationship revi
 
   assertEquals(relationshipItems.length, 0);
   assertEquals(acceptedRelationships.length, 0);
-  assertEquals(acceptedAuthorityCandidates.length, 2);
-  assert(acceptedAuthorityCandidates.every((candidate) => candidate.reviewStatus === "accepted"));
+  assertEquals(acceptedAuthorityCandidates.length, 0);
   assert(blockedRelationship);
   assertEquals(blockedRelationship.reason, "unresolved_endpoints");
   assertStringIncludes(
@@ -3527,11 +3526,10 @@ Deno.test("public body comparison keeps conservative variant matches separate fr
   workbench.close();
 });
 
-Deno.test("legal authority acceptance keeps legal refs on the entity instead of a non-exported relationship", async () => {
+Deno.test("Open DC legal authority stays attached to the entity without a non-exported relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
   const fetcher = async (url: string) => ({
@@ -3554,32 +3552,22 @@ Deno.test("legal authority acceptance keeps legal refs on the entity instead of 
     await getConnector("open_dc.public_bodies").run(createConnectorContext({ fetcher, limit: 1 })),
     dataDir,
   );
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_relationship_candidate",
-      subjectId: "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by",
-      payload: {},
-    },
-    resolutionsDir,
-  );
   const relationshipLegalAttachmentRows = workbench.db.prepare(
     "select relationship_id as relationshipId, legal_ref_id as legalRefId from relationship_legal_refs order by relationship_id",
   ).all().map((row) => row as { relationshipId: string; legalRefId: string });
   const entityLegalAttachmentRows = workbench.db.prepare(
     "select entity_id as entityId, legal_ref_id as legalRefId from entity_legal_refs order by entity_id",
   ).all().map((row) => row as { entityId: string; legalRefId: string });
-  const acceptedAuthorityRelationship = workbench.db.prepare(
-    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = ?",
-  ).get(
-    "relationship.open_dc.public_bodies.commission_on_example_services_authorized_by",
-  ) as { reviewStatus: string } | undefined;
+  const authorityRelationshipCount = workbench.db.prepare(
+    "select count(*) as count from relationship_candidates where relationship_type = 'authorized_by'",
+  ).get() as { count: number };
   workbench.close();
   assertEquals(relationshipLegalAttachmentRows, []);
   assertEquals(entityLegalAttachmentRows, [{
     entityId: "dc.commission_on_example_services",
     legalRefId: "legal.open_dc.public_bodies.commission_on_example_services_authority",
   }]);
-  assertEquals(acceptedAuthorityRelationship?.reviewStatus, "accepted");
+  assertEquals(authorityRelationshipCount.count, 0);
 });
 
 Deno.test("relationship acceptance rejects blocked endpoints instead of creating placeholders", async () => {
