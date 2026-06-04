@@ -325,6 +325,18 @@ function importParsedOutput(
     );
   }
   const itemIndex = new Map<string, ParsedSourceItemRecord & { artifactPath: string }>();
+  const existingEntityCandidateStatuses = reviewStatusesById(
+    store,
+    "entity_candidates",
+    "candidate_id",
+    parsed.entityCandidates?.map((candidate) => candidate.candidateId) ?? [],
+  );
+  const existingRelationshipCandidateStatuses = reviewStatusesById(
+    store,
+    "relationship_candidates",
+    "relationship_candidate_id",
+    parsed.relationshipCandidates?.map((candidate) => candidate.relationshipCandidateId) ?? [],
+  );
   for (const item of parsed.items ?? []) {
     const artifactRecord = artifactAt(artifactRecords, item.artifactIndex);
     const sourceItemId = `${runId}:${item.itemKey}`;
@@ -387,7 +399,7 @@ function importParsedOutput(
       candidate.officialUrl ?? null,
       candidate.confidence ?? null,
       candidate.duplicateHint ?? null,
-      candidate.candidateId,
+      existingEntityCandidateStatuses.get(candidate.candidateId) ?? "pending",
     ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
       const artifactRecord = artifactAt(
@@ -424,7 +436,22 @@ function importParsedOutput(
       "review_status",
     ],
     entityCandidateRows,
-    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from entity_candidates where candidate_id = ?), 'pending'))",
+    {
+      insertVerb: "insert into",
+      conflictSql: ` on conflict(candidate_id) do update set
+            source_item_id = excluded.source_item_id,
+            proposed_entity_id = excluded.proposed_entity_id,
+            name = excluded.name,
+            normalized_name = excluded.normalized_name,
+            kind = excluded.kind,
+            raw_kind = excluded.raw_kind,
+            branch = excluded.branch,
+            cluster = excluded.cluster,
+            official_url = excluded.official_url,
+            confidence = excluded.confidence,
+            duplicate_hint = excluded.duplicate_hint,
+            review_status = excluded.review_status`,
+    },
   );
   bulkInsertRows(
     store.db,
@@ -439,6 +466,16 @@ function importParsedOutput(
       "artifact_path",
     ],
     entityCandidateEvidenceRows,
+    {
+      insertVerb: "insert into",
+      conflictSql: ` on conflict(evidence_id) do update set
+            candidate_id = excluded.candidate_id,
+            source_id = excluded.source_id,
+            source_item_id = excluded.source_item_id,
+            field_path = excluded.field_path,
+            observed_value = excluded.observed_value,
+            artifact_path = excluded.artifact_path`,
+    },
   );
   if ((parsed.entityCandidates?.length ?? 0) > 0) {
     onProgress?.(
@@ -456,7 +493,7 @@ function importParsedOutput(
       candidate.relationshipType,
       candidate.rawValue ?? null,
       candidate.needsReview ? 1 : 0,
-      candidate.relationshipCandidateId,
+      existingRelationshipCandidateStatuses.get(candidate.relationshipCandidateId) ?? "pending",
     ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
       const artifactRecord = artifactAt(
@@ -488,7 +525,17 @@ function importParsedOutput(
       "review_status",
     ],
     relationshipCandidateRows,
-    "(?, ?, ?, ?, ?, ?, ?, coalesce((select review_status from relationship_candidates where relationship_candidate_id = ?), 'pending'))",
+    {
+      insertVerb: "insert into",
+      conflictSql: ` on conflict(relationship_candidate_id) do update set
+            source_item_id = excluded.source_item_id,
+            from_entity_ref = excluded.from_entity_ref,
+            to_entity_ref = excluded.to_entity_ref,
+            relationship_type = excluded.relationship_type,
+            raw_value = excluded.raw_value,
+            needs_review = excluded.needs_review,
+            review_status = excluded.review_status`,
+    },
   );
   bulkInsertRows(
     store.db,
@@ -503,6 +550,16 @@ function importParsedOutput(
       "artifact_path",
     ],
     relationshipCandidateEvidenceRows,
+    {
+      insertVerb: "insert into",
+      conflictSql: ` on conflict(evidence_id) do update set
+            relationship_candidate_id = excluded.relationship_candidate_id,
+            source_id = excluded.source_id,
+            source_item_id = excluded.source_item_id,
+            field_path = excluded.field_path,
+            observed_value = excluded.observed_value,
+            artifact_path = excluded.artifact_path`,
+    },
   );
   if ((parsed.relationshipCandidates?.length ?? 0) > 0) {
     onProgress?.(
@@ -720,20 +777,53 @@ function bulkInsertRows(
   tableName: string,
   columnNames: string[],
   rows: unknown[][],
-  rowValueSql = `(${columnNames.map(() => "?").join(", ")})`,
+  options: {
+    rowValueSql?: string;
+    insertVerb?: "insert into" | "insert or replace into";
+    conflictSql?: string;
+  } = {},
 ): void {
   if (rows.length === 0) return;
   const columns = columnNames.join(", ");
+  const rowValueSql = options.rowValueSql ?? `(${columnNames.map(() => "?").join(", ")})`;
   for (let offset = 0; offset < rows.length; offset += BULK_INSERT_ROW_LIMIT) {
     const chunk = rows.slice(offset, offset + BULK_INSERT_ROW_LIMIT);
     const placeholders = chunk.map(() => rowValueSql).join(", ");
     const params = chunk.flat();
     run(
       db,
-      `insert or replace into ${tableName}(${columns}) values ${placeholders}`,
+      `${
+        options.insertVerb ?? "insert or replace into"
+      } ${tableName}(${columns}) values ${placeholders}${options.conflictSql ?? ""}`,
       params,
     );
   }
+}
+
+function reviewStatusesById(
+  store: WorkbenchStore,
+  tableName: "entity_candidates" | "relationship_candidates",
+  idColumn: "candidate_id" | "relationship_candidate_id",
+  ids: string[],
+): Map<string, string> {
+  const uniqueIds = [...new Set(ids)];
+  const statuses = new Map<string, string>();
+  for (const idChunk of chunks(uniqueIds, 500)) {
+    if (idChunk.length === 0) continue;
+    const placeholders = idChunk.map(() => "?").join(", ");
+    const rows = queryAll<{ id: string; reviewStatus: string }>(
+      store.db,
+      `select ${idColumn} as id,
+              review_status as reviewStatus
+       from ${tableName}
+       where ${idColumn} in (${placeholders})`,
+      idChunk,
+    );
+    for (const row of rows) {
+      statuses.set(row.id, row.reviewStatus);
+    }
+  }
+  return statuses;
 }
 
 function reviewItemWithWorkbenchContext(
