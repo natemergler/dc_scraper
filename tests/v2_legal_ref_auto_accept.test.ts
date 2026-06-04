@@ -63,6 +63,7 @@ Deno.test("recognized legal citation families auto-accept on current schema", as
     await workbench.importConnectorResult(
       syntheticLegalRefSourceResult(legalRefId, citationText, "https://example.com/legal", {
         needsReview: false,
+        sourceItemKey: legalRefId,
       }),
       dataDir,
     );

@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { buildReviewItemId } from "../src/v2/domain.ts";
+import { buildReviewItemId, type ConnectorResult, parseLegalReference } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { syntheticLegalRefSourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 
@@ -57,6 +57,64 @@ Deno.test("accepted legal ref decisions are reused across refetch when legal ref
   assertEquals(openItems.length, 0);
 });
 
+Deno.test("legal refs omitted by a current parse are deleted for refetched source items", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.compound_old",
+      "DC. ST. D.I., T.1, Ch 15, Subch. III, Pt. 1, 1979 Plan 2 (IV. B. (2)); 5-1402 et seq.",
+      "https://ocme.dc.gov/",
+    ),
+    dataDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResultForItem([
+      {
+        legalRefId: "legal.test.signature.legal_refs.compound_1",
+        citationText: "DC. ST. D.I., T.1, Ch 15, Subch. III, Pt. 1, 1979 Plan 2 (IV. B. (2))",
+        url: "https://ocme.dc.gov/",
+      },
+      {
+        legalRefId: "legal.test.signature.legal_refs.compound_2",
+        citationText: "5-1402 et seq.",
+        url: "https://ocme.dc.gov/",
+      },
+    ]),
+    dataDir,
+  );
+
+  const legalRefs = workbench.db.prepare(
+    "select legal_ref_id as legalRefId from legal_refs order by legal_ref_id",
+  ).all() as Array<{ legalRefId: string }>;
+  const oldRowCounts = workbench.db.prepare(
+    `select
+       (select count(*) from legal_refs where legal_ref_id = 'legal.test.signature.legal_refs.compound_old') as legalRefs,
+       (select count(*) from legal_ref_evidence where legal_ref_id = 'legal.test.signature.legal_refs.compound_old') as evidence,
+       (select count(*) from review_items where subject_id = 'legal.test.signature.legal_refs.compound_old') as reviewItems`,
+  ).get() as { legalRefs: number; evidence: number; reviewItems: number };
+  const openItems = workbench.listReviewItems({ mode: "legal", status: "open" });
+  workbench.close();
+
+  assertEquals(legalRefs.map((row) => row.legalRefId), [
+    "legal.test.signature.legal_refs.compound_1",
+    "legal.test.signature.legal_refs.compound_2",
+  ]);
+  assertEquals(oldRowCounts, { legalRefs: 0, evidence: 0, reviewItems: 0 });
+  assertEquals(
+    openItems.map((item) => item.subjectId).sort(),
+    [
+      "legal.test.signature.legal_refs.compound_1",
+      "legal.test.signature.legal_refs.compound_2",
+    ],
+  );
+});
+
 Deno.test("changed legal ref evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -106,6 +164,65 @@ Deno.test("changed legal ref evidence after a prior accept becomes stale review 
   assertEquals(staleItem.details.stalePriorDecision, true);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
+
+function syntheticLegalRefSourceResultForItem(
+  refs: Array<{ legalRefId: string; citationText: string; url: string }>,
+): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.signature.legal_refs",
+      title: "Test Signature Legal Refs",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/signature-legal-refs",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.signature.legal_refs.main",
+        sourceId: "test.signature.legal_refs",
+        title: "Signature legal ref rows",
+        kind: "fixture",
+        url: "https://example.com/signature-legal-refs",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/signature-legal-refs",
+        contentText: JSON.stringify(refs),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "example-legal-row",
+          itemType: "fixture_row",
+          title: "Example legal row",
+          body: { refs },
+        }],
+        legalRefs: refs.map((ref) => {
+          const parsed = parseLegalReference(ref.citationText, ref.url);
+          return {
+            legalRefId: ref.legalRefId,
+            sourceItemKey: "example-legal-row",
+            refType: parsed.refType,
+            citationText: ref.citationText,
+            normalizedCitation: parsed.normalizedCitation,
+            url: ref.url,
+            needsReview: true,
+            evidence: [{
+              fieldPath: "citation",
+              observedValue: ref.citationText,
+            }, {
+              fieldPath: "url",
+              observedValue: ref.url,
+            }],
+          };
+        }),
+      },
+    }],
+  };
+}
 
 Deno.test("edited legal ref accept decisions are reused across refetch when legal ref ids change", async () => {
   const dir = await Deno.makeTempDir();

@@ -373,21 +373,35 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
       : "AUTHORIZING_ORDER_LAW";
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
-    const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
+    const citationParts = splitDcgisLegalAuthority(legislation);
     const entityName = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
-    legalRefs.push({
-      legalRefId: buildLegalRefId(source.sourceId, `${item.itemKey}-legislation`),
-      sourceItemKey: item.itemKey,
-      refType: parsed.refType,
-      citationText: parsed.citationText,
-      normalizedCitation: parsed.normalizedCitation,
-      url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
-      needsReview: parsed.needsReview,
-      evidence: [fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item))],
-      attachEntityRef: buildKnownEntityRef(entityName),
+    citationParts.forEach((citationText, index) => {
+      const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
+      const idSuffix = citationParts.length === 1
+        ? `${item.itemKey}-legislation`
+        : `${item.itemKey}-legislation-${index + 1}`;
+      legalRefs.push({
+        legalRefId: buildLegalRefId(source.sourceId, idSuffix),
+        sourceItemKey: item.itemKey,
+        refType: parsed.refType,
+        citationText: parsed.citationText,
+        normalizedCitation: parsed.normalizedCitation,
+        url: extractFirstUrl(citationText) ?? extractFirstUrl(legislation) ??
+          maybeString(row.WEB_URL),
+        needsReview: parsed.needsReview,
+        evidence: [fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item))],
+        attachEntityRef: buildKnownEntityRef(entityName),
+      });
     });
   }
   return legalRefs;
+}
+
+function splitDcgisLegalAuthority(value: string): string[] {
+  const parts = value.split(";").map((part) => maybeString(part)).filter((part): part is string =>
+    Boolean(part)
+  );
+  return parts.length > 1 ? parts : [value];
 }
 
 function dcgisRowArtifactIndex(item: SourceItemInput): number {
