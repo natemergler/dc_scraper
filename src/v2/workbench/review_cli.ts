@@ -37,11 +37,13 @@ interface RelationshipEndpointContext {
   to: EndpointStatus;
 }
 
+type InteractiveReviewWorkbench = Pick<
+  Workbench,
+  "db" | "dbPath" | "listReviewItems" | "appendResolutionEvent"
+>;
+
 export async function runInteractiveReview(
-  workbench: Pick<
-    Workbench,
-    "db" | "listReviewItems" | "appendResolutionEvent"
-  >,
+  workbench: InteractiveReviewWorkbench,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {
@@ -123,7 +125,7 @@ interface InteractiveReviewSnapshot {
 }
 
 function buildInteractiveReviewSnapshot(
-  workbench: Pick<Workbench, "db" | "listReviewItems">,
+  workbench: Pick<InteractiveReviewWorkbench, "db" | "listReviewItems">,
   filters: ReviewItemFilters,
 ): InteractiveReviewSnapshot {
   const items = workbench.listReviewItems({ ...filters, limit: undefined });
@@ -317,7 +319,7 @@ function inboxChoices(
       if (!leadItem) return undefined;
       return {
         packet,
-        title: reviewItemTitle(store, leadItem),
+        title: packetInboxTitle(store, packet, leadItem),
         defaultAction: leadItem.defaultAction,
       } satisfies ReviewInboxChoice;
     })
@@ -364,6 +366,41 @@ function reviewItemTitle(
   item: ReviewItemRecord,
 ): string {
   return reviewSubjectContext(store, item, reviewSubject(store, item)).title;
+}
+
+function packetInboxTitle(
+  store: Pick<WorkbenchStore, "db">,
+  packet: ReviewPacketRecord,
+  leadItem: ReviewItemRecord,
+): string {
+  const deferredTitle = deferredRelationshipPacketTitle(store, packet);
+  if (deferredTitle) return deferredTitle;
+  return reviewItemTitle(store, leadItem);
+}
+
+function deferredRelationshipPacketTitle(
+  store: Pick<WorkbenchStore, "db">,
+  packet: ReviewPacketRecord,
+): string | undefined {
+  if (packet.itemType !== "relationship_candidate" || packet.defaultAction !== "defer") {
+    return undefined;
+  }
+  if (packet.sourceId === "mota.quickbase" && packet.relationshipType === "overseen_by") {
+    return "Quickbase committee-like Council oversight";
+  }
+  if (!packet.toEntityRef) return undefined;
+  const targetName = endpointStatus(store, packet.toEntityRef).name ??
+    humanizeToken(packet.toEntityRef.replace(/^dc\./, "").replace(/^legal\./, ""));
+  if (packet.whyDeferred?.startsWith("Scoped oversight text")) {
+    return `${targetName} scoped oversight`;
+  }
+  if (packet.whyDeferred?.startsWith("This named target stays")) {
+    return `${targetName} named oversight`;
+  }
+  if (packet.whyDeferred?.includes('parent branch as "Other"')) {
+    return `${targetName} branch relationships`;
+  }
+  return targetName;
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
@@ -419,7 +456,7 @@ export function renderReviewItemSummary(
 }
 
 export async function runBatchAcceptSafe(
-  workbench: Pick<Workbench, "db" | "listReviewItems" | "appendResolutionEvent">,
+  workbench: InteractiveReviewWorkbench,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {
@@ -447,7 +484,7 @@ export async function runBatchAcceptSafe(
 }
 
 export async function runBatchDeferDefault(
-  workbench: Pick<Workbench, "db" | "listReviewItems">,
+  workbench: Pick<InteractiveReviewWorkbench, "db" | "listReviewItems">,
   filters: ReviewItemFilters,
   resolutionsDir: string,
 ): Promise<void> {

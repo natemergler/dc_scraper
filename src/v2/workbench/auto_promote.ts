@@ -3,8 +3,10 @@ import { queryAll, queryOne, run } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_PROMOTE_SOURCE_ALLOWLIST = new Set([
+  "bega.structure",
   "dcgis.agencies",
   "dcgis.boards_commissions_councils",
+  "dccourts.structure",
   "open_dc.public_bodies",
   "council.members",
   "council.committees",
