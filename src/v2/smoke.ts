@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import type { SourceFetchOutcome } from "./cli_source.ts";
+import type { SourceFetchOutcome, SourceFetchProgressEvent } from "./cli_source.ts";
 import type { SourceConnector } from "./connectors/shared.ts";
 import type { SmokeProfile } from "./domain.ts";
 
@@ -28,7 +28,10 @@ export interface RunSmokeProfileDeps {
   makeTempDir(): Promise<string>;
   fetchSources(
     sourceIds: string[],
-    options: { limit?: number },
+    options: {
+      limit?: number;
+      onProgress?: (event: SourceFetchProgressEvent) => void;
+    },
     paths: SmokeWorkspacePaths,
   ): Promise<SourceFetchOutcome[]>;
   readWorkbenchStatus(paths: SmokeWorkspacePaths): Promise<SmokeCommandStatus>;
@@ -45,7 +48,10 @@ export function sourceIdsForSmokeProfile(
 
 export async function runSmokeProfile(
   profile: SmokeProfile,
-  options: { limit?: number },
+  options: {
+    limit?: number;
+    onProgress?: (event: SourceFetchProgressEvent) => void;
+  },
   deps: RunSmokeProfileDeps,
 ): Promise<SmokeRunResult> {
   const rootDir = await deps.makeTempDir();

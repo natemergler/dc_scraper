@@ -106,7 +106,8 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
       fetchSources: async (sourceIds, smokeOptions, paths) =>
         await fetchSources(sourceIds, { limit: smokeOptions.limit }, {
           getConnector,
-          createConnectorContext: ({ limit }) => createConnectorContext({ limit }),
+          createConnectorContext: ({ limit, onProgress }) =>
+            createConnectorContext({ limit, onProgress }),
           importConnectorResult: async (result) =>
             await withWorkbench(
               paths.dbPath,
@@ -115,7 +116,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
               },
               { refreshDerivedState: false },
             ),
-        }),
+        }, smokeOptions.onProgress),
       readWorkbenchStatus: async (paths) =>
         await withWorkbench(
           paths.dbPath,

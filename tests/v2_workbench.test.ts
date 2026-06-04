@@ -2708,6 +2708,7 @@ Deno.test("Council committee member parsing captures chair and member relationsh
 });
 
 Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners without contact data", async () => {
+  const progressMessages: string[] = [];
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -2727,7 +2728,11 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
     },
   });
   const result = await getConnector("oanc.anc_profiles").run(
-    createConnectorContext({ fetcher, limit: 2 }),
+    createConnectorContext({
+      fetcher,
+      limit: 2,
+      onProgress: (event) => progressMessages.push(event.message),
+    }),
   );
   const parsed = result.endpointResults[0].parsed;
   assert(parsed);
@@ -2778,6 +2783,11 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
       candidate.toEntityRef === buildEntityId("ANC 6C")
     ),
   );
+  assertEquals(progressMessages, [
+    "Fetching OANC ANC listing page",
+    "Fetching OANC ANC profile 1/2: ANC 3/4G",
+    "Fetching OANC ANC profile 2/2: ANC 6C",
+  ]);
 });
 
 Deno.test("public body comparison report stays on public-body candidates and includes ANC overlap", async () => {

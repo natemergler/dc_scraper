@@ -1,5 +1,6 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { SmokeProfile } from "./domain.ts";
+import { logSourceFetchProgress } from "./cli_source.ts";
 import { runSmokeProfile, type RunSmokeProfileDeps, type SmokeRunResult } from "./smoke.ts";
 
 export interface SmokeCommandOptions {
@@ -21,7 +22,10 @@ export async function handleSmokeCommand(
     printSmokeHelp();
     return true;
   }
-  const result = await runSmokeProfile(args[1], { limit: options.limit }, deps);
+  const result = await runSmokeProfile(args[1], {
+    limit: options.limit,
+    onProgress: options.json ? undefined : logSourceFetchProgress,
+  }, deps);
   const failures = result.outcomes.filter((outcome) => outcome.status === "failed");
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));
@@ -39,6 +43,9 @@ Workflow:
   1. Run \`${dcCommand("smoke structure")}\` for a temp-workbench structure pass
   2. Run \`${dcCommand("smoke tier0")}\` for the smallest credible release spine
   3. Run \`${dcCommand("smoke inventory")}\` for inventory-only dataset lanes
+
+Smoke always creates a fresh temp workspace. Use \`${dcCommand("source fetch --all")}\` with
+\`--db\` and \`--data-dir\` when you need to fetch into explicit paths.
 
 Usage:
   ${dcCommand("smoke structure")} [--limit <n>] [--json]
