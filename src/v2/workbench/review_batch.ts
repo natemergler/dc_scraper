@@ -71,44 +71,11 @@ function canBatchAcceptRelationshipItem(
   if (!candidate || candidate.reviewStatus !== "pending") {
     return false;
   }
-  if (candidate.needsReview !== 0 && !isScopedReviewNeededRelationshipAccept(filters)) {
-    return false;
-  }
+  if (candidate.needsReview !== 0) return false;
   return candidate.fromReviewStatus === "accepted" &&
     candidate.toReviewStatus === "accepted" &&
     candidate.fromIsPlaceholder === 0 &&
     candidate.toIsPlaceholder === 0;
-}
-
-function isScopedReviewNeededRelationshipAccept(filters: ReviewItemFilters): boolean {
-  return isScopedCouncilOversightAccept(filters) || isScopedQuickbaseSeatAccept(filters) ||
-    isScopedDcCourtsStructureAccept(filters) || isScopedBegaStructureAccept(filters);
-}
-
-function isScopedCouncilOversightAccept(filters: ReviewItemFilters): boolean {
-  return filters.relationshipType === "overseen_by" &&
-    Boolean(filters.subjectPrefix?.startsWith("relationship.council.committees"));
-}
-
-function isScopedQuickbaseSeatAccept(filters: ReviewItemFilters): boolean {
-  return Boolean(filters.subjectPrefix?.startsWith("relationship.mota.quickbase")) &&
-    (
-      filters.relationshipType === "has_seat" ||
-      filters.relationshipType === "has_status" ||
-      filters.relationshipType === "holds" ||
-      filters.relationshipType === "appointed_by" ||
-      filters.relationshipType === "designated_by"
-    );
-}
-
-function isScopedDcCourtsStructureAccept(filters: ReviewItemFilters): boolean {
-  return Boolean(filters.subjectPrefix?.startsWith("relationship.dccourts.structure")) &&
-    filters.relationshipType === "part_of";
-}
-
-function isScopedBegaStructureAccept(filters: ReviewItemFilters): boolean {
-  return Boolean(filters.subjectPrefix?.startsWith("relationship.bega.structure")) &&
-    filters.relationshipType === "part_of";
 }
 
 function canBatchAcceptLegalItem(

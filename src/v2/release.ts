@@ -53,7 +53,7 @@ export async function buildV2Release(
   await resetReleaseDirectory(outDir);
   emitReleaseProgress(options, {
     phase: "read-workbench",
-    message: "Reading accepted workbench rows",
+    message: "Reading accepted release rows",
   });
   const entities: EntityRow[] = workbench.canonicalEntities();
   const relationships: RelationshipRow[] = workbench.canonicalRelationships();

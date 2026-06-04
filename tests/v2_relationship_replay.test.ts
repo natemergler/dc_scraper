@@ -299,6 +299,56 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
 });
 
+Deno.test("batch accept-safe does not own source-specific needs-review relationship policy", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_committee",
+      "Target Committee",
+    ]]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const relationshipCandidateId = "relationship.council.committees.manual_fallback_oversight";
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.batch_relationships",
+      relationshipCandidateId,
+      sourceItemKey: "manual-fallback-oversight-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_committee",
+      relationshipType: "overseen_by",
+      rawValue: "Source Board",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const item = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.manual_fallback",
+  })[0];
+  assert(item);
+  const canAccept = canBatchAcceptReviewItem(workbench, item, {
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.manual_fallback",
+  });
+  workbench.close();
+
+  assertEquals(item.subjectId, relationshipCandidateId);
+  assertEquals(item.defaultAction, "accept");
+  assertEquals(canAccept, false);
+});
+
 Deno.test("edited relationship accept decisions are reused across refetch when relationship candidate ids change", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
