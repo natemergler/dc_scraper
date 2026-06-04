@@ -186,7 +186,7 @@ Deno.test("local workbench artifacts are ignored by git", async () => {
   assertEquals(new TextDecoder().decode(output.stdout).trim().split("\n"), paths);
 });
 
-Deno.test("source list fails fast for non-current workbench schema contracts", async () => {
+Deno.test("source list fails fast for non-current local workbench DBs", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
@@ -199,7 +199,7 @@ Deno.test("source list fails fast for non-current workbench schema contracts", a
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -222,7 +222,7 @@ Deno.test("source list does not mutate non-current databases", async () => {
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench does not match the current schema contract (found version 0). Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 0). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 
   const reopened = new Database(dbPath);
@@ -249,7 +249,7 @@ Deno.test("source list rejects a current schema record when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -270,6 +270,6 @@ Deno.test("source list rejects current schema records with unexpected local tabl
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });

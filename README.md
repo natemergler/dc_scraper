@@ -44,7 +44,8 @@ workbench. A full fetch can take a while because it walks several public source 
 per-source progress and a final succeeded/failed summary before moving on.
 
 Local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and refetch a
-fresh one. Ignored local DBs outside the current schema contract are scratch state.
+fresh one. If an ignored local DB is not current, treat it as scratch state: point `--db` at a
+current workbench or delete the old DB and let `dc init` create a fresh one.
 
 ## Happy Path
 
@@ -129,7 +130,7 @@ of the full workbench database.
   blockers remain, or release rows no longer trace to source-backed decisions or references. Visible
   review decisions remain visible without automatically invalidating source-backed release rows.
 - `deno task dc -- release inspect` checks the built package on disk against the manifest and
-  reports package integrity plus release readiness.
+  reports package integrity plus the built package summary.
 
 A healthy current full-source run ends with a compact set of explicit human decisions, not broad
 manual approval of routine source-backed facts.
