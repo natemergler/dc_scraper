@@ -46,6 +46,14 @@ export interface WorkbenchStatusSnapshot {
     blockedBySource: Array<{ sourceId: string; count: number }>;
     blockedByBlockerState: Array<{ blockerState: string; count: number }>;
     blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
+    blockedFamilies: Array<{
+      sourceId: string;
+      relationshipType: string;
+      blockerId: string;
+      blockerLabel: string;
+      blockerState: string;
+      count: number;
+    }>;
     blockedByReason: Array<{ reason: string; count: number }>;
     firstBlocked?: {
       subjectId: string;
@@ -109,6 +117,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       blockedBySource: reconciliation.blockedBySource,
       blockedByBlockerState: reconciliation.blockedByBlockerState,
       blockedByRelationshipType: reconciliation.blockedByRelationshipType,
+      blockedFamilies: reconciliation.blockedFamilies,
       blockedByReason: reconciliation.blockedByReason,
       firstBlocked: reconciliation.firstBlocked,
     },
@@ -153,6 +162,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       }`
       : undefined,
   ].filter((value): value is string => Boolean(value)).join("; ");
+  const blockedFamilySummary = renderBlockedFamilySummary(status.reconciliation.blockedFamilies);
   return [
     "",
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
@@ -178,6 +188,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
     `Reconciliation: ${status.reconciliation.blocked} blocked${
       reconciliationDetails ? ` (${reconciliationDetails})` : ""
     }`,
+    ...(blockedFamilySummary ? [`Blocked families: ${blockedFamilySummary}`] : []),
     ...renderFirstBlockedSummary(status.reconciliation.firstBlocked),
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Readiness: ${status.unresolvedStateNote}`,
@@ -236,6 +247,19 @@ function renderFirstBlockedSummary(
       : []),
     `Subject id: ${firstBlocked.subjectId}`,
   ];
+}
+
+function renderBlockedFamilySummary(
+  families: WorkbenchStatusSnapshot["reconciliation"]["blockedFamilies"],
+): string | undefined {
+  if (families.length === 0) return undefined;
+  const rendered = families.slice(0, 5).map((family) =>
+    `${family.sourceId} ${family.relationshipType} -> ${family.blockerLabel} = ${family.count}`
+  );
+  if (families.length > 5) {
+    rendered.push(`+${families.length - 5} more`);
+  }
+  return rendered.join("; ");
 }
 
 function renderBlockedDependency(

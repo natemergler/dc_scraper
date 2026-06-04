@@ -60,6 +60,14 @@ export interface UnresolvedReconciliationSummary {
   blockedBySource: Array<{ sourceId: string; count: number }>;
   blockedByBlockerState: Array<{ blockerState: string; count: number }>;
   blockedByRelationshipType: Array<{ relationshipType: string; count: number }>;
+  blockedFamilies: Array<{
+    sourceId: string;
+    relationshipType: string;
+    blockerId: string;
+    blockerLabel: string;
+    blockerState: string;
+    count: number;
+  }>;
   blockedByReason: Array<{ reason: string; count: number }>;
   firstBlocked?: {
     subjectId: string;
@@ -187,6 +195,7 @@ export function summarizeUnresolvedReconciliation(
       (diagnostic) => diagnostic.relationshipType ?? "unknown",
       "relationshipType",
     ),
+    blockedFamilies: summarizeBlockedFamilies(graph.diagnostics),
     blockedByReason: countByKey(graph.diagnostics, "reason"),
     firstBlocked: firstDiagnostic
       ? {
@@ -203,6 +212,43 @@ export function summarizeUnresolvedReconciliation(
       }
       : undefined,
   };
+}
+
+function summarizeBlockedFamilies(
+  diagnostics: UnresolvedDiagnosticNode[],
+): UnresolvedReconciliationSummary["blockedFamilies"] {
+  const families = new Map<string, UnresolvedReconciliationSummary["blockedFamilies"][number]>();
+  for (const diagnostic of diagnostics) {
+    const relationshipType = diagnostic.relationshipType ?? "unknown";
+    for (const blocker of diagnostic.blockers) {
+      const familyKey = [
+        diagnostic.sourceId,
+        relationshipType,
+        blocker.blockerId,
+        blocker.blockerState,
+      ].join("\u0000");
+      const existing = families.get(familyKey);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+      families.set(familyKey, {
+        sourceId: diagnostic.sourceId,
+        relationshipType,
+        blockerId: blocker.blockerId,
+        blockerLabel: blocker.blockerLabel,
+        blockerState: blocker.blockerState,
+        count: 1,
+      });
+    }
+  }
+  return [...families.values()].sort((left, right) =>
+    right.count - left.count ||
+    left.sourceId.localeCompare(right.sourceId) ||
+    left.relationshipType.localeCompare(right.relationshipType) ||
+    left.blockerId.localeCompare(right.blockerId) ||
+    left.blockerState.localeCompare(right.blockerState)
+  );
 }
 
 export function downstreamBlockedCountByReviewItem(

@@ -150,6 +150,70 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
   workbench.close();
 });
 
+Deno.test("unresolved reconciliation summary groups repeated blocked families by source relationship and blocker", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+
+  for (const relationshipCandidateId of [
+    "relationship.test.unresolved_work.family.first",
+    "relationship.test.unresolved_work.family.second",
+  ]) {
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "test.unresolved_work.family.relationships",
+        relationshipCandidateId,
+        sourceItemKey: relationshipCandidateId,
+        fromEntityRef: "dc.source_board",
+        toEntityRef: "dc.mayor",
+        relationshipType: "appointed_by",
+        rawValue: "Mayoral Appointee",
+        needsReview: true,
+      }),
+      dataDir,
+    );
+  }
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.family.relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.family.third",
+      sourceItemKey: "relationship.test.unresolved_work.family.third",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "appointed_by",
+      rawValue: "Council Appointee",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const summary = summarizeUnresolvedReconciliation(workbench.unresolvedWorkGraph());
+  workbench.close();
+
+  assertEquals(summary.blockedCount, 3);
+  assertEquals(summary.blockedFamilies, [
+    {
+      sourceId: "test.unresolved_work.family.relationships",
+      relationshipType: "appointed_by",
+      blockerId: "dc.mayor",
+      blockerLabel: "dc.mayor",
+      blockerState: "missing",
+      count: 2,
+    },
+    {
+      sourceId: "test.unresolved_work.family.relationships",
+      relationshipType: "appointed_by",
+      blockerId: "dc.council_of_the_district_of_columbia",
+      blockerLabel: "dc.council_of_the_district_of_columbia",
+      blockerState: "missing",
+      count: 1,
+    },
+  ]);
+});
+
 Deno.test("unresolved work graph keeps deferred blockers as diagnostics without fake actions", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

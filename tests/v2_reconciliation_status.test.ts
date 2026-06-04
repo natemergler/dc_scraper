@@ -79,6 +79,120 @@ Deno.test("status json reports blocked reconciliation counts", async () => {
   assert(status.reconciliation.firstBlocked.blockers.length > 0);
 });
 
+Deno.test("status surfaces repeated blocked reconciliation families in json and human output", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  for (const relationshipCandidateId of [
+    "relationship.test.reconciliation.family.first",
+    "relationship.test.reconciliation.family.second",
+  ]) {
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "test.reconciliation.family.relationships",
+        relationshipCandidateId,
+        sourceItemKey: relationshipCandidateId,
+        fromEntityRef: "dc.source_board",
+        toEntityRef: "dc.mayor",
+        relationshipType: "appointed_by",
+        rawValue: "Mayoral Appointee",
+        needsReview: true,
+      }),
+      dataDir,
+    );
+  }
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.reconciliation.family.relationships",
+      relationshipCandidateId: "relationship.test.reconciliation.family.third",
+      sourceItemKey: "relationship.test.reconciliation.family.third",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "appointed_by",
+      rawValue: "Council Appointee",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const jsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(jsonOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+    reconciliation: {
+      blockedFamilies: Array<{
+        sourceId: string;
+        relationshipType: string;
+        blockerId: string;
+        blockerLabel: string;
+        blockerState: string;
+        count: number;
+      }>;
+    };
+  };
+
+  assertEquals(status.reconciliation.blockedFamilies, [
+    {
+      sourceId: "test.reconciliation.family.relationships",
+      relationshipType: "appointed_by",
+      blockerId: "dc.mayor",
+      blockerLabel: "dc.mayor",
+      blockerState: "missing",
+      count: 2,
+    },
+    {
+      sourceId: "test.reconciliation.family.relationships",
+      relationshipType: "appointed_by",
+      blockerId: "dc.council_of_the_district_of_columbia",
+      blockerLabel: "dc.council_of_the_district_of_columbia",
+      blockerState: "missing",
+      count: 1,
+    },
+  ]);
+
+  const textOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(textOutput.code, 0);
+  const statusText = new TextDecoder().decode(textOutput.stdout);
+  assertStringIncludes(statusText, "Blocked families:");
+  assertStringIncludes(
+    statusText,
+    "test.reconciliation.family.relationships appointed_by -> dc.mayor = 2",
+  );
+});
+
 Deno.test("status surfaces blocked work by source with readable blocker labels", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
