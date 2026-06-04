@@ -209,6 +209,20 @@ export interface ReviewItemRecord {
   defaultAction: string;
   status: ReviewStatus;
   details: Record<string, unknown>;
+  subject?: ReviewItemSubjectContext;
+}
+
+export interface ReviewItemSubjectContext {
+  sourceId?: string;
+  itemTitle?: string;
+  label?: string;
+  entityKind?: string;
+  relationshipType?: string;
+  fromEntityRef?: string;
+  toEntityRef?: string;
+  rawValue?: string | null;
+  citationText?: string;
+  refType?: string;
 }
 
 export interface EntitySearchResult {
