@@ -10,7 +10,7 @@ const AUTO_ACCEPT_NO_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
   ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
   ["mota.quickbase", new Set(["has_seat"])],
   ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
-  ["open_dc.public_bodies", new Set(["authorized_by", "governed_by"])],
+  ["open_dc.public_bodies", new Set(["governed_by"])],
 ]);
 
 const AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES = new Map<string, Set<RelationshipType>>([

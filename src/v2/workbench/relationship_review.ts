@@ -55,7 +55,6 @@ function reviewItemSuffix(candidate: RelationshipReviewCandidate): string {
         ? "council-oversight"
         : "governing-agency";
     case "open_dc.public_bodies":
-      if (candidate.relationshipType === "authorized_by") return "authorized-by";
       return candidate.relationshipCandidateId.includes("administering_agency")
         ? "administering-agency"
         : "governing-agency";
@@ -88,9 +87,6 @@ function reviewReason(candidate: RelationshipReviewCandidate): string {
     case "oanc.anc_profiles":
       return "Review ANC structure relationship";
     case "open_dc.public_bodies":
-      if (candidate.relationshipType === "authorized_by") {
-        return "Review legal authority relationship from Open DC enabling authority";
-      }
       return candidate.relationshipCandidateId.includes("administering_agency")
         ? "Review administering agency relationship from Open DC"
         : "Review governing agency relationship from Open DC";
@@ -115,9 +111,6 @@ function reviewDefaultAction(
     case "mota.quickbase":
       return "accept";
     case "open_dc.public_bodies":
-      if (candidate.relationshipType === "authorized_by") {
-        return candidate.needsReview === 1 ? "defer" : "accept";
-      }
       return "accept";
     default:
       return candidate.needsReview === 1 ? "accept" : "defer";
