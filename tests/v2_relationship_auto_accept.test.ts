@@ -17,7 +17,7 @@ import {
   syntheticCustomRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("dcgis agency taxonomy part_of relationships do not auto-accept", async () => {
+Deno.test("accepted-endpoint default-accept relationships auto-accept without source allowlist", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -47,19 +47,14 @@ Deno.test("dcgis agency taxonomy part_of relationships do not auto-accept", asyn
   const relationship = workbench.db.prepare(
     "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.example_agency:part_of:dc.executive_branch'",
   ).get() as { relationshipId: string } | undefined;
-  const candidate = workbench.db.prepare(
-    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.auto_accept.dcgis.part_of'",
-  ).get() as { reviewStatus: string } | undefined;
   const reviewItems = workbench.listReviewItems({
     mode: "relationships",
     subjectPrefix: "relationship.test.auto_accept.dcgis",
   });
   workbench.close();
 
-  assertEquals(relationship, undefined);
-  assertEquals(candidate?.reviewStatus, "pending");
-  assertEquals(reviewItems.length, 1);
-  assertEquals(reviewItems[0]?.defaultAction, "accept");
+  assertEquals(relationship?.relationshipId, "dc.example_agency:part_of:dc.executive_branch");
+  assertEquals(reviewItems.length, 0);
 });
 
 Deno.test("default-defer dcgis relationships stay in review instead of auto-accepting", async () => {
