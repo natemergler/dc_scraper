@@ -281,6 +281,9 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
   const legalRefs: LegalRefInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
+    const legislationField = row.LEGISLATION !== undefined
+      ? "LEGISLATION"
+      : "AUTHORIZING_ORDER_LAW";
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
@@ -293,7 +296,7 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
       normalizedCitation: parsed.normalizedCitation,
       url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
       needsReview: parsed.needsReview,
-      evidence: [fieldEvidence("LEGISLATION", legislation, 1)],
+      evidence: [fieldEvidence(legislationField, legislation, 1)],
       attachEntityRef: buildKnownEntityRef(entityName),
     });
   }

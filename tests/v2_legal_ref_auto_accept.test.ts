@@ -41,7 +41,7 @@ Deno.test("recognized legal entrypoints auto-accept without generic navigation r
   assertEquals(openItems.length, 0);
 });
 
-Deno.test("recognized statute citation families auto-accept on current schema", async () => {
+Deno.test("recognized legal citation families auto-accept on current schema", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -53,6 +53,7 @@ Deno.test("recognized statute citation families auto-accept on current schema", 
       ["legal.test.signature.legal_refs.dc_law", "D.C. Law 22-155"],
       ["legal.test.signature.legal_refs.dc_act", "REACH Act (D.C. Act 23-521)"],
       ["legal.test.signature.legal_refs.public_law", "Public Law 89-774"],
+      ["legal.test.signature.legal_refs.dc_bill", "B21-0697"],
       [
         "legal.test.signature.legal_refs.reorganization_plan",
         "DC ST D.I, T. 1, Ch.15, Subch. XIV, Pt. A, 1996 Plan 4",
@@ -76,6 +77,7 @@ Deno.test("recognized statute citation families auto-accept on current schema", 
   assertEquals(openItems.length, 0);
   assertEquals(rows, [
     { refType: "dc_act", reviewStatus: "accepted", normalizedCitation: "D.C. Act 23-521" },
+    { refType: "dc_bill", reviewStatus: "accepted", normalizedCitation: "D.C. Bill B21-0697" },
     { refType: "dc_law", reviewStatus: "accepted", normalizedCitation: "D.C. Law 22-155" },
     { refType: "public_law", reviewStatus: "accepted", normalizedCitation: "Public Law 89-774" },
     {

@@ -87,8 +87,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 15);
-  assertEquals(second.schemaVersion, 15);
+  assertEquals(first.schemaVersion, 16);
+  assertEquals(second.schemaVersion, 16);
   assertEquals(second.schemaMarkers.length, 1);
   assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
@@ -352,7 +352,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 15");
+  assertStringIncludes(statusText, "Schema version: 16");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -381,7 +381,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 15);
+  assertEquals(jsonStatus.schemaVersion, 16);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
@@ -509,7 +509,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 15. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -540,7 +540,7 @@ Deno.test("source list rejects a current schema marker when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 15. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -2452,6 +2452,12 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
   assertEquals(parsed.entityCandidates?.length, 3);
   assertEquals(parsed.relationshipCandidates?.length, 2);
   assertEquals(parsed.legalRefs?.length, 3);
+  const ancLegalRef = parsed.legalRefs?.find((legalRef) =>
+    legalRef.legalRefId === "legal.dcgis.boards_commissions_councils.25_legislation"
+  );
+  assertEquals(ancLegalRef?.refType, "dc_bill");
+  assertEquals(ancLegalRef?.normalizedCitation, "D.C. Bill B21-0697");
+  assertEquals(ancLegalRef?.evidence?.[0]?.fieldPath, "AUTHORIZING_ORDER_LAW");
   assert(
     parsed.entityCandidates?.some((candidate) =>
       candidate.name === "Board of Accountancy" && candidate.duplicateHint ===
@@ -3688,6 +3694,10 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   );
   assertEquals(parseLegalReference("Public Law 89-774").refType, "public_law");
   assertEquals(parseLegalReference("Public Law 89-774").normalizedCitation, "Public Law 89-774");
+  assertEquals(parseLegalReference("B21-0697").refType, "dc_bill");
+  assertEquals(parseLegalReference("B21-0697").normalizedCitation, "D.C. Bill B21-0697");
+  assertEquals(parseLegalReference("Act B20-0366").refType, "dc_bill");
+  assertEquals(parseLegalReference("Act B20-0366").normalizedCitation, "D.C. Bill B20-0366");
   assertEquals(
     parseLegalReference("DC ST D.I, T. 1, Ch.15, Subch. XIV, Pt. A, 1996 Plan 4")
       .normalizedCitation,

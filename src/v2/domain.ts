@@ -355,6 +355,15 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
+  const dcBillMatch = text.match(/\b(?:Act\s+)?(B[0-9]{1,2}-[0-9]{1,4})\b/i);
+  if (dcBillMatch) {
+    return {
+      refType: "dc_bill",
+      citationText: text,
+      normalizedCitation: `D.C. Bill ${dcBillMatch[1].toUpperCase()}`,
+      needsReview: false,
+    };
+  }
   const reorganizationPlanMatch = text.match(/\b([12][0-9]{3})\s+Plan\s+([0-9]+)\b/i);
   if (reorganizationPlanMatch && !text.includes(";")) {
     return {
