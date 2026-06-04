@@ -72,13 +72,18 @@ Use:
 
 ```bash
 deno task dc -- release verify
+deno task dc -- release inspect
 ```
 
-This checks unresolved release work, source-artifact provenance, and repeatable row-family
-provenance in the workbench before a public handoff. `release verify` checks that accepted entity
-and relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to
+`release verify` checks unresolved release work, source-artifact provenance, and repeatable
+row-family provenance in the workbench before a public handoff. It checks that accepted entity and
+relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to
 source-backed workbench decisions or references; the compact release rows remain short facts, not a
 copy of the manual review queue.
+
+`release inspect` checks the built release directory against `manifest.json`: expected file count,
+actual file count, file hashes, missing files, and unexpected entries. Package-integrity problems
+make release readiness conservative even when the manifest itself can be read.
 
 ## Query Cookbook
 

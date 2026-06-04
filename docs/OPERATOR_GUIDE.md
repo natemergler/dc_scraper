@@ -21,6 +21,12 @@ deno task dc -- source fetch dcgis.agencies --limit 25
 deno task dc -- source inspect dcgis.agencies
 ```
 
+Fetch every configured source when you need a full workbench refresh:
+
+```bash
+deno task dc -- source fetch --all
+```
+
 Use the metadata-driven smoke profiles when you want a fresh temp-workbench pass:
 
 ```bash
@@ -37,6 +43,7 @@ Check the current state before opening the manual decision inbox:
 deno task dc -- status
 deno task dc -- audit
 deno task dc -- entity search accountancy
+deno task dc -- entity show dc.board_of_accountancy
 ```
 
 Safe materialized facts are not manual queue work. Browse them with `status`, `audit`, entity
@@ -54,6 +61,9 @@ deno task dc -- review packets --mode relationships
 deno task dc -- review list --mode relationships --limit 10
 deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils
 ```
+
+`review packets`, `review list`, and `entity show` are browse surfaces for unresolved, stale, or
+blocked work. Use `dc review` when a packet needs an actual decision.
 
 `dc review` opens with a ranked decision inbox for the current slice. Press Enter for the
 recommended packet or choose another ranked packet, then inspect evidence, accept, edit, reject,
@@ -75,12 +85,17 @@ deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
 
+`release verify` checks workbench readiness and source-backed provenance before build.
+`release inspect` checks the built package on disk against the manifest and reports package
+integrity plus release readiness.
+
 ## Health
 
 - `dc status` answers "what is left?"
 - `dc audit` answers "what is blocked and why?"
 - `dc release verify` answers "is this workbench ready to hand off, and do accepted release rows
   still trace to source-backed decisions?"
+- `dc release inspect` answers "does the built release package still match its manifest?"
 
 If a command fails, keep the smallest real surface in mind: inspect one source, one review slice, or
 one release verification reason before widening again.

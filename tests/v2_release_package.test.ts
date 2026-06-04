@@ -594,6 +594,46 @@ Deno.test("release builder rejects email-shaped contact info in release rows", a
   workbench.close();
 });
 
+Deno.test("release builder rejects contact-shaped unresolved review summary before writing README", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    `insert into review_items(
+      review_item_id,
+      item_type,
+      subject_id,
+      reason,
+      default_action,
+      status,
+      details_json,
+      created_at,
+      updated_at
+    ) values(
+      'review.contact_leak',
+      'entity_candidate',
+      'candidate.test.contact_leak.1',
+      'Review internal contact label',
+      'defer',
+      'open',
+      '{"name":"not-for-release@example.com"}',
+      datetime('now'),
+      datetime('now')
+    )`,
+  ).run();
+
+  await assertRejects(
+    () => buildV2Release(workbench, outDir),
+    Error,
+    "Release output contains email-shaped contact info in release_summary",
+  );
+  await assertRejects(() => Deno.stat(join(outDir, "README.md")), Deno.errors.NotFound);
+  await assertRejects(() => Deno.stat(join(outDir, "manifest.json")), Deno.errors.NotFound);
+  workbench.close();
+});
+
 Deno.test("release builder rejects relationships with missing endpoint entities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

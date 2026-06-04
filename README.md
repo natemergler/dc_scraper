@@ -34,14 +34,16 @@ deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
 
-The default workbench database is `data/workbench.sqlite`.
+The default workbench database is `data/workbench.sqlite`. The `--limit 25` fetch is a small slice
+for orientation. Use `deno task dc -- source fetch --all` when you need the full configured-source
+workbench.
 
 ## Happy Path
 
 Use one real fetch, one audit/browse pass, and one real release:
 
 ```bash
-deno task dc -- source fetch dcgis.agencies --limit 25
+deno task dc -- source fetch --all
 deno task dc -- source inspect dcgis.agencies
 deno task dc -- status
 deno task dc -- audit
@@ -79,6 +81,9 @@ deno task dc -- entity show dc.board_of_accountancy --json
 deno task dc -- release inspect --json
 ```
 
+`status`, `audit`, `review packets`, `review list`, and `entity show` are the main browse surfaces
+for unresolved, stale, or blocked work before opening interactive review.
+
 ## Release Contract
 
 `dc release build` writes a short, stable package:
@@ -104,6 +109,8 @@ of the full workbench database.
   enough.
 - `deno task dc -- release verify` fails fast when release work is still unresolved, source artifact
   provenance is not clean, or release rows no longer trace to source-backed decisions or references.
+- `deno task dc -- release inspect` checks the built package on disk against the manifest and
+  reports package integrity plus release readiness.
 
 ## Current Docs
 
@@ -113,6 +120,7 @@ of the full workbench database.
   work.
 - [docs/RELEASE_CONTRACT.md](docs/RELEASE_CONTRACT.md) is the public package contract.
 - [docs/SOURCE_COVERAGE.md](docs/SOURCE_COVERAGE.md) is the operator view of current source lanes.
+- [docs/DATA_HYGIENE.md](docs/DATA_HYGIENE.md) is the generated-data and privacy boundary note.
 
 Historical planning notes still exist under `notes/`, but they are implementation history, not the
 current truth surface.

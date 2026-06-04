@@ -318,6 +318,14 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
         open_count: number;
         deferred_count: number;
       }>;
+      top_unresolved_review_items: Array<{
+        item_type: string;
+        source_id?: string;
+        label: string;
+        reason: string;
+        default_action: string;
+        status: string;
+      }>;
     };
   };
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -370,6 +378,26 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   assertStringIncludes(readme, "review debt by source:");
   assertStringIncludes(readme, "test.signature.entities(open=1,deferred=0)");
   assertStringIncludes(readme, "test.signature.legal_refs(open=0,deferred=1)");
+  assert(
+    manifest.release_summary.top_unresolved_review_items.some((row) =>
+      row.label === "Example Body" &&
+      row.item_type === "entity_candidate" &&
+      row.source_id === "test.signature.entities" &&
+      row.default_action === "accept" &&
+      row.status === "open"
+    ),
+  );
+  assert(
+    manifest.release_summary.top_unresolved_review_items.some((row) =>
+      row.label === "D.C. Official Code § 1-204.22" &&
+      row.item_type === "legal_ref" &&
+      row.source_id === "test.signature.legal_refs" &&
+      row.default_action === "accept" &&
+      row.status === "deferred"
+    ),
+  );
+  assert(!readme.includes("## Top unresolved review items"));
+  assert(!readme.includes("Review fixture entity candidate"));
 
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -421,6 +449,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
         open_count: number;
         deferred_count: number;
       }>;
+      top_unresolved_review_items: Array<{ label: string; source_id?: string }>;
     };
   };
   assertEquals(inspectJsonOutput.code, 0);
@@ -444,6 +473,11 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
     inspectJson.releaseSummary.review_debt_by_source.some((row) =>
       row.source_id === "test.signature.legal_refs" && row.open_count === 0 &&
       row.deferred_count === 1
+    ),
+  );
+  assert(
+    inspectJson.releaseSummary.top_unresolved_review_items.some((row) =>
+      row.label === "Example Body" && row.source_id === "test.signature.entities"
     ),
   );
 });

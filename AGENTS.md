@@ -85,6 +85,8 @@ relationships.csv/json
 sources.csv/json
 datasets.csv/json
 legal_refs.csv/json
+entity_legal_refs.csv/json
+relationship_legal_refs.csv/json
 ```
 
 If the release needs a review-status note, put it in README.md. Avoid language like "gaps" or
