@@ -596,18 +596,10 @@ function buildReleaseSummary(
   entityLegalRefs: EntityLegalRefRow[],
   relationshipLegalRefs: RelationshipLegalRefRow[],
 ) {
-  const reviewByStatus = workbench.db.prepare(
-    "select status, count(*) as count from review_items group by status order by status",
-  ).all() as Array<{ status: string; count: number }>;
-  const reviewByType = workbench.db.prepare(
-    "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
-  ).all() as Array<{ item_type: string; count: number }>;
   const status = buildWorkbenchStatus(workbench);
   return {
     entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
-    review_items_by_status: reviewByStatus,
-    review_items_by_type: reviewByType,
     review_debt_by_type: status.review.byType.map((row) => ({
       item_type: row.itemType,
       open_count: row.openCount,
