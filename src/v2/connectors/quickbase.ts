@@ -804,7 +804,21 @@ function parseSeatAuthorities(
 
 function extractSeatLabel(seat: string): string {
   const withoutParens = seat.replace(/\([^)]*\)/g, " ").replaceAll(/\s+/g, " ").trim();
-  return withoutParens || seat.trim();
+  return collapseAdjacentDuplicatePhrase(withoutParens) || seat.trim();
+}
+
+function collapseAdjacentDuplicatePhrase(value: string): string {
+  const words = value.split(/\s+/).filter(Boolean);
+  for (let size = Math.floor(words.length / 2); size >= 2; size--) {
+    for (let start = 0; start + size * 2 <= words.length; start++) {
+      const left = words.slice(start, start + size).join(" ").toLowerCase();
+      const right = words.slice(start + size, start + size * 2).join(" ").toLowerCase();
+      if (left !== right) continue;
+      words.splice(start + size, size);
+      return collapseAdjacentDuplicatePhrase(words.join(" "));
+    }
+  }
+  return words.join(" ");
 }
 
 function parseDesignatingAuthorityFromSeat(seat: string): string | undefined {
