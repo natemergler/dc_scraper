@@ -4,16 +4,7 @@ import { endpointStatusMap } from "./endpoint_status.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
-const AUTO_ACCEPT_NO_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
-  ["council.committees", new Set(["chairs", "member_of", "part_of"])],
-  ["council.members", new Set(["holds", "part_of", "represents"])],
-  ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
-  ["mota.quickbase", new Set(["has_seat"])],
-  ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
-  ["open_dc.public_bodies", new Set(["governed_by"])],
-]);
-
-const AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES = new Map<string, Set<RelationshipType>>([
+const AUTO_ACCEPT_NEEDS_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
   ["bega.structure", new Set(["part_of"])],
   ["council.committees", new Set(["overseen_by"])],
   ["dccourts.structure", new Set(["part_of"])],
@@ -30,6 +21,8 @@ interface AutoAcceptRelationshipRow {
   reviewItemStatus: string;
   defaultAction: string;
   stalePriorDecision?: number | null;
+  replayConflict?: number | null;
+  whyDeferred?: string | null;
 }
 
 export function autoAcceptSafeRelationshipCandidates(
@@ -45,7 +38,9 @@ export function autoAcceptSafeRelationshipCandidates(
             relationship_candidates.needs_review as needsReview,
             review_items.status as reviewItemStatus,
             review_items.default_action as defaultAction,
-            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision
+            json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
+            json_extract(review_items.details_json, '$.replayConflict') as replayConflict,
+            json_extract(review_items.details_json, '$.whyDeferred') as whyDeferred
      from relationship_candidates
      join source_items on source_items.source_item_id = relationship_candidates.source_item_id
      join review_items
@@ -73,24 +68,18 @@ function isSafeToAutoAccept(
   endpointStatuses: ReturnType<typeof endpointStatusMap>,
   candidate: AutoAcceptRelationshipRow,
 ): boolean {
-  if (!isAllowedAutoAcceptType(candidate)) return false;
   if (candidate.reviewItemStatus !== "open") return false;
   if (candidate.defaultAction !== "accept") return false;
-  if (!allowsNeedsReviewAutoAccept(candidate) && candidate.needsReview !== 0) return false;
   if (candidate.stalePriorDecision === 1) return false;
+  if (candidate.replayConflict === 1) return false;
+  if (candidate.whyDeferred) return false;
+  if (candidate.needsReview !== 0 && !allowsNeedsReviewAutoAccept(candidate)) return false;
   return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
     endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
 }
 
-function isAllowedAutoAcceptType(candidate: AutoAcceptRelationshipRow): boolean {
-  return AUTO_ACCEPT_NO_REVIEW_RULES.get(candidate.sourceId)?.has(candidate.relationshipType) ===
-      true ||
-    AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES.get(candidate.sourceId)?.has(candidate.relationshipType) ===
-      true;
-}
-
 function allowsNeedsReviewAutoAccept(candidate: AutoAcceptRelationshipRow): boolean {
-  return AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES.get(candidate.sourceId)?.has(
+  return AUTO_ACCEPT_NEEDS_REVIEW_RULES.get(candidate.sourceId)?.has(
     candidate.relationshipType,
   ) ===
     true;
