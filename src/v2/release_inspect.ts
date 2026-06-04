@@ -15,6 +15,8 @@ export interface ReleaseManifest {
     legal_refs_by_type?: Array<{ ref_type: string; count: number }>;
     legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
     open_review_item_count?: number;
+    open_human_decision_review_item_count?: number;
+    browse_only_open_review_item_count?: number;
     deferred_review_item_count?: number;
     stale_review_item_count?: number;
     stale_review_by_prior_decision_state?: Array<{ prior_decision_state: string; count: number }>;
@@ -82,7 +84,9 @@ export async function renderReleaseInspection(
     `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
-    `Decision status: open=${summary.open_review_item_count ?? 0}, deferred=${
+    `Decision status: open=${summary.open_review_item_count ?? 0} (human decisions=${
+      summary.open_human_decision_review_item_count ?? summary.open_review_item_count ?? 0
+    }, browse-only=${summary.browse_only_open_review_item_count ?? 0}), deferred=${
       summary.deferred_review_item_count ?? 0
     }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
       summary.blocked_reconciliation_count ?? 0

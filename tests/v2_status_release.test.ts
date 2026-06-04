@@ -241,10 +241,18 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
     unresolvedStateNote: string;
     review: {
+      open: number;
+      humanDecisionOpen: number;
+      browseOnlyOpen: number;
+      deferred: number;
       byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
       bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
     };
   };
+  assertEquals(jsonStatus.review.open, 1);
+  assertEquals(jsonStatus.review.humanDecisionOpen, 0);
+  assertEquals(jsonStatus.review.browseOnlyOpen, 1);
+  assertEquals(jsonStatus.review.deferred, 1);
   assert(
     jsonStatus.review.byType.some((row) =>
       row.itemType === "entity_candidate" && row.openCount === 1 && row.deferredCount === 0
@@ -269,10 +277,12 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   );
   assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "open review=1");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "human decisions=0");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "browse-only=1");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");
 });
 
-Deno.test("status points open review to the primary review surface while explicit batches still work", async () => {
+Deno.test("status routes human decisions to review but browse-only additions to later workflow steps", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -561,10 +571,20 @@ Deno.test("status points open review to the primary review surface while explici
   assertEquals(statusOutputFour.code, 0);
   const statusFour = JSON.parse(new TextDecoder().decode(statusOutputFour.stdout)) as {
     nextCommand: string;
+    review: {
+      open: number;
+      humanDecisionOpen: number;
+      browseOnlyOpen: number;
+      deferred: number;
+    };
   };
+  assertEquals(statusFour.review.open, 1);
+  assertEquals(statusFour.review.humanDecisionOpen, 0);
+  assertEquals(statusFour.review.browseOnlyOpen, 1);
+  assertEquals(statusFour.review.deferred, 2);
   assertEquals(
     statusFour.nextCommand,
-    "deno task dc -- review",
+    "deno task dc -- source list",
   );
 });
 

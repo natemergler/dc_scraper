@@ -58,6 +58,8 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
     release_summary: {
       open_review_item_count: number;
+      open_human_decision_review_item_count: number;
+      browse_only_open_review_item_count: number;
       deferred_review_item_count: number;
       blocked_reconciliation_count: number;
       placeholder_entity_count: number;
@@ -69,6 +71,14 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   workbench.close();
 
   assertEquals(manifest.release_summary.open_review_item_count, status.review.open);
+  assertEquals(
+    manifest.release_summary.open_human_decision_review_item_count,
+    status.review.humanDecisionOpen,
+  );
+  assertEquals(
+    manifest.release_summary.browse_only_open_review_item_count,
+    status.review.browseOnlyOpen,
+  );
   assertEquals(manifest.release_summary.deferred_review_item_count, status.review.deferred);
   assertEquals(
     manifest.release_summary.blocked_reconciliation_count,
@@ -293,6 +303,8 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json"))) as {
     release_summary: {
       open_review_item_count: number;
+      open_human_decision_review_item_count: number;
+      browse_only_open_review_item_count: number;
       deferred_review_item_count: number;
       failed_source_count: number;
       review_debt_by_type: Array<{
@@ -315,6 +327,14 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   workbench.close();
 
   assertEquals(manifest.release_summary.open_review_item_count, status.review.open);
+  assertEquals(
+    manifest.release_summary.open_human_decision_review_item_count,
+    status.review.humanDecisionOpen,
+  );
+  assertEquals(
+    manifest.release_summary.browse_only_open_review_item_count,
+    status.review.browseOnlyOpen,
+  );
   assertEquals(manifest.release_summary.deferred_review_item_count, status.review.deferred);
   assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
   assertEquals(
@@ -380,7 +400,10 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Decision status: open=1, deferred=1");
+  assertStringIncludes(
+    inspectText,
+    "Decision status: open=1 (human decisions=0, browse-only=1), deferred=1",
+  );
   assert(!inspectText.includes("Review debt by type:"));
   assert(!inspectText.includes("Review debt by source:"));
   assert(!inspectText.includes("test.signature.entities(open=1,deferred=0)"));

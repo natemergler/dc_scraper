@@ -73,6 +73,20 @@ Deno.test("operator plan falls back through review, audit, source list, and rele
   assertEquals(
     buildOperatorPlan({
       fetchedSources: connectors.length - 1,
+      openReviewItemCount: 2,
+      humanDecisionOpenReviewItemCount: 0,
+      browseOnlyOpenReviewItemCount: 2,
+      deferredReviewItemCount: 0,
+      staleReviewItemCount: 0,
+      blockedReconciliationCount: 0,
+      placeholderEntityCount: 0,
+    }).nextCommand,
+    "deno task dc -- source list",
+  );
+
+  assertEquals(
+    buildOperatorPlan({
+      fetchedSources: connectors.length - 1,
       openReviewItemCount: 0,
       deferredReviewItemCount: 0,
       staleReviewItemCount: 0,

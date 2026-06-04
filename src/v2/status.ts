@@ -3,6 +3,7 @@ import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
 import { renderReviewCommand } from "./workbench/review_command_args.ts";
+import { reviewDecisionSummary } from "./workbench/review.ts";
 import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
@@ -15,6 +16,8 @@ export interface WorkbenchStatusSnapshot {
   };
   review: {
     open: number;
+    humanDecisionOpen: number;
+    browseOnlyOpen: number;
     deferred: number;
     byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
     bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
@@ -88,8 +91,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
   const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
-  const openReview = workbench.listReviewItems({ status: "open" }).length;
-  const deferredReview = workbench.listReviewItems({ status: "deferred" }).length;
+  const reviewDecisions = reviewDecisionSummary(workbench);
   const reviewDebt = reviewPacketDebtSummary(workbench);
   const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
@@ -100,8 +102,10 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const operatorPlan = buildOperatorPlan({
     fetchedSources,
     failedSourceId: failedSource?.sourceId,
-    openReviewItemCount: openReview,
-    deferredReviewItemCount: deferredReview,
+    openReviewItemCount: reviewDecisions.open,
+    humanDecisionOpenReviewItemCount: reviewDecisions.humanDecisionOpen,
+    browseOnlyOpenReviewItemCount: reviewDecisions.browseOnlyOpen,
+    deferredReviewItemCount: reviewDecisions.deferred,
     staleReviewItemCount: staleReview.count,
     blockedReconciliationCount: reconciliation.blockedCount,
     placeholderEntityCount: placeholders.count,
@@ -114,8 +118,10 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       firstFailedSourceId: failedSource?.sourceId,
     },
     review: {
-      open: openReview,
-      deferred: deferredReview,
+      open: reviewDecisions.open,
+      humanDecisionOpen: reviewDecisions.humanDecisionOpen,
+      browseOnlyOpen: reviewDecisions.browseOnlyOpen,
+      deferred: reviewDecisions.deferred,
       byType: reviewDebt.byType,
       bySource: reviewDebt.bySource,
     },
@@ -180,12 +186,17 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       : undefined,
   ].filter((value): value is string => Boolean(value)).join("; ");
   const blockedFamilySummary = renderBlockedFamilySummary(status.reconciliation.blockedFamilies);
+  const reviewDecisionSuffix = status.review.open > 0
+    ? ` (${status.review.humanDecisionOpen} decision${
+      status.review.humanDecisionOpen === 1 ? "" : "s"
+    }, ${status.review.browseOnlyOpen} browse-only)`
+    : "";
   return [
     "",
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
-    `Review: ${status.review.open} open, ${status.review.deferred} deferred`,
+    `Review: ${status.review.open} open${reviewDecisionSuffix}, ${status.review.deferred} deferred`,
     ...(reviewDebtByType ? [`Review debt by type: ${reviewDebtByType}`] : []),
     ...(reviewDebtBySource ? [`Review debt by source: ${reviewDebtBySource}`] : []),
     `Stale review: ${status.staleReview.count}${

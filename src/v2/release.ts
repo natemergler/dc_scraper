@@ -611,6 +611,8 @@ function buildReleaseSummary(
       deferred_count: row.deferredCount,
     })),
     open_review_item_count: status.review.open,
+    open_human_decision_review_item_count: status.review.humanDecisionOpen,
+    browse_only_open_review_item_count: status.review.browseOnlyOpen,
     deferred_review_item_count: status.review.deferred,
     stale_review_item_count: status.staleReview.count,
     stale_review_by_prior_decision_state: status.staleReview.byPriorDecisionState.map((row) => ({

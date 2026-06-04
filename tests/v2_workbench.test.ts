@@ -270,7 +270,7 @@ Deno.test("status, review list, and entity search stay usable during an external
     }).output();
     assertEquals(statusOutput.code, 0);
     const statusText = new TextDecoder().decode(statusOutput.stdout);
-    assertStringIncludes(statusText, "Review: 1 open, 0 deferred");
+    assertStringIncludes(statusText, "Review: 1 open (0 decisions, 1 browse-only), 0 deferred");
 
     const reviewListOutput = await new Deno.Command(Deno.execPath(), {
       cwd: Deno.cwd(),
