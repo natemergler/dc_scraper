@@ -7934,8 +7934,14 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
   assert(
     rowsParsed.items?.some((item) =>
       item.title === "Film Rebate Ledger" &&
+      item.body.datasetName === "Film Rebate Ledger" &&
+      item.body.rawDatasetName === " Film Rebate Ledger " &&
       item.body.systemUpdatedOn === "2026-03-04T14:08:53.000Z"
     ),
+  );
+  assertEquals(
+    rowsParsed.datasets?.find((dataset) => dataset.datasetId.includes("ocfo_edi_009999"))?.name,
+    "Film Rebate Ledger",
   );
 });
 

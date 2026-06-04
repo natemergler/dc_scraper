@@ -175,7 +175,7 @@ export const enterpriseDatasetInventoryRowsPageTwoFixture = {
         DATASET_ID: "OCFO-EDI-009999",
         PUBLICATION_STATUS: "Audit Completed",
         AGENCY_NAME: "Office of the Chief Financial Officer",
-        DATASET_NAME: "Film Rebate Ledger",
+        DATASET_NAME: " Film Rebate Ledger ",
         DATASET_CATEGORY: "Government Operations",
         DATASET_STATUS: "Retired",
         DATASET_URL: "https://example.dc.gov/datasets/film-rebate-ledger",
