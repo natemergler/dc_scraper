@@ -47,9 +47,10 @@ export const legalEntrypointsConnector: SourceConnector = {
       title: source.name,
       body: source,
     }));
-    const legalRefs: LegalRefInput[] = sources.map((source) => {
+    const legalRefs: LegalRefInput[] = sources.flatMap((source) => {
       const parsed = parseLegalReference(source.name, source.url);
-      return {
+      if (parsed.refType === "unknown" || !parsed.normalizedCitation) return [];
+      return [{
         legalRefId: buildLegalRefId(legalEntrypointsSource.sourceId, source.slug),
         sourceItemKey: source.slug,
         refType: parsed.refType,
@@ -58,7 +59,7 @@ export const legalEntrypointsConnector: SourceConnector = {
         url: source.url,
         needsReview: parsed.needsReview,
         evidence: [fieldEvidence("link", source.url)],
-      };
+      }];
     });
     const datasets: DatasetInput[] = sources.map((source) => ({
       datasetId: buildDatasetId(legalEntrypointsSource.sourceId, source.slug),

@@ -21,6 +21,7 @@ export interface ReviewItemFilters {
   rawValue?: string;
   rawValueContains?: string;
   refType?: string;
+  sourceId?: string;
   limit?: number;
 }
 
@@ -90,6 +91,12 @@ export function listReviewItems(
     where.push("legal_refs.ref_type = ?");
     params.push(filters.refType);
   }
+  if (filters.sourceId) {
+    where.push(
+      "(source_items.source_id = ? or (review_items.item_type = 'source_status' and review_items.subject_id = ?))",
+    );
+    params.push(filters.sourceId, filters.sourceId);
+  }
   const whereSql = where.length === 0 ? "1 = 1" : where.join(" and ");
   const sql = `
 select review_items.review_item_id as reviewItemId,
@@ -103,6 +110,11 @@ from review_items
 left join entity_candidates on entity_candidates.candidate_id = review_items.subject_id
 left join relationship_candidates on relationship_candidates.relationship_candidate_id = review_items.subject_id
 left join legal_refs on legal_refs.legal_ref_id = review_items.subject_id
+left join source_items on source_items.source_item_id = coalesce(
+  entity_candidates.source_item_id,
+  relationship_candidates.source_item_id,
+  legal_refs.source_item_id
+)
 left join canonical_entities as from_entity on from_entity.entity_id = relationship_candidates.from_entity_ref
 left join canonical_entities as to_entity on to_entity.entity_id = relationship_candidates.to_entity_ref
 where ${whereSql}

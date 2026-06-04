@@ -4,7 +4,7 @@ import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { legalEntrypointsFixture } from "./helpers/v2_fixtures.ts";
 
-Deno.test("normalized needsReview=false legal refs auto-accept during import", async () => {
+Deno.test("recognized legal entrypoints auto-accept without generic navigation review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -35,9 +35,7 @@ Deno.test("normalized needsReview=false legal refs auto-accept during import", a
   const openItems = workbench.listReviewItems({ mode: "legal", status: "open" });
   workbench.close();
 
-  assertEquals(statusCounts.get("accepted"), 2);
-  assertEquals(statusCounts.get("pending"), 1);
-  assertEquals(openItems.length, 1);
-  assertEquals(openItems[0]?.details.refType, "dc_register");
-  assertEquals(openItems[0]?.details.needsReview, true);
+  assertEquals(statusCounts.get("accepted"), 3);
+  assertEquals(statusCounts.get("pending"), undefined);
+  assertEquals(openItems.length, 0);
 });

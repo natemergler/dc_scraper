@@ -116,19 +116,19 @@ Workflow:
 Usage:
   ${
     dcCommand("review")
-  } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
+  } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
   ${
     dcCommand("review list")
-  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   ${
     dcCommand("review packets")
-  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   ${
     dcCommand("review batch accept-safe")
-  } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  } --mode <mode> [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${
     dcCommand("review batch defer-default")
-  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  } --mode <mode> --subject-prefix <prefix> [--source <source-id>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
   Enter runs the default action for the current item.
@@ -157,10 +157,10 @@ Workflow:
 Usage:
   ${
     dcCommand("review batch accept-safe")
-  } --mode <mode> [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  } --mode <mode> [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
   ${
     dcCommand("review batch defer-default")
-  } --mode <mode> --subject-prefix <prefix> [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
+  } --mode <mode> --subject-prefix <prefix> [--source <source-id>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 `);
   for (const tip of tips) {
     console.log(`Tip: ${tip}`);
@@ -176,6 +176,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
   const rawValue = readFlag(args, "--raw-value");
   const rawValueContains = readFlag(args, "--raw-value-contains");
   const refType = readFlag(args, "--ref-type");
+  const sourceId = readFlag(args, "--source");
   const limit = readNumberFlag(args, "--limit");
   const positionalMode = isReviewMode(args[1]) ? args[1] : undefined;
   return {
@@ -187,6 +188,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
     rawValue: rawValue ?? undefined,
     rawValueContains: rawValueContains ?? undefined,
     refType: refType ?? undefined,
+    sourceId: sourceId ?? undefined,
     limit,
   };
 }
