@@ -509,6 +509,12 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
     "deno task dc -- review [entities|relationships|legal|sources]",
   );
   assertStringIncludes(reviewText, "deno task dc -- review list");
+  assertStringIncludes(reviewText, "Advanced maintenance:");
+  const reviewWorkflowText = reviewText.slice(
+    reviewText.indexOf("Workflow:"),
+    reviewText.indexOf("Usage:"),
+  );
+  assert(!reviewWorkflowText.includes("review batch"));
   assert(!reviewText.includes("No review items remain."));
 
   const reviewModeHelp = await new Deno.Command(Deno.execPath(), {
@@ -531,6 +537,11 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
     reviewModeText,
     "deno task dc -- review [entities|relationships|legal|sources]",
   );
+  const reviewModeWorkflowText = reviewModeText.slice(
+    reviewModeText.indexOf("Workflow:"),
+    reviewModeText.indexOf("Usage:"),
+  );
+  assert(!reviewModeWorkflowText.includes("review batch"));
   assertStringIncludes(reviewModeText, "deno task dc -- review batch accept-safe");
   assert(!reviewModeText.includes("No review items remain."));
 
