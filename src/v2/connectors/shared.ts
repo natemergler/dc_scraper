@@ -94,13 +94,15 @@ export function toAbsoluteUrl(baseUrl: string, maybeRelative: string): string {
 export function buildKnownEntityRef(name: string): string {
   const directAlias = knownEntityRefs.get(entityAliasKey(name));
   if (directAlias) return directAlias;
-  for (const variant of acceptedStyleEntityVariants(name)) {
+  const variants = acceptedStyleEntityVariants(name);
+  for (const variant of variants) {
     const alias = knownEntityRefs.get(entityAliasKey(variant));
     if (alias) return alias;
   }
-  for (const variant of acceptedStyleEntityVariants(name)) {
+  for (const variant of variants) {
     if (looksLikeAgencyStyleEndpoint(variant)) return buildEntityId(variant);
   }
+  if (variants[0]) return buildEntityId(variants[0]);
   return buildEntityId(name);
 }
 

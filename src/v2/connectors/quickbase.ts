@@ -300,7 +300,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
       continue;
     }
 
-    const boardEntityId = buildEntityId(board);
+    const boardEntityId = buildKnownEntityRef(board);
     if (!seenBoards.has(board)) {
       seenBoards.set(board, "true");
       const candidateId = buildCandidateId(quickbaseSource.sourceId, board);
