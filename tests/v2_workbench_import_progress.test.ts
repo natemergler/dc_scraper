@@ -38,16 +38,16 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
     "relationship-auto-accept",
   ]);
   assertEquals(events.slice(0, 6).map((event) => event.message), [
-    "Indexed source items items=1 fields=0",
-    "Inserted entity candidates candidates=1 evidence=1",
-    "Inserted relationship candidates candidates=1 evidence=1",
-    "Inserted legal refs refs=1 evidence=1",
-    "Inserted datasets datasets=1 evidence=1",
-    "Inserted review items items=1",
+    "Prepared source items items=1 fields=0",
+    "Prepared entity candidates candidates=1 evidence=1",
+    "Prepared relationship candidates candidates=1 evidence=1",
+    "Prepared legal refs refs=1 evidence=1",
+    "Prepared datasets datasets=1 evidence=1",
+    "Prepared review items items=1",
   ]);
 });
 
-Deno.test("workbench import only reports parsed substeps after commit", async () => {
+Deno.test("workbench import keeps rollback progress preparatory", async () => {
   const dir = await Deno.makeTempDir();
   const workbench = new Workbench(join(dir, "workbench.sqlite"));
   workbench.init();
@@ -67,7 +67,14 @@ Deno.test("workbench import only reports parsed substeps after commit", async ()
   );
   workbench.close();
 
-  assertEquals(events, []);
+  assertEquals(events.map((event) => event.phase), [
+    "parsed-source-items",
+    "parsed-entity-candidates",
+  ]);
+  assertEquals(events.map((event) => event.message), [
+    "Prepared source items items=1 fields=0",
+    "Prepared entity candidates candidates=1 evidence=1",
+  ]);
 });
 
 Deno.test("workbench import preserves evidence across bulk insert chunks", async () => {

@@ -134,7 +134,6 @@ export async function importConnectorResult(
       )
       : [];
     const needsDerivedStateRefresh = parsedAffectsDerivedState(parsed);
-    const parsedProgress: Array<{ phase: ImportProgressPhase; message: string }> = [];
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
@@ -171,17 +170,15 @@ export async function importConnectorResult(
             runId,
             artifactRecords,
             parsed,
-            (phase, message) => parsedProgress.push({ phase, message }),
+            (phase, message) =>
+              reportImportProgress(options, {
+                phase,
+                sourceId: endpointResult.endpoint.sourceId,
+                endpointId: endpointResult.endpoint.endpointId,
+                message,
+              }),
           );
         });
-        for (const { phase, message } of parsedProgress) {
-          reportImportProgress(options, {
-            phase,
-            sourceId: endpointResult.endpoint.sourceId,
-            endpointId: endpointResult.endpoint.endpointId,
-            message,
-          });
-        }
         reportImportProgress(options, {
           phase: "parsed-row-insert",
           sourceId: endpointResult.endpoint.sourceId,
@@ -366,7 +363,7 @@ function importParsedOutput(
   );
   onProgress?.(
     "parsed-source-items",
-    `Indexed source items items=${sourceItemRows.length} fields=${parsed.fields?.length ?? 0}`,
+    `Prepared source items items=${sourceItemRows.length} fields=${parsed.fields?.length ?? 0}`,
   );
   deleteStaleLegalRefsForParsedItems(
     store,
@@ -446,7 +443,7 @@ function importParsedOutput(
   if ((parsed.entityCandidates?.length ?? 0) > 0) {
     onProgress?.(
       "parsed-entity-candidates",
-      `Inserted entity candidates candidates=${entityCandidateRows.length} evidence=${entityCandidateEvidenceRows.length}`,
+      `Prepared entity candidates candidates=${entityCandidateRows.length} evidence=${entityCandidateEvidenceRows.length}`,
     );
   }
   for (const candidate of parsed.relationshipCandidates ?? []) {
@@ -510,7 +507,7 @@ function importParsedOutput(
   if ((parsed.relationshipCandidates?.length ?? 0) > 0) {
     onProgress?.(
       "parsed-relationship-candidates",
-      `Inserted relationship candidates candidates=${relationshipCandidateRows.length} evidence=${relationshipCandidateEvidenceRows.length}`,
+      `Prepared relationship candidates candidates=${relationshipCandidateRows.length} evidence=${relationshipCandidateEvidenceRows.length}`,
     );
   }
   let legalRefEvidenceCount = 0;
@@ -570,7 +567,7 @@ function importParsedOutput(
     refreshLegalRefAttachments(store);
     onProgress?.(
       "parsed-legal-refs",
-      `Inserted legal refs refs=${parsed.legalRefs?.length ?? 0} evidence=${legalRefEvidenceCount}`,
+      `Prepared legal refs refs=${parsed.legalRefs?.length ?? 0} evidence=${legalRefEvidenceCount}`,
     );
   }
   let datasetEvidenceCount = 0;
@@ -615,7 +612,7 @@ function importParsedOutput(
   if ((parsed.datasets ?? []).length > 0) {
     onProgress?.(
       "parsed-datasets",
-      `Inserted datasets datasets=${parsed.datasets?.length ?? 0} evidence=${datasetEvidenceCount}`,
+      `Prepared datasets datasets=${parsed.datasets?.length ?? 0} evidence=${datasetEvidenceCount}`,
     );
   }
   const entityReviewContext = entityReviewConflictContextBySubject(store, parsed.reviewItems ?? []);
@@ -648,7 +645,7 @@ function importParsedOutput(
     reviewItemCount += 1;
   }
   if (reviewItemCount > 0) {
-    onProgress?.("parsed-review-items", `Inserted review items items=${reviewItemCount}`);
+    onProgress?.("parsed-review-items", `Prepared review items items=${reviewItemCount}`);
   }
 }
 
