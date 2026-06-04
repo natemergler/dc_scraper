@@ -461,6 +461,65 @@ Deno.test("interactive review Enter accepts the default action for an explicit e
   assertEquals(entities.map((entity) => entity.id), ["dc.board_of_accountancy"]);
 });
 
+Deno.test("interactive review explains available actions after an unavailable action", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.invalid_action",
+      candidateId: "candidate.test.review_cli.invalid_action.board_accountancy",
+      sourceItemKey: "review-cli-invalid-action-board-accountancy",
+      proposedEntityId: "dc.board_of_accountancy",
+      name: "Board of Accountancy",
+      kind: "board",
+      observedName: "Board of Accountancy",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("\nx\na\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "That action is not available. Use Enter accept, a accept, r reject, m merge, d defer, or q quit.",
+  );
+  assertStringIncludes(stdout, "Saved resolution.");
+});
+
 Deno.test("interactive review sends plain source-backed additions to browse surfaces", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
