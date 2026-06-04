@@ -7531,9 +7531,11 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
               return JSON.stringify(governmentOperationsCatalogFixture);
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
               return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
+              return JSON.stringify({ count: 3 });
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageOneFixture);
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=2&f=json":
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture);
             default:
               throw new Error(`Unexpected url ${url}`);
@@ -7549,8 +7551,12 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
   assertEquals(progressMessages, [
     "Fetching Government Operations catalog metadata",
     "Fetching Enterprise Dataset Inventory table metadata",
+    "Fetching Enterprise Dataset Inventory row count",
+    "Fetching Enterprise Dataset Inventory rows 1-3 in 2 page(s) of up to 2",
     "Fetching Enterprise Dataset Inventory rows starting at 1 (page 1, up to 2)",
-    "Fetching Enterprise Dataset Inventory rows starting at 3 (page 2, up to 2)",
+    "Fetching Enterprise Dataset Inventory rows starting at 3 (page 2, up to 1)",
+    "Fetched Enterprise Dataset Inventory page 1 with 2 row(s)",
+    "Fetched Enterprise Dataset Inventory page 2 with 1 row(s)",
   ]);
   assert(result.endpointResults.every((endpoint) => endpoint.status === "success"));
   const catalogParsed = result.endpointResults[0].parsed;
@@ -7579,6 +7585,7 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
     ),
   );
   assertEquals(metadataParsed.fields?.length, 9);
+  assertEquals(result.endpointResults[1].artifacts.length, 2);
   assertEquals(result.endpointResults[2].artifacts.length, 2);
   assertEquals(rowsParsed.items?.length, 3);
   assertEquals(rowsParsed.datasets?.length, 3);
@@ -7597,6 +7604,57 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
       item.body.systemUpdatedOn === "2026-03-04T14:08:53.000Z"
     ),
   );
+});
+
+Deno.test("Enterprise Dataset Inventory connector fetches counted row pages concurrently", async () => {
+  const allFeatures = [
+    ...enterpriseDatasetInventoryRowsPageOneFixture.features,
+    ...enterpriseDatasetInventoryRowsPageTwoFixture.features,
+  ];
+  let activeRowRequests = 0;
+  let maxActiveRowRequests = 0;
+  const result = await getConnector("admin.enterprise_dataset_inventory").run(
+    createConnectorContext({
+      fetcher: async (url: string) => ({
+        status: 200,
+        text: async () => {
+          switch (url) {
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json":
+              return JSON.stringify(governmentOperationsCatalogFixture);
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
+              return JSON.stringify({
+                ...enterpriseDatasetInventoryMetadataFixture,
+                maxRecordCount: 1,
+              });
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
+              return JSON.stringify({ count: allFeatures.length });
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1&f=json":
+              return delayedRowPage({ features: [allFeatures[0]], exceededTransferLimit: true });
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=1&resultRecordCount=1&f=json":
+              return delayedRowPage({ features: [allFeatures[1]], exceededTransferLimit: true });
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
+              return delayedRowPage({ features: [allFeatures[2]] });
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        },
+        json: async <T>() => {
+          throw new Error(`No json fixture for ${url}`) as T;
+        },
+      }),
+    }),
+  );
+
+  assertEquals(maxActiveRowRequests, 3);
+  assertEquals(result.endpointResults[2].parsed?.datasets?.length, 3);
+
+  async function delayedRowPage(payload: Record<string, unknown>): Promise<string> {
+    activeRowRequests += 1;
+    maxActiveRowRequests = Math.max(maxActiveRowRequests, activeRowRequests);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    activeRowRequests -= 1;
+    return JSON.stringify(payload);
+  }
 });
 
 Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {

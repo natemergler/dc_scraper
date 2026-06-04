@@ -126,6 +126,7 @@ const enterpriseDatasetInventoryRowFields = [
   "DATASET_URL",
   "SYSTEM_UPDATED_ON",
 ];
+const enterpriseDatasetInventoryPageConcurrency = 4;
 
 interface GovernmentOperationsCatalogGroup {
   itemKey: string;
@@ -265,38 +266,33 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
       ? Math.max(0, Math.floor(context.limit))
       : undefined;
 
-    const rowArtifacts: ReturnType<typeof artifact>[] = [];
+    const countUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
+      where: "1=1",
+      returnCountOnly: "true",
+      f: "json",
+    });
+    const countArtifact = requestedLimit === undefined
+      ? await fetchEnterpriseDatasetInventoryCount(context, countUrl)
+      : undefined;
+    const rowLimit = requestedLimit ?? countArtifact?.count ?? 0;
+    const pagePlans = buildEnterpriseDatasetInventoryPagePlans(rowLimit, maxRecordCount);
+    if (pagePlans.length > 0) {
+      context.onProgress?.({
+        message:
+          `Fetching Enterprise Dataset Inventory rows 1-${rowLimit} in ${pagePlans.length} page(s) of up to ${maxRecordCount}`,
+      });
+    }
+    const fetchedPages = await mapConcurrent(
+      pagePlans,
+      enterpriseDatasetInventoryPageConcurrency,
+      (plan) => fetchEnterpriseDatasetInventoryPage(context, plan),
+    );
+
+    const rowArtifacts = fetchedPages.map((page) => page.artifact);
     const items: SourceItemInput[] = [];
     const datasets: DatasetInput[] = [];
-    let offset = 0;
-    let pageNumber = 1;
-
-    while (requestedLimit === undefined || offset < requestedLimit) {
-      const remainingLimit = requestedLimit === undefined
-        ? maxRecordCount
-        : requestedLimit - offset;
-      const pageSize = Math.min(maxRecordCount, remainingLimit);
-      const pageUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
-        where: "1=1",
-        outFields: enterpriseDatasetInventoryRowFields.join(","),
-        orderByFields: "OBJECTID",
-        returnGeometry: "false",
-        resultOffset: String(offset),
-        resultRecordCount: String(pageSize),
-        f: "json",
-      });
-      context.onProgress?.({
-        message: `Fetching Enterprise Dataset Inventory rows starting at ${
-          offset + 1
-        } (page ${pageNumber}, up to ${pageSize})`,
-      });
-      const pageResponse = await context.fetcher(pageUrl);
-      const pageText = await pageResponse.text();
-      const pagePayload = JSON.parse(pageText) as Record<string, unknown>;
-      const features = (pagePayload.features ?? []) as Array<Record<string, unknown>>;
-      const artifactIndex = rowArtifacts.length;
-      rowArtifacts.push(artifact("rows", "json", pageUrl, pageText));
-      for (const feature of features) {
+    for (const [artifactIndex, page] of fetchedPages.entries()) {
+      for (const feature of page.features) {
         const attributes = (feature.attributes ?? {}) as Record<string, unknown>;
         const objectId = Number(attributes.OBJECTID ?? 0);
         const rawDatasetId = String(attributes.DATASET_ID ?? `objectid-${objectId}`);
@@ -352,12 +348,6 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
           ],
         });
       }
-      if (features.length === 0) break;
-      offset += features.length;
-      pageNumber += 1;
-      const hitRequestedLimit = requestedLimit !== undefined && offset >= requestedLimit;
-      const serviceSaysMore = pagePayload.exceededTransferLimit === true;
-      if (hitRequestedLimit || (!serviceSaysMore && features.length < pageSize)) break;
     }
 
     return {
@@ -374,7 +364,10 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
         {
           endpoint: metadataEndpoint,
           status: "success",
-          artifacts: [artifact("schema", "json", metadataUrl, metadataText)],
+          artifacts: [
+            artifact("schema", "json", metadataUrl, metadataText),
+            ...(countArtifact ? [countArtifact.artifact] : []),
+          ],
           parsed: {
             fields,
           },
@@ -392,6 +385,101 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
     };
   },
 };
+
+interface EnterpriseDatasetInventoryPagePlan {
+  offset: number;
+  pageNumber: number;
+  pageSize: number;
+  url: string;
+}
+
+interface EnterpriseDatasetInventoryPage {
+  artifact: ReturnType<typeof artifact>;
+  features: Array<Record<string, unknown>>;
+}
+
+async function fetchEnterpriseDatasetInventoryCount(
+  context: ConnectorContext,
+  countUrl: string,
+): Promise<{ count: number; artifact: ReturnType<typeof artifact> }> {
+  context.onProgress?.({ message: "Fetching Enterprise Dataset Inventory row count" });
+  const countResponse = await context.fetcher(countUrl);
+  const countText = await countResponse.text();
+  const countPayload = JSON.parse(countText) as Record<string, unknown>;
+  const count = Math.max(0, Math.floor(Number(countPayload.count ?? 0)));
+  return {
+    count,
+    artifact: artifact("schema", "json", countUrl, countText),
+  };
+}
+
+function buildEnterpriseDatasetInventoryPagePlans(
+  rowLimit: number,
+  maxRecordCount: number,
+): EnterpriseDatasetInventoryPagePlan[] {
+  const plans: EnterpriseDatasetInventoryPagePlan[] = [];
+  for (let offset = 0; offset < rowLimit; offset += maxRecordCount) {
+    const pageSize = Math.min(maxRecordCount, rowLimit - offset);
+    plans.push({
+      offset,
+      pageNumber: plans.length + 1,
+      pageSize,
+      url: buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
+        where: "1=1",
+        outFields: enterpriseDatasetInventoryRowFields.join(","),
+        orderByFields: "OBJECTID",
+        returnGeometry: "false",
+        resultOffset: String(offset),
+        resultRecordCount: String(pageSize),
+        f: "json",
+      }),
+    });
+  }
+  return plans;
+}
+
+async function fetchEnterpriseDatasetInventoryPage(
+  context: ConnectorContext,
+  plan: EnterpriseDatasetInventoryPagePlan,
+): Promise<EnterpriseDatasetInventoryPage> {
+  context.onProgress?.({
+    message: `Fetching Enterprise Dataset Inventory rows starting at ${
+      plan.offset + 1
+    } (page ${plan.pageNumber}, up to ${plan.pageSize})`,
+  });
+  const pageResponse = await context.fetcher(plan.url);
+  const pageText = await pageResponse.text();
+  const pagePayload = JSON.parse(pageText) as Record<string, unknown>;
+  const features = (pagePayload.features ?? []) as Array<Record<string, unknown>>;
+  context.onProgress?.({
+    message:
+      `Fetched Enterprise Dataset Inventory page ${plan.pageNumber} with ${features.length} row(s)`,
+  });
+  return {
+    artifact: artifact("rows", "json", plan.url, pageText),
+    features,
+  };
+}
+
+async function mapConcurrent<T, U>(
+  values: T[],
+  concurrency: number,
+  worker: (value: T) => Promise<U>,
+): Promise<U[]> {
+  const results = new Array<U>(values.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), values.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < values.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await worker(values[currentIndex]);
+      }
+    }),
+  );
+  return results;
+}
 
 interface ArcGisLayerTarget {
   id: number;
