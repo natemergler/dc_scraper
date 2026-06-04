@@ -44,6 +44,26 @@ export function classifySameEntityKindMerge(
   return { decision: "conflict" };
 }
 
+export function compareAuthoritativeEntitySourcePrecedence(
+  candidateSourceId: string,
+  otherSourceId: string,
+): number {
+  if (AUTHORITATIVE_KIND_REFINEMENT_SOURCE_PRECEDENCE.get(candidateSourceId)?.has(otherSourceId)) {
+    return 1;
+  }
+  if (AUTHORITATIVE_KIND_REFINEMENT_SOURCE_PRECEDENCE.get(otherSourceId)?.has(candidateSourceId)) {
+    return -1;
+  }
+  return 0;
+}
+
+export function compareEntityKindSpecificity(candidateKind: string, otherKind: string): number {
+  if (candidateKind === otherKind) return 0;
+  if (isGenericPublicBodyRefinement(otherKind, candidateKind)) return 1;
+  if (isGenericPublicBodyRefinement(candidateKind, otherKind)) return -1;
+  return 0;
+}
+
 function isGenericPublicBodyRefinement(canonicalKind: string, candidateKind: string): boolean {
   return canonicalKind === "public_body" && PUBLIC_BODY_SPECIFIC_KINDS.has(candidateKind);
 }

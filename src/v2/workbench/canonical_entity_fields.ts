@@ -1,5 +1,9 @@
 import { nowIso } from "../domain.ts";
 import { queryAll, queryOne, run } from "./db.ts";
+import {
+  compareAuthoritativeEntitySourcePrecedence,
+  compareEntityKindSpecificity,
+} from "./entity_kind_policy.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface CanonicalEntityFieldsRow {
@@ -13,6 +17,7 @@ interface CanonicalEntityFieldsRow {
 
 interface AcceptedEntityCandidateRow {
   candidateId: string;
+  sourceId: string;
   name: string;
   kind: string;
   branch?: string | null;
@@ -45,6 +50,7 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
   const candidates = queryAll<AcceptedEntityCandidateRow>(
     store.db,
     `select candidate_id as candidateId,
+            source_items.source_id as sourceId,
             name,
             kind,
             branch,
@@ -52,28 +58,19 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
             official_url as officialUrl,
             confidence
      from entity_candidates
+     join source_items
+       on source_items.source_item_id = entity_candidates.source_item_id
      where review_status = 'accepted'
        and candidate_id in (${placeholders})`,
     mergedCandidateIds,
   );
   if (candidates.length === 0) return;
   const order = new Map(mergedCandidateIds.map((candidateId, index) => [candidateId, index]));
-  const strongestFirst = candidates.toSorted((a, b) => {
-    const confidenceDelta = (b.confidence ?? 0) - (a.confidence ?? 0);
-    if (confidenceDelta !== 0) return confidenceDelta;
-    return (order.get(a.candidateId) ?? 0) - (order.get(b.candidateId) ?? 0);
-  });
-  const strongest = strongestFirst[0];
-  if (!strongest) return;
-  const fillBlankField = (
-    currentValue: string | null | undefined,
-    field: "branch" | "cluster" | "officialUrl",
-  ): string | null => {
-    const strongestValue = strongest[field];
-    if (hasText(strongestValue)) return strongestValue;
-    if (hasText(currentValue)) return currentValue;
-    return strongestFirst.find((candidate) => hasText(candidate[field]))?.[field] ?? null;
-  };
+  const nameCandidate = strongestCandidateForField(candidates, order, "name");
+  const kindCandidate = strongestCandidateForField(candidates, order, "kind");
+  const branchCandidate = strongestCandidateForField(candidates, order, "branch");
+  const clusterCandidate = strongestCandidateForField(candidates, order, "cluster");
+  const officialUrlCandidate = strongestCandidateForField(candidates, order, "officialUrl");
   run(
     store.db,
     `update canonical_entities
@@ -85,15 +82,47 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
          updated_at = ?
      where entity_id = ?`,
     [
-      strongest.name,
-      strongest.kind,
-      fillBlankField(current.branch, "branch"),
-      fillBlankField(current.cluster, "cluster"),
-      fillBlankField(current.officialUrl, "officialUrl"),
+      nameCandidate?.name ?? current.name,
+      kindCandidate?.kind ?? current.kind,
+      branchCandidate?.branch ?? current.branch ?? null,
+      clusterCandidate?.cluster ?? current.cluster ?? null,
+      officialUrlCandidate?.officialUrl ?? current.officialUrl ?? null,
       nowIso(),
       entityId,
     ],
   );
+}
+
+type CanonicalEntityField = "name" | "kind" | "branch" | "cluster" | "officialUrl";
+
+function strongestCandidateForField(
+  candidates: AcceptedEntityCandidateRow[],
+  order: Map<string, number>,
+  field: CanonicalEntityField,
+): AcceptedEntityCandidateRow | undefined {
+  const candidatesWithField = field === "name" || field === "kind"
+    ? candidates
+    : candidates.filter((candidate) => hasText(candidate[field]));
+  return candidatesWithField.toSorted((a, b) => compareCandidateStrength(a, b, order))[0];
+}
+
+function compareCandidateStrength(
+  candidate: AcceptedEntityCandidateRow,
+  other: AcceptedEntityCandidateRow,
+  order: Map<string, number>,
+): number {
+  const sourcePrecedence = compareAuthoritativeEntitySourcePrecedence(
+    candidate.sourceId,
+    other.sourceId,
+  );
+  if (sourcePrecedence !== 0) return -sourcePrecedence;
+
+  const kindSpecificity = compareEntityKindSpecificity(candidate.kind, other.kind);
+  if (kindSpecificity !== 0) return -kindSpecificity;
+
+  const confidenceDelta = (other.confidence ?? 0) - (candidate.confidence ?? 0);
+  if (confidenceDelta !== 0) return confidenceDelta;
+  return (order.get(candidate.candidateId) ?? 0) - (order.get(other.candidateId) ?? 0);
 }
 
 function hasText(value: string | null | undefined): value is string {
