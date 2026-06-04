@@ -685,6 +685,7 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
        on source_items.source_item_id = legal_refs.source_item_id
      left join sources
        on sources.source_id = source_items.source_id
+     where legal_refs.review_status = 'accepted'
      order by legal_refs.legal_ref_id`,
   ).all() as Array<{
     legalRefId: string;
@@ -740,6 +741,7 @@ function validateEntityLegalRefProvenance(
        on canonical_entities.entity_id = entity_legal_refs.entity_id
      left join legal_refs
        on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
+     where legal_refs.review_status = 'accepted'
      order by entity_legal_refs.entity_legal_ref_id`,
   ).all() as Array<{
     attachmentId: string;
@@ -795,6 +797,7 @@ function validateRelationshipLegalRefProvenance(
        on to_entities.entity_id = canonical_relationships.to_entity_id
      left join legal_refs
        on legal_refs.legal_ref_id = relationship_legal_refs.legal_ref_id
+     where legal_refs.review_status = 'accepted'
      order by relationship_legal_refs.relationship_legal_ref_id`,
   ).all() as Array<{
     attachmentId: string;
