@@ -283,6 +283,19 @@ Deno.test("release verify accepts source-backed legal attachment rows", async ()
       legalRefId: string;
       message: string;
     }>;
+    legalAttachmentAudit: {
+      acceptedLegalRefs: number;
+      explicitEntityLegalRefInputs: number;
+      explicitRelationshipLegalRefInputs: number;
+      entityLegalRefAttachments: number;
+      relationshipLegalRefAttachments: number;
+      legalRelationshipCooccurrenceSources: Array<{
+        sourceId: string;
+        sourceItemCount: number;
+        acceptedLegalRefs: number;
+        acceptedRelationshipCandidates: number;
+      }>;
+    };
   };
   assertEquals(result.code, 0);
   assertEquals(body.ready, true);
@@ -291,6 +304,27 @@ Deno.test("release verify accepts source-backed legal attachment rows", async ()
   assertEquals(body.entityLegalRefProvenanceProblems, []);
   assertEquals(body.relationshipLegalRefProvenanceCheckedCount, 1);
   assertEquals(body.relationshipLegalRefProvenanceProblems, []);
+  assertEquals(body.legalAttachmentAudit, {
+    acceptedLegalRefs: 1,
+    explicitEntityLegalRefInputs: 1,
+    explicitRelationshipLegalRefInputs: 1,
+    entityLegalRefAttachments: 1,
+    relationshipLegalRefAttachments: 1,
+    legalRelationshipCooccurrenceSources: [],
+  });
+});
+
+Deno.test("release verify text explains zero relationship legal attachments as no explicit inputs", async () => {
+  const { dbPath, workbench } = await sourceBackedInventoryWorkbench();
+  workbench.close();
+
+  const output = await runReleaseVerifyText(dbPath);
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 0);
+  assertStringIncludes(
+    stdout,
+    "Legal attachment audit: accepted legal refs=1, explicit entity inputs=0, explicit relationship inputs=0, released entity attachments=0, released relationship attachments=0.",
+  );
 });
 
 Deno.test("release verify reports dataset and legal ref rows without source evidence", async () => {

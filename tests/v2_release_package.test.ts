@@ -4,7 +4,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release, type ReleaseBuildProgressEvent } from "../src/v2/release.ts";
 import { renderReleaseBuildProgress } from "../src/v2/cli_release.ts";
-import { buildReleaseInspection } from "../src/v2/release_inspect.ts";
+import { buildReleaseInspection, renderReleaseInspection } from "../src/v2/release_inspect.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { syntheticEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
 import { assertReleaseReadmeOmitsWorkbenchStatusLanguage } from "./helpers/v2_release_readme_assertions.ts";
@@ -92,6 +92,26 @@ Deno.test("release inspection treats missing file manifest as not-ready", async 
 
   assertEquals(inspection.packageIntegrity, "unknown");
   assertEquals(inspection.readiness, "not-ready");
+});
+
+Deno.test("release inspection renders legal attachment counts from the manifest", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+      entity_legal_refs_count: 3,
+      relationship_legal_refs_count: 0,
+    },
+  });
+
+  assertStringIncludes(text, "Legal attachments: entity=3, relationship=0");
 });
 
 Deno.test("release builder reports progress phases for long package builds", async () => {

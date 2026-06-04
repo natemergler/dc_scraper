@@ -49,6 +49,22 @@ export interface ReleaseRelationshipLegalRefProvenanceProblem {
   message: string;
 }
 
+export interface ReleaseLegalRelationshipCooccurrenceSource {
+  sourceId: string;
+  sourceItemCount: number;
+  acceptedLegalRefs: number;
+  acceptedRelationshipCandidates: number;
+}
+
+export interface ReleaseLegalAttachmentAudit {
+  acceptedLegalRefs: number;
+  explicitEntityLegalRefInputs: number;
+  explicitRelationshipLegalRefInputs: number;
+  entityLegalRefAttachments: number;
+  relationshipLegalRefAttachments: number;
+  legalRelationshipCooccurrenceSources: ReleaseLegalRelationshipCooccurrenceSource[];
+}
+
 export interface ReleaseVerificationResult {
   ready: boolean;
   readiness: ReleaseReadiness;
@@ -66,6 +82,7 @@ export interface ReleaseVerificationResult {
   entityLegalRefProvenanceProblems: ReleaseEntityLegalRefProvenanceProblem[];
   relationshipLegalRefProvenanceCheckedCount: number;
   relationshipLegalRefProvenanceProblems: ReleaseRelationshipLegalRefProvenanceProblem[];
+  legalAttachmentAudit: ReleaseLegalAttachmentAudit;
   nextCommand: string;
   unresolvedStateNote: string;
 }
@@ -115,6 +132,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   const entityLegalRefProvenanceProblems = entityLegalRefProvenance.problems;
   const relationshipLegalRefProvenance = validateRelationshipLegalRefProvenance(workbench);
   const relationshipLegalRefProvenanceProblems = relationshipLegalRefProvenance.problems;
+  const legalAttachmentAudit = buildLegalAttachmentAudit(workbench);
   const reasons: string[] = [];
   if (status.sources.fetched === 0) reasons.push("no sources fetched");
   if (status.sources.failed > 0) reasons.push(`failed sources: ${status.sources.failed}`);
@@ -201,6 +219,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
     entityLegalRefProvenanceProblems,
     relationshipLegalRefProvenanceCheckedCount: relationshipLegalRefProvenance.checkedCount,
     relationshipLegalRefProvenanceProblems,
+    legalAttachmentAudit,
     nextCommand: status.nextCommand,
     unresolvedStateNote: status.unresolvedStateNote,
   };
@@ -262,6 +281,9 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       result.relationshipLegalRefProvenanceCheckedCount === 1 ? "" : "s"
     }.`,
   );
+  lines.push(renderLegalAttachmentAudit(result.legalAttachmentAudit));
+  const cooccurrence = renderLegalRelationshipCooccurrence(result.legalAttachmentAudit);
+  if (cooccurrence) lines.push(cooccurrence);
   if (result.entityProvenanceProblems.length > 0) {
     const problems = result.entityProvenanceProblems.slice(0, 5);
     lines.push(
@@ -339,6 +361,21 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
   lines.push(`Readiness note: ${result.unresolvedStateNote}`);
   lines.push(`Next: ${result.nextCommand}`);
   return lines.join("\n");
+}
+
+function renderLegalAttachmentAudit(audit: ReleaseLegalAttachmentAudit): string {
+  return `Legal attachment audit: accepted legal refs=${audit.acceptedLegalRefs}, explicit entity inputs=${audit.explicitEntityLegalRefInputs}, explicit relationship inputs=${audit.explicitRelationshipLegalRefInputs}, released entity attachments=${audit.entityLegalRefAttachments}, released relationship attachments=${audit.relationshipLegalRefAttachments}.`;
+}
+
+function renderLegalRelationshipCooccurrence(
+  audit: ReleaseLegalAttachmentAudit,
+): string | undefined {
+  if (audit.legalRelationshipCooccurrenceSources.length === 0) return undefined;
+  const sources = audit.legalRelationshipCooccurrenceSources
+    .slice(0, 5)
+    .map((source) => `${source.sourceId}=${source.sourceItemCount}`)
+    .join(", ");
+  return `Legal/relationship co-occurrence source items: ${sources} (source co-location, not relationship attachment evidence).`;
 }
 
 function truncationNote(shownCount: number, totalCount: number): string {
@@ -841,6 +878,64 @@ function validateRelationshipLegalRefProvenance(
     if (!attachment.resolvedLegalRefId) addProblem("legal_ref_id does not resolve to a legal ref");
   }
   return { checkedCount: attachments.length, problems };
+}
+
+function buildLegalAttachmentAudit(workbench: Workbench): ReleaseLegalAttachmentAudit {
+  const counts = workbench.db.prepare(
+    `select
+       (select count(*)
+        from legal_refs
+        where review_status = 'accepted') as acceptedLegalRefs,
+       (select count(*)
+        from review_items
+        join legal_refs
+          on legal_refs.legal_ref_id = review_items.subject_id
+         and legal_refs.review_status = 'accepted'
+        where review_items.item_type = 'legal_ref'
+          and json_extract(review_items.details_json, '$.attachEntityRef') is not null)
+          as explicitEntityLegalRefInputs,
+       (select count(*)
+        from review_items
+        join legal_refs
+          on legal_refs.legal_ref_id = review_items.subject_id
+         and legal_refs.review_status = 'accepted'
+        where review_items.item_type = 'legal_ref'
+          and json_extract(review_items.details_json, '$.attachRelationshipRef') is not null)
+          as explicitRelationshipLegalRefInputs,
+       (select count(*)
+        from entity_legal_refs
+        join legal_refs
+          on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
+         and legal_refs.review_status = 'accepted') as entityLegalRefAttachments,
+       (select count(*)
+        from relationship_legal_refs
+        join legal_refs
+          on legal_refs.legal_ref_id = relationship_legal_refs.legal_ref_id
+         and legal_refs.review_status = 'accepted') as relationshipLegalRefAttachments`,
+  ).get() as {
+    acceptedLegalRefs: number;
+    explicitEntityLegalRefInputs: number;
+    explicitRelationshipLegalRefInputs: number;
+    entityLegalRefAttachments: number;
+    relationshipLegalRefAttachments: number;
+  };
+  const legalRelationshipCooccurrenceSources = workbench.db.prepare(
+    `select source_items.source_id as sourceId,
+            count(distinct source_items.source_item_id) as sourceItemCount,
+            count(distinct legal_refs.legal_ref_id) as acceptedLegalRefs,
+            count(distinct relationship_candidates.relationship_candidate_id)
+              as acceptedRelationshipCandidates
+     from source_items
+     join legal_refs
+       on legal_refs.source_item_id = source_items.source_item_id
+      and legal_refs.review_status = 'accepted'
+     join relationship_candidates
+       on relationship_candidates.source_item_id = source_items.source_item_id
+      and relationship_candidates.review_status = 'accepted'
+     group by source_items.source_id
+     order by sourceItemCount desc, source_items.source_id`,
+  ).all() as ReleaseLegalRelationshipCooccurrenceSource[];
+  return { ...counts, legalRelationshipCooccurrenceSources };
 }
 
 interface SourceBackedEvidenceRow {
