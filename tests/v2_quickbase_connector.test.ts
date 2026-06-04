@@ -179,6 +179,61 @@ Deno.test(
   },
 );
 
+Deno.test("quickbase connector dedupes exact duplicate appointee observations at source time", async () => {
+  const duplicateRowsCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+`.trim();
+  const result = await runQuickbaseConnector(duplicateRowsCsv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 2);
+  assertEquals(
+    (parsed.entityCandidates ?? []).filter((candidate) =>
+      candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
+    ).length,
+    1,
+  );
+  assertEquals(
+    (parsed.relationshipCandidates ?? []).filter((candidate) =>
+      candidate.relationshipType === "holds" &&
+      candidate.toEntityRef ===
+        "dc.board_of_ethics_and_government_accountability_bega_public_member"
+    ).length,
+    1,
+  );
+});
+
+Deno.test("quickbase connector keeps non-identical appointee observations distinct", async () => {
+  const changedRowsCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Holdover","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Agency Representative","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+`.trim();
+  const result = await runQuickbaseConnector(changedRowsCsv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 3);
+  assertEquals(
+    (parsed.entityCandidates ?? []).filter((candidate) =>
+      candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
+    ).length,
+    3,
+  );
+  assertEquals(
+    (parsed.relationshipCandidates ?? []).filter((candidate) =>
+      candidate.relationshipType === "holds" &&
+      candidate.fromEntityRef.startsWith("observation.") &&
+      candidate.fromEntityRef.includes("jane_doe")
+    ).length,
+    3,
+  );
+});
+
 Deno.test("Quickbase board labels resolve through accepted-style entity refs", async () => {
   const csv = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
@@ -224,8 +279,8 @@ Deno.test("quickbase connector derives public appointee observations from live-s
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "holds" &&
-      candidate.fromEntityRef ===
-        "observation.adult_career_pathways_task_force_row_1_dr_antoinette_mitchell" &&
+      candidate.fromEntityRef.startsWith("observation.") &&
+      candidate.fromEntityRef.includes("dr_antoinette_mitchell") &&
       candidate.toEntityRef ===
         "dc.adult_career_pathways_task_force_office_of_the_state_superintendent_of_education_designee"
     ),

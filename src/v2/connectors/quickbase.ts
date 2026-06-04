@@ -6,6 +6,7 @@ import {
   buildReviewItemId,
   type DatasetInput,
   type EntityCandidateInput,
+  normalizeName,
   type RelationshipCandidateInput,
   type ReviewItemInput,
   type SourceDefinition,
@@ -49,6 +50,7 @@ const quickbaseColumns = {
   seat: "seat designation (specific role)",
   status: "appointment status",
   appointee: "appointee designation",
+  appointmentDate: "appointment date",
 };
 
 export const quickbaseConnector: SourceConnector = {
@@ -277,6 +279,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
   const seenBoards = new Map<string, string>();
   const seenSeats = new Set<string>();
   const seenStatuses = new Set<string>();
+  const seenAppointeeObservations = new Set<string>();
   const entityCandidates: EntityCandidateInput[] = [];
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   const reviewItems: ReviewItemInput[] = [];
@@ -288,6 +291,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     const seat = maybeString(row[quickbaseColumns.seat]) ?? "";
     const appointmentStatus = maybeString(row[quickbaseColumns.status]) ?? "unknown";
     const appointeeDesignation = maybeString(row[quickbaseColumns.appointee]) ?? "";
+    const appointmentDate = maybeString(row[quickbaseColumns.appointmentDate]) ?? "";
 
     if (!board) {
       continue;
@@ -333,8 +337,12 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     const statusRecord = buildSeatStatusRecord(appointmentStatus);
     const appointeeObservationRecord = buildAppointeeObservationRecord(
       index + 1,
+      boardEntityId,
       board,
       seatRecord,
+      appointmentStatus,
+      appointeeDesignation,
+      appointmentDate,
       row,
     );
     if (seatRecord && !seenSeats.has(seatRecord.entityId)) {
@@ -482,32 +490,35 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     }
 
     if (appointeeObservationRecord) {
-      entityCandidates.push({
-        candidateId: appointeeObservationRecord.candidateId,
-        sourceItemKey: itemKey,
-        proposedEntityId: appointeeObservationRecord.entityId,
-        name: appointeeObservationRecord.name,
-        kind: "appointee_observation",
-        rawKind: "appointee_observation",
-        cluster: "Appointment Observation",
-        confidence: 0.9,
-        duplicateHint: `${board}::${appointeeObservationRecord.name}`,
-        evidence: appointeeObservationRecord.evidence,
-      });
-      reviewItems.push(
-        buildCandidateReviewItem(
-          appointeeObservationRecord.candidateId,
-          "Review public appointee observation from Quickbase appointment row",
-          "accept",
-          {
-            source: quickbaseSource.sourceId,
-            board,
-            publicAppointeeName: appointeeObservationRecord.name,
-            appointmentStatus,
-            seatDesignation: seat,
-          },
-        ),
-      );
+      if (!seenAppointeeObservations.has(appointeeObservationRecord.dedupeKey)) {
+        seenAppointeeObservations.add(appointeeObservationRecord.dedupeKey);
+        entityCandidates.push({
+          candidateId: appointeeObservationRecord.candidateId,
+          sourceItemKey: itemKey,
+          proposedEntityId: appointeeObservationRecord.entityId,
+          name: appointeeObservationRecord.name,
+          kind: "appointee_observation",
+          rawKind: "appointee_observation",
+          cluster: "Appointment Observation",
+          confidence: 0.9,
+          duplicateHint: `${board}::${appointeeObservationRecord.name}`,
+          evidence: appointeeObservationRecord.evidence,
+        });
+        reviewItems.push(
+          buildCandidateReviewItem(
+            appointeeObservationRecord.candidateId,
+            "Review public appointee observation from Quickbase appointment row",
+            "accept",
+            {
+              source: quickbaseSource.sourceId,
+              board,
+              publicAppointeeName: appointeeObservationRecord.name,
+              appointmentStatus,
+              seatDesignation: seat,
+            },
+          ),
+        );
+      }
     }
 
     if (appointeeObservationRecord && seatRecord) {
@@ -695,6 +706,7 @@ interface AppointeeNameRecord {
 interface QuickbaseAppointeeObservationRecord {
   candidateId: string;
   entityId: string;
+  dedupeKey: string;
   name: string;
   evidence: Array<ReturnType<typeof fieldEvidence>>;
 }
@@ -726,23 +738,52 @@ function buildSeatStatusRecord(status: string): QuickbaseSeatStatusRecord | unde
 
 function buildAppointeeObservationRecord(
   rowIndex: number,
+  boardEntityId: string,
   board: string,
   seatRecord: QuickbaseSeatRecord | undefined,
+  appointmentStatus: string,
+  appointeeDesignation: string,
+  appointmentDate: string,
   row: Record<string, string>,
 ): QuickbaseAppointeeObservationRecord | undefined {
   const appointeeName = derivePublicAppointeeName(row);
   if (!appointeeName) return undefined;
-  const rawKey = `${board}-row-${rowIndex}-${appointeeName.name}`;
-  const entityBase = `${board} row ${rowIndex} ${appointeeName.name}`;
+  const publicRole = normalizeQuickbaseObservationKeyPart(appointeeDesignation) ===
+      normalizeQuickbaseObservationKeyPart(appointeeName.name)
+    ? ""
+    : appointeeDesignation;
+  const dedupeKey = [
+    boardEntityId,
+    seatRecord?.entityId ?? "",
+    normalizeQuickbaseObservationKeyPart(appointeeName.name),
+    normalizeQuickbaseObservationKeyPart(appointmentStatus),
+    normalizeQuickbaseObservationKeyPart(publicRole),
+    normalizeQuickbaseObservationKeyPart(appointmentDate),
+  ].join("::");
+  const entityBase = [
+    board,
+    seatRecord?.label ?? "",
+    appointeeName.name,
+    appointmentStatus,
+    publicRole,
+    appointmentDate,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const seatEvidence = seatRecord
     ? [fieldEvidence(quickbaseColumns.seat, seatRecord.rawValue)]
     : [];
   return {
-    candidateId: buildCandidateId(quickbaseSource.sourceId, `appointee-observation-${rawKey}`),
+    candidateId: buildCandidateId(quickbaseSource.sourceId, `appointee-observation-${dedupeKey}`),
     entityId: buildEntityId(entityBase, "observation"),
+    dedupeKey,
     name: appointeeName.name,
     evidence: [...appointeeName.evidence, ...seatEvidence, fieldEvidence("row", String(rowIndex))],
   };
+}
+
+function normalizeQuickbaseObservationKeyPart(value: string): string {
+  return normalizeName(value).toLowerCase();
 }
 
 function derivePublicAppointeeName(row: Record<string, string>): AppointeeNameRecord | undefined {

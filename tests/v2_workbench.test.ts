@@ -11,6 +11,7 @@ import {
   type ConnectorResult,
   inverseRelationshipType,
   parseLegalReference,
+  slugify,
 } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { importConnectorResult as importConnectorResultIntoStore } from "../src/v2/workbench/import.ts";
@@ -7073,11 +7074,20 @@ Deno.test("accepted-endpoint Quickbase appointee observation relationships no lo
     ),
     dataDir,
   );
+  const appointeeCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId
+     from entity_candidates
+     where kind = 'appointee_observation'
+       and name = 'John Smith'
+       and proposed_entity_id like 'observation.%'`,
+  ).get() as { candidateId: string; proposedEntityId: string } | undefined;
+  assert(appointeeCandidate);
   for (
     const subjectId of [
       "candidate.mota.quickbase.council_of_the_district_of_columbia_seat_chairperson",
       "candidate.mota.quickbase.appointment_status_filled",
-      "candidate.mota.quickbase.appointee_observation_council_of_the_district_of_columbia_row_3_john_smith",
+      appointeeCandidate.candidateId,
     ]
   ) {
     await workbench.appendResolutionEvent(
@@ -7102,7 +7112,7 @@ Deno.test("accepted-endpoint Quickbase appointee observation relationships no lo
     "--mode",
     "relationships",
     "--subject-prefix",
-    "relationship.mota.quickbase.observation_council_of_the_district_of_columbia_row_3_john_smith",
+    `relationship.mota.quickbase.${slugify(appointeeCandidate.proposedEntityId)}`,
     "--db",
     dbPath,
     "--resolutions-dir",
@@ -7138,12 +7148,12 @@ Deno.test("accepted-endpoint Quickbase appointee observation relationships no lo
   const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
   assert(
     relationshipIds.includes(
-      "observation.council_of_the_district_of_columbia_row_3_john_smith:has_status:status.filled",
+      `${appointeeCandidate.proposedEntityId}:has_status:status.filled`,
     ),
   );
   assert(
     relationshipIds.includes(
-      "observation.council_of_the_district_of_columbia_row_3_john_smith:holds:dc.council_of_the_district_of_columbia_chairperson",
+      `${appointeeCandidate.proposedEntityId}:holds:dc.council_of_the_district_of_columbia_chairperson`,
     ),
   );
 });
