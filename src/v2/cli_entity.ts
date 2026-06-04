@@ -1,5 +1,5 @@
 import { dcCommand } from "./command_prefix.ts";
-import type { EntitySearchResult, EntityView } from "./domain.ts";
+import type { EntitySearchResult, EntityView, ReviewItemRecord } from "./domain.ts";
 
 export interface EntityCommandOptions {
   json?: boolean;
@@ -110,10 +110,53 @@ function renderEntityView(view: EntityView): string {
   if (view.reviewItems.length > 0) {
     lines.push("open_review:");
     for (const item of view.reviewItems) {
-      lines.push(`- ${item.itemType}: ${item.reason}`);
+      lines.push(...renderOpenReviewItem(item));
     }
   }
   return lines.join("\n");
+}
+
+function renderOpenReviewItem(item: ReviewItemRecord): string[] {
+  const lines = [
+    `- ${item.itemType}: ${item.reason} [default ${item.defaultAction}]`,
+  ];
+  if (item.subject?.sourceId) {
+    lines.push(
+      `  source: ${item.subject.sourceId}${
+        item.subject.itemTitle ? ` / ${item.subject.itemTitle}` : ""
+      }`,
+    );
+  }
+  if (item.subject?.label) {
+    lines.push(`  label: ${item.subject.label}`);
+  }
+  if (item.subject?.relationshipType) {
+    lines.push(
+      `  relationship: ${item.subject.fromEntityRef ?? "?"} --${item.subject.relationshipType}--> ${
+        item.subject.toEntityRef ?? "?"
+      }`,
+    );
+  }
+  if (item.subject?.rawValue) {
+    lines.push(`  raw value: ${item.subject.rawValue}`);
+  }
+  const whyDeferred = stringDetail(item.details, "whyDeferred");
+  if (whyDeferred) {
+    lines.push(`  why: ${whyDeferred}`);
+  }
+  if (item.subject?.sourceId) {
+    lines.push(
+      `  review: ${
+        dcCommand("review")
+      } --source ${item.subject.sourceId} --subject-prefix ${item.subjectId}`,
+    );
+  }
+  return lines;
+}
+
+function stringDetail(details: Record<string, unknown>, key: string): string | undefined {
+  const value = details[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 function hasHelpFlag(args: string[], start: number): boolean {

@@ -4039,6 +4039,124 @@ Deno.test("Council oversight targets default to accept except exclusion and circ
   assertEquals(groupedItem, undefined);
 });
 
+Deno.test("entity show review context explains deferred relationship candidates", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.council_of_the_district_of_columbia", "Council of the District of Columbia", "council"],
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+      [
+        "dc.office_of_the_chief_financial_officer",
+        "Office of the Chief Financial Officer",
+        "agency",
+      ],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture.replace(
+            "</ul>",
+            "<li>Council of the District of Columbia</li><li>Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)</li></ul>",
+          );
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const councilView = workbench.entityView("dc.council_of_the_district_of_columbia");
+  const circularReview = councilView.reviewItems.find((item) =>
+    item.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_3"
+  );
+  const ocfoView = workbench.entityView("dc.office_of_the_chief_financial_officer");
+  const exclusionReview = ocfoView.reviewItems.find((item) =>
+    item.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_4"
+  );
+  workbench.close();
+
+  assertEquals(circularReview?.defaultAction, "defer");
+  assertEquals(circularReview?.subject?.sourceId, "council.committees");
+  assertEquals(circularReview?.subject?.itemTitle, "Committee of the Whole oversight detail");
+  assertEquals(circularReview?.subject?.relationshipType, "overseen_by");
+  assertEquals(circularReview?.subject?.fromEntityRef, "dc.council_of_the_district_of_columbia");
+  assertEquals(circularReview?.subject?.toEntityRef, "dc.committee_of_the_whole");
+  assertEquals(circularReview?.subject?.rawValue, "Council of the District of Columbia");
+  assertEquals(
+    circularReview?.details.whyDeferred,
+    "Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+  );
+  assertEquals(exclusionReview?.defaultAction, "defer");
+  assertEquals(
+    exclusionReview?.subject?.rawValue,
+    "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+  );
+  assertEquals(
+    exclusionReview?.details.whyDeferred,
+    "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
+  );
+
+  const entityShowOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "entity",
+      "show",
+      "dc.council_of_the_district_of_columbia",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  const entityShowText = new TextDecoder().decode(entityShowOutput.stdout);
+  assertEquals(entityShowOutput.code, 0);
+  assertStringIncludes(entityShowText, "open_review:");
+  assertStringIncludes(
+    entityShowText,
+    "source: council.committees / Committee of the Whole oversight detail",
+  );
+  assertStringIncludes(
+    entityShowText,
+    "relationship: dc.council_of_the_district_of_columbia --overseen_by--> dc.committee_of_the_whole",
+  );
+  assertStringIncludes(entityShowText, "raw value: Council of the District of Columbia");
+  assertStringIncludes(
+    entityShowText,
+    "why: Oversight target is the Council itself, so this circular committee relationship needs a human decision.",
+  );
+  assertStringIncludes(
+    entityShowText,
+    "review: deno task dc -- review --source council.committees --subject-prefix relationship.council.committees.committee_of_the_whole_oversight_3",
+  );
+});
+
 Deno.test("legal reference parsing normalizes common DC citation families", () => {
   assertEquals(
     parseLegalReference("D.C. Official Code § 1-204.22").normalizedCitation,

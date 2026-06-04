@@ -3,9 +3,11 @@ import {
   type EntityView,
   inverseRelationshipType,
   type ReviewItemRecord,
+  type ReviewItemSubjectContext,
   type ReviewStatus,
 } from "../domain.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { type ReviewSubject, reviewSubject } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface EntityCoreRow {
@@ -259,16 +261,55 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
       sourceEntityId: row.sourceEntityId,
       sourceName: row.sourceName,
     })),
-    reviewItems: reviewItems.map((row) => ({
-      reviewItemId: row.reviewItemId,
-      itemType: row.itemType,
-      subjectId: row.subjectId,
-      reason: row.reason,
-      defaultAction: row.defaultAction,
-      status: row.status,
-      details: JSON.parse(row.detailsJson),
-    })),
+    reviewItems: reviewItems.map((row) => {
+      const item = {
+        reviewItemId: row.reviewItemId,
+        itemType: row.itemType,
+        subjectId: row.subjectId,
+        reason: row.reason,
+        defaultAction: row.defaultAction,
+        status: row.status,
+        details: JSON.parse(row.detailsJson) as Record<string, unknown>,
+      };
+      return {
+        ...item,
+        subject: entityReviewSubjectContext(reviewSubject(store, item)),
+      };
+    }),
     legalRefs,
+  };
+}
+
+function entityReviewSubjectContext(
+  subject: ReviewSubject | undefined,
+): ReviewItemSubjectContext | undefined {
+  if (!subject) return undefined;
+  const source = {
+    sourceId: subject.source.sourceId,
+    itemTitle: subject.source.itemTitle,
+  };
+  if (subject.itemType === "entity_candidate") {
+    return {
+      ...source,
+      label: subject.name,
+      entityKind: subject.entityKind,
+    };
+  }
+  if (subject.itemType === "relationship_candidate") {
+    return {
+      ...source,
+      label: subject.rawValue ?? `${subject.fromEntityRef} ${subject.relationshipType}`,
+      relationshipType: subject.relationshipType,
+      fromEntityRef: subject.fromEntityRef,
+      toEntityRef: subject.toEntityRef,
+      rawValue: subject.rawValue,
+    };
+  }
+  return {
+    ...source,
+    label: subject.citationText,
+    citationText: subject.citationText,
+    refType: subject.refType,
   };
 }
 
