@@ -23,6 +23,8 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
 
   assertEquals(events.map((event) => event.phase), [
     "parsed-row-insert",
+    "entity-replay",
+    "legal-ref-replay",
     "legal-auto-accept",
     "entity-auto-promote",
     "relationship-reconciliation",
