@@ -3054,6 +3054,88 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
   );
 });
 
+Deno.test("DCGIS public-body agency-name conflicts show source identity context", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const bccRows = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 26,
+        NAME: "Alcoholic Beverage and Cannabis Administration",
+        SHORT_NAME: "ABC Board",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Alcoholic Beverage and Cannabis Administration",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://abca.dc.gov/page/abc-board",
+        AUTHORIZING_ORDER_LAW: "D.C. Code § 25-201",
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(dcgisRowsFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(bccRows);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+
+  const reviewItem = workbench.listReviewItems({
+    type: "entity_candidate",
+    subjectPrefix: "candidate.dcgis.boards_commissions_councils.26",
+  })[0];
+  const evidenceFields = workbench.db.prepare(
+    "select field_path as fieldPath from entity_candidate_evidence where candidate_id = ? order by field_path",
+  ).all("candidate.dcgis.boards_commissions_councils.26") as Array<{ fieldPath: string }>;
+  workbench.close();
+
+  assertEquals(reviewItem.defaultAction, "defer");
+  assertEquals(
+    reviewItem.details.identityQuestion,
+    "Is this source row naming a distinct public body from the governing agency?",
+  );
+  assertEquals(
+    reviewItem.details.sourceGoverningAgency,
+    "Alcoholic Beverage and Cannabis Administration",
+  );
+  assertEquals(reviewItem.details.sourceShortName, "ABC Board");
+  assertEquals(reviewItem.details.sourceUrl, "https://abca.dc.gov/page/abc-board");
+  assertStringIncludes(
+    String(reviewItem.details.whyDeferred),
+    "Source row is a board whose label matches the accepted agency",
+  );
+  assert(evidenceFields.some((row) => row.fieldPath === "GOVERNING_AGENCY"));
+  assert(evidenceFields.some((row) => row.fieldPath === "AUTHORIZING_ORDER_LAW"));
+});
+
 Deno.test("Council members connector captures seats and ward representations", async () => {
   const fetcher = async (url: string) => ({
     status: 200,

@@ -418,6 +418,8 @@ export function renderReviewItem(
     [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
     context.sourceLine,
     `reason: ${item.reason}`,
+    renderIdentityQuestion(item),
+    ...renderIdentityContext(item),
     renderWhyDeferred(item),
     `default: ${renderDefaultAction(item)}`,
     renderDecisionOutcome(item),
@@ -601,6 +603,13 @@ function renderDefaultAction(item: ReviewItemRecord): string {
 function renderDecisionOutcome(item: ReviewItemRecord): string | undefined {
   if (item.itemType === "entity_candidate") {
     if (
+      typeof item.details.identityQuestion === "string" &&
+      typeof item.details.existingEntityId === "string" &&
+      typeof item.details.candidateKind === "string"
+    ) {
+      return `impact: decide whether this ${item.details.candidateKind} source row is a distinct public body before attaching it to existing agency ${item.details.existingEntityId}.`;
+    }
+    if (
       typeof item.details.existingEntityId === "string" &&
       typeof item.details.existingKind === "string" &&
       typeof item.details.candidateKind === "string"
@@ -621,6 +630,25 @@ function renderDecisionOutcome(item: ReviewItemRecord): string | undefined {
   return undefined;
 }
 
+function renderIdentityQuestion(item: ReviewItemRecord): string | undefined {
+  return typeof item.details.identityQuestion === "string"
+    ? `question: ${item.details.identityQuestion}`
+    : undefined;
+}
+
+function renderIdentityContext(item: ReviewItemRecord): string[] {
+  if (typeof item.details.identityQuestion !== "string") return [];
+  return [
+    detailLine("sourceGoverningAgency", item.details.sourceGoverningAgency),
+    detailLine("sourceShortName", item.details.sourceShortName),
+    detailLine("sourceUrl", item.details.sourceUrl),
+  ].filter((line): line is string => line !== undefined);
+}
+
+function detailLine(label: string, value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? `${label}: ${value}` : undefined;
+}
+
 function renderWhyDeferred(item: ReviewItemRecord): string | undefined {
   return typeof item.details.whyDeferred === "string"
     ? `why deferred: ${item.details.whyDeferred}`
@@ -628,9 +656,11 @@ function renderWhyDeferred(item: ReviewItemRecord): string | undefined {
 }
 
 function specialOmittedDetailKeys(item: ReviewItemRecord, omittedKeys: string[]): string[] {
-  return typeof item.details.whyDeferred === "string"
-    ? [...omittedKeys, "whyDeferred"]
-    : omittedKeys;
+  return [
+    ...omittedKeys,
+    ...(typeof item.details.whyDeferred === "string" ? ["whyDeferred"] : []),
+    ...(typeof item.details.identityQuestion === "string" ? ["identityQuestion"] : []),
+  ];
 }
 
 function actionPrompt(item: ReviewItemRecord): string {

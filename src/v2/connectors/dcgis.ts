@@ -292,6 +292,11 @@ function buildDcgisEntityCandidates(
       duplicateHint: maybeString(row.WEB_URL),
       evidence: [
         fieldEvidence("NAME", row.AGENCY_NAME ?? row.NAME, artifactIndex),
+        ...(agencyTaxonomyOnly ? [] : [
+          fieldEvidence("SHORT_NAME", row.SHORT_NAME, artifactIndex),
+          fieldEvidence("GOVERNING_AGENCY", row.GOVERNING_AGENCY, artifactIndex),
+          fieldEvidence("AUTHORIZING_ORDER_LAW", row.AUTHORIZING_ORDER_LAW, artifactIndex),
+        ]),
         fieldEvidence("TYPE", row.TYPE, artifactIndex),
         fieldEvidence("BRANCH", row.BRANCH, artifactIndex),
         fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, artifactIndex),

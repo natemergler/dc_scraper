@@ -595,6 +595,7 @@ function reviewItemWithWorkbenchContext(
     candidateKind: string;
     candidateName: string;
     candidateSourceId: string;
+    candidateBodyJson: string;
     existingEntityId: string;
     existingName: string;
     existingKind: string;
@@ -604,6 +605,7 @@ function reviewItemWithWorkbenchContext(
     `select entity_candidates.kind as candidateKind,
             entity_candidates.name as candidateName,
             source_items.source_id as candidateSourceId,
+            source_items.body_json as candidateBodyJson,
             canonical_entities.entity_id as existingEntityId,
             canonical_entities.name as existingName,
             canonical_entities.kind as existingKind,
@@ -643,8 +645,58 @@ function reviewItemWithWorkbenchContext(
       candidateKind: conflict.candidateKind,
       whyDeferred:
         `Candidate kind ${conflict.candidateKind} conflicts with accepted ${conflict.existingKind} for the same entity id.`,
+      ...sourceIdentityConflictDetails(conflict),
     },
   };
+}
+
+function sourceIdentityConflictDetails(conflict: {
+  candidateBodyJson: string;
+  candidateKind: string;
+  candidateName: string;
+  candidateSourceId: string;
+  existingKind: string;
+  existingName: string;
+}): Record<string, unknown> {
+  if (conflict.candidateSourceId !== "dcgis.boards_commissions_councils") return {};
+  if (conflict.existingKind !== "agency") return {};
+  const body = parseSourceBody(conflict.candidateBodyJson);
+  const sourceGoverningAgency = sourceBodyString(body, "GOVERNING_AGENCY");
+  if (
+    !sourceGoverningAgency ||
+    !sameText(sourceGoverningAgency, conflict.existingName) ||
+    !sameText(conflict.candidateName, conflict.existingName)
+  ) {
+    return {};
+  }
+  return {
+    identityQuestion: "Is this source row naming a distinct public body from the governing agency?",
+    sourceGoverningAgency,
+    sourceShortName: sourceBodyString(body, "SHORT_NAME"),
+    sourceUrl: sourceBodyString(body, "WEB_URL"),
+    whyDeferred:
+      `Source row is a ${conflict.candidateKind} whose label matches the accepted agency; decide whether this row represents a distinct public body before attaching it.`,
+  };
+}
+
+function parseSourceBody(bodyJson: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(bodyJson) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function sourceBodyString(body: Record<string, unknown>, key: string): string | undefined {
+  const value = body[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function sameText(left: string, right: string): boolean {
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
 }
 
 function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
