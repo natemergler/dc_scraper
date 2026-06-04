@@ -2,6 +2,30 @@ import { assert, assertEquals } from "@std/assert";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { quickbaseAppointmentsCsvFixture, quickbaseFixture } from "./helpers/v2_fixtures.ts";
 
+async function runQuickbaseConnector(appointmentsCsv: string) {
+  return await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return appointmentsCsv;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+}
+
 Deno.test(
   "quickbase connector parses public CSV appointment rows into seats, statuses, authorities, and appointee observations",
   async () => {
@@ -9,27 +33,7 @@ Deno.test(
 "Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
 "Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)","Office of the State Superintendent of Education (OSSE) Designee Office of the State Superintendent of Education (OSSE) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
 `;
-    const result = await getConnector("mota.quickbase").run(
-      createConnectorContext({
-        fetcher: async (url: string) => {
-          const body = (() => {
-            switch (url) {
-              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-                return quickbaseFixture;
-              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-                return appointmentsCsvWithAlias;
-              default:
-                throw new Error(`Unexpected url ${url}`);
-            }
-          })();
-          return {
-            status: 200,
-            text: async () => body,
-            json: async <T>() => JSON.parse(body) as T,
-          };
-        },
-      }),
-    );
+    const result = await runQuickbaseConnector(appointmentsCsvWithAlias);
     assertEquals(result.endpointResults.length, 2);
     assertEquals(result.endpointResults[1].status, "success");
     const parsed = result.endpointResults[1].parsed;
@@ -180,27 +184,7 @@ Deno.test("Quickbase board labels resolve through accepted-style entity refs", a
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
 "Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Jane Doe","Active"
 `.trim();
-  const result = await getConnector("mota.quickbase").run(
-    createConnectorContext({
-      fetcher: async (url: string) => {
-        const body = (() => {
-          switch (url) {
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-              return quickbaseFixture;
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return csv;
-            default:
-              throw new Error(`Unexpected url ${url}`);
-          }
-        })();
-        return {
-          status: 200,
-          text: async () => body,
-          json: async <T>() => JSON.parse(body) as T,
-        };
-      },
-    }),
-  );
+  const result = await runQuickbaseConnector(csv);
 
   const parsed = result.endpointResults[1].parsed;
   const boardCandidate = parsed?.entityCandidates?.find((candidate) =>
@@ -228,27 +212,7 @@ Deno.test("quickbase connector derives public appointee observations from live-s
 "Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
 "Dr.","Antoinette","Mitchell","","New Appointment","Adult Career Pathways Task Force","Office of the State Superintendent of Education (OSSE) Designee","Active / filled seat","Mayoral Appointee, DC Agency Representative","02-16-2016","antoinette.mitchell@dc.gov"
 `;
-  const result = await getConnector("mota.quickbase").run(
-    createConnectorContext({
-      fetcher: async (url: string) => {
-        const body = (() => {
-          switch (url) {
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-              return quickbaseFixture;
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return liveStyleCsv;
-            default:
-              throw new Error(`Unexpected url ${url}`);
-          }
-        })();
-        return {
-          status: 200,
-          text: async () => body,
-          json: async <T>() => JSON.parse(body) as T,
-        };
-      },
-    }),
-  );
+  const result = await runQuickbaseConnector(liveStyleCsv);
 
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
@@ -281,27 +245,7 @@ Deno.test("quickbase connector does not infer Council oversight from committee-l
 "Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)","Member","Filled","Mayoral Appointee","Active"
 "Public Space Committee (PSC)","Member","Filled","Mayoral Appointee","Active"
 `;
-  const result = await getConnector("mota.quickbase").run(
-    createConnectorContext({
-      fetcher: async (url: string) => {
-        const body = (() => {
-          switch (url) {
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-              return quickbaseFixture;
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return executiveAnchoredCsv;
-            default:
-              throw new Error(`Unexpected url ${url}`);
-          }
-        })();
-        return {
-          status: 200,
-          text: async () => body,
-          json: async <T>() => JSON.parse(body) as T,
-        };
-      },
-    }),
-  );
+  const result = await runQuickbaseConnector(executiveAnchoredCsv);
 
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
@@ -320,27 +264,7 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
     '"Active"',
     '"Active","not-for-release@example.com","202-555-0100","private contact metadata"',
   );
-  const result = await getConnector("mota.quickbase").run(
-    createConnectorContext({
-      fetcher: async (url: string) => {
-        const body = (() => {
-          switch (url) {
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-              return quickbaseFixture;
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return csvWithContactColumns;
-            default:
-              throw new Error(`Unexpected url ${url}`);
-          }
-        })();
-        return {
-          status: 200,
-          text: async () => body,
-          json: async <T>() => JSON.parse(body) as T,
-        };
-      },
-    }),
-  );
+  const result = await runQuickbaseConnector(csvWithContactColumns);
 
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
@@ -458,27 +382,7 @@ ${
     ).join("\n")
   }
 `.trim();
-  const result = await getConnector("mota.quickbase").run(
-    createConnectorContext({
-      fetcher: async (url: string) => {
-        const body = (() => {
-          switch (url) {
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
-              return quickbaseFixture;
-            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
-              return csv;
-            default:
-              throw new Error(`Unexpected url ${url}`);
-          }
-        })();
-        return {
-          status: 200,
-          text: async () => body,
-          json: async <T>() => JSON.parse(body) as T,
-        };
-      },
-    }),
-  );
+  const result = await runQuickbaseConnector(csv);
 
   const relationships = result.endpointResults[1].parsed?.relationshipCandidates ?? [];
   assertEquals(
