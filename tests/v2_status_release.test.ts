@@ -321,7 +321,7 @@ Deno.test("status reports browse-only and deferred work without review ledgers",
   assertEquals(jsonStatus.review.humanDecisionOpen, 0);
   assertEquals(jsonStatus.review.browseOnlyOpen, 1);
   assertEquals(jsonStatus.review.deferred, 1);
-  assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "Workbench state:");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "open decisions=0");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "browse rows=1");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");

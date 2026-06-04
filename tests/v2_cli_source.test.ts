@@ -175,7 +175,7 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
     readWorkbenchStatus: async () => ({
       nextCommand: "deno task dc -- review",
       unresolvedStateNote:
-        "Unresolved workbench state: open decisions=2, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+        "Workbench state: open decisions=2, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
     }),
   };
 
@@ -199,7 +199,7 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
   assertStringIncludes(output, "Source fetch summary: 2/2 succeeded.");
   assertStringIncludes(
     output,
-    "Readiness: Unresolved workbench state: open decisions=2, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+    "Readiness: Workbench state: open decisions=2, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
   );
   assertStringIncludes(
     output,

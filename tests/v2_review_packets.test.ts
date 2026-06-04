@@ -275,7 +275,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
 
   assertEquals(textOutput.code, 0);
   const textBody = new TextDecoder().decode(textOutput.stdout);
-  assertStringIncludes(textBody, "Review packets: 1");
+  assertStringIncludes(textBody, "Decision packets: 1");
   assertStringIncludes(textBody, "[2] test.review_packets.group_a relationship_candidate");
   assertStringIncludes(
     textBody,

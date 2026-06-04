@@ -186,7 +186,7 @@ function unresolvedStateNote(counts: WorkbenchUnresolvedCounts): string {
   ) {
     return "No open decisions, browse rows, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.";
   }
-  return `Unresolved workbench state: open decisions=${openDecisionCount}, browse rows=${browseOnlyCount}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
+  return `Workbench state: open decisions=${openDecisionCount}, browse rows=${browseOnlyCount}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
 }
 
 function nextWorkbenchCommand(input: WorkbenchStatusPlanInput): string {
@@ -222,15 +222,15 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       : undefined,
   ].filter((value): value is string => Boolean(value)).join("; ");
   const blockedFamilySummary = renderBlockedFamilySummary(status.reconciliation.blockedFamilies);
-  const browseOnlySuffix = status.review.browseOnlyOpen > 0
-    ? `, ${status.review.browseOnlyOpen} browse row${status.review.browseOnlyOpen === 1 ? "" : "s"}`
-    : "";
   return [
     "",
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
-    `Decisions: ${status.review.humanDecisionOpen} open${browseOnlySuffix}, ${status.review.deferred} deferred`,
+    `Decisions: ${status.review.humanDecisionOpen} open, ${status.review.deferred} deferred`,
+    `Browse: ${status.review.browseOnlyOpen} source-backed row${
+      status.review.browseOnlyOpen === 1 ? "" : "s"
+    }`,
     `Stale review: ${status.staleReview.count}${
       status.staleReview.firstStale?.priorDecisionState
         ? ` from prior ${status.staleReview.firstStale.priorDecisionState} decision`
