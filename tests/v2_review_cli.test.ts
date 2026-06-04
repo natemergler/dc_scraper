@@ -5,7 +5,6 @@ import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { renderReviewItem } from "../src/v2/workbench/review_cli.ts";
 import {
-  legalEntrypointsFixture,
   openDcBoardFixture,
   openDcIndexFixture,
   openDcTaskForceFixture,
@@ -13,6 +12,7 @@ import {
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
+  syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
 function openDcPublicBodiesFetcher() {
@@ -29,21 +29,6 @@ function openDcPublicBodiesFetcher() {
         default:
           throw new Error(`Unexpected url ${url}`);
       }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-}
-
-function legalEntrypointsFetcher() {
-  return async (url: string) => ({
-    status: 200,
-    text: async () => {
-      if (url === "https://dc.gov/page/laws-regulations-and-courts") {
-        return legalEntrypointsFixture;
-      }
-      throw new Error(`Unexpected url ${url}`);
     },
     json: async <T>() => {
       throw new Error(`No json fixture for ${url}`) as T;
@@ -91,10 +76,14 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
-    fetcher: legalEntrypointsFetcher(),
-  }));
-  await workbench.importConnectorResult(result, dataDir);
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.cli_unknown",
+      "Mystery legal authority",
+      "https://example.com/mystery-legal-authority",
+    ),
+    dataDir,
+  );
   workbench.close();
 
   const child = new Deno.Command(Deno.execPath(), {
@@ -129,8 +118,8 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   const stderr = new TextDecoder().decode(output.stderr);
   assertEquals(output.code, 0);
   assertEquals(stderr, "");
-  assertStringIncludes(stdout, "Review: DC Register / DCMR");
-  assertStringIncludes(stdout, "legal ref | dc register | open");
+  assertStringIncludes(stdout, "Review: Mystery legal authority");
+  assertStringIncludes(stdout, "legal ref | unknown | open");
   assertStringIncludes(
     stdout,
     "impact: accept keeps this citation as source-backed legal context; reject drops it; defer keeps it pending.",
@@ -143,7 +132,7 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   reopened.init();
   const accepted = reopened.legalRefs().filter((ref) => ref.review_status === "accepted");
   reopened.close();
-  assertEquals(accepted.length, 3);
+  assertEquals(accepted.length, 1);
   assertEquals(
     accepted.some((ref) => ref.normalized_citation === "DCMR and D.C. Register entrypoint"),
     true,
@@ -1309,10 +1298,14 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const result = await getConnector("legal.entrypoints").run(createConnectorContext({
-    fetcher: legalEntrypointsFetcher(),
-  }));
-  await workbench.importConnectorResult(result, dataDir);
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.cli_defer",
+      "Mystery legal authority",
+      "https://example.com/mystery-legal-authority",
+    ),
+    dataDir,
+  );
   workbench.close();
 
   const reviewProcess = new Deno.Command(Deno.execPath(), {
@@ -1329,7 +1322,7 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
       "review",
       "legal",
       "--subject-prefix",
-      "legal.legal.entrypoints.https_dcregs_dc_gov",
+      "legal.test.signature.legal_refs.cli_defer",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -1354,7 +1347,7 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   const deferred = reopened.listReviewItems({
     mode: "legal",
     status: "deferred",
-    subjectPrefix: "legal.legal.entrypoints.https_dcregs_dc_gov",
+    subjectPrefix: "legal.test.signature.legal_refs.cli_defer",
   });
   reopened.close();
   assertEquals(deferred.length, 1);

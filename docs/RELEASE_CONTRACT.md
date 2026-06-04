@@ -23,7 +23,7 @@ The release contains exactly these public files:
 - Accepted canonical facts are public.
 - Source inventory and dataset inventory are public.
 - Compact `relationships.*` rows expose accepted directed facts, not row-level evidence payloads.
-- Evidence remains source-backed, compact, and reviewable in the workbench before handoff.
+- Evidence remains source-backed, compact, and auditable in the workbench before handoff.
 - Personal contact details and local filesystem paths are never allowed in release output.
 
 ## Model Semantics
@@ -77,7 +77,8 @@ deno task dc -- release verify
 This checks unresolved release work, source-artifact provenance, and repeatable row-family
 provenance in the workbench before a public handoff. `release verify` checks that accepted entity
 and relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to
-source-backed workbench decisions or references; the compact release rows remain short facts.
+source-backed workbench decisions or references; the compact release rows remain short facts, not a
+copy of the manual review queue.
 
 ## Query Cookbook
 

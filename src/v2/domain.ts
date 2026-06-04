@@ -337,13 +337,22 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
+  if (/Mayor['’]?s?\s+Orders?/i.test(text) || url?.includes("mayor.dc.gov/page/mayors-orders")) {
+    return {
+      refType: "mayors_order",
+      citationText: text,
+      normalizedCitation: "Mayor's Orders",
+      needsReview: false,
+    };
+  }
   const registerMatch = text.match(/D\.?\s*C\.?\s+Register|DCMR|Municipal\s+Regulations/i);
   if (registerMatch || url?.includes("dcregs.dc.gov")) {
+    const namesDcmr = /DCMR|Municipal\s+Regulations/i.test(text);
     return {
       refType: "dc_register",
       citationText: text,
-      normalizedCitation: undefined,
-      needsReview: true,
+      normalizedCitation: namesDcmr ? "DCMR and D.C. Register" : "D.C. Register",
+      needsReview: false,
     };
   }
   const bareCodeMatch = text.match(/^([0-9]+[-–—][0-9A-Za-z.\-–—]+(?:\([^)]+\))*)\b/i);
@@ -364,14 +373,6 @@ export function parseLegalReference(
       refType: "dc_code",
       citationText: text,
       normalizedCitation: "D.C. Official Code",
-      needsReview: false,
-    };
-  }
-  if (/Mayor['’]?s?\s+Orders?/i.test(text) || url?.includes("mayor.dc.gov/page/mayors-orders")) {
-    return {
-      refType: "mayors_order",
-      citationText: text,
-      normalizedCitation: "Mayor's Orders",
       needsReview: false,
     };
   }

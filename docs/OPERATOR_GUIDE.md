@@ -29,9 +29,19 @@ deno task dc -- smoke structure
 deno task dc -- smoke inventory
 ```
 
-## Review
+## Audit And Review
 
-The primary human path is still:
+Check the current state before opening the manual decision inbox:
+
+```bash
+deno task dc -- status
+deno task dc -- audit
+deno task dc -- entity search accountancy
+```
+
+Safe materialized facts are not manual queue work. Browse them with `status`, `audit`, entity
+commands, and release verification. Use the manual path when those surfaces point at true ambiguity,
+conflicts, edits, rejects, or deferrals:
 
 ```bash
 deno task dc -- review
@@ -43,13 +53,12 @@ Useful secondary seams:
 deno task dc -- review packets --mode relationships
 deno task dc -- review list --mode relationships --limit 10
 deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils
-deno task dc -- audit
 ```
 
-`dc review` is the whole human decision layer, not just a conflict fixer. It opens with a ranked
-decision inbox for the current slice. Press Enter for the recommended packet or choose another
-ranked packet, then inspect evidence, accept, edit, reject, defer, or quit and resume deliberately.
-Once you enter a packet, `dc review` stays inside it until it clears or you quit.
+`dc review` opens with a ranked decision inbox for the current slice. Press Enter for the
+recommended packet or choose another ranked packet, then inspect evidence, accept, edit, reject,
+defer, or quit and resume deliberately. Once you enter a packet, `dc review` stays inside it until
+it clears or you quit.
 
 ## Release
 

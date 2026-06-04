@@ -475,6 +475,8 @@ export const legalEntrypointsFixture = `
   <a href="https://code.dccouncil.gov/">District of Columbia Official Code</a>
   <a href="https://dcregs.dc.gov/">DC Register / DCMR</a>
   <a href="https://mayor.dc.gov/page/mayors-orders">Mayor's Orders</a>
+  <a href="https://dc.gov/page/laws-regulations-and-courts">Laws, Regulations and Courts</a>
+  <a href="http://mayor.dc.gov/">Mayor</a>
 </body></html>
 `;
 

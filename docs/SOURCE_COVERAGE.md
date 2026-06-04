@@ -66,7 +66,7 @@ It keeps the official table surface visible without pretending every table belon
 | FOIA tables and reports `1, 14, 25, 28, 32, 34, 36`                                | Deferred person-heavy records | They are likely to widen into request-level/public-record handling beyond this workbench boundary | Separate FOIA/privacy decision required                                  |
 | DC Government Employee Salary table `35`                                           | Out of scope for release      | This is explicitly person-heavy and not civic structure                                           | Do not ingest without a new scope decision                               |
 
-## Review-Heavy Surfaces
+## Ambiguity-Heavy Surfaces
 
 - `open_dc.public_bodies`: keep legal-authority and governing-agency rows review-first whenever the
   source is vague, the endpoint is unclear, or the bounded detail surface has not captured the

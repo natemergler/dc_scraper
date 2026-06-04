@@ -2,12 +2,13 @@
 
 This repo is a maintainer-first local workbench for source-backed D.C. civic structure data. It
 fetches public sources into local artifacts, normalizes typed candidates into a SQLite workbench,
-records replayable JSONL review decisions, and builds a compact public release package.
+records replayable JSONL decisions when resolution is needed, and builds a compact public release
+package.
 
 The product shape is deliberately small:
 
 ```text
-source connector -> local artifact -> SQLite workbench -> review JSONL -> release package
+source connector -> local artifact -> SQLite workbench -> audit/review -> release package
 ```
 
 Local state lives under `data/`, `resolutions/`, and `releases/`. Those paths are ignored. Do not
@@ -26,7 +27,8 @@ deno task ok
 deno task dc -- init
 deno task dc -- source list
 deno task dc -- source fetch dcgis.agencies --limit 25
-deno task dc -- review
+deno task dc -- status
+deno task dc -- audit
 deno task dc -- release verify
 deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
@@ -36,25 +38,26 @@ The default workbench database is `data/workbench.sqlite`.
 
 ## Happy Path
 
-Use one real fetch, one real review, and one real release:
+Use one real fetch, one audit/browse pass, and one real release:
 
 ```bash
 deno task dc -- source fetch dcgis.agencies --limit 25
 deno task dc -- source inspect dcgis.agencies
-deno task dc -- review
+deno task dc -- status
+deno task dc -- audit
 deno task dc -- entity search accountancy
 deno task dc -- release verify
 deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
 
-`dc review` is the main human path. It now opens with a ranked decision inbox for the current slice.
-Press Enter for the recommended packet or choose another packet from the list, then review the
-current item, its default action, and the exact evidence behind that default. Once you enter a
-packet, `dc review` stays inside it until it clears or you quit. Quit is safe; rerun `dc review` to
-resume.
+`dc review` is the human path for true ambiguity, conflicts, edits, rejects, and deferrals. Safe
+materialized facts should be audited, browsed, verified, and released without turning them into
+manual queue work. When review is needed, it opens with a ranked decision inbox for the current
+slice. Press Enter for the recommended packet or choose another packet from the list, then inspect
+the evidence and decide. Quit is safe; rerun `dc review` to resume.
 
-## Review And Smoke
+## Inspect And Smoke
 
 Use the temp-workbench smoke profiles when you want a clean operator rehearsal:
 
@@ -97,7 +100,8 @@ of the full workbench database.
 ## How To Know It Is Healthy
 
 - `deno task dc -- status` shows the current work queue and the next suggested command.
-- `deno task dc -- audit` shows blocked reconciliation details when status alone is not enough.
+- `deno task dc -- audit` shows blocked reconciliation and review reasons when status alone is not
+  enough.
 - `deno task dc -- release verify` fails fast when release work is still unresolved, source artifact
   provenance is not clean, or release rows no longer trace to source-backed decisions or references.
 

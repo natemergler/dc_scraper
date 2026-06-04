@@ -59,6 +59,7 @@ import {
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
+  syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
 function queryPlanDetails(
@@ -3656,7 +3657,16 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   );
   assertEquals(
     parseLegalReference("Mayor's Orders", "https://dcregs.dc.gov/default.aspx").refType,
-    "dc_register",
+    "mayors_order",
+  );
+  assertEquals(
+    parseLegalReference("Mayor's Orders", "https://mayor.dc.gov/page/mayors-orders").refType,
+    "mayors_order",
+  );
+  assertEquals(
+    parseLegalReference("DC Municipal Regulations and DC Register", "https://www.dcregs.dc.gov/")
+      .normalizedCitation,
+    "DCMR and D.C. Register",
   );
   assertEquals(parseLegalReference("§ 25–202").normalizedCitation, "D.C. Code 25-202");
   assertEquals(parseLegalReference("4-1303.01a").normalizedCitation, "D.C. Code 4-1303.01a");
@@ -3902,11 +3912,10 @@ Deno.test("public-body seat relationship inverses stay user-facing", () => {
   assertEquals(inverseRelationshipType("designated_by"), "designates");
 });
 
-Deno.test("safe legal refs auto-accept on import and remaining legal resolutions update release status truth", async () => {
+Deno.test("recognized legal entrypoints auto-accept and update release status truth", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const outDir = join(dir, "release");
   const workbench = new Workbench(dbPath);
   workbench.init();
@@ -3927,19 +3936,7 @@ Deno.test("safe legal refs auto-accept on import and remaining legal resolutions
   await workbench.importConnectorResult(result, dataDir);
 
   const items = workbench.listReviewItems({ mode: "legal" });
-  assertEquals(items.length, 1);
-  assert(items.every((item) => item.defaultAction === "defer"));
-
-  const registerItem = items.find((item) => item.details.refType === "dc_register");
-  assert(registerItem);
-  await workbench.appendResolutionEvent(
-    {
-      eventType: "accept_legal_ref",
-      subjectId: registerItem.subjectId,
-      payload: { refType: "dcmr", normalizedCitation: "DCMR and D.C. Register entrypoint" },
-    },
-    resolutionsDir,
-  );
+  assertEquals(items.length, 0);
 
   const resolvedItems = workbench.listReviewItems({ mode: "legal", status: "resolved" });
   assertEquals(resolvedItems.length, 3);
@@ -3959,9 +3956,16 @@ Deno.test("safe legal refs auto-accept on import and remaining legal resolutions
   const types = new Map(
     manifest.release_summary.legal_refs_by_type.map((row) => [row.ref_type, row.count]),
   );
+  const legalRefs = workbench.db.prepare(
+    "select citation_text as citationText from legal_refs order by citation_text",
+  ).all() as Array<{ citationText: string }>;
   workbench.close();
   assertEquals(statuses.get("accepted"), 3);
-  assertEquals(types.get("dcmr"), 1);
+  assertEquals(types.get("dc_code"), 1);
+  assertEquals(types.get("dc_register"), 1);
+  assertEquals(types.get("mayors_order"), 1);
+  assert(!legalRefs.some((row) => row.citationText === "Laws, Regulations and Courts"));
+  assert(!legalRefs.some((row) => row.citationText === "Mayor"));
 });
 
 Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe import auto-accept", async () => {
@@ -3986,6 +3990,14 @@ Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe imp
     }),
   }));
   await workbench.importConnectorResult(result, dataDir);
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.unknown_review",
+      "Mystery legal authority",
+      "https://example.com/mystery-legal-authority",
+    ),
+    dataDir,
+  );
   workbench.close();
 
   const batchOutput = await new Deno.Command(Deno.execPath(), {
@@ -4005,7 +4017,7 @@ Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe imp
       "--mode",
       "legal",
       "--subject-prefix",
-      "legal.legal.entrypoints",
+      "legal.test.signature.legal_refs",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -4025,9 +4037,9 @@ Deno.test("batch accept-safe skips remaining ambiguous legal refs after safe imp
   const statusCounts = new Map(statuses.map((row) => [row.reviewStatus, row.count]));
   const pendingItem = reopened.listReviewItems({ mode: "legal" })[0];
   reopened.close();
-  assertEquals(statusCounts.get("accepted"), 2);
+  assertEquals(statusCounts.get("accepted"), 3);
   assertEquals(statusCounts.get("pending"), 1);
-  assertEquals(pendingItem.details.refType, "dc_register");
+  assertEquals(pendingItem.details.refType, "unknown");
 });
 
 Deno.test("batch defer-default marks scoped legal refs deferred without changing legal ref status", async () => {
@@ -4052,6 +4064,14 @@ Deno.test("batch defer-default marks scoped legal refs deferred without changing
     }),
   }));
   await workbench.importConnectorResult(result, dataDir);
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.unknown_defer",
+      "Mystery legal authority",
+      "https://example.com/mystery-legal-authority",
+    ),
+    dataDir,
+  );
   workbench.close();
 
   const listOutput = await new Deno.Command(Deno.execPath(), {
@@ -4070,9 +4090,9 @@ Deno.test("batch defer-default marks scoped legal refs deferred without changing
       "--mode",
       "legal",
       "--subject-prefix",
-      "legal.legal.entrypoints",
+      "legal.test.signature.legal_refs",
       "--ref-type",
-      "dc_register",
+      "unknown",
       "--db",
       dbPath,
       "--json",
@@ -4084,7 +4104,7 @@ Deno.test("batch defer-default marks scoped legal refs deferred without changing
   };
   assertEquals(listOutput.code, 0);
   assertEquals(listed.count, 1);
-  assertEquals(listed.items[0].details.refType, "dc_register");
+  assertEquals(listed.items[0].details.refType, "unknown");
 
   const deferOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -4103,9 +4123,9 @@ Deno.test("batch defer-default marks scoped legal refs deferred without changing
       "--mode",
       "legal",
       "--subject-prefix",
-      "legal.legal.entrypoints",
+      "legal.test.signature.legal_refs",
       "--ref-type",
-      "dc_register",
+      "unknown",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -4123,11 +4143,11 @@ Deno.test("batch defer-default marks scoped legal refs deferred without changing
   const deferred = reopened.listReviewItems({
     mode: "legal",
     status: "deferred",
-    subjectPrefix: "legal.legal.entrypoints",
-    refType: "dc_register",
+    subjectPrefix: "legal.test.signature.legal_refs",
+    refType: "unknown",
   });
   const legalRef = reopened.db.prepare(
-    "select review_status as reviewStatus from legal_refs where ref_type = 'dc_register'",
+    "select review_status as reviewStatus from legal_refs where legal_ref_id = 'legal.test.signature.legal_refs.unknown_defer'",
   ).get() as { reviewStatus: string };
   reopened.close();
   assertEquals(deferred.length, 1);
@@ -4484,6 +4504,33 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assertEquals(allStatusJsonOutput.code, 0);
   assertEquals(allStatusJson.count, allStatusJson.items.length);
   assert(allStatusJson.count >= json.count);
+
+  const sourcePacketJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "packets",
+      "--source",
+      "council.committees",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const sourcePacketJson = JSON.parse(
+    new TextDecoder().decode(sourcePacketJsonOutput.stdout),
+  ) as { count: number; packets: Array<{ sourceId: string }> };
+  assertEquals(sourcePacketJsonOutput.code, 0);
+  assert(sourcePacketJson.count > 0);
+  assert(sourcePacketJson.packets.every((packet) => packet.sourceId === "council.committees"));
 });
 
 Deno.test("deferred review items stay visible but sort behind open items", async () => {
