@@ -427,6 +427,7 @@ export function renderReviewItem(
     `reason: ${item.reason}`,
     renderWhyDeferred(item),
     `default: ${renderDefaultAction(item)}`,
+    renderDecisionOutcome(item),
     `actions: ${availableActionLabels(item).join(", ")}`,
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     ...renderRelationshipBlock(item, subject, context.relationshipEndpoints),
@@ -611,6 +612,22 @@ function defaultActionKey(defaultAction: string): string {
 
 function renderDefaultAction(item: ReviewItemRecord): string {
   return `${item.defaultAction} (Enter or ${defaultActionKey(item.defaultAction)})`;
+}
+
+function renderDecisionOutcome(item: ReviewItemRecord): string | undefined {
+  if (item.itemType === "entity_candidate") {
+    return "impact: accept promotes this candidate into canonical entities; reject or defer keeps it out of the release for now.";
+  }
+  if (item.itemType === "relationship_candidate") {
+    return "impact: accept writes this directed relationship; reject drops it; defer keeps it out of the release for now.";
+  }
+  if (item.itemType === "legal_ref") {
+    return "impact: accept keeps this citation as source-backed legal context; reject drops it; defer keeps it pending.";
+  }
+  if (item.itemType === "source_status") {
+    return "impact: defer keeps this source unresolved until the source issue is handled.";
+  }
+  return undefined;
 }
 
 function renderWhyDeferred(item: ReviewItemRecord): string | undefined {

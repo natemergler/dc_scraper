@@ -36,7 +36,7 @@ interface SourceFetchProgressEvent {
   title: string;
   index: number;
   total: number;
-  phase: "start" | "success" | "failed";
+  phase: "start" | "import" | "success" | "failed";
   connectorDurationMs?: number;
   importDurationMs?: number;
   totalDurationMs?: number;
@@ -266,6 +266,15 @@ export async function fetchSources(
       const result = await connector.run(deps.createConnectorContext({ limit: options.limit }));
       const connectorDurationMs = performance.now() - connectorStartedAt;
       const importStartedAt = performance.now();
+      onProgress?.({
+        sourceId: connector.sourceId,
+        title: connector.source.title,
+        index: sourceIndex,
+        total,
+        phase: "import",
+        connectorDurationMs,
+        totalDurationMs: performance.now() - sourceStartedAt,
+      });
       let importDurationMs = 0;
       try {
         await deps.importConnectorResult(result);
@@ -436,6 +445,14 @@ function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
       } (connector ${formatDuration(event.connectorDurationMs)}, import ${
         formatDuration(event.importDurationMs)
       })`,
+    );
+    return;
+  }
+  if (event.phase === "import") {
+    console.log(
+      `${prefix} Importing ${event.sourceId} after connector ${
+        formatDuration(event.connectorDurationMs)
+      }`,
     );
     return;
   }
