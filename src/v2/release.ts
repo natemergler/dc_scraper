@@ -58,12 +58,11 @@ export async function buildV2Release(
   const allEntities: EntityRow[] = workbench.canonicalEntities();
   const entities: EntityRow[] = acceptedReleaseEntities(allEntities);
   const releaseEntityIds = new Set(entities.map((row) => row.id));
-  const excludedEntityIds = new Set(
-    allEntities.filter((row) => !releaseEntityIds.has(row.id)).map((row) => row.id),
-  );
+  const knownEntityIds = new Set(allEntities.map((row) => row.id));
   const relationships: RelationshipRow[] = acceptedReleaseRelationships(
     workbench.canonicalRelationships(),
-    excludedEntityIds,
+    releaseEntityIds,
+    knownEntityIds,
   );
   const releaseRelationshipIds = new Set(relationships.map((row) => row.id));
   const sources: SourceRow[] = workbench.sourceInventory();
@@ -285,11 +284,20 @@ function emitReleaseProgress(
   options.onProgress?.(event);
 }
 
-function acceptedReleaseLegalRefs(rows: LegalRefRow[]): LegalRefRow[] {
+export function acceptedReleaseLegalRefs<T extends { review_status: string; ref_type: string }>(
+  rows: T[],
+): T[] {
   return rows.filter((row) => row.review_status === "accepted" && row.ref_type !== "unknown");
 }
 
-function acceptedReleaseEntities(rows: EntityRow[]): EntityRow[] {
+export function acceptedReleaseEntities<
+  T extends {
+    review_status: string;
+    kind: string;
+    name: string;
+    official_url?: string | null;
+  },
+>(rows: T[]): T[] {
   return rows.filter((row) =>
     row.review_status === "accepted" &&
     !(row.kind === "budgetary" && /^[0-9]+$/.test(row.name)) &&
@@ -297,17 +305,29 @@ function acceptedReleaseEntities(rows: EntityRow[]): EntityRow[] {
   );
 }
 
-function acceptedReleaseRelationships(
-  rows: RelationshipRow[],
-  excludedEntityIds: ReadonlySet<string>,
-): RelationshipRow[] {
+export function acceptedReleaseRelationships<
+  T extends { review_status: string; from_entity_id: string; to_entity_id: string },
+>(
+  rows: T[],
+  releaseEntityIds: ReadonlySet<string>,
+  knownEntityIds?: ReadonlySet<string>,
+): T[] {
   return rows.filter((row) =>
     row.review_status === "accepted" &&
-    !excludedEntityIds.has(row.from_entity_id) && !excludedEntityIds.has(row.to_entity_id)
+    releaseRelationshipEndpointIsEligible(row.from_entity_id, releaseEntityIds, knownEntityIds) &&
+    releaseRelationshipEndpointIsEligible(row.to_entity_id, releaseEntityIds, knownEntityIds)
   );
 }
 
-function isOpenDcNonBodyReleaseEntity(row: EntityRow): boolean {
+function releaseRelationshipEndpointIsEligible(
+  entityId: string,
+  releaseEntityIds: ReadonlySet<string>,
+  knownEntityIds?: ReadonlySet<string>,
+): boolean {
+  return releaseEntityIds.has(entityId) || !(knownEntityIds?.has(entityId) ?? true);
+}
+
+function isOpenDcNonBodyReleaseEntity(row: { official_url?: string | null }): boolean {
   return Boolean(
     row.official_url?.match(
       /^https:\/\/www\.open-dc\.gov\/public-bodies\/.*(?:-recess|-duplicate)(?:[/?#]|$)/i,
@@ -315,7 +335,7 @@ function isOpenDcNonBodyReleaseEntity(row: EntityRow): boolean {
   );
 }
 
-function acceptedReleaseLegalAttachments<
+export function acceptedReleaseLegalAttachments<
   T extends { legal_ref_id: string; review_status: string },
 >(
   rows: T[],

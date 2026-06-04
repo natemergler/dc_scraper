@@ -1,4 +1,9 @@
 import { buildWorkbenchStatus } from "./status.ts";
+import {
+  acceptedReleaseEntities,
+  acceptedReleaseLegalRefs,
+  acceptedReleaseRelationships,
+} from "./release.ts";
 import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
 import { releaseReadinessInputFromWorkbenchStatus } from "./release_summary.ts";
 import { isPublicHttpUrl } from "./url_safety.ts";
@@ -433,10 +438,12 @@ function problemForArtifact(
 }
 
 function validateEntityProvenance(workbench: Workbench): ReleaseEntityProvenanceCheck {
-  const entities = workbench.db.prepare(
+  const allEntities = workbench.db.prepare(
     `select entity_id as entityId,
             name,
-            official_url as officialUrl,
+            kind,
+            official_url as official_url,
+            review_status as review_status,
             merged_candidate_ids as mergedCandidateIds
      from canonical_entities
      where review_status = 'accepted'
@@ -444,9 +451,12 @@ function validateEntityProvenance(workbench: Workbench): ReleaseEntityProvenance
   ).all() as Array<{
     entityId: string;
     name: string;
-    officialUrl?: string | null;
+    kind: string;
+    official_url?: string | null;
+    review_status: string;
     mergedCandidateIds: string;
   }>;
+  const entities = acceptedReleaseEntities(allEntities);
   const problems: ReleaseEntityProvenanceProblem[] = [];
 
   for (const entity of entities) {
@@ -458,7 +468,7 @@ function validateEntityProvenance(workbench: Workbench): ReleaseEntityProvenance
       });
     };
     if (!entity.name) addProblem("unknown", "missing entity label");
-    if (entity.officialUrl && !isPublicHttpUrl(entity.officialUrl)) {
+    if (entity.official_url && !isPublicHttpUrl(entity.official_url)) {
       addProblem("unknown", "official_url is not a public http/https URL");
     }
 
@@ -531,11 +541,14 @@ function validateEntityProvenance(workbench: Workbench): ReleaseEntityProvenance
 function validateRelationshipProvenance(
   workbench: Workbench,
 ): ReleaseRelationshipProvenanceCheck {
-  const relationships = workbench.db.prepare(
+  const allRelationships = workbench.db.prepare(
     `select canonical_relationships.relationship_id as relationshipId,
             canonical_relationships.from_entity_id as fromEntityId,
+            canonical_relationships.from_entity_id as from_entity_id,
             canonical_relationships.relationship_type as relationshipType,
             canonical_relationships.to_entity_id as toEntityId,
+            canonical_relationships.to_entity_id as to_entity_id,
+            canonical_relationships.review_status as review_status,
             canonical_relationships.source_event_id as sourceEventId,
             from_entities.name as fromEntityName,
             to_entities.name as toEntityName,
@@ -561,8 +574,11 @@ function validateRelationshipProvenance(
   ).all() as Array<{
     relationshipId: string;
     fromEntityId: string;
+    from_entity_id: string;
     relationshipType: string;
     toEntityId: string;
+    to_entity_id: string;
+    review_status: string;
     sourceEventId: string;
     fromEntityName?: string | null;
     toEntityName?: string | null;
@@ -575,6 +591,13 @@ function validateRelationshipProvenance(
     candidateRelationshipType?: string | null;
     candidateToEntityId?: string | null;
   }>;
+  const releaseEntityIds = releaseEntityIdSet(workbench);
+  const knownEntityIds = knownEntityIdSet(workbench);
+  const relationships = acceptedReleaseRelationships(
+    allRelationships,
+    releaseEntityIds,
+    knownEntityIds,
+  );
   const problems: ReleaseRelationshipProvenanceProblem[] = [];
   const evidenceRowsByRelationshipCandidateId = sourceBackedEvidenceRowsByRowId(
     workbench,
@@ -711,9 +734,11 @@ function validateDatasetProvenance(workbench: Workbench): ReleaseDatasetProvenan
 }
 
 function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProvenanceCheck {
-  const legalRefs = workbench.db.prepare(
+  const allLegalRefs = workbench.db.prepare(
     `select legal_refs.legal_ref_id as legalRefId,
             legal_refs.source_item_id as sourceItemId,
+            legal_refs.ref_type as ref_type,
+            legal_refs.review_status as review_status,
             legal_refs.url as url,
             source_items.source_id as sourceItemSourceId,
             sources.base_url as sourceBaseUrl
@@ -727,10 +752,13 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
   ).all() as Array<{
     legalRefId: string;
     sourceItemId: string;
+    ref_type: string;
+    review_status: string;
     url?: string | null;
     sourceItemSourceId?: string | null;
     sourceBaseUrl?: string | null;
   }>;
+  const legalRefs = acceptedReleaseLegalRefs(allLegalRefs);
   const problems: ReleaseLegalRefProvenanceProblem[] = [];
   const evidenceRowsByLegalRefId = sourceBackedEvidenceRowsByRowId(
     workbench,
@@ -765,7 +793,9 @@ function validateLegalRefProvenance(workbench: Workbench): ReleaseLegalRefProven
 function validateEntityLegalRefProvenance(
   workbench: Workbench,
 ): ReleaseEntityLegalRefProvenanceCheck {
-  const attachments = workbench.db.prepare(
+  const releaseEntityIds = releaseEntityIdSet(workbench);
+  const releaseLegalRefIds = releaseLegalRefIdSet(workbench);
+  const allAttachments = workbench.db.prepare(
     `select entity_legal_refs.entity_legal_ref_id as attachmentId,
             entity_legal_refs.entity_id as entityId,
             entity_legal_refs.legal_ref_id as legalRefId,
@@ -789,6 +819,11 @@ function validateEntityLegalRefProvenance(
     entityReviewStatus?: string | null;
     resolvedLegalRefId?: string | null;
   }>;
+  const knownEntityIds = knownEntityIdSet(workbench);
+  const attachments = allAttachments.filter((attachment) =>
+    releaseLegalRefIds.has(attachment.legalRefId) &&
+    (releaseEntityIds.has(attachment.entityId) || !knownEntityIds.has(attachment.entityId))
+  );
   const problems: ReleaseEntityLegalRefProvenanceProblem[] = [];
   for (const attachment of attachments) {
     const addProblem = (message: string) => {
@@ -813,7 +848,9 @@ function validateEntityLegalRefProvenance(
 function validateRelationshipLegalRefProvenance(
   workbench: Workbench,
 ): ReleaseRelationshipLegalRefProvenanceCheck {
-  const attachments = workbench.db.prepare(
+  const releaseLegalRefIds = releaseLegalRefIdSet(workbench);
+  const releaseRelationshipIds = releaseRelationshipIdSet(workbench);
+  const allAttachments = workbench.db.prepare(
     `select relationship_legal_refs.relationship_legal_ref_id as attachmentId,
             relationship_legal_refs.relationship_id as relationshipId,
             relationship_legal_refs.legal_ref_id as legalRefId,
@@ -849,6 +886,12 @@ function validateRelationshipLegalRefProvenance(
     toEntityName?: string | null;
     resolvedLegalRefId?: string | null;
   }>;
+  const knownRelationshipIds = knownRelationshipIdSet(workbench);
+  const attachments = allAttachments.filter((attachment) =>
+    releaseLegalRefIds.has(attachment.legalRefId) &&
+    (releaseRelationshipIds.has(attachment.relationshipId) ||
+      !knownRelationshipIds.has(attachment.relationshipId))
+  );
   const problems: ReleaseRelationshipLegalRefProvenanceProblem[] = [];
   for (const attachment of attachments) {
     const addProblem = (message: string) => {
@@ -880,44 +923,66 @@ function validateRelationshipLegalRefProvenance(
   return { checkedCount: attachments.length, problems };
 }
 
+function releaseEntityIdSet(workbench: Workbench): Set<string> {
+  return new Set(acceptedReleaseEntities(workbench.canonicalEntities()).map((row) => row.id));
+}
+
+function knownEntityIdSet(workbench: Workbench): Set<string> {
+  return new Set(workbench.canonicalEntities().map((row) => row.id));
+}
+
+function releaseLegalRefIdSet(workbench: Workbench): Set<string> {
+  return new Set(acceptedReleaseLegalRefs(workbench.legalRefs()).map((row) => row.id));
+}
+
+function releaseRelationshipIdSet(workbench: Workbench): Set<string> {
+  const releaseEntityIds = releaseEntityIdSet(workbench);
+  const knownEntityIds = knownEntityIdSet(workbench);
+  return new Set(
+    acceptedReleaseRelationships(
+      workbench.canonicalRelationships(),
+      releaseEntityIds,
+      knownEntityIds,
+    ).map((row) => row.id),
+  );
+}
+
+function knownRelationshipIdSet(workbench: Workbench): Set<string> {
+  return new Set(workbench.canonicalRelationships().map((row) => row.id));
+}
+
 function buildLegalAttachmentAudit(workbench: Workbench): ReleaseLegalAttachmentAudit {
-  const counts = workbench.db.prepare(
-    `select
-       (select count(*)
-        from legal_refs
-        where review_status = 'accepted') as acceptedLegalRefs,
-       (select count(*)
-        from review_items
-        join legal_refs
-          on legal_refs.legal_ref_id = review_items.subject_id
-         and legal_refs.review_status = 'accepted'
-        where review_items.item_type = 'legal_ref'
-          and json_extract(review_items.details_json, '$.attachEntityRef') is not null)
-          as explicitEntityLegalRefInputs,
-       (select count(*)
-        from review_items
-        join legal_refs
-          on legal_refs.legal_ref_id = review_items.subject_id
-         and legal_refs.review_status = 'accepted'
-        where review_items.item_type = 'legal_ref'
-          and json_extract(review_items.details_json, '$.attachRelationshipRef') is not null)
-          as explicitRelationshipLegalRefInputs,
-       (select count(*)
-        from entity_legal_refs
-        join legal_refs
-          on legal_refs.legal_ref_id = entity_legal_refs.legal_ref_id
-         and legal_refs.review_status = 'accepted') as entityLegalRefAttachments,
-       (select count(*)
-        from relationship_legal_refs
-        join legal_refs
-          on legal_refs.legal_ref_id = relationship_legal_refs.legal_ref_id
-         and legal_refs.review_status = 'accepted') as relationshipLegalRefAttachments`,
-  ).get() as {
-    acceptedLegalRefs: number;
-    explicitEntityLegalRefInputs: number;
-    explicitRelationshipLegalRefInputs: number;
-    entityLegalRefAttachments: number;
-    relationshipLegalRefAttachments: number;
+  const releaseEntityIds = releaseEntityIdSet(workbench);
+  const releaseLegalRefIds = releaseLegalRefIdSet(workbench);
+  const releaseRelationshipIds = releaseRelationshipIdSet(workbench);
+  const explicitInputs = workbench.db.prepare(
+    `select review_items.subject_id as legalRefId,
+            json_extract(review_items.details_json, '$.attachEntityRef') as attachEntityRef,
+            json_extract(review_items.details_json, '$.attachRelationshipRef') as attachRelationshipRef
+     from review_items
+     where review_items.item_type = 'legal_ref'`,
+  ).all() as Array<{
+    legalRefId: string;
+    attachEntityRef?: string | null;
+    attachRelationshipRef?: string | null;
+  }>;
+  const counts = {
+    acceptedLegalRefs: releaseLegalRefIds.size,
+    explicitEntityLegalRefInputs:
+      explicitInputs.filter((row) => releaseLegalRefIds.has(row.legalRefId) && row.attachEntityRef)
+        .length,
+    explicitRelationshipLegalRefInputs:
+      explicitInputs.filter((row) =>
+        releaseLegalRefIds.has(row.legalRefId) && row.attachRelationshipRef
+      ).length,
+    entityLegalRefAttachments:
+      workbench.entityLegalRefs().filter((row) =>
+        releaseLegalRefIds.has(row.legal_ref_id) && releaseEntityIds.has(row.entity_id)
+      ).length,
+    relationshipLegalRefAttachments:
+      workbench.relationshipLegalRefs().filter((row) =>
+        releaseLegalRefIds.has(row.legal_ref_id) && releaseRelationshipIds.has(row.relationship_id)
+      ).length,
   };
   const legalRelationshipCooccurrenceSources = workbench.db.prepare(
     `select source_items.source_id as sourceId,
@@ -929,6 +994,7 @@ function buildLegalAttachmentAudit(workbench: Workbench): ReleaseLegalAttachment
      join legal_refs
        on legal_refs.source_item_id = source_items.source_item_id
       and legal_refs.review_status = 'accepted'
+      and legal_refs.ref_type != 'unknown'
      join relationship_candidates
        on relationship_candidates.source_item_id = source_items.source_item_id
       and relationship_candidates.review_status = 'accepted'
