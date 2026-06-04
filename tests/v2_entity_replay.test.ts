@@ -63,6 +63,77 @@ Deno.test("accepted entity decisions are reused across refetch when candidate id
   );
 });
 
+Deno.test("reused accepted entity decisions refresh canonical fields from refetched evidence", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.test.signature.entities.example_blank_v1";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: firstCandidateId,
+      sourceItemKey: "example-blank-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      observedName: "Example Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: firstCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const secondCandidateId = "candidate.test.signature.entities.example_blank_v2";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: secondCandidateId,
+      sourceItemKey: "example-blank-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      officialUrl: "https://example.com/official",
+      observedName: "Example Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const secondCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(secondCandidateId) as { reviewStatus: string };
+  const canonical = workbench.db.prepare(
+    `select official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.example_body'`,
+  ).get() as {
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const openItems = workbench.listReviewItems({ mode: "entities", status: "open" });
+  workbench.close();
+
+  assertEquals(secondCandidate.reviewStatus, "accepted");
+  assertEquals(canonical.officialUrl, "https://example.com/official");
+  assertEquals(openItems.length, 0);
+  assertEquals(
+    JSON.parse(canonical.mergedCandidateIds) as string[],
+    [firstCandidateId, secondCandidateId],
+  );
+});
+
 Deno.test("accepting a stronger entity candidate refreshes canonical fields", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
