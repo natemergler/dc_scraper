@@ -115,11 +115,11 @@ export function printReviewHelp(): void {
   console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`${dcCommand("review")}\` to open the decision inbox
-  2. Press Enter for the recommended packet or choose another ranked decision packet
-  3. Browse review items with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
-  5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
+  1. Run \`${dcCommand("status")}\` or \`${dcCommand("audit")}\` to see what remains
+  2. Browse raw unresolved rows with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  3. Inspect grouped decision work with \`${dcCommand("review packets --mode relationships")}\`
+  4. Run \`${dcCommand("review")}\` when the slice needs a human decision
+  5. Press Enter for the recommended packet or choose another ranked decision packet
 
 Usage:
   ${

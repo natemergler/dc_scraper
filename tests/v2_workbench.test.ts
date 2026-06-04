@@ -359,9 +359,14 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertStringIncludes(topLevelText, "Workflow:");
   assertStringIncludes(topLevelText, "deno task dc -- source fetch --all");
   assertStringIncludes(topLevelText, "deno task dc -- audit");
+  assertStringIncludes(topLevelText, "Browse:");
   assertStringIncludes(
     topLevelText,
-    "deno task dc -- review | deno task dc -- review list --mode entities",
+    "deno task dc -- entity search accountancy | deno task dc -- review list --status all",
+  );
+  assertStringIncludes(
+    topLevelText,
+    "deno task dc -- review | deno task dc -- review packets --mode relationships",
   );
 
   const auditHelp = await new Deno.Command(Deno.execPath(), {
@@ -503,6 +508,13 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   const reviewText = new TextDecoder().decode(reviewHelp.stdout);
   assertEquals(reviewHelp.code, 0);
   assertStringIncludes(reviewText, "Workflow:");
+  assertStringIncludes(reviewText, "Run `deno task dc -- status` or `deno task dc -- audit`");
+  assertStringIncludes(reviewText, "Browse raw unresolved rows");
+  assertStringIncludes(reviewText, "Inspect grouped decision work");
+  assertStringIncludes(
+    reviewText,
+    "Run `deno task dc -- review` when the slice needs a human decision",
+  );
   assertStringIncludes(reviewText, "Usage:");
   assertStringIncludes(
     reviewText,
