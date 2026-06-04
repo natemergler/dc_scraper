@@ -53,31 +53,11 @@ const quickbaseColumns = {
   appointee: "appointee designation",
 };
 
-type QuickbaseAuthorityEndpointPolicy = {
-  safeToSeed: boolean;
-  designatingOnly: boolean;
-};
-
-const quickbaseAuthorityEndpointPolicies = new Map<string, QuickbaseAuthorityEndpointPolicy>([
-  [
-    "university of the district of columbia community college",
-    { safeToSeed: true, designatingOnly: false },
-  ],
-  [
-    "office of budget and performance management",
-    { safeToSeed: true, designatingOnly: false },
-  ],
-  [
-    "office of the chief of staff",
-    { safeToSeed: true, designatingOnly: true },
-  ],
+const quickbaseSafeSeededAuthorityEndpoints = new Set([
+  "university of the district of columbia community college",
+  "office of budget and performance management",
+  "office of the chief of staff",
 ]);
-
-function getQuickbaseAuthorityEndpointPolicy(
-  name: string,
-): QuickbaseAuthorityEndpointPolicy | undefined {
-  return quickbaseAuthorityEndpointPolicies.get(normalizeQuickbasePolicyName(name));
-}
 
 export const quickbaseConnector: SourceConnector = {
   sourceId: quickbaseSource.sourceId,
@@ -430,52 +410,6 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           },
         ),
       );
-    }
-
-    const governingAgency = parseGoverningAgencyFromSeat(seat);
-    if (governingAgency && !suppressesQuickbaseBoardGovernanceEdge(governingAgency)) {
-      const governingAgencyEntityId = buildKnownEntityRef(governingAgency);
-      const relationshipKey = `${boardEntityId}>${governingAgencyEntityId}:governed_by`;
-      if (!relationshipKeys.has(relationshipKey)) {
-        relationshipKeys.add(relationshipKey);
-        const relationshipCandidateId = buildRelationshipCandidateId(
-          quickbaseSource.sourceId,
-          `${board}-governed-by-${governingAgency}`,
-        );
-        const candidate: RelationshipCandidateInput = {
-          relationshipCandidateId,
-          sourceItemKey: itemKey,
-          fromEntityRef: boardEntityId,
-          toEntityRef: governingAgencyEntityId,
-          toEntityName: governingAgency,
-          toEntitySafeToAutoAccept: isSafeQuickbaseSeededAuthorityEndpoint(
-            governingAgency,
-            appointeeDesignation,
-          ),
-          relationshipType: "governed_by",
-          rawValue: seat,
-          needsReview: false,
-          evidence: [
-            fieldEvidence(quickbaseColumns.seat, seat),
-            fieldEvidence("row", String(index + 1)),
-            fieldEvidence(quickbaseColumns.appointee, appointeeDesignation),
-          ],
-        };
-        relationshipCandidates.push(candidate);
-        reviewItems.push({
-          reviewItemId: buildReviewItemId(relationshipCandidateId, "governing-agency"),
-          itemType: "relationship_candidate",
-          subjectId: relationshipCandidateId,
-          reason: "Review governing agency inferred from seat designation",
-          defaultAction: "accept",
-          details: {
-            fromEntityRef: boardEntityId,
-            toEntityRef: governingAgencyEntityId,
-            relationshipType: candidate.relationshipType,
-            rawValue: seat,
-          },
-        });
-      }
     }
 
     if (seatRecord) {
@@ -923,7 +857,7 @@ function extractSeatLabel(seat: string): string {
 function parseDesignatingAuthorityFromSeat(seat: string): string | undefined {
   const rawValue = maybeString(seat);
   if (!rawValue || !/\bdesignee\b/i.test(rawValue)) return undefined;
-  const organization = parseGoverningAgencyFromSeat(rawValue);
+  const organization = parseDesignatingOrganizationFromSeat(rawValue);
   if (organization) {
     return normalizeAuthorityName(organization);
   }
@@ -988,7 +922,7 @@ function normalizeAuthorityName(value: string): string | undefined {
   return normalized || undefined;
 }
 
-function parseGoverningAgencyFromSeat(seat: string): string | undefined {
+function parseDesignatingOrganizationFromSeat(seat: string): string | undefined {
   const direct = maybeString(seat);
   if (!direct) return undefined;
   const trustedPrefix = extractTrustedSeatOrganizationPrefix(direct);
@@ -1077,7 +1011,7 @@ function isSafeQuickbaseSeededAuthorityEndpoint(
   appointeeDesignation: string,
 ): boolean {
   if (!/\bDC Agency Representative\b/i.test(appointeeDesignation)) return false;
-  return getQuickbaseAuthorityEndpointPolicy(name)?.safeToSeed === true;
+  return quickbaseSafeSeededAuthorityEndpoints.has(normalizeQuickbasePolicyName(name));
 }
 
 function resolvesToExplicitKnownEntityRef(value: string): boolean {
@@ -1085,10 +1019,6 @@ function resolvesToExplicitKnownEntityRef(value: string): boolean {
   if (knownRef === buildEntityId(value)) return false;
   const acronymStripped = stripSeatAcronymParens(value);
   return knownRef !== buildEntityId(acronymStripped);
-}
-
-function suppressesQuickbaseBoardGovernanceEdge(name: string): boolean {
-  return getQuickbaseAuthorityEndpointPolicy(name)?.designatingOnly === true;
 }
 
 function normalizeQuickbasePolicyName(name: string): string {

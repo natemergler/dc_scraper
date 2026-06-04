@@ -70,10 +70,11 @@ Deno.test("status json reports blocked reconciliation counts", async () => {
   assertEquals(statusOutput.code, 0);
   assert(status.reconciliation.blocked > 0);
   assertEquals(status.reconciliation.firstBlockedReason, "unresolved_endpoints");
-  assert(
+  assertEquals(
     status.reconciliation.blockedByRelationshipType.some((row) =>
-      row.relationshipType === "governed_by" && row.count > 0
+      row.relationshipType === "governed_by"
     ),
+    false,
   );
   assert(status.reconciliation.firstBlocked);
   assert(status.reconciliation.firstBlocked.blockers.length > 0);

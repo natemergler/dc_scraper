@@ -8,7 +8,7 @@ const AUTO_ACCEPT_NO_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
   ["council.committees", new Set(["chairs", "member_of", "part_of"])],
   ["council.members", new Set(["holds", "part_of", "represents"])],
   ["dcgis.boards_commissions_councils", new Set(["governed_by", "part_of"])],
-  ["mota.quickbase", new Set(["governed_by", "has_seat"])],
+  ["mota.quickbase", new Set(["has_seat"])],
   ["oanc.anc_profiles", new Set(["part_of", "member_of", "represents"])],
   ["open_dc.public_bodies", new Set(["authorized_by", "governed_by"])],
 ]);
