@@ -8,6 +8,7 @@ import {
   slugify,
 } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
+import { detachEntityCandidateFromOtherCanonicalEntities } from "./canonical_entity_membership.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
@@ -1113,6 +1114,7 @@ function mergeAcceptedEntityCandidate(
   candidateId: string,
   entityId: string,
 ): boolean {
+  detachEntityCandidateFromOtherCanonicalEntities(store, candidateId, entityId);
   const entity = queryOne<{ mergedCandidateIds: string }>(
     store.db,
     "select merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = ?",

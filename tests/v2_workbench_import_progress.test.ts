@@ -249,7 +249,7 @@ Deno.test("workbench bulk candidate refetch preloads existing review statuses", 
   await workbench.importConnectorResult(bulkParsedRowsFixtureResult(1200), join(dir, "artifacts"));
 
   const entityStatusQueries = preparedSql.filter((sql) =>
-    sql.startsWith("select candidate_id as id")
+    sql.includes("candidate_id as id") && sql.includes("from entity_candidates")
   );
   const relationshipStatusQueries = preparedSql.filter((sql) =>
     sql.startsWith("select relationship_candidate_id as id")

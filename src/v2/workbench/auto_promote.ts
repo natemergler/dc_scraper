@@ -1,5 +1,6 @@
 import { normalizeName, nowIso } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
+import { detachEntityCandidateFromOtherCanonicalEntities } from "./canonical_entity_membership.ts";
 import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
@@ -187,6 +188,11 @@ function acceptEntityCandidateDirect(
   store: WorkbenchStore,
   candidate: AutoPromoteCandidateRow,
 ): void {
+  detachEntityCandidateFromOtherCanonicalEntities(
+    store,
+    candidate.candidateId,
+    candidate.proposedEntityId,
+  );
   const existing = queryOne<CanonicalEntityRow>(
     store.db,
     `select name,
