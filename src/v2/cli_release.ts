@@ -1,6 +1,6 @@
 import { join } from "@std/path";
 import { dcCommand } from "./command_prefix.ts";
-import { buildV2Release } from "./release.ts";
+import { buildV2Release, type ReleaseBuildProgressEvent } from "./release.ts";
 import { renderReleaseVerification, verifyWorkbenchRelease } from "./release_verify.ts";
 import type { SmokeProfile } from "./domain.ts";
 import {
@@ -40,6 +40,9 @@ export async function handleReleaseCommand(
       async (workbench) =>
         await buildV2Release(workbench, options.outDir, {
           sourceProfile: options.sourceProfile,
+          onProgress: (event) => {
+            console.error(renderReleaseBuildProgress(event));
+          },
         }),
     );
     console.log(`Built v2 release ${result.outDir}`);
@@ -77,6 +80,14 @@ export async function handleReleaseCommand(
   return false;
 }
 
+export function renderReleaseBuildProgress(event: ReleaseBuildProgressEvent): string {
+  const parts = [`Release build: ${event.message}`];
+  if (event.fileCount !== undefined) parts.push(`files=${event.fileCount}`);
+  const counts = renderReleaseBuildCounts(event.counts);
+  if (counts) parts.push(counts);
+  return parts.join(" ");
+}
+
 export function printReleaseHelp(): void {
   console.log(`${dcCommand("release")}
 
@@ -104,4 +115,18 @@ function hasHelpFlag(args: string[], start: number): boolean {
 
 function isHelp(value: string | undefined): boolean {
   return value === "help" || value === "--help" || value === "-h";
+}
+
+function renderReleaseBuildCounts(
+  counts: ReleaseBuildProgressEvent["counts"] | undefined,
+): string | undefined {
+  if (!counts) return undefined;
+  const parts = [
+    ["entities", counts.entities],
+    ["relationships", counts.relationships],
+    ["sources", counts.sources],
+    ["datasets", counts.datasets],
+    ["legal_refs", counts.legalRefs],
+  ].filter((row): row is [string, number] => typeof row[1] === "number");
+  return parts.map(([name, count]) => `${name}=${count}`).join(" ");
 }
