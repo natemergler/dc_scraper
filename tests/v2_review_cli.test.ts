@@ -667,7 +667,7 @@ Deno.test("interactive review sends plain source-backed additions to browse surf
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "No human decisions remain. Browse 2 unresolved review item(s) with deno task dc -- review list --mode entities or deno task dc -- review packets --mode entities.",
+    "No human decisions remain. Browse 2 source-backed row(s) with deno task dc -- review list --mode entities or deno task dc -- review packets --mode entities.",
   );
 
   const reopened = new Workbench(dbPath);
@@ -1418,7 +1418,7 @@ Deno.test("interactive review browse commands preserve source filters for plain 
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "No human decisions remain. Browse 1 unresolved review item(s) with deno task dc -- review list --source test.review_cli.source_resume or deno task dc -- review packets --source test.review_cli.source_resume.",
+    "No human decisions remain. Browse 1 source-backed row(s) with deno task dc -- review list --source test.review_cli.source_resume or deno task dc -- review packets --source test.review_cli.source_resume.",
   );
 });
 

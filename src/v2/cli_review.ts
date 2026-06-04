@@ -72,7 +72,7 @@ export async function handleReviewCommand(
       console.log(JSON.stringify({ count: items.length, items }, null, 2));
       return true;
     }
-    console.log(`Review items: ${items.length}`);
+    console.log(`${reviewListHeading(items)}: ${items.length}`);
     for (const summary of summaries) {
       console.log(summary);
       console.log("");
@@ -107,7 +107,7 @@ export async function handleReviewCommand(
       );
       return true;
     }
-    console.log(`Review packets: ${packets.length}`);
+    console.log(`${reviewPacketsHeading(filters)}: ${packets.length}`);
     for (const packet of packets) {
       console.log(renderReviewPacketSummary(packet));
       console.log("");
@@ -138,8 +138,10 @@ export function printReviewHelp(): void {
   console.log(`${dcCommand("review")}
 
 Workflow:
-  1. Run \`${dcCommand("status")}\` or \`${dcCommand("audit")}\` to see what remains
-  2. Browse raw unresolved rows with \`${dcCommand("review list --mode relationships --limit 5")}\`
+  1. Run \`${dcCommand("status")}\` or \`${
+    dcCommand("audit")
+  }\` to see the current decision and browse state
+  2. Browse source-backed rows with \`${dcCommand("review list --mode relationships --limit 5")}\`
   3. Narrow raw browsing to actual human decisions with \`${
     dcCommand("review list --decisions")
   }\` when needed
@@ -172,6 +174,22 @@ Advanced maintenance:
   Scoped batch commands are scriptable fallback tools after inspecting a narrow packet/list slice.
   Use \`${dcCommand("review batch --help")}\` for those commands.
 `);
+}
+
+function reviewListHeading(
+  items: Array<{ humanDecision?: boolean }>,
+): string {
+  if (items.length > 0 && items.every((item) => item.humanDecision === false)) {
+    return "Browse rows";
+  }
+  if (items.length > 0 && items.every((item) => item.humanDecision === true)) {
+    return "Decision items";
+  }
+  return "Review items";
+}
+
+function reviewPacketsHeading(filters: ReviewItemFilters): string {
+  return filters.status === undefined ? "Decision packets" : "Review packets";
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {
