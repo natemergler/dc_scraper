@@ -29,6 +29,41 @@ function fixtureConnector(
   };
 }
 
+function fixtureResult(sourceId: string, title: string): ConnectorResult {
+  return {
+    source: {
+      sourceId,
+      title,
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: `https://example.com/${sourceId}`,
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: `${sourceId}.main`,
+        sourceId,
+        title: `${title} endpoint`,
+        kind: "fixture",
+        url: `https://example.com/${sourceId}`,
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [],
+    }],
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function captureConsoleLogs<T>(fn: () => Promise<T>): Promise<{ result: T; lines: string[] }> {
   const original = console.log;
   const lines: string[] = [];
@@ -170,6 +205,68 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
     output,
     "Next: deno task dc -- review",
   );
+});
+
+Deno.test("source fetch --all prefetches connectors while importing in requested order", async () => {
+  const events: string[] = [];
+  const imported: string[] = [];
+  const alphaReady = deferred<ConnectorResult>();
+  const betaStarted = deferred<void>();
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => {
+      events.push("run alpha.source");
+      return await alphaReady.promise;
+    }),
+    fixtureConnector("beta.source", "Beta Source", async () => {
+      events.push("run beta.source");
+      betaStarted.resolve();
+      return fixtureResult("beta.source", "Beta Source");
+    }),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async (result) => {
+      imported.push(result.source.sourceId);
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const command = captureConsole(async () =>
+    await handleSourceCommand(["source", "fetch", "--all"], {}, deps)
+  );
+  const betaStartedBeforeAlphaFinished = await Promise.race([
+    betaStarted.promise.then(() => true),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 50)),
+  ]);
+  if (!betaStartedBeforeAlphaFinished) {
+    alphaReady.resolve(fixtureResult("alpha.source", "Alpha Source"));
+    await command;
+  }
+  assertEquals(betaStartedBeforeAlphaFinished, true);
+  alphaReady.resolve(fixtureResult("alpha.source", "Alpha Source"));
+
+  const { result } = await command;
+
+  assertEquals(result, true);
+  assertEquals(events, ["run alpha.source", "run beta.source"]);
+  assertEquals(imported, ["alpha.source", "beta.source"]);
 });
 
 Deno.test("source fetch --all continues through failures and throws a summary error", async () => {
