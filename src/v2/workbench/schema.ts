@@ -2,14 +2,14 @@ import { nowIso, type WorkbenchMeta } from "../domain.ts";
 import { queryAll, run, withTransaction } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
-export interface WorkbenchSchemaRow {
+export interface WorkbenchSchemaContractRow {
   version: number;
   name: string;
   initializedAt: string;
 }
 
-const WORKBENCH_SCHEMA_VERSION = 16;
-const WORKBENCH_SCHEMA_NAME = "v2_current_workbench_schema";
+const CURRENT_WORKBENCH_SCHEMA_VERSION = 16;
+const CURRENT_WORKBENCH_SCHEMA_NAME = "v2_current_workbench_schema";
 
 const CREATE_WORKBENCH_SQL = `create table sources(
   source_id text primary key,
@@ -310,8 +310,8 @@ const EXPECTED_INDEXES = new Set([
   "reconciliation_blockers_subject_idx",
 ]);
 
-function unsupportedWorkbenchMessage(version: number): string {
-  return `Unsupported local workbench schema version ${version}. Rebuild this ignored local DB or point --db at a current workbench.`;
+function currentSchemaRequiredMessage(version: number): string {
+  return `Local workbench does not match the current schema contract (found version ${version}). Rebuild this ignored local DB or point --db at a current workbench.`;
 }
 
 function workbenchSchemaTableExists(store: WorkbenchStore): boolean {
@@ -340,44 +340,44 @@ function userIndexNames(store: WorkbenchStore): Set<string> {
   );
 }
 
-function assertCurrentWorkbenchSchema(
+function assertCurrentWorkbenchContract(
   store: WorkbenchStore,
-  schemaRow: WorkbenchSchemaRow | undefined,
+  schemaRow: WorkbenchSchemaContractRow | undefined,
 ): void {
   const version = schemaRow?.version ?? 0;
   if (
     !schemaRow ||
-    schemaRow.version !== WORKBENCH_SCHEMA_VERSION ||
-    schemaRow.name !== WORKBENCH_SCHEMA_NAME
+    schemaRow.version !== CURRENT_WORKBENCH_SCHEMA_VERSION ||
+    schemaRow.name !== CURRENT_WORKBENCH_SCHEMA_NAME
   ) {
-    throw new Error(unsupportedWorkbenchMessage(version));
+    throw new Error(currentSchemaRequiredMessage(version));
   }
   const tableNames = userTableNames(store);
   const missingTables = [...EXPECTED_TABLES].filter((name) => !tableNames.has(name));
   const unexpectedTables = [...tableNames].filter((name) => !EXPECTED_TABLES.has(name));
   if (missingTables.length > 0 || unexpectedTables.length > 0) {
-    throw new Error(unsupportedWorkbenchMessage(version));
+    throw new Error(currentSchemaRequiredMessage(version));
   }
   const indexNames = userIndexNames(store);
   const missingIndexes = [...EXPECTED_INDEXES].filter((name) => !indexNames.has(name));
   const unexpectedIndexes = [...indexNames].filter((name) => !EXPECTED_INDEXES.has(name));
   if (missingIndexes.length > 0 || unexpectedIndexes.length > 0) {
-    throw new Error(unsupportedWorkbenchMessage(version));
+    throw new Error(currentSchemaRequiredMessage(version));
   }
 }
 
 export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
   const existingTables = userTableNames(store);
   if (existingTables.has("workbench_schema")) {
-    const schema = readWorkbenchSchema(store);
-    assertCurrentWorkbenchSchema(store, schema);
+    const schema = readWorkbenchSchemaContract(store);
+    assertCurrentWorkbenchContract(store, schema);
     return {
       dbPath: store.dbPath,
       schema,
     };
   }
   if (existingTables.size > 0) {
-    throw new Error(unsupportedWorkbenchMessage(0));
+    throw new Error(currentSchemaRequiredMessage(0));
   }
   withTransaction(store.db, () => {
     store.db.exec(`
@@ -391,7 +391,7 @@ create table workbench_schema (
     run(
       store.db,
       "insert into workbench_schema(version, name, initialized_at) values(?, ?, ?)",
-      [WORKBENCH_SCHEMA_VERSION, WORKBENCH_SCHEMA_NAME, nowIso()],
+      [CURRENT_WORKBENCH_SCHEMA_VERSION, CURRENT_WORKBENCH_SCHEMA_NAME, nowIso()],
     );
   });
   return readWorkbenchMeta(store);
@@ -399,31 +399,31 @@ create table workbench_schema (
 
 export function readWorkbenchMeta(store: WorkbenchStore): WorkbenchMeta {
   if (!workbenchSchemaTableExists(store)) {
-    throw new Error(unsupportedWorkbenchMessage(0));
+    throw new Error(currentSchemaRequiredMessage(0));
   }
-  const schema = readWorkbenchSchema(store);
-  assertCurrentWorkbenchSchema(store, schema);
+  const schema = readWorkbenchSchemaContract(store);
+  assertCurrentWorkbenchContract(store, schema);
   return {
     dbPath: store.dbPath,
     schema,
   };
 }
 
-function readWorkbenchSchema(store: WorkbenchStore): WorkbenchSchemaRow {
+function readWorkbenchSchemaContract(store: WorkbenchStore): WorkbenchSchemaContractRow {
   const columns = new Set(
     queryAll<{ name: string }>(store.db, "pragma table_info(workbench_schema)").map((row) =>
       row.name
     ),
   );
   if (!columns.has("version") || !columns.has("name") || !columns.has("initialized_at")) {
-    throw new Error(unsupportedWorkbenchMessage(0));
+    throw new Error(currentSchemaRequiredMessage(0));
   }
-  const schema = queryAll<WorkbenchSchemaRow>(
+  const schema = queryAll<WorkbenchSchemaContractRow>(
     store.db,
     "select version, name, initialized_at as initializedAt from workbench_schema",
   );
   if (schema.length !== 1) {
-    throw new Error(unsupportedWorkbenchMessage(schema.at(-1)?.version ?? 0));
+    throw new Error(currentSchemaRequiredMessage(schema.at(-1)?.version ?? 0));
   }
   return schema[0];
 }

@@ -186,7 +186,7 @@ Deno.test("local workbench artifacts are ignored by git", async () => {
   assertEquals(new TextDecoder().decode(output.stdout).trim().split("\n"), paths);
 });
 
-Deno.test("source list fails fast for unsupported non-current workbench schemas", async () => {
+Deno.test("source list fails fast for non-current workbench schema contracts", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
@@ -199,11 +199,11 @@ Deno.test("source list fails fast for unsupported non-current workbench schemas"
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
-Deno.test("source list does not mutate unsupported non-current databases", async () => {
+Deno.test("source list does not mutate non-current databases", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   await ensureDir(join(dir, "data"));
@@ -222,7 +222,7 @@ Deno.test("source list does not mutate unsupported non-current databases", async
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 0. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench does not match the current schema contract (found version 0). Rebuild this ignored local DB or point --db at a current workbench.",
   );
 
   const reopened = new Database(dbPath);
@@ -249,7 +249,7 @@ Deno.test("source list rejects a current schema record when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -270,6 +270,6 @@ Deno.test("source list rejects current schema records with unexpected local tabl
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Local workbench does not match the current schema contract (found version 16). Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
