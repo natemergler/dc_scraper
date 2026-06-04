@@ -229,11 +229,13 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
     };
 
     const catalogUrl = `${governmentOperationsServiceUrl}?f=json`;
+    context.onProgress?.({ message: "Fetching Government Operations catalog metadata" });
     const catalogResponse = await context.fetcher(catalogUrl);
     const catalogText = await catalogResponse.text();
     const catalogPayload = JSON.parse(catalogText) as Record<string, unknown>;
 
     const metadataUrl = `${enterpriseDatasetInventorySource.baseUrl}?f=json`;
+    context.onProgress?.({ message: "Fetching Enterprise Dataset Inventory table metadata" });
     const metadataResponse = await context.fetcher(metadataUrl);
     const metadataText = await metadataResponse.text();
     const metadataPayload = JSON.parse(metadataText) as Record<string, unknown>;
@@ -251,6 +253,7 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
       returnCountOnly: "true",
       f: "json",
     });
+    context.onProgress?.({ message: "Counting Enterprise Dataset Inventory rows" });
     const countResponse = await context.fetcher(countUrl);
     const countText = await countResponse.text();
     const countPayload = JSON.parse(countText) as Record<string, unknown>;
@@ -263,9 +266,11 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
     const rowArtifacts: ReturnType<typeof artifact>[] = [];
     const items: SourceItemInput[] = [];
     const datasets: DatasetInput[] = [];
+    const pageCount = requestedCount === 0 ? 0 : Math.ceil(requestedCount / maxRecordCount);
 
     for (let offset = 0; offset < requestedCount; offset += maxRecordCount) {
       const pageSize = Math.min(maxRecordCount, requestedCount - offset);
+      const pageNumber = Math.floor(offset / maxRecordCount) + 1;
       const pageUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
         where: "1=1",
         outFields: "*",
@@ -274,6 +279,11 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
         resultOffset: String(offset),
         resultRecordCount: String(pageSize),
         f: "json",
+      });
+      context.onProgress?.({
+        message: `Fetching Enterprise Dataset Inventory rows ${offset + 1}-${
+          offset + pageSize
+        } of ${requestedCount} (page ${pageNumber}/${pageCount})`,
       });
       const pageResponse = await context.fetcher(pageUrl);
       const pageText = await pageResponse.text();

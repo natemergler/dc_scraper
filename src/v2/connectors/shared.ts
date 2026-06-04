@@ -19,9 +19,14 @@ export interface ConnectorFetchResponse {
 
 export type Fetcher = (url: string, init?: RequestInit) => Promise<ConnectorFetchResponse>;
 
+export interface ConnectorProgressEvent {
+  message: string;
+}
+
 export interface ConnectorContext {
   fetcher: Fetcher;
   limit?: number;
+  onProgress?: (event: ConnectorProgressEvent) => void;
 }
 
 export interface SourceConnector {

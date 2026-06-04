@@ -6865,8 +6865,10 @@ Deno.test("resolution append rejects unknown subjects without writing JSONL", as
 });
 
 Deno.test("Enterprise Dataset Inventory connector captures rows and classifies Government Operations tables conservatively", async () => {
+  const progressMessages: string[] = [];
   const result = await getConnector("admin.enterprise_dataset_inventory").run(
     createConnectorContext({
+      onProgress: (event) => progressMessages.push(event.message),
       fetcher: async (url: string) => ({
         status: 200,
         text: async () => {
@@ -6892,6 +6894,13 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
     }),
   );
   assertEquals(result.endpointResults.length, 3);
+  assertEquals(progressMessages, [
+    "Fetching Government Operations catalog metadata",
+    "Fetching Enterprise Dataset Inventory table metadata",
+    "Counting Enterprise Dataset Inventory rows",
+    "Fetching Enterprise Dataset Inventory rows 1-2 of 3 (page 1/2)",
+    "Fetching Enterprise Dataset Inventory rows 3-3 of 3 (page 2/2)",
+  ]);
   assert(result.endpointResults.every((endpoint) => endpoint.status === "success"));
   const catalogParsed = result.endpointResults[0].parsed;
   const metadataParsed = result.endpointResults[1].parsed;

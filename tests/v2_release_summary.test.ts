@@ -99,8 +99,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
     manifest.release_summary.review_status_note,
     "Release rows keep review_status visible; unresolved rows are not silently treated as complete.",
   );
-  assertStringIncludes(readme, "review status note:");
-  assertStringIncludes(readme, "blocked by source: council.committees=");
+  assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -215,7 +214,7 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
     ),
   );
   assertStringIncludes(manifest.release_summary.review_status_note, "stale review=1");
-  assertStringIncludes(readme, "stale review: 1");
+  assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -372,12 +371,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
       row.deferred_count === 1
     ),
   );
-  assertStringIncludes(readme, "review debt by type:");
-  assertStringIncludes(readme, "entity_candidate(open=1,deferred=0)");
-  assertStringIncludes(readme, "legal_ref(open=0,deferred=1)");
-  assertStringIncludes(readme, "review debt by source:");
-  assertStringIncludes(readme, "test.signature.entities(open=1,deferred=0)");
-  assertStringIncludes(readme, "test.signature.legal_refs(open=0,deferred=1)");
+  assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
   assert(
     manifest.release_summary.top_unresolved_review_items.some((row) =>
       row.label === "Example Body" &&
@@ -484,4 +478,23 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
 
 function releaseStatusNote(status: ReturnType<typeof buildWorkbenchStatus>): string {
   return `${status.unresolvedStateNote} Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
+}
+
+function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
+  for (
+    const snippet of [
+      "review_status",
+      "review status note:",
+      "review items by",
+      "review debt by",
+      "Unresolved workbench state:",
+      "unresolved rows",
+      "stale review:",
+      "blocked by source:",
+      "Blocked and stale counts report unresolved work",
+      "stay review-first",
+    ]
+  ) {
+    assert(!readme.includes(snippet), `README should not include ${snippet}`);
+  }
 }

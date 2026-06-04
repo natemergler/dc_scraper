@@ -544,25 +544,14 @@ async function buildReleaseSqlite(
 }
 
 function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
-  const entityStatus = renderStatusCounts(summary.entities_by_review_status);
-  const relationshipStatus = renderStatusCounts(summary.relationships_by_review_status);
   const legalByType =
     summary.legal_refs_by_type.map((item) => `${item.ref_type}=${item.count}`).join(", ") || "none";
-  const legalByStatus = renderStatusCounts(summary.legal_refs_by_review_status);
-  const reviewByStatus =
-    summary.review_items_by_status.map((item) => `${item.status}=${item.count}`).join(", ") ||
-    "none";
-  const reviewByType =
-    summary.review_items_by_type.map((item) => `${item.item_type}=${item.count}`).join(", ") ||
-    "none";
-  const reviewDebtByType = renderReviewDebt(summary.review_debt_by_type, "item_type");
-  const reviewDebtBySource = renderReviewDebt(summary.review_debt_by_source, "source_id");
   return `# DCGov v2 Release
 
 This release contains compact canonical entities, directed relationships, source inventory, dataset inventory, legal references, and a queryable SQLite release database.
 
 Files:
-- \`README.md\`: release summary, model semantics, and readiness notes
+- \`README.md\`: package overview, model semantics, and release counts
 - \`manifest.json\`: package metadata, file hashes, source inventory/artifact summary, and release summary
 - \`dcgov.sqlite\`: release SQLite package
 - \`entities.*\`: canonical entities
@@ -585,35 +574,20 @@ Relationship families: structure (\`part_of\`, \`has_seat\`, \`has_status\`), au
 
 Relationship direction guide: \`part_of\` points from a component to its containing entity; \`has_seat\`/\`has_status\` point from a body, seat, or observation to the seat/status marker; authority/source types point from the civic subject to the governing, oversight, appointment, designation, legal-authority, or publication source; civic-role types point from an observation or role entity to the seat, district, body, or committee role.
 
-Release tables keep their own \`review_status\`: accepted entity/relationship rows are materialized canonical facts, while inventory/reference rows such as datasets and legal refs can remain pending or deferred and stay visible in the summary.
-
-Blocked and stale counts report unresolved work instead of marking it complete.
-
-Deterministic source-backed facts may be accepted automatically. Ambiguous names, relationship directions, statuses, and legal citations stay review-first until a replayable decision accepts or defers them.
-
 DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.
 
 ## Release summary
 
-- entities by review_status: ${entityStatus}
-- relationships by review_status: ${relationshipStatus}
-- review items by status: ${reviewByStatus}
-- review items by type: ${reviewByType}
-- review debt by type: ${reviewDebtByType}
-- review debt by source: ${reviewDebtBySource}
-- stale review: ${summary.stale_review_item_count} (${
-    renderStaleByPriorDecision(summary.stale_review_by_prior_decision_state)
-  })
-- sources: total=${summary.source_count}, failed=${summary.failed_source_count}
+- entities: total=${totalReviewStatusCount(summary.entities_by_review_status)}
+- relationships: total=${totalReviewStatusCount(summary.relationships_by_review_status)}
+- sources: total=${summary.source_count}
 - datasets: total=${summary.dataset_count}
+- legal refs: total=${totalReviewStatusCount(summary.legal_refs_by_review_status)}
 - legal refs by type: ${legalByType}
-- legal refs by review_status: ${legalByStatus}
 - entity legal refs: total=${summary.entity_legal_refs_count}
 - relationship legal refs: total=${summary.relationship_legal_refs_count}
-- review status note: ${summary.review_status_note}
-- blocked by source: ${renderBlockedBySource(summary.blocked_reconciliation_by_source)}
 
-Relationship coverage note: accepted relationships may represent only a partial reviewed slice of discovered relationship candidates.
+Relationship coverage note: relationships may represent only part of discovered relationship candidates.
 `;
 }
 
@@ -755,26 +729,8 @@ function countByRefType<T>(
   }));
 }
 
-function renderReviewDebt<T extends string>(
-  rows: Array<Record<T, string> & { open_count: number; deferred_count: number }>,
-  nameKey: T,
-): string {
-  return rows.map((row) => `${row[nameKey]}(open=${row.open_count},deferred=${row.deferred_count})`)
-    .join(", ") || "none";
-}
-
-function renderStatusCounts(rows: Array<{ review_status: string; count: number }>): string {
-  return rows.map((row) => `${row.review_status}=${row.count}`).join(", ") || "none";
-}
-
-function renderBlockedBySource(rows: Array<{ source_id: string; count: number }>): string {
-  return rows.map((row) => `${row.source_id}=${row.count}`).join(", ") || "none";
-}
-
-function renderStaleByPriorDecision(
-  rows: Array<{ prior_decision_state: string; count: number }> | undefined,
-): string {
-  return rows?.map((row) => `${row.prior_decision_state}=${row.count}`).join(", ") || "none";
+function totalReviewStatusCount(rows: Array<{ count: number }>): number {
+  return rows.reduce((total, row) => total + row.count, 0);
 }
 
 function toCsv<T extends Record<string, string | number | null | undefined>>(

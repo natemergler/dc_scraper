@@ -179,7 +179,7 @@ function countRenderEndpointStatusPrepares(
   return { endpointCandidateStatusQueries, endpointCanonicalQueries, output };
 }
 
-Deno.test("scripted review CLI accepts a candidate and entity show renders evidence and backlinks", async () => {
+Deno.test("scripted review CLI accepts an explicit entity decision and entity show renders evidence and backlinks", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -202,6 +202,7 @@ Deno.test("scripted review CLI accepts a candidate and entity show renders evide
       name: "Board of Accountancy",
       kind: "board",
       observedName: "Board of Accountancy",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -398,7 +399,7 @@ Deno.test("entity conflict review rendering explains defer impact", async () => 
   assert(!text.includes("accept promotes this candidate into canonical entities"));
 });
 
-Deno.test("interactive review Enter accepts the default action", async () => {
+Deno.test("interactive review Enter accepts the default action for an explicit entity decision", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -414,6 +415,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
       name: "Board of Accountancy",
       kind: "board",
       observedName: "Board of Accountancy",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -459,7 +461,7 @@ Deno.test("interactive review Enter accepts the default action", async () => {
   assertEquals(entities.map((entity) => entity.id), ["dc.board_of_accountancy"]);
 });
 
-Deno.test("interactive review quit reports remaining work and resume command", async () => {
+Deno.test("interactive review sends plain source-backed additions to browse surfaces", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -524,7 +526,7 @@ Deno.test("interactive review quit reports remaining work and resume command", a
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "Review stopped. 2 item(s) remain. Resume with deno task dc -- review entities.",
+    "No human decisions remain. Browse 2 unresolved review item(s) with deno task dc -- review list entities or deno task dc -- review packets entities.",
   );
 
   const reopened = new Workbench(dbPath);
@@ -740,6 +742,7 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
       kind: "agency",
       observedName: "Unblocking Agency",
       confidence: 0.4,
+      needsReview: true,
     }),
     dataDir,
   );
@@ -789,9 +792,8 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
   assertEquals(output.code, 0);
   assertStringIncludes(
     stdout,
-    "1. [recommended] Unblocking Agency - test.review_cli.graph_priority entity candidate [default accept; packet 2 open; unblocks 1]",
+    "1. [recommended] Unblocking Agency - test.review_cli.graph_priority entity candidate [default accept; packet 1 open; unblocks 1]",
   );
-  assertStringIncludes(stdout, "Lead decision: Unblocking Agency [unblocks 1]");
   assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
   assertStringIncludes(stdout, "Review: Unblocking Agency");
 });
@@ -914,6 +916,7 @@ Deno.test("interactive review --status all still prioritizes open unblocking wor
       name: "Open Priority Target",
       kind: "agency",
       observedName: "Open Priority Target",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -989,6 +992,7 @@ Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of
       name: "Aaa Low Impact One",
       kind: "board",
       observedName: "Aaa Low Impact One",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1001,6 +1005,7 @@ Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of
       name: "Aaa Low Impact Two",
       kind: "board",
       observedName: "Aaa Low Impact Two",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1013,6 +1018,7 @@ Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of
       name: "Zzz High Impact Target",
       kind: "agency",
       observedName: "Zzz High Impact Target",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1082,6 +1088,7 @@ Deno.test("interactive review stays inside the current packet until it clears", 
       name: "Zzz Packet One",
       kind: "board",
       observedName: "Zzz Packet One",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1094,6 +1101,7 @@ Deno.test("interactive review stays inside the current packet until it clears", 
       name: "Zzz Packet Two",
       kind: "board",
       observedName: "Zzz Packet Two",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1106,6 +1114,7 @@ Deno.test("interactive review stays inside the current packet until it clears", 
       name: "Aaa Other One",
       kind: "board",
       observedName: "Aaa Other One",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -1211,7 +1220,7 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
   );
 });
 
-Deno.test("interactive review resume command preserves source filters", async () => {
+Deno.test("interactive review browse commands preserve source filters for plain additions", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1264,7 +1273,7 @@ Deno.test("interactive review resume command preserves source filters", async ()
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "Resume with deno task dc -- review --source test.review_cli.source_resume.",
+    "No human decisions remain. Browse 1 unresolved review item(s) with deno task dc -- review list --source test.review_cli.source_resume or deno task dc -- review packets --source test.review_cli.source_resume.",
   );
 });
 

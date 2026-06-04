@@ -291,6 +291,7 @@ Deno.test("status surfaces the top actionable unblocker for blocked relationship
       name: "Pending Target",
       kind: "agency",
       observedName: "Pending Target",
+      needsReview: true,
     }),
     dataDir,
   );

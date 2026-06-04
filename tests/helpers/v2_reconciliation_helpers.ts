@@ -81,6 +81,7 @@ export function syntheticCustomEntitySourceResult(input: {
   cluster?: string;
   officialUrl?: string;
   confidence?: number;
+  needsReview?: boolean;
 }): ConnectorResult {
   return {
     source: {
@@ -141,6 +142,7 @@ export function syntheticCustomEntitySourceResult(input: {
           details: {
             name: input.name,
             kind: input.kind,
+            ...(input.needsReview === undefined ? {} : { needsReview: input.needsReview }),
           },
         }],
       },

@@ -159,6 +159,24 @@ order by
   }));
 }
 
+export function isHumanDecisionReviewItem(item: ReviewItemRecord): boolean {
+  if (item.status !== "open") return false;
+  if (item.itemType === "source_status") return false;
+  if (item.defaultAction !== "accept") return true;
+  if (item.details.stalePriorDecision === true) return true;
+  if (item.details.replayConflict === true) return true;
+  if (item.details.needsReview === true) return true;
+  if (item.itemType === "legal_ref") {
+    return item.details.refType === "unknown" ||
+      typeof item.details.normalizedCitation !== "string";
+  }
+  if (item.itemType === "entity_candidate") {
+    return typeof item.details.existingKind === "string" &&
+      typeof item.details.candidateKind === "string";
+  }
+  return false;
+}
+
 export function staleReviewSummary(store: WorkbenchStore): StaleReviewSummary {
   const count = queryOne<{ count: number }>(
     store.db,

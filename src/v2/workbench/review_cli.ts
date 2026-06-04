@@ -11,7 +11,11 @@ import {
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
-import { canBatchAcceptReviewItem, type ReviewItemFilters } from "./review.ts";
+import {
+  canBatchAcceptReviewItem,
+  isHumanDecisionReviewItem,
+  type ReviewItemFilters,
+} from "./review.ts";
 import {
   reviewEvidence,
   type ReviewEvidenceRow,
@@ -58,7 +62,15 @@ export async function runInteractiveReview(
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
     if (snapshot.items.length === 0) {
-      console.log("No review items remain.");
+      if (snapshot.browseOnlyItemCount > 0) {
+        console.log(
+          `No human decisions remain. Browse ${snapshot.browseOnlyItemCount} unresolved review item(s) with ${
+            renderReviewListCommand(filters)
+          } or ${renderReviewPacketsCommand(filters)}.`,
+        );
+      } else {
+        console.log("No review items remain.");
+      }
       return;
     }
     if (!stickyPacketId || !snapshot.packets.some((packet) => packet.packetId === stickyPacketId)) {
@@ -117,6 +129,7 @@ interface InteractiveReviewSelection {
 
 interface InteractiveReviewSnapshot {
   items: ReviewItemRecord[];
+  browseOnlyItemCount: number;
   itemsByReviewItemId: Map<string, ReviewItemRecord>;
   packets: ReviewPacketRecord[];
   rankedPackets: ReviewPacketRecord[];
@@ -128,10 +141,14 @@ function buildInteractiveReviewSnapshot(
   workbench: Pick<InteractiveReviewWorkbench, "db" | "listReviewItems">,
   filters: ReviewItemFilters,
 ): InteractiveReviewSnapshot {
-  const items = workbench.listReviewItems({ ...filters, limit: undefined });
+  const allItems = workbench.listReviewItems({ ...filters, limit: undefined });
+  const items = shouldFilterInteractiveItems(filters)
+    ? allItems.filter(isHumanDecisionReviewItem)
+    : allItems;
+  const browseOnlyItemCount = allItems.length - items.length;
   const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
   const packets = reviewPacketsFromItems(workbench, items);
-  const decisions = items.filter(isActionableInteractiveDecisionItem).map((item) => ({
+  const decisions = items.filter(isHumanDecisionReviewItem).map((item) => ({
     nodeId: `decision.${item.reviewItemId}`,
     reviewItemId: item.reviewItemId,
     itemType: item.itemType,
@@ -158,6 +175,7 @@ function buildInteractiveReviewSnapshot(
   const rankedPackets = rankPacketsByPriority(packets, decisionsByReviewItemId);
   return {
     items,
+    browseOnlyItemCount,
     itemsByReviewItemId,
     packets,
     rankedPackets,
@@ -166,8 +184,8 @@ function buildInteractiveReviewSnapshot(
   };
 }
 
-function isActionableInteractiveDecisionItem(item: ReviewItemRecord): boolean {
-  return item.status === "open" && item.itemType !== "source_status";
+function shouldFilterInteractiveItems(filters: ReviewItemFilters): boolean {
+  return filters.status === undefined || filters.status === "open";
 }
 
 function nextInteractiveReviewSelection(
@@ -399,6 +417,25 @@ function deferredRelationshipPacketTitle(
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
   const parts = ["deno", "task", "dc", "--", "review"];
+  const mode = reviewModeSubcommand(filters.mode);
+  if (mode) parts.push(mode);
+  parts.push(...reviewFilterArgs(filters, { includeMode: false, includeType: true }));
+  return parts.join(" ");
+}
+
+function renderReviewListCommand(filters: ReviewItemFilters): string {
+  return renderReviewBrowseCommand("list", filters);
+}
+
+function renderReviewPacketsCommand(filters: ReviewItemFilters): string {
+  return renderReviewBrowseCommand("packets", filters);
+}
+
+function renderReviewBrowseCommand(
+  subcommand: "list" | "packets",
+  filters: ReviewItemFilters,
+): string {
+  const parts = ["deno", "task", "dc", "--", "review", subcommand];
   const mode = reviewModeSubcommand(filters.mode);
   if (mode) parts.push(mode);
   parts.push(...reviewFilterArgs(filters, { includeMode: false, includeType: true }));
