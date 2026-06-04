@@ -4,6 +4,7 @@ import {
   listOpenDecisionReviewPackets,
   listReviewPackets,
   renderReviewPacketSummary,
+  reviewPacketJsonRecord,
 } from "./workbench/review_packets.ts";
 import { reviewItemLabel, reviewSubjectSourceIds } from "./workbench/review_subject.ts";
 import {
@@ -75,13 +76,26 @@ export async function handleReviewCommand(
       return true;
     }
     const filters = readReviewFilters(args);
+    const includeReviewItemIds = args.includes("--include-review-item-ids");
     const packets = await deps.withWorkbench((workbench) =>
       filters.status === undefined
         ? listOpenDecisionReviewPackets(workbench, filters)
         : listReviewPackets(workbench, filters)
     );
     if (options.json) {
-      console.log(JSON.stringify({ count: packets.length, packets }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            count: packets.length,
+            includeReviewItemIds,
+            packets: packets.map((packet) =>
+              reviewPacketJsonRecord(packet, { includeReviewItemIds })
+            ),
+          },
+          null,
+          2,
+        ),
+      );
       return true;
     }
     console.log(`Review packets: ${packets.length}`);
@@ -130,7 +144,7 @@ Usage:
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
   ${
     dcCommand("review packets")
-  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json] [--include-review-item-ids]
   ${
     dcCommand("review batch accept-safe")
   } --mode <mode> [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]

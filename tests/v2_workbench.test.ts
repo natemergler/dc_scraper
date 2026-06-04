@@ -516,6 +516,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
     "Run `deno task dc -- review` when the slice needs a human decision",
   );
   assertStringIncludes(reviewText, "Usage:");
+  assertStringIncludes(reviewText, "--include-review-item-ids");
   assertStringIncludes(
     reviewText,
     "deno task dc -- review [entities|relationships|legal|sources]",

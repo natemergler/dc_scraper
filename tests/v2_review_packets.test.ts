@@ -85,22 +85,52 @@ Deno.test("review packets group explicit-safe and high-confidence entity work wi
     "--json",
   ]);
   const rawBody = JSON.parse(new TextDecoder().decode(rawOutput.stdout)) as {
+    includeReviewItemIds: boolean;
     packets: Array<{
       itemType: string;
       sourceId: string;
       count: number;
       subjectPrefix?: string;
+      reviewItemIds?: string[];
       nextCommand?: string;
     }>;
   };
 
   assertEquals(rawOutput.code, 0);
+  assertEquals(rawBody.includeReviewItemIds, false);
   assertEquals(rawBody.packets.length, 1);
   assertEquals(rawBody.packets[0].itemType, "entity_candidate");
   assertEquals(rawBody.packets[0].sourceId, "test.packet.mixed_entities");
   assertEquals(rawBody.packets[0].count, 2);
   assertEquals(rawBody.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
+  assertEquals(rawBody.packets[0].reviewItemIds, undefined);
   assertEquals(rawBody.packets[0].nextCommand, undefined);
+
+  const rawIdsOutput = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "entities",
+    "--status",
+    "all",
+    "--db",
+    dbPath,
+    "--json",
+    "--include-review-item-ids",
+  ]);
+  const rawIdsBody = JSON.parse(new TextDecoder().decode(rawIdsOutput.stdout)) as {
+    includeReviewItemIds: boolean;
+    packets: Array<{
+      reviewItemIds?: string[];
+    }>;
+  };
+
+  assertEquals(rawIdsOutput.code, 0);
+  assertEquals(rawIdsBody.includeReviewItemIds, true);
+  assertEquals(rawIdsBody.packets[0].reviewItemIds?.sort(), [
+    "review.candidate_test_packet_mixed_entities_explicit.entity_review",
+    "review.candidate_test_packet_mixed_entities_high_confidence.entity_review",
+  ]);
 });
 
 Deno.test("review packet source lookup does not scale queries per item", async () => {
