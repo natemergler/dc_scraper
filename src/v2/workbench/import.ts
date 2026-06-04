@@ -134,6 +134,7 @@ export async function importConnectorResult(
       )
       : [];
     const needsDerivedStateRefresh = parsedAffectsDerivedState(parsed);
+    const parsedProgress: Array<{ phase: ImportProgressPhase; message: string }> = [];
     try {
       for (const artifactInput of endpointResult.artifacts) {
         const artifactId = makeId("artifact");
@@ -170,15 +171,17 @@ export async function importConnectorResult(
             runId,
             artifactRecords,
             parsed,
-            (phase, message) =>
-              reportImportProgress(options, {
-                phase,
-                sourceId: endpointResult.endpoint.sourceId,
-                endpointId: endpointResult.endpoint.endpointId,
-                message,
-              }),
+            (phase, message) => parsedProgress.push({ phase, message }),
           );
         });
+        for (const { phase, message } of parsedProgress) {
+          reportImportProgress(options, {
+            phase,
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message,
+          });
+        }
         reportImportProgress(options, {
           phase: "parsed-row-insert",
           sourceId: endpointResult.endpoint.sourceId,
