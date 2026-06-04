@@ -1250,15 +1250,10 @@ Deno.test("imports representative connector results and source inspection stays 
   const permitSummary = workbench.sourceSummary("admin.permits_licenses");
   const categories = new Set(workbench.datasets().map((dataset) => dataset.category));
   const hasRegisterRef = workbench.legalRefs().some((ref) => ref.ref_type === "dc_register");
-  const branchEntity = workbench.db.prepare(
-    "select entity_id as entityId, review_status as reviewStatus from canonical_entities where entity_id = 'dc.executive_branch'",
-  ).get() as { entityId: string; reviewStatus: string } | undefined;
   workbench.close();
   assertEquals(dcgis.fieldCount, 7);
-  assertEquals(dcgis.entityCandidateCount, 3);
-  assertEquals(dcgis.relationshipCandidateCount, 2);
-  assertEquals(branchEntity?.entityId, "dc.executive_branch");
-  assertEquals(branchEntity?.reviewStatus, "accepted");
+  assertEquals(dcgis.entityCandidateCount, 2);
+  assertEquals(dcgis.relationshipCandidateCount, 0);
   assertEquals(quickbase.latestStatus, "success");
   assertStringIncludes(quickbase.latestArtifactPath ?? "", "mota.quickbase");
   assertEquals(quickbase.itemCount > 0, true);
@@ -5523,11 +5518,10 @@ Deno.test("batch defer-default requires a scoped review slice", async () => {
   );
 });
 
-Deno.test("relationship raw-value filter narrows branch review slices and safe batch acceptance", async () => {
+Deno.test("dcgis agency taxonomy labels do not create branch review slices", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
   const mixedBranchRowsFixture = {
@@ -5587,140 +5581,23 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
     await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
     dataDir,
   );
-  workbench.close();
 
-  const commonArgs = [
-    "run",
-    "--allow-read",
-    "--allow-write",
-    "--allow-env",
-    "--allow-run",
-    "--allow-net",
-    "--allow-ffi",
-    "scripts/dc.ts",
-  ];
-  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      ...commonArgs,
-      "review",
-      "batch",
-      "accept-safe",
-      "--mode",
-      "entities",
-      "--subject-prefix",
-      "candidate.dcgis.agencies",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
-  assertEquals(entityBatchOutput.code, 0);
-
-  const executiveListOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      ...commonArgs,
-      "review",
-      "list",
-      "--mode",
-      "relationships",
-      "--relationship-type",
-      "part_of",
-      "--subject-prefix",
-      "relationship.dcgis.agencies",
-      "--raw-value",
-      "Executive",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const executiveList = JSON.parse(
-    new TextDecoder().decode(executiveListOutput.stdout),
-  ) as {
-    count: number;
-    items: Array<{ details: { rawValue: string } }>;
-  };
-  assertEquals(executiveListOutput.code, 0);
-  assertEquals(executiveList.count, 0);
-  assertEquals(executiveList.items.length, 0);
-
-  const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      ...commonArgs,
-      "review",
-      "batch",
-      "accept-safe",
-      "--mode",
-      "relationships",
-      "--relationship-type",
-      "part_of",
-      "--subject-prefix",
-      "relationship.dcgis.agencies",
-      "--raw-value",
-      "Executive",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
-  assertEquals(relationshipBatchOutput.code, 0);
-  assertStringIncludes(
-    new TextDecoder().decode(relationshipBatchOutput.stdout),
-    "Accepted 0 safe review item(s).",
-  );
-
-  const broadRelationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      ...commonArgs,
-      "review",
-      "batch",
-      "accept-safe",
-      "--mode",
-      "relationships",
-      "--relationship-type",
-      "part_of",
-      "--subject-prefix",
-      "relationship.dcgis.agencies",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
-  assertEquals(broadRelationshipBatchOutput.code, 0);
-  const broadRelationshipBatchText = new TextDecoder().decode(
-    broadRelationshipBatchOutput.stdout,
-  );
-  assertStringIncludes(broadRelationshipBatchText, "Accepted 0 safe review item(s).");
-  assertStringIncludes(
-    broadRelationshipBatchText,
-    "Skipped 1 item(s) that were not safe to auto-accept.",
-  );
-
-  const reopened = new Workbench(dbPath);
-  reopened.init();
-  const relationshipCount = reopened.db.prepare(
-    "select count(*) as count from canonical_relationships",
+  const candidateCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where candidate_id like 'candidate.dcgis.agencies.%'",
   ).get() as { count: number };
-  const remainingItems = reopened.listReviewItems({
+  const relationshipCount = workbench.db.prepare(
+    "select count(*) as count from relationship_candidates where relationship_candidate_id like 'relationship.dcgis.agencies.%'",
+  ).get() as { count: number };
+  const remainingItems = workbench.listReviewItems({
     mode: "relationships",
     relationshipType: "part_of",
     subjectPrefix: "relationship.dcgis.agencies",
   });
-  const remainingBranches = remainingItems.map((item) => item.details.rawValue);
-  const otherBranchItem = remainingItems.find((item) => item.details.rawValue === "Other");
-  reopened.close();
-  assertEquals(relationshipCount.count, 3);
-  assertEquals(otherBranchItem?.defaultAction, "defer");
-  assert(remainingBranches.includes("Other"));
-  assert(!remainingBranches.includes("Executive"));
-  assert(!remainingBranches.includes("Judicial"));
+  workbench.close();
+
+  assertEquals(candidateCount.count, 5);
+  assertEquals(relationshipCount.count, 0);
+  assertEquals(remainingItems.length, 0);
 });
 
 Deno.test("batch defer-default marks a scoped relationship review slice deferred", async () => {
@@ -5730,50 +5607,23 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const mixedBranchRowsFixture = {
-    features: [
-      ...dcgisRowsFixture.features,
-      {
-        attributes: {
-          AGENCY_ID: 3001,
-          AGENCY_NAME: "Example Residual Agency",
-          TYPE: "Agency",
-          BRANCH: "Other",
-          MAYORAL_CLUSTER: "",
-          WEB_URL: "",
-          LEGISLATION: "",
-        },
-      },
-      {
-        attributes: {
-          AGENCY_ID: 3002,
-          AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Budgetary",
-          BRANCH: "Other",
-          MAYORAL_CLUSTER: "",
-          WEB_URL: "",
-          LEGISLATION: "",
-        },
-      },
-    ],
-  };
-  const bodyForUrl = (url: string): string => {
-    switch (url) {
-      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
-        return JSON.stringify(dcgisMetadataFixture);
-      case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
-        return JSON.stringify(mixedBranchRowsFixture);
-      default:
-        throw new Error(`Unexpected url ${url}`);
-    }
-  };
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => bodyForUrl(url),
-    json: async <T>() => JSON.parse(bodyForUrl(url)) as T,
-  });
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_body', 'Example Body', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.other_branch', 'Other Branch', 'branch', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
   await workbench.importConnectorResult(
-    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      relationshipCandidateId: "relationship.dcgis.boards_commissions_councils.example_other",
+      sourceItemKey: "dcgis-bcc-other-row",
+      fromEntityRef: "dc.example_body",
+      toEntityRef: "dc.other_branch",
+      relationshipType: "part_of",
+      rawValue: "Other",
+      needsReview: true,
+    }),
     dataDir,
   );
   workbench.close();
@@ -5795,7 +5645,7 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
       "--mode",
       "entities",
       "--subject-prefix",
-      "candidate.dcgis.agencies",
+      "candidate.dcgis.boards_commissions_councils",
       "--db",
       dbPath,
       "--resolutions-dir",
@@ -5823,7 +5673,7 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
       "--relationship-type",
       "part_of",
       "--subject-prefix",
-      "relationship.dcgis.agencies",
+      "relationship.dcgis.boards_commissions_councils",
       "--raw-value",
       "Other",
       "--db",
@@ -5844,14 +5694,14 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
     mode: "relationships",
     status: "open",
     relationshipType: "part_of",
-    subjectPrefix: "relationship.dcgis.agencies",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils",
     rawValue: "Other",
   });
   const deferredOther = reopened.listReviewItems({
     mode: "relationships",
     status: "deferred",
     relationshipType: "part_of",
-    subjectPrefix: "relationship.dcgis.agencies",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils",
     rawValue: "Other",
   });
   reopened.close();

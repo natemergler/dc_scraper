@@ -150,7 +150,7 @@ Workflow:
   }\`
   3. Defer default-defer relationships with \`${
     dcCommand(
-      "review batch defer-default --mode relationships --subject-prefix relationship.dcgis.agencies --relationship-type part_of",
+      "review batch defer-default --mode relationships --subject-prefix relationship.mota.quickbase --relationship-type overseen_by",
     )
   }\`
 

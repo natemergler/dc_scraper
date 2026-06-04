@@ -18,7 +18,7 @@ import {
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("dcgis part_of relationships auto-accept when both endpoints are accepted", async () => {
+Deno.test("dcgis agency taxonomy part_of relationships do not auto-accept", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -57,9 +57,10 @@ Deno.test("dcgis part_of relationships auto-accept when both endpoints are accep
   });
   workbench.close();
 
-  assertEquals(relationship?.relationshipId, "dc.example_agency:part_of:dc.executive_branch");
-  assertEquals(candidate?.reviewStatus, "accepted");
-  assertEquals(reviewItems.length, 0);
+  assertEquals(relationship, undefined);
+  assertEquals(candidate?.reviewStatus, "pending");
+  assertEquals(reviewItems.length, 1);
+  assertEquals(reviewItems[0]?.defaultAction, "accept");
 });
 
 Deno.test("default-defer dcgis relationships stay in review instead of auto-accepting", async () => {

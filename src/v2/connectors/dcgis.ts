@@ -183,6 +183,7 @@ function buildDcgisEntityCandidates(
   source: SourceDefinition,
   items: SourceItemInput[],
 ): EntityCandidateInput[] {
+  const agencyTaxonomyOnly = source.sourceId === "dcgis.agencies";
   const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
     const name = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? item.title;
@@ -193,18 +194,22 @@ function buildDcgisEntityCandidates(
       name,
       kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
       rawKind: String(row.TYPE ?? "agency"),
-      branch: maybeString(row.BRANCH),
-      cluster: maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
+      branch: agencyTaxonomyOnly ? undefined : maybeString(row.BRANCH),
+      cluster: agencyTaxonomyOnly ? undefined : maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
       officialUrl: maybeString(row.WEB_URL),
       confidence: 0.95,
       duplicateHint: maybeString(row.WEB_URL),
       evidence: [
         fieldEvidence("NAME", row.AGENCY_NAME ?? row.NAME, 1),
         fieldEvidence("TYPE", row.TYPE, 1),
+        fieldEvidence("BRANCH", row.BRANCH, 1),
+        fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, 1),
         fieldEvidence("WEB_URL", row.WEB_URL, 1),
       ],
     };
   });
+  if (agencyTaxonomyOnly) return agencyCandidates;
+
   const branchCandidates: EntityCandidateInput[] = [];
   const seenBranches = new Set<string>();
   for (const item of items) {
@@ -236,9 +241,8 @@ function buildDcgisRelationshipCandidates(
     const row = item.body as Record<string, unknown>;
     const name = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
     const entityRef = buildKnownEntityRef(name);
-    const branch = maybeString(row.BRANCH);
-    const type = maybeString(row.TYPE);
-    if (branch && shouldEmitDcgisBranchRelationship(branch, type)) {
+    const branch = source.sourceId === "dcgis.agencies" ? undefined : maybeString(row.BRANCH);
+    if (branch) {
       relationshipCandidates.push({
         relationshipCandidateId: buildRelationshipCandidateId(
           source.sourceId,
@@ -271,15 +275,6 @@ function buildDcgisRelationshipCandidates(
     });
   }
   return relationshipCandidates;
-}
-
-function shouldEmitDcgisBranchRelationship(branch: string, type?: string): boolean {
-  if (branch !== "Other") return true;
-  return !isNonStructuralDcgisOtherBranchType(type);
-}
-
-function isNonStructuralDcgisOtherBranchType(type?: string): boolean {
-  return type === "Budgetary" || type === "Non-DC Government";
 }
 
 function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[]): LegalRefInput[] {

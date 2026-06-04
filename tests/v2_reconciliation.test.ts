@@ -9,7 +9,6 @@ import {
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
   dcgisMetadataFixture,
-  dcgisRowsFixture,
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
@@ -1303,39 +1302,29 @@ Deno.test("placeholder endpoints keep relationship candidates blocked until the 
   );
 });
 
-Deno.test("relationship review defaults are rebuilt from workbench state without connector relationship review items", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const resolutionsDir = join(dir, "resolutions");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  const mixedBranchRowsFixture = {
-    features: [
-      ...dcgisRowsFixture.features,
-      {
-        attributes: {
-          AGENCY_ID: 3001,
-          AGENCY_NAME: "Example Residual Agency",
-          TYPE: "Agency",
-          BRANCH: "Other",
-          MAYORAL_CLUSTER: "",
-          WEB_URL: "",
-          LEGISLATION: "",
-        },
+Deno.test("dcgis agency taxonomy labels stay source evidence instead of canonical fields", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1032,
+        AGENCY_NAME: "Department of Employment Services",
+        TYPE: "Agency",
+        BRANCH: "Executive",
+        MAYORAL_CLUSTER: "Education",
+        WEB_URL: "https://does.dc.gov/",
+        LEGISLATION: "",
       },
-      {
-        attributes: {
-          AGENCY_ID: 3002,
-          AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Budgetary",
-          BRANCH: "Other",
-          MAYORAL_CLUSTER: "",
-          WEB_URL: "",
-          LEGISLATION: "",
-        },
+    }, {
+      attributes: {
+        AGENCY_ID: 1083,
+        AGENCY_NAME: "Office of the Attorney General",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://oag.dc.gov/",
+        LEGISLATION: "",
       },
-    ],
+    }],
   };
 
   const fetcher = async (url: string) => ({
@@ -1345,7 +1334,7 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return JSON.stringify(dcgisMetadataFixture);
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
-          return JSON.stringify(mixedBranchRowsFixture);
+          return JSON.stringify(rowsFixture);
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -1355,7 +1344,7 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
           return dcgisMetadataFixture as T;
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
-          return mixedBranchRowsFixture as T;
+          return rowsFixture as T;
         default:
           throw new Error(`Unexpected url ${url}`) as T;
       }
@@ -1365,37 +1354,28 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
   const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
   const parsed = result.endpointResults[0]?.parsed;
   if (!parsed) throw new Error("Expected parsed DCGIS output");
-  parsed.reviewItems = (parsed.reviewItems ?? []).filter((item) =>
-    item.itemType !== "relationship_candidate"
+  const doesCandidate = parsed.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1032"
+  );
+  const oagCandidate = parsed.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1083"
   );
 
-  await workbench.importConnectorResult(result, dataDir);
-  for (const item of workbench.listReviewItems({ mode: "entities" })) {
-    await workbench.appendResolutionEvent(
-      {
-        eventType: "accept_entity_candidate",
-        subjectId: item.subjectId,
-        payload: {},
-      },
-      resolutionsDir,
-    );
-  }
-
-  const items = workbench.listReviewItems({
-    mode: "relationships",
-    relationshipType: "part_of",
-    subjectPrefix: "relationship.dcgis.agencies",
-  });
-  const acceptedRelationships = workbench.db.prepare(
-    "select count(*) as count from canonical_relationships where relationship_type = 'part_of'",
-  ).get() as { count: number };
-  const executiveItem = items.find((item) => item.details.rawValue === "Executive");
-  const otherItem = items.find((item) => item.details.rawValue === "Other");
-  workbench.close();
-
-  assertEquals(executiveItem, undefined);
-  assertEquals(acceptedRelationships.count > 0, true);
-  assertEquals(otherItem?.defaultAction, "defer");
+  assert(doesCandidate);
+  assertEquals(doesCandidate.branch, undefined);
+  assertEquals(doesCandidate.cluster, undefined);
+  assertEquals(
+    doesCandidate.evidence.find((item) => item.fieldPath === "MAYORAL_CLUSTER")?.observedValue,
+    "Education",
+  );
+  assert(oagCandidate);
+  assertEquals(oagCandidate.branch, undefined);
+  assertEquals(oagCandidate.cluster, undefined);
+  assertEquals(
+    oagCandidate.evidence.find((item) => item.fieldPath === "BRANCH")?.observedValue,
+    "Judicial",
+  );
+  assertEquals(parsed.relationshipCandidates?.length ?? 0, 0);
 });
 
 Deno.test("dcgis agency aliases propose shared canonical entity ids", async () => {
@@ -1461,8 +1441,8 @@ Deno.test("dcgis agency aliases propose shared canonical entity ids", async () =
   assert(candidate);
   assertEquals(candidate.name, "DC Court of Appeals");
   assertEquals(candidate.proposedEntityId, "dc.court_of_appeals");
-  assert(branchRelationship);
-  assertEquals(branchRelationship.fromEntityRef, "dc.court_of_appeals");
+  assertEquals(candidate.branch, undefined);
+  assertEquals(branchRelationship, undefined);
   assert(legalRef);
   assertEquals(legalRef.attachEntityRef, "dc.court_of_appeals");
   assert(pcsbCandidate);
@@ -1470,7 +1450,7 @@ Deno.test("dcgis agency aliases propose shared canonical entity ids", async () =
   assertEquals(pcsbCandidate.proposedEntityId, "dc.public_charter_school_board_pcsb");
 });
 
-Deno.test("dcgis other-branch review skips known non-structural types", async () => {
+Deno.test("dcgis agency branch labels do not emit structural relationships", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -1528,11 +1508,10 @@ Deno.test("dcgis other-branch review skips known non-structural types", async ()
   const parsed = result.endpointResults[0]?.parsed;
   if (!parsed) throw new Error("Expected parsed DCGIS output");
   const otherBranchRelationships = (parsed.relationshipCandidates ?? []).filter((candidate) =>
-    candidate.relationshipType === "part_of" && candidate.rawValue === "Other"
+    candidate.relationshipType === "part_of"
   );
 
-  assertEquals(otherBranchRelationships.length, 1);
-  assertEquals(otherBranchRelationships[0]?.fromEntityRef, "dc.example_residual_agency");
+  assertEquals(otherBranchRelationships.length, 0);
 });
 
 Deno.test("accepted prerequisite refetch clears stale blocker and reprocesses dependent relationship", async () => {
