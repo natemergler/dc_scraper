@@ -230,6 +230,8 @@ export function syntheticCustomRelationshipSourceResult(input: {
   toEntityRef: string;
   relationshipType: RelationshipType;
   rawValue: string;
+  toEntityName?: string;
+  toEntitySafeToAutoAccept?: boolean;
   needsReview?: boolean;
 }): ConnectorResult {
   return {
@@ -272,6 +274,8 @@ export function syntheticCustomRelationshipSourceResult(input: {
           sourceItemKey: input.sourceItemKey,
           fromEntityRef: input.fromEntityRef,
           toEntityRef: input.toEntityRef,
+          toEntityName: input.toEntityName,
+          toEntitySafeToAutoAccept: input.toEntitySafeToAutoAccept,
           relationshipType: input.relationshipType,
           rawValue: input.rawValue,
           needsReview: input.needsReview ?? true,

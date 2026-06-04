@@ -104,6 +104,7 @@ export interface EntityCandidateInput {
   officialUrl?: string;
   confidence?: number;
   duplicateHint?: string;
+  safeToAutoAccept?: boolean;
   evidence: EvidenceInput[];
 }
 
@@ -112,6 +113,9 @@ export interface RelationshipCandidateInput {
   sourceItemKey: string;
   fromEntityRef: string;
   toEntityRef: string;
+  fromEntityName?: string;
+  toEntityName?: string;
+  toEntitySafeToAutoAccept?: boolean;
   relationshipType: RelationshipType;
   rawValue?: string;
   needsReview?: boolean;

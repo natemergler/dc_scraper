@@ -71,27 +71,33 @@ function seededRelationshipEndpointCandidatesForRelationship(
   relationshipCandidate: RelationshipCandidateInput,
 ): EntityCandidateInput[] {
   const observedName = normalizeName(relationshipCandidate.rawValue ?? "");
+  const observedToName = normalizeName(relationshipCandidate.toEntityName ?? observedName);
+  const observedFromName = normalizeName(relationshipCandidate.fromEntityName ?? observedName);
   if (!observedName || !isSeedableEndpointName(observedName)) return [];
   const candidates: EntityCandidateInput[] = [];
-  if (
-    !relationshipCandidate.toEntityRef.startsWith("legal.") &&
-    buildEntityId(observedName) === relationshipCandidate.toEntityRef
-  ) {
-    candidates.push(
-      buildSeededRelationshipEndpointCandidate(
-        sourceId,
-        relationshipCandidate,
-        observedName,
-        relationshipCandidate.toEntityRef,
-        "to-endpoint",
-      ),
-    );
-  }
   const seedableToEndpoint = seedableToRelationshipEndpoint(
     sourceId,
     relationshipCandidate,
     observedName,
   );
+  if (
+    !seedableToEndpoint &&
+    !relationshipCandidate.toEntityRef.startsWith("legal.") &&
+    isSeedableEndpointName(observedToName) &&
+    buildEntityId(observedToName) === relationshipCandidate.toEntityRef
+  ) {
+    candidates.push(
+      buildSeededRelationshipEndpointCandidate(
+        sourceId,
+        relationshipCandidate,
+        observedToName,
+        relationshipCandidate.toEntityRef,
+        "to-endpoint",
+        undefined,
+        relationshipCandidate.toEntitySafeToAutoAccept === true,
+      ),
+    );
+  }
   if (seedableToEndpoint) {
     candidates.push(
       buildSeededRelationshipEndpointCandidate(
@@ -107,7 +113,7 @@ function seededRelationshipEndpointCandidatesForRelationship(
   const seedableFromName = seedableFromRelationshipEndpointName(
     sourceId,
     relationshipCandidate,
-    observedName,
+    observedFromName,
   );
   if (seedableFromName) {
     candidates.push(
@@ -130,6 +136,7 @@ function buildSeededRelationshipEndpointCandidate(
   proposedEntityId: string,
   suffix: string,
   kind = detectEntityKind(undefined, observedName),
+  safeToAutoAccept = false,
 ): EntityCandidateInput {
   return {
     candidateId: buildCandidateId(
@@ -140,6 +147,7 @@ function buildSeededRelationshipEndpointCandidate(
     proposedEntityId,
     name: observedName,
     kind,
+    safeToAutoAccept,
     evidence: relationshipCandidate.evidence.map((evidence) => ({ ...evidence })),
   };
 }
@@ -197,9 +205,8 @@ function seedableFromRelationshipEndpointName(
 function seededRelationshipEndpointReviewItem(
   candidate: EntityCandidateInput,
 ): ReviewItemInput {
-  const safeToAutoAccept = isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(
-    candidate.candidateId,
-  );
+  const safeToAutoAccept = candidate.safeToAutoAccept === true ||
+    isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(candidate.candidateId);
   return {
     reviewItemId: buildReviewItemId(candidate.candidateId, "seeded-endpoint"),
     itemType: "entity_candidate",

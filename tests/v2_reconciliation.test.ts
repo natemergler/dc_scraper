@@ -67,7 +67,7 @@ Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint 
 
   assertEquals(relationshipCandidates.count > 0, true);
   assertEquals(relationshipReviewItems.length > 0, true);
-  assertEquals(entityReviewItems.length, 0);
+  assertEquals(entityReviewItems.length > 0, true);
   assert(blockedItems.length > 0);
   assertEquals(
     blockedItems.some((item) =>
@@ -275,6 +275,71 @@ Deno.test("relationship imports seed reviewable endpoint candidates for missing 
     true,
   );
   assertEquals(blockedAfter.count, 0);
+});
+
+Deno.test("relationship imports seed safe endpoint candidates from parsed endpoint names", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "mota.quickbase",
+      relationshipCandidateId: "relationship.mota.quickbase.safe_endpoint_hint",
+      sourceItemKey: "safe-endpoint-hint-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.office_of_budget_and_performance_management",
+      toEntityName: "Office of Budget and Performance Management",
+      toEntitySafeToAutoAccept: true,
+      relationshipType: "governed_by",
+      rawValue: "Director of the Office of Budget and Performance Management (OBPM) Designee",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const seededEntity = workbench.db.prepare(
+    `select name,
+            kind,
+            review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_budget_and_performance_management'`,
+  ).get() as { name: string; kind: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.source_board:governed_by:dc.office_of_budget_and_performance_management'`,
+  ).get() as { relationshipId: string } | undefined;
+  const seededReviewCount = workbench.db.prepare(
+    `select count(*) as count
+     from review_items
+     where subject_id = 'candidate.mota.quickbase.relationship_mota_quickbase_safe_endpoint_hint_to_endpoint'
+       and status = 'resolved'
+       and json_extract(details_json, '$.safeToAutoAccept') = 1`,
+  ).get() as { count: number };
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.mota.quickbase.safe_endpoint_hint'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(seededEntity, {
+    name: "Office of Budget and Performance Management",
+    kind: "office",
+    reviewStatus: "accepted",
+  });
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.source_board:governed_by:dc.office_of_budget_and_performance_management",
+  );
+  assertEquals(seededReviewCount.count, 1);
+  assertEquals(blockedCount.count, 0);
 });
 
 function countReconciliationPrepares(workbench: Workbench): {

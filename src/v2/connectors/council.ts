@@ -122,7 +122,10 @@ export const councilCommitteesConnector: SourceConnector = {
       evidence: [fieldEvidence("committee", committee.name, 0)],
     }));
     for (const detail of committeeDetails) {
-      for (const [index, target] of detail.oversightTargets.entries()) {
+      for (
+        const [index, target] of detail.oversightTargets.filter(isExplicitOversightTarget)
+          .entries()
+      ) {
         relationshipCandidates.push({
           relationshipCandidateId: buildRelationshipCandidateId(
             councilCommitteesSource.sourceId,
@@ -210,6 +213,10 @@ export const councilCommitteesConnector: SourceConnector = {
 function defaultActionForRelationship(candidate: RelationshipCandidateInput): "accept" | "defer" {
   if (candidate.relationshipType !== "overseen_by") return "accept";
   return defaultActionForCouncilOversightTarget(candidate.rawValue);
+}
+
+function isExplicitOversightTarget(target: string): boolean {
+  return !/^all of the\b/i.test(target.trim());
 }
 
 function buildCommitteeMemberRelationships(

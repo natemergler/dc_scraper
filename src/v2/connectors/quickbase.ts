@@ -421,6 +421,11 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           sourceItemKey: itemKey,
           fromEntityRef: boardEntityId,
           toEntityRef: governingAgencyEntityId,
+          toEntityName: governingAgency,
+          toEntitySafeToAutoAccept: isSafeQuickbaseSeededAuthorityEndpoint(
+            governingAgency,
+            appointeeDesignation,
+          ),
           relationshipType: "governed_by",
           rawValue: seat,
           needsReview: false,
@@ -656,6 +661,11 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
         sourceItemKey: itemKey,
         fromEntityRef: seatRecord.entityId,
         toEntityRef: authorityEntityId,
+        toEntityName: authority.authorityName,
+        toEntitySafeToAutoAccept: isSafeQuickbaseSeededAuthorityEndpoint(
+          authority.authorityName,
+          appointeeDesignation,
+        ),
         relationshipType: authority.relationshipType,
         rawValue: authority.rawValue,
         needsReview: true,
@@ -1030,9 +1040,20 @@ function hasPlainTextAfterSeatAcronym(value: string): boolean {
 
 function isLikelyQuickbaseOrganization(value: string): boolean {
   if (resolvesToExplicitKnownEntityRef(value)) return true;
+  if (/\breserve corps\b/i.test(value)) return false;
   if (/\b(officer|advisor|counselor|representative)\b/i.test(value)) return false;
   return /\b(department|office|agency|administration|board|commission|council|committee|authority|university|library|district department|mayor's office)\b/i
     .test(value);
+}
+
+function isSafeQuickbaseSeededAuthorityEndpoint(
+  name: string,
+  appointeeDesignation: string,
+): boolean {
+  if (!/\bDC Agency Representative\b/i.test(appointeeDesignation)) return false;
+  const normalized = name.trim().toLowerCase();
+  return normalized === "university of the district of columbia community college" ||
+    normalized === "office of budget and performance management";
 }
 
 function resolvesToExplicitKnownEntityRef(value: string): boolean {
