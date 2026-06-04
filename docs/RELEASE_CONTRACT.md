@@ -83,7 +83,9 @@ copy of the manual review queue.
 
 `release inspect` checks the built release directory against `manifest.json`: expected file count,
 actual file count, file hashes, missing files, and unexpected entries. Package-integrity problems
-make release readiness conservative even when the manifest itself can be read.
+make release readiness conservative even when the manifest itself can be read. The default text
+output stays compact; use `release inspect --json` for aggregate review/readiness drilldowns from
+`release_summary`.
 
 ## Query Cookbook
 
