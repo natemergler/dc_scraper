@@ -266,27 +266,16 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
       ? Math.max(0, Math.floor(context.limit))
       : undefined;
 
-    const countUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
-      where: "1=1",
-      returnCountOnly: "true",
-      f: "json",
-    });
-    const countArtifact = requestedLimit === undefined
-      ? await fetchEnterpriseDatasetInventoryCount(context, countUrl)
-      : undefined;
-    const rowLimit = requestedLimit ?? countArtifact?.count ?? 0;
-    const pagePlans = buildEnterpriseDatasetInventoryPagePlans(rowLimit, maxRecordCount);
-    if (pagePlans.length > 0) {
+    const fetchedPages = requestedLimit === undefined
+      ? await fetchEnterpriseDatasetInventoryPagesUntilExhausted(context, maxRecordCount)
+      : await fetchEnterpriseDatasetInventoryLimitedPages(context, requestedLimit, maxRecordCount);
+    const rowCount = fetchedPages.reduce((count, page) => count + page.features.length, 0);
+    if (rowCount > 0) {
       context.onProgress?.({
         message:
-          `Fetching Enterprise Dataset Inventory rows 1-${rowLimit} in ${pagePlans.length} page(s) of up to ${maxRecordCount}`,
+          `Fetched ${rowCount} Enterprise Dataset Inventory row(s) across ${fetchedPages.length} page artifact(s)`,
       });
     }
-    const fetchedPages = await mapConcurrent(
-      pagePlans,
-      enterpriseDatasetInventoryPageConcurrency,
-      (plan) => fetchEnterpriseDatasetInventoryPage(context, plan),
-    );
 
     const rowArtifacts = fetchedPages.map((page) => page.artifact);
     const items: SourceItemInput[] = [];
@@ -364,10 +353,7 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
         {
           endpoint: metadataEndpoint,
           status: "success",
-          artifacts: [
-            artifact("schema", "json", metadataUrl, metadataText),
-            ...(countArtifact ? [countArtifact.artifact] : []),
-          ],
+          artifacts: [artifact("schema", "json", metadataUrl, metadataText)],
           parsed: {
             fields,
           },
@@ -395,27 +381,64 @@ interface EnterpriseDatasetInventoryPagePlan {
 
 interface EnterpriseDatasetInventoryPage {
   artifact: ReturnType<typeof artifact>;
+  plan: EnterpriseDatasetInventoryPagePlan;
   features: Array<Record<string, unknown>>;
 }
 
-async function fetchEnterpriseDatasetInventoryCount(
+async function fetchEnterpriseDatasetInventoryLimitedPages(
   context: ConnectorContext,
-  countUrl: string,
-): Promise<{ count: number; artifact: ReturnType<typeof artifact> }> {
-  context.onProgress?.({ message: "Fetching Enterprise Dataset Inventory row count" });
-  const countResponse = await context.fetcher(countUrl);
-  const countText = await countResponse.text();
-  const countPayload = JSON.parse(countText) as Record<string, unknown>;
-  assertNoEnterpriseDatasetInventoryError("row count", countPayload);
-  const rawCount = Number(countPayload.count);
-  if (!Number.isFinite(rawCount) || rawCount < 0) {
-    throw new Error("admin.enterprise_dataset_inventory row count failed: missing numeric count");
+  rowLimit: number,
+  maxRecordCount: number,
+): Promise<EnterpriseDatasetInventoryPage[]> {
+  const pagePlans = buildEnterpriseDatasetInventoryPagePlans(rowLimit, maxRecordCount);
+  if (pagePlans.length === 0) return [];
+  context.onProgress?.({
+    message:
+      `Fetching Enterprise Dataset Inventory rows 1-${rowLimit} in ${pagePlans.length} page(s) of up to ${maxRecordCount}`,
+  });
+  return await mapConcurrent(
+    pagePlans,
+    enterpriseDatasetInventoryPageConcurrency,
+    (plan) => fetchEnterpriseDatasetInventoryPage(context, plan),
+  );
+}
+
+async function fetchEnterpriseDatasetInventoryPagesUntilExhausted(
+  context: ConnectorContext,
+  maxRecordCount: number,
+): Promise<EnterpriseDatasetInventoryPage[]> {
+  const pages: EnterpriseDatasetInventoryPage[] = [];
+  let nextOffset = 0;
+  let nextPageNumber = 1;
+  while (true) {
+    const plans = Array.from(
+      { length: enterpriseDatasetInventoryPageConcurrency },
+      (_, index) =>
+        buildEnterpriseDatasetInventoryPagePlan({
+          offset: nextOffset + index * maxRecordCount,
+          pageNumber: nextPageNumber + index,
+          pageSize: maxRecordCount,
+        }),
+    );
+    context.onProgress?.({
+      message: `Fetching Enterprise Dataset Inventory row page batch starting at ${
+        nextOffset + 1
+      } (${plans.length} page(s) of up to ${maxRecordCount})`,
+    });
+    const batch = await mapConcurrent(
+      plans,
+      enterpriseDatasetInventoryPageConcurrency,
+      (plan) => fetchEnterpriseDatasetInventoryPage(context, plan),
+    );
+    const terminalIndex = batch.findIndex((page) => page.features.length < page.plan.pageSize);
+    if (terminalIndex >= 0) {
+      pages.push(...batch.slice(0, terminalIndex + 1));
+      return pages.filter((page) => page.features.length > 0);
+    }
+    pages.push(...batch);
+    nextOffset += batch.length * maxRecordCount;
+    nextPageNumber += batch.length;
   }
-  const count = Math.floor(rawCount);
-  return {
-    count,
-    artifact: artifact("schema", "json", countUrl, countText),
-  };
 }
 
 function buildEnterpriseDatasetInventoryPagePlans(
@@ -425,22 +448,30 @@ function buildEnterpriseDatasetInventoryPagePlans(
   const plans: EnterpriseDatasetInventoryPagePlan[] = [];
   for (let offset = 0; offset < rowLimit; offset += maxRecordCount) {
     const pageSize = Math.min(maxRecordCount, rowLimit - offset);
-    plans.push({
+    plans.push(buildEnterpriseDatasetInventoryPagePlan({
       offset,
       pageNumber: plans.length + 1,
       pageSize,
-      url: buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
-        where: "1=1",
-        outFields: enterpriseDatasetInventoryRowFields.join(","),
-        orderByFields: "OBJECTID",
-        returnGeometry: "false",
-        resultOffset: String(offset),
-        resultRecordCount: String(pageSize),
-        f: "json",
-      }),
-    });
+    }));
   }
   return plans;
+}
+
+function buildEnterpriseDatasetInventoryPagePlan(
+  input: { offset: number; pageNumber: number; pageSize: number },
+): EnterpriseDatasetInventoryPagePlan {
+  return {
+    ...input,
+    url: buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
+      where: "1=1",
+      outFields: enterpriseDatasetInventoryRowFields.join(","),
+      orderByFields: "OBJECTID",
+      returnGeometry: "false",
+      resultOffset: String(input.offset),
+      resultRecordCount: String(input.pageSize),
+      f: "json",
+    }),
+  };
 }
 
 async function fetchEnterpriseDatasetInventoryPage(
@@ -468,6 +499,7 @@ async function fetchEnterpriseDatasetInventoryPage(
   });
   return {
     artifact: artifact("rows", "json", plan.url, pageText),
+    plan,
     features,
   };
 }
