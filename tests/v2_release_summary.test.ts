@@ -317,16 +317,10 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
         open_count: number;
         deferred_count: number;
       }>;
-      top_unresolved_review_items: Array<{
-        item_type: string;
-        source_id?: string;
-        label: string;
-        reason: string;
-        default_action: string;
-        status: string;
-      }>;
+      top_unresolved_review_items?: unknown;
     };
   };
+  const manifestText = await Deno.readTextFile(join(outDir, "manifest.json"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   workbench.close();
 
@@ -372,24 +366,9 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
     ),
   );
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
-  assert(
-    manifest.release_summary.top_unresolved_review_items.some((row) =>
-      row.label === "Example Body" &&
-      row.item_type === "entity_candidate" &&
-      row.source_id === "test.signature.entities" &&
-      row.default_action === "accept" &&
-      row.status === "open"
-    ),
-  );
-  assert(
-    manifest.release_summary.top_unresolved_review_items.some((row) =>
-      row.label === "D.C. Official Code § 1-204.22" &&
-      row.item_type === "legal_ref" &&
-      row.source_id === "test.signature.legal_refs" &&
-      row.default_action === "accept" &&
-      row.status === "deferred"
-    ),
-  );
+  assertEquals(manifest.release_summary.top_unresolved_review_items, undefined);
+  assert(!manifestText.includes("Example Body"));
+  assert(!manifestText.includes("D.C. Official Code § 1-204.22"));
   assert(!readme.includes("## Top unresolved review items"));
   assert(!readme.includes("Review fixture entity candidate"));
 
@@ -443,7 +422,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
         open_count: number;
         deferred_count: number;
       }>;
-      top_unresolved_review_items: Array<{ label: string; source_id?: string }>;
+      top_unresolved_review_items?: unknown;
     };
   };
   assertEquals(inspectJsonOutput.code, 0);
@@ -469,11 +448,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
       row.deferred_count === 1
     ),
   );
-  assert(
-    inspectJson.releaseSummary.top_unresolved_review_items.some((row) =>
-      row.label === "Example Body" && row.source_id === "test.signature.entities"
-    ),
-  );
+  assertEquals(inspectJson.releaseSummary.top_unresolved_review_items, undefined);
 });
 
 function releaseStatusNote(status: ReturnType<typeof buildWorkbenchStatus>): string {

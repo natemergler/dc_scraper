@@ -613,7 +613,7 @@ Deno.test("release builder rejects email-shaped contact info in release rows", a
   workbench.close();
 });
 
-Deno.test("release builder rejects contact-shaped unresolved review summary before writing README", async () => {
+Deno.test("release builder omits contact-shaped unresolved review labels from release summary", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const outDir = join(dir, "release");
@@ -643,13 +643,11 @@ Deno.test("release builder rejects contact-shaped unresolved review summary befo
     )`,
   ).run();
 
-  await assertRejects(
-    () => buildV2Release(workbench, outDir),
-    Error,
-    "Release output contains email-shaped contact info in release_summary",
-  );
-  await assertRejects(() => Deno.stat(join(outDir, "README.md")), Deno.errors.NotFound);
-  await assertRejects(() => Deno.stat(join(outDir, "manifest.json")), Deno.errors.NotFound);
+  await buildV2Release(workbench, outDir);
+  const manifest = await Deno.readTextFile(join(outDir, "manifest.json"));
+  const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  assert(!manifest.includes("not-for-release@example.com"));
+  assert(!readme.includes("not-for-release@example.com"));
   workbench.close();
 });
 
