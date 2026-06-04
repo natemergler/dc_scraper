@@ -3839,6 +3839,22 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     }),
     dataDir,
   );
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.corrections_information_council', 'Corrections Information Council', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.review_list_oversight",
+      sourceItemKey: "review-list-oversight-row",
+      fromEntityRef: "dc.corrections_information_council",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "overseen_by",
+      rawValue: "Corrections Information Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
   workbench.close();
   const output = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -3931,7 +3947,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--relationship-type",
       "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.council.committees.review_list_oversight",
       "--db",
       dbPath,
       "--json",
@@ -3948,7 +3964,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   assert(
     relationshipTypeJson.items.every((item) =>
       item.itemType === "relationship_candidate" &&
-      item.subjectId.startsWith("relationship.council.committees") &&
+      item.subjectId.startsWith("relationship.council.committees.review_list_oversight") &&
       item.details.relationshipType === "overseen_by"
     ),
   );
@@ -3971,9 +3987,9 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "--relationship-type",
       "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees.committee_on_health_oversight",
+      "relationship.council.committees.review_list_oversight",
       "--raw-value-contains",
-      "Health",
+      "Corrections",
       "--db",
       dbPath,
       "--json",
@@ -3986,10 +4002,11 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
     items: Array<{ details: { rawValue: string; relationshipType: string } }>;
   };
   assertEquals(rawValueContainsJsonOutput.code, 0);
+  assertEquals(rawValueContainsJson.count, 1);
   assert(
     rawValueContainsJson.items.every((item) =>
       item.details.relationshipType === "overseen_by" &&
-      item.details.rawValue.includes("Health")
+      item.details.rawValue.includes("Corrections")
     ),
   );
 
@@ -4007,11 +4024,13 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       "review",
       "list",
       "--mode",
-      "relationships",
-      "--relationship-type",
-      "overseen_by",
+      "entities",
+      "--status",
+      "open",
+      "--type",
+      "entity_candidate",
       "--subject-prefix",
-      "relationship.council.committees.committee_on_health_oversight",
+      "candidate.test.review_list",
       "--limit",
       "1",
       "--db",
@@ -4216,7 +4235,7 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
   assert(blockedRelationships.count > 0);
 });
 
-Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and the unblocked oversight relationship", async () => {
+Deno.test("accepted-endpoint seeded Council oversight relationships no longer wait for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -4279,6 +4298,11 @@ Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and 
      from canonical_entities
      where entity_id = 'dc.child_support_guideline_commission'`,
   ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedAfterEntityBatch = reopenedAfterEntityBatch.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
   const reviewReadyOversight = reopenedAfterEntityBatch.listReviewItems({
     mode: "relationships",
     relationshipType: "overseen_by",
@@ -4287,8 +4311,11 @@ Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and 
   reopenedAfterEntityBatch.close();
   assertEquals(seededEntity?.entityId, "dc.child_support_guideline_commission");
   assertEquals(seededEntity?.reviewStatus, "accepted");
-  assertEquals(reviewReadyOversight.length, 1);
-  assertEquals(reviewReadyOversight[0]?.defaultAction, "accept");
+  assertEquals(
+    acceptedAfterEntityBatch?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(reviewReadyOversight.length, 0);
 
   const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -4321,7 +4348,7 @@ Deno.test("batch accept-safe accepts seeded Council oversight prerequisites and 
   assertEquals(relationshipBatchOutput.code, 0);
   assertStringIncludes(
     new TextDecoder().decode(relationshipBatchOutput.stdout),
-    "Accepted 1 safe review item(s).",
+    "Accepted 0 safe review item(s).",
   );
 
   const reopenedAfterRelationshipBatch = new Workbench(dbPath);
@@ -4502,7 +4529,7 @@ Deno.test("batch accept-safe skips non-committee seeded endpoint candidates", as
   assertEquals(canonicalEntity, undefined);
 });
 
-Deno.test("batch accept-safe accepts filtered relationships only when endpoints are accepted", async () => {
+Deno.test("accepted-endpoint filtered Council oversight relationships no longer wait for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -4571,7 +4598,7 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -4591,7 +4618,7 @@ Deno.test("batch accept-safe accepts filtered relationships only when endpoints 
   assertEquals(unresolvedOversight.length, 0);
 });
 
-Deno.test("batch accept-safe accepts scoped Council oversight only for accepted endpoints", async () => {
+Deno.test("accepted-endpoint scoped Council oversight no longer waits for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -4671,7 +4698,7 @@ Deno.test("batch accept-safe accepts scoped Council oversight only for accepted 
   }).output();
   assertEquals(batchOutput.code, 0);
   const batchText = new TextDecoder().decode(batchOutput.stdout);
-  assertStringIncludes(batchText, "Accepted 2 safe review item(s).");
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -5668,49 +5695,29 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const fetcher = async (url: string) => ({
-    status: 200,
-    text: async () => {
-      switch (url) {
-        case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
-        case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
-        default:
-          throw new Error(`Unexpected url ${url}`);
-      }
-    },
-    json: async <T>() => {
-      throw new Error(`No json fixture for ${url}`) as T;
-    },
-  });
-  await workbench.importConnectorResult(
-    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
-    dataDir,
-  );
   for (
-    const subjectId of [
-      "candidate.council.committees.committee_of_the_whole",
-      "candidate.council.committees.committee_on_health",
-    ]
-  ) {
-    await workbench.appendResolutionEvent(
-      { eventType: "accept_entity_candidate", subjectId, payload: {} },
-      resolutionsDir,
-    );
-  }
-  for (
-    const [entityId, name] of [
-      ["dc.dc_health", "Department of Health"],
-      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
-    ]
+    const [entityId, name, kind] of [
+      ["dc.accept_default_test_parent", "Accept Default Test Parent", "board"],
+      ["dc.accept_default_test_committee", "Accept Default Test Committee", "committee"],
+    ] as const
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name);
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
   }
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.defer_default.accept_relationship",
+      relationshipCandidateId: "relationship.test.defer_default.accept_relationship.health",
+      sourceItemKey: "defer-default-accept-health-row",
+      fromEntityRef: "dc.accept_default_test_parent",
+      toEntityRef: "dc.accept_default_test_committee",
+      relationshipType: "overseen_by",
+      rawValue: "Health Example Oversight",
+      needsReview: true,
+    }),
+    dataDir,
+  );
   workbench.close();
 
   const deferOutput = await new Deno.Command(Deno.execPath(), {
@@ -5732,7 +5739,7 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
       "--relationship-type",
       "overseen_by",
       "--subject-prefix",
-      "relationship.council.committees",
+      "relationship.test.defer_default.accept_relationship",
       "--raw-value-contains",
       "Health",
       "--db",
@@ -5748,7 +5755,7 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
   );
   assertStringIncludes(
     new TextDecoder().decode(deferOutput.stdout),
-    "Skipped 2 item(s) whose default action was not defer.",
+    "Skipped 1 item(s) whose default action was not defer.",
   );
 
   const reopened = new Workbench(dbPath);
@@ -5757,18 +5764,18 @@ Deno.test("batch defer-default skips accept-default raw-value substring slices",
     mode: "relationships",
     status: "deferred",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.council.committees",
+    subjectPrefix: "relationship.test.defer_default.accept_relationship",
     rawValueContains: "Health",
   });
   const openOversight = reopened.listReviewItems({
     mode: "relationships",
     status: "open",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.council.committees",
+    subjectPrefix: "relationship.test.defer_default.accept_relationship",
   });
   reopened.close();
   assertEquals(deferredHealth.length, 0);
-  assertEquals(openOversight.length, 2);
+  assertEquals(openOversight.length, 1);
 });
 
 Deno.test("plain batch defer is not available", async () => {

@@ -16,6 +16,7 @@ const AUTO_ACCEPT_NO_REVIEW_RULES = new Map<string, Set<RelationshipType>>([
 
 const AUTO_ACCEPT_ACCEPTED_ENDPOINT_RULES = new Map<string, Set<RelationshipType>>([
   ["bega.structure", new Set(["part_of"])],
+  ["council.committees", new Set(["overseen_by"])],
   ["dccourts.structure", new Set(["part_of"])],
   ["mota.quickbase", new Set(["appointed_by", "designated_by", "has_status", "holds"])],
 ]);

@@ -629,24 +629,23 @@ Deno.test("seeded committee endpoint candidates do not block stronger source aut
      where subject_id = 'relationship.council.committees.seeded_oversight_overlap'
        and state = 'blocked'`,
   ).get() as { count: number };
-  const relationshipItems = workbench.listReviewItems({
-    mode: "relationships",
-    subjectPrefix: "relationship.council.committees.seeded_oversight_overlap",
-  });
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.adult_career_pathways_task_force:overseen_by:dc.committee_on_executive_administration_and_labor'`,
+  ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
   assertEquals(canonical?.entityId, "dc.adult_career_pathways_task_force");
   assertEquals(canonical?.reviewStatus, "accepted");
   assertEquals(blockedCount.count, 0);
   assertEquals(
-    relationshipItems.some((item) =>
-      item.subjectId === "relationship.council.committees.seeded_oversight_overlap"
-    ),
-    true,
+    acceptedRelationship?.relationshipId,
+    "dc.adult_career_pathways_task_force:overseen_by:dc.committee_on_executive_administration_and_labor",
   );
 });
 
-Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into review-ready work", async () => {
+Deno.test("council oversight exact-name aliases resolve accepted canonical endpoints into accepted relationships", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -696,18 +695,17 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
      where subject_id = 'relationship.council.committees.committee_on_housing_oversight_1'
        and state = 'blocked'`,
   ).get() as { count: number };
-  const relationshipItems = workbench.listReviewItems({
-    mode: "relationships",
-    subjectPrefix: "relationship.council.committees.committee_on_housing_oversight_1",
-  });
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.board_of_review_for_anti_deficiency_violations:overseen_by:dc.committee_on_housing'`,
+  ).get() as { relationshipId: string } | undefined;
   workbench.close();
 
   assertEquals(blockedCount.count, 0);
   assertEquals(
-    relationshipItems.some((item) =>
-      item.subjectId === "relationship.council.committees.committee_on_housing_oversight_1"
-    ),
-    true,
+    acceptedRelationship?.relationshipId,
+    "dc.board_of_review_for_anti_deficiency_violations:overseen_by:dc.committee_on_housing",
   );
 });
 
@@ -949,18 +947,15 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council_of_the_district_of_columbia', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
   for (
-    const [entityId, name] of [
-      ["dc.dc_health", "Department of Health"],
-      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
-    ]
+    const [entityId, name, kind] of [
+      ["dc.office_of_planning", "Office of Planning", "office"],
+      ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
+    ] as const
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name);
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
   }
 
   const fetcher = async (url: string) => ({
@@ -968,11 +963,21 @@ Deno.test("relationship review items are rebuilt from workbench state without co
     text: async () => {
       switch (url) {
         case "https://dccouncil.gov/committees/":
-          return councilCommitteesFixture;
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
+            </body></html>
+          `;
         case "https://dccouncil.gov/committees/committee-of-the-whole/":
-          return councilCommitteeWholeDetailFixture;
-        case "https://dccouncil.gov/committees/committee-on-health/":
-          return councilCommitteeHealthDetailFixture;
+          return `
+            <html><body>
+              <h1>Committee of the Whole</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Office of Planning (including commemorative works)</li>
+              </ul>
+            </body></html>
+          `;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -1005,16 +1010,16 @@ Deno.test("relationship review items are rebuilt from workbench state without co
     relationshipType: "overseen_by",
     subjectPrefix: "relationship.council.committees",
   }).find((reviewItem) =>
-    reviewItem.subjectId === "relationship.council.committees.committee_on_health_oversight_1"
+    reviewItem.subjectId === "relationship.council.committees.committee_of_the_whole_oversight_1"
   );
   workbench.close();
 
   assert(item);
   assertEquals(item.reason, "Review Council committee oversight relationship");
-  assertEquals(item.defaultAction, "accept");
+  assertEquals(item.defaultAction, "defer");
   assertEquals(item.details.relationshipType, "overseen_by");
-  assertEquals(item.details.fromEntityRef, "dc.dc_health");
-  assertEquals(item.details.toEntityRef, "dc.committee_on_health");
+  assertEquals(item.details.fromEntityRef, "dc.office_of_planning");
+  assertEquals(item.details.toEntityRef, "dc.committee_of_the_whole");
 });
 
 Deno.test("blocked relationship acceptance fails instead of creating placeholder entities", async () => {

@@ -148,25 +148,27 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   seedAcceptedEntity(workbench, "dc.alt_agency", "Alt Agency", "agency");
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
-      sourceId: "council.committees",
-      relationshipCandidateId: "relationship.council.committees.review_packet_one",
+      sourceId: "test.review_packets.group_a",
+      relationshipCandidateId: "relationship.test.review_packets.group_a.review_packet_one",
       sourceItemKey: "review-packet-row-one",
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.target_agency",
       relationshipType: "overseen_by",
       rawValue: "Committee on Health's Work",
+      needsReview: true,
     }),
     dataDir,
   );
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
-      sourceId: "council.committees",
-      relationshipCandidateId: "relationship.council.committees.review_packet_two",
+      sourceId: "test.review_packets.group_a",
+      relationshipCandidateId: "relationship.test.review_packets.group_a.review_packet_two",
       sourceItemKey: "review-packet-row-two",
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.alt_agency",
       relationshipType: "overseen_by",
       rawValue: "Committee on Education",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -198,11 +200,11 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     }>;
   };
   assertEquals(body.count, 1);
-  assertEquals(body.packets[0].sourceId, "council.committees");
+  assertEquals(body.packets[0].sourceId, "test.review_packets.group_a");
   assertEquals(body.packets[0].relationshipType, "overseen_by");
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[0].openCount, 2);
-  assertEquals(body.packets[0].subjectPrefix, "relationship.council.committees");
+  assertEquals(body.packets[0].subjectPrefix, "relationship.test.review_packets.group_a");
 
   const textOutput = await runDc([
     "review",
@@ -220,7 +222,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(textOutput.code, 0);
   const textBody = new TextDecoder().decode(textOutput.stdout);
   assertStringIncludes(textBody, "Review packets: 1");
-  assertStringIncludes(textBody, "[2] council.committees relationship_candidate");
+  assertStringIncludes(textBody, "[2] test.review_packets.group_a relationship_candidate");
   assertEquals(textBody.includes("next:"), false);
 
   const narrowedOutput = await runDc([
@@ -249,7 +251,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(narrowedBody.packets[0].count, 1);
   assertEquals(
     narrowedBody.packets[0].subjectPrefix,
-    "relationship.council.committees.review_packet_one",
+    "relationship.test.review_packets.group_a.review_packet_one",
   );
 
   const broadPrefixOutput = await runDc([
@@ -258,7 +260,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     "--mode",
     "relationships",
     "--subject-prefix",
-    "relationship.council",
+    "relationship.test.review_packets",
     "--db",
     dbPath,
     "--resolutions-dir",
@@ -270,7 +272,10 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   const broadPrefixBody = JSON.parse(new TextDecoder().decode(broadPrefixOutput.stdout)) as {
     packets: Array<{ subjectPrefix?: string }>;
   };
-  assertEquals(broadPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
+  assertEquals(
+    broadPrefixBody.packets[0].subjectPrefix,
+    "relationship.test.review_packets.group_a",
+  );
 
   const narrowPrefixOutput = await runDc([
     "review",
@@ -278,7 +283,7 @@ Deno.test("review packets groups related relationship work conservatively", asyn
     "--mode",
     "relationships",
     "--subject-prefix",
-    "relationship.council.committees.review_packet",
+    "relationship.test.review_packets.group_a.review_packet",
     "--db",
     dbPath,
     "--resolutions-dir",
@@ -290,7 +295,10 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   const narrowPrefixBody = JSON.parse(new TextDecoder().decode(narrowPrefixOutput.stdout)) as {
     packets: Array<{ subjectPrefix?: string }>;
   };
-  assertEquals(narrowPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
+  assertEquals(
+    narrowPrefixBody.packets[0].subjectPrefix,
+    "relationship.test.review_packets.group_a",
+  );
 
   const segmentPrefixOutput = await runDc([
     "review",
@@ -310,7 +318,10 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   const segmentPrefixBody = JSON.parse(new TextDecoder().decode(segmentPrefixOutput.stdout)) as {
     packets: Array<{ subjectPrefix?: string; nextCommand?: string }>;
   };
-  assertEquals(segmentPrefixBody.packets[0].subjectPrefix, "relationship.council.committees");
+  assertEquals(
+    segmentPrefixBody.packets[0].subjectPrefix,
+    "relationship.test.review_packets.group_a",
+  );
   assertEquals(segmentPrefixBody.packets[0].nextCommand, undefined);
 });
 
@@ -326,25 +337,27 @@ Deno.test("review packet limits apply after grouping related work", async () => 
   seedAcceptedEntity(workbench, "dc.alt_agency", "Alt Agency", "agency");
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
-      sourceId: "council.committees",
-      relationshipCandidateId: "relationship.council.committees.limit_group_a.one",
+      sourceId: "test.review_packets.group_a",
+      relationshipCandidateId: "relationship.test.review_packets.group_a.limit_group_a.one",
       sourceItemKey: "review-packet-limit-row-one",
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.target_agency",
       relationshipType: "overseen_by",
       rawValue: "Alpha Committee",
+      needsReview: true,
     }),
     dataDir,
   );
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
-      sourceId: "council.committees",
-      relationshipCandidateId: "relationship.council.committees.limit_group_a.two",
+      sourceId: "test.review_packets.group_a",
+      relationshipCandidateId: "relationship.test.review_packets.group_a.limit_group_a.two",
       sourceItemKey: "review-packet-limit-row-two",
       fromEntityRef: "dc.source_board",
       toEntityRef: "dc.alt_agency",
       relationshipType: "overseen_by",
       rawValue: "Beta Committee",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -386,7 +399,7 @@ Deno.test("review packet limits apply after grouping related work", async () => 
   };
   assertEquals(body.count, 2);
   assertEquals(body.packets.length, 2);
-  assertEquals(body.packets[0].sourceId, "council.committees");
+  assertEquals(body.packets[0].sourceId, "test.review_packets.group_a");
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[1].sourceId, "test.review_packets.group_b");
   assertEquals(body.packets[1].count, 1);

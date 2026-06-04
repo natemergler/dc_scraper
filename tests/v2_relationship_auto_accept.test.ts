@@ -481,6 +481,58 @@ Deno.test("Accepted-endpoint DC Courts structure relationships auto-accept durin
   assertEquals(reviewItems.length, 0);
 });
 
+Deno.test("accepted-endpoint Council oversight relationships auto-accept when default action is accept", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.child_support_guideline_commission", "Child Support Guideline Commission", "commission"],
+      [
+        "dc.committee_on_the_judiciary_and_public_safety",
+        "Committee on the Judiciary and Public Safety",
+        "committee",
+      ],
+    ] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.oversight",
+      sourceItemKey: "council-oversight-row",
+      fromEntityRef: "dc.child_support_guideline_commission",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Child Support Guideline Commission",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const relationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'",
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.test.auto_accept.council",
+  });
+  workbench.close();
+
+  assertEquals(
+    relationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(reviewItems.length, 0);
+});
+
 Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
