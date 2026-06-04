@@ -13,6 +13,7 @@ import {
   parseLegalReference,
 } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { importConnectorResult as importConnectorResultIntoStore } from "../src/v2/workbench/import.ts";
 import {
   admin311Fixture,
   admin311WrongLayerFixture,
@@ -4862,6 +4863,14 @@ Deno.test("entity candidates that conflict with accepted kind default to defer",
   assertEquals(canonical.mergedCandidateIds, "[]");
 });
 
+Deno.test("entity conflict review context is loaded in bulk during import", async () => {
+  const onePrepareCount = await countConflictContextLookupPrepares(1);
+  const manyPrepareCount = await countConflictContextLookupPrepares(8);
+
+  assertEquals(manyPrepareCount, onePrepareCount);
+  assertEquals(manyPrepareCount, 1);
+});
+
 Deno.test("legal refs for unresolved same-entity kind conflicts stay unattached until candidate acceptance", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -7359,6 +7368,110 @@ function inventoryOnlySourceResult(): ConnectorResult {
             observedValue: "Inventory Only Dataset",
           }],
         }],
+      },
+    }],
+  };
+}
+
+async function countConflictContextLookupPrepares(candidateCount: number): Promise<number> {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.bulk_conflicted_body', 'Bulk Conflicted Body', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  let conflictContextPrepareCount = 0;
+  const countedDb = new Proxy(workbench.db, {
+    get(target, property, receiver) {
+      if (property === "prepare") {
+        return (sql: string) => {
+          if (
+            sql.includes("canonical_entities.kind != entity_candidates.kind") &&
+            sql.includes("entity_candidates.candidate_id")
+          ) {
+            conflictContextPrepareCount += 1;
+          }
+          return target.prepare(sql);
+        };
+      }
+      const value = Reflect.get(target, property, receiver);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  }) as Database;
+
+  await importConnectorResultIntoStore(
+    { db: countedDb } as Parameters<typeof importConnectorResultIntoStore>[0],
+    conflictEntityBatchSourceResult(candidateCount),
+    dataDir,
+  );
+  workbench.close();
+  return conflictContextPrepareCount;
+}
+
+function conflictEntityBatchSourceResult(candidateCount: number): ConnectorResult {
+  const itemKeys = Array.from(
+    { length: candidateCount },
+    (_, index) => `bulk-conflicted-entity-row-${index + 1}`,
+  );
+  const candidateIds = itemKeys.map((itemKey) => `candidate.test.bulk_conflicted.${itemKey}`);
+  return {
+    source: {
+      sourceId: "test.bulk_conflicted_entity_kind",
+      title: "Bulk Conflicted Entity Kind",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/bulk-conflicted-entity-kind",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.bulk_conflicted_entity_kind.main",
+        sourceId: "test.bulk_conflicted_entity_kind",
+        title: "Bulk conflicted entity rows",
+        kind: "fixture",
+        url: "https://example.com/bulk-conflicted-entity-kind",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/bulk-conflicted-entity-kind",
+        contentText: JSON.stringify({ candidateCount }),
+      }],
+      parsed: {
+        items: itemKeys.map((itemKey, index) => ({
+          itemKey,
+          itemType: "fixture_row",
+          title: `Bulk conflicted entity row ${index + 1}`,
+          body: { observedName: `Bulk Conflicted Body ${index + 1}` },
+        })),
+        entityCandidates: candidateIds.map((candidateId, index) => ({
+          candidateId,
+          sourceItemKey: itemKeys[index],
+          proposedEntityId: "dc.bulk_conflicted_body",
+          name: "Bulk Conflicted Body",
+          kind: "board",
+          confidence: 0.99,
+          evidence: [{
+            fieldPath: "name",
+            observedValue: "Bulk Conflicted Body",
+          }],
+        })),
+        reviewItems: candidateIds.map((candidateId) => ({
+          reviewItemId: buildReviewItemId(candidateId, "entity-review"),
+          itemType: "entity_candidate",
+          subjectId: candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "accept",
+          details: {
+            name: "Bulk Conflicted Body",
+            kind: "board",
+          },
+        })),
       },
     }],
   };
