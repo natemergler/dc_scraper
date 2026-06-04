@@ -16,6 +16,7 @@ export interface ReviewPacketRecord {
   refType?: string;
   toEntityRef?: string;
   whyDeferred?: string;
+  deferredGroupLabel?: string;
   subjectPrefix?: string;
   reviewItemIds: string[];
 }
@@ -83,6 +84,7 @@ export function reviewPacketsFromItems(
       whyDeferred: typeof item.details.whyDeferred === "string"
         ? item.details.whyDeferred
         : undefined,
+      deferredGroupLabel: deferredRelationshipPacketGroupLabel(item, sourceId),
       reviewItemIds: [item.reviewItemId],
     });
     packetItems.set(key, [item]);
@@ -123,6 +125,7 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     packet.refType ? `ref_type: ${packet.refType}` : undefined,
     packet.toEntityRef ? `to_entity_ref: ${packet.toEntityRef}` : undefined,
     packet.whyDeferred ? `why_deferred: ${packet.whyDeferred}` : undefined,
+    packet.deferredGroupLabel ? `deferred_group: ${packet.deferredGroupLabel}` : undefined,
     packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
     `packet_id: ${packet.packetId}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -147,16 +150,45 @@ function reviewPacketKey(item: ReviewItemRecord, sourceId: string): string {
     item.defaultAction,
     typeof item.details.relationshipType === "string" ? item.details.relationshipType : "",
     typeof item.details.refType === "string" ? item.details.refType : "",
-    ...deferredRelationshipPacketContext(item),
+    ...deferredRelationshipPacketContext(item, sourceId),
   ].join("|");
 }
 
-function deferredRelationshipPacketContext(item: ReviewItemRecord): string[] {
+function deferredRelationshipPacketContext(item: ReviewItemRecord, sourceId?: string): string[] {
   if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") return [];
   return [
     typeof item.details.toEntityRef === "string" ? item.details.toEntityRef : "",
     typeof item.details.whyDeferred === "string" ? item.details.whyDeferred : "",
+    deferredRelationshipPacketGroupLabel(item, sourceId) ?? "",
   ];
+}
+
+function deferredRelationshipPacketGroupLabel(
+  item: ReviewItemRecord,
+  sourceId?: string,
+): string | undefined {
+  if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") {
+    return undefined;
+  }
+  const packetSourceId = sourceId ?? "unknown";
+  if (packetSourceId !== "mota.quickbase") return undefined;
+  if (item.details.relationshipType !== "overseen_by") return undefined;
+  if (typeof item.details.rawValue !== "string") return undefined;
+  const normalized = item.details.rawValue.toLowerCase();
+  if (
+    normalized.includes("fatality review") ||
+    normalized.includes("mortality review") ||
+    normalized.includes("review committee")
+  ) {
+    return "Review/fatality committee-like names";
+  }
+  if (
+    normalized.includes("mayor's advisory committee") ||
+    normalized.includes("advisory committee to the office")
+  ) {
+    return "Executive-anchored committee-like names";
+  }
+  return "Other committee-like names";
 }
 
 function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(

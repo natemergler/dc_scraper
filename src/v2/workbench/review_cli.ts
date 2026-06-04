@@ -386,7 +386,9 @@ function deferredRelationshipPacketTitle(
     return undefined;
   }
   if (packet.sourceId === "mota.quickbase" && packet.relationshipType === "overseen_by") {
-    return "Quickbase committee-like Council oversight";
+    return packet.deferredGroupLabel
+      ? `${packet.deferredGroupLabel} Council oversight`
+      : "Quickbase committee-like Council oversight";
   }
   if (!packet.toEntityRef) return undefined;
   const targetName = endpointStatus(store, packet.toEntityRef).name ??
