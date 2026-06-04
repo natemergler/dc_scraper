@@ -25,6 +25,8 @@ The release contains exactly these public files:
 - Compact `relationships.*` rows expose accepted directed facts, not row-level evidence payloads.
 - Evidence remains source-backed, compact, and auditable in the workbench before handoff.
 - Personal contact details and local filesystem paths are never allowed in release output.
+- The generated `README.md` is a public package guide. It does not carry review status, readiness,
+  unresolved-work, or workbench caveat language.
 
 ## Model Semantics
 
