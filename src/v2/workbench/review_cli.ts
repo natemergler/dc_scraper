@@ -388,11 +388,8 @@ function deferredRelationshipPacketTitle(
   if (!packet.toEntityRef) return undefined;
   const targetName = endpointStatusMap(store, [packet.toEntityRef]).get(packet.toEntityRef)?.name ??
     humanizeToken(packet.toEntityRef.replace(/^dc\./, "").replace(/^legal\./, ""));
-  if (packet.whyDeferred?.startsWith("Scoped oversight text")) {
-    return `${targetName} scoped oversight`;
-  }
-  if (packet.whyDeferred?.startsWith("This named target stays")) {
-    return `${targetName} named oversight`;
+  if (packet.whyDeferred?.startsWith("Oversight text uses exclusion")) {
+    return `${targetName} exclusion oversight`;
   }
   if (packet.whyDeferred?.includes('parent branch as "Other"')) {
     return `${targetName} branch relationships`;

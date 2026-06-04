@@ -598,6 +598,8 @@ Deno.test("accepted-endpoint Council oversight relationships auto-accept when de
         "Committee on the Judiciary and Public Safety",
         "committee",
       ],
+      ["dc.department_of_buildings", "Department of Buildings", "agency"],
+      ["dc.office_of_the_attorney_general", "Office of the Attorney General", "agency"],
     ] as const
   ) {
     workbench.db.prepare(
@@ -636,7 +638,7 @@ Deno.test("accepted-endpoint Council oversight relationships auto-accept when de
   assertEquals(reviewItems.length, 0);
 });
 
-Deno.test("accepted-endpoint Council oversight relationships stay in review when default action is defer", async () => {
+Deno.test("accepted-endpoint Council exact, including, and jointly oversight relationships auto-accept", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -664,8 +666,8 @@ Deno.test("accepted-endpoint Council oversight relationships stay in review when
   await workbench.importConnectorResult(
     syntheticCustomRelationshipSourceResult({
       sourceId: "council.committees",
-      relationshipCandidateId: "relationship.test.auto_accept.council.defer_oversight",
-      sourceItemKey: "council-defer-oversight-row",
+      relationshipCandidateId: "relationship.test.auto_accept.council.exact_oversight",
+      sourceItemKey: "council-exact-oversight-row",
       fromEntityRef: "dc.committee_on_facilities_and_procurement",
       toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
       relationshipType: "overseen_by",
@@ -674,24 +676,50 @@ Deno.test("accepted-endpoint Council oversight relationships stay in review when
     }),
     dataDir,
   );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.including_oversight",
+      sourceItemKey: "council-including-oversight-row",
+      fromEntityRef: "dc.department_of_buildings",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Department of Buildings (including construction codes)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.auto_accept.council.jointly_oversight",
+      sourceItemKey: "council-jointly-oversight-row",
+      fromEntityRef: "dc.office_of_the_attorney_general",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue:
+        "Office of the Attorney General (jointly, only for oversight purposes, with the Committee on Youth Affairs)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
 
-  const relationship = workbench.db.prepare(
-    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.committee_on_facilities_and_procurement:overseen_by:dc.committee_on_the_judiciary_and_public_safety'",
-  ).get() as { relationshipId: string } | undefined;
+  const relationships = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
   const reviewItems = workbench.listReviewItems({
     mode: "relationships",
     relationshipType: "overseen_by",
-    subjectPrefix: "relationship.test.auto_accept.council.defer_oversight",
+    subjectPrefix: "relationship.test.auto_accept.council",
   });
   workbench.close();
 
-  assertEquals(relationship, undefined);
-  assertEquals(reviewItems.length, 1);
-  assertEquals(reviewItems[0]?.defaultAction, "defer");
-  assertEquals(
-    reviewItems[0]?.details.whyDeferred,
-    "This named target stays on the conservative Council oversight defer list until a human confirms the committee relationship.",
-  );
+  assertEquals(relationships.map((row) => row.relationshipId), [
+    "dc.committee_on_facilities_and_procurement:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+    "dc.department_of_buildings:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+    "dc.office_of_the_attorney_general:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  ]);
+  assertEquals(reviewItems.length, 0);
 });
 
 Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints are already accepted", async () => {

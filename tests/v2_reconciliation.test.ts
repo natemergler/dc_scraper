@@ -627,7 +627,7 @@ Deno.test("council oversight imports auto-promote scoped grouped base entities a
   );
 });
 
-Deno.test("council oversight scoped grouped bodies reopen as deferred review when the base entity is accepted", async () => {
+Deno.test("council oversight exclusion bodies reopen as deferred review when the base entity is accepted", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -636,7 +636,11 @@ Deno.test("council oversight scoped grouped bodies reopen as deferred review whe
   for (
     const [entityId, name, kind] of [
       ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
-      ["dc.office_of_planning", "Office of Planning", "office"],
+      [
+        "dc.office_of_the_chief_financial_officer",
+        "Office of the Chief Financial Officer",
+        "office",
+      ],
     ] as const
   ) {
     workbench.db.prepare(
@@ -649,10 +653,11 @@ Deno.test("council oversight scoped grouped bodies reopen as deferred review whe
       sourceId: "council.committees",
       relationshipCandidateId: "relationship.council.committees.seeded_oversight_scoped_accepted",
       sourceItemKey: "seeded-oversight-scoped-accepted-row",
-      fromEntityRef: "dc.office_of_planning",
+      fromEntityRef: "dc.office_of_the_chief_financial_officer",
       toEntityRef: "dc.committee_of_the_whole",
       relationshipType: "overseen_by",
-      rawValue: "Office of Planning (including commemorative works)",
+      rawValue:
+        "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
     }),
     dataDir,
   );
@@ -671,14 +676,14 @@ Deno.test("council oversight scoped grouped bodies reopen as deferred review whe
 
   assertEquals(reviewItems.length, 1);
   assertEquals(reviewItems[0]?.defaultAction, "defer");
-  assertEquals(reviewItems[0]?.details.fromEntityRef, "dc.office_of_planning");
+  assertEquals(reviewItems[0]?.details.fromEntityRef, "dc.office_of_the_chief_financial_officer");
   assertEquals(
     reviewItems[0]?.details.rawValue,
-    "Office of Planning (including commemorative works)",
+    "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
   );
   assertEquals(
     reviewItems[0]?.details.whyDeferred,
-    "Scoped oversight text uses including/excluding/jointly wording, so the exact oversight edge still needs a human decision.",
+    "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
   );
   assertEquals(blockedCount.count, 0);
 });
@@ -1148,7 +1153,11 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   workbench.init();
   for (
     const [entityId, name, kind] of [
-      ["dc.office_of_planning", "Office of Planning", "office"],
+      [
+        "dc.office_of_the_chief_financial_officer",
+        "Office of the Chief Financial Officer",
+        "office",
+      ],
       ["dc.committee_of_the_whole", "Committee of the Whole", "committee"],
     ] as const
   ) {
@@ -1173,7 +1182,7 @@ Deno.test("relationship review items are rebuilt from workbench state without co
               <h1>Committee of the Whole</h1>
               <h2>Oversight</h2>
               <ul>
-                <li>Office of Planning (including commemorative works)</li>
+	                <li>Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)</li>
               </ul>
             </body></html>
           `;
@@ -1217,7 +1226,7 @@ Deno.test("relationship review items are rebuilt from workbench state without co
   assertEquals(item.reason, "Review Council committee oversight relationship");
   assertEquals(item.defaultAction, "defer");
   assertEquals(item.details.relationshipType, "overseen_by");
-  assertEquals(item.details.fromEntityRef, "dc.office_of_planning");
+  assertEquals(item.details.fromEntityRef, "dc.office_of_the_chief_financial_officer");
   assertEquals(item.details.toEntityRef, "dc.committee_of_the_whole");
 });
 

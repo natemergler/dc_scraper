@@ -118,42 +118,9 @@ export function isScopedCouncilOversightTarget(rawValue: string): boolean {
   return /\bincluding\b|\bjointly\b|^all of\b|\bexcluding\b/i.test(normalizeName(rawValue));
 }
 
-const defaultDeferCouncilOversightTargets = new Set([
-  "Access to Justice Initiative",
-  "Age-Friendly DC Task Force",
-  "Behavioral Health Planning Council",
-  "Cedar Hill Hospital",
-  "Committee on Facilities and Procurement",
-  "Committee on Housing and Neighborhood Revitalization",
-  "Commission and Office on Re-Entry and Returning Citizen Affairs",
-  "Contract Appeals Board",
-  "Corrections Information Council",
-  "Council on Physical Fitness, Health, and Nutrition",
-  "Green Finance Authority",
-  "Health Literacy Council",
-  "Interfaith Council",
-  "Interstate Compact Commissions",
-  "Labor/Management Partnership Council",
-  "Law Revision Commission",
-  "Metropolitan Washington Airports Authority",
-  "Metropolitan Washington Regional Ryan White Planning Council",
-  "Multistate Tax Commission",
-  "OCFO Office of Budget and Planning",
-  "Office and Commission on African Affairs",
-  "Office and Commission on African American Affairs",
-  "Office of and Commission on Human Rights",
-  "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
-  "Other Post-Employment Benefits/Retiree Health Contribution",
-  "Pay-As-You-Go Capital",
-  "Research Practice Partnership",
-  "Robert F. Kennedy Memorial Stadium Community Benefits Oversight Committee",
-  "Soil and Water Conservation District",
-  "Statehood Commission and delegation",
-  "Sustainable Energy Utility",
-  "Universal Paid Leave Fund",
-  "Washington Aqueduct",
-  "Washington Metropolitan Area Transit Authority",
-]);
+export function isExcludedCouncilOversightTarget(rawValue: string): boolean {
+  return /\bexcluding\b/i.test(normalizeName(rawValue));
+}
 
 export function defaultActionForCouncilOversightTarget(
   rawValue?: string | null,
@@ -166,18 +133,11 @@ export function councilOversightReviewPolicy(
 ): { defaultAction: "accept" | "defer"; whyDeferred?: string } {
   if (!rawValue) return { defaultAction: "accept" };
   const normalized = normalizeName(rawValue);
-  if (isScopedCouncilOversightTarget(normalized)) {
+  if (isExcludedCouncilOversightTarget(normalized)) {
     return {
       defaultAction: "defer",
       whyDeferred:
-        "Scoped oversight text uses including/excluding/jointly wording, so the exact oversight edge still needs a human decision.",
-    };
-  }
-  if (defaultDeferCouncilOversightTargets.has(normalized)) {
-    return {
-      defaultAction: "defer",
-      whyDeferred:
-        "This named target stays on the conservative Council oversight defer list until a human confirms the committee relationship.",
+        "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
     };
   }
   return { defaultAction: "accept" };

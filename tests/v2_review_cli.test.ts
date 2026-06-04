@@ -633,7 +633,7 @@ Deno.test("interactive review gives deferred relationship packets packet-level i
       fromEntityRef: "dc.department_of_buildings",
       toEntityRef: "dc.committee_on_health",
       relationshipType: "overseen_by",
-      rawValue: "Department of Buildings (including construction codes)",
+      rawValue: "Department of Buildings (excluding construction codes)",
       needsReview: true,
     }),
     dataDir,
@@ -673,11 +673,7 @@ Deno.test("interactive review gives deferred relationship packets packet-level i
   assertStringIncludes(stdout, "Decision inbox");
   assertStringIncludes(
     stdout,
-    "1. [recommended] Committee on Health named oversight - council.committees overseen_by [default defer; packet 2 open]",
-  );
-  assertStringIncludes(
-    stdout,
-    "Committee on Health scoped oversight - council.committees overseen_by [default defer; packet 1 open]",
+    "1. [recommended] Committee on Health exclusion oversight - council.committees overseen_by [default defer; packet 1 open]",
   );
 });
 
