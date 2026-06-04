@@ -278,6 +278,68 @@ Deno.test("same-id public-body refinement fills canonical fields without opening
   assertEquals(openReview.length, 0);
 });
 
+Deno.test("safe accepted entity candidates fill blank canonical fields from later source evidence", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const firstCandidateId = "candidate.dcgis.agencies.blank_fields";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.agencies",
+      candidateId: firstCandidateId,
+      sourceItemKey: "dcgis-blank-fields-row",
+      proposedEntityId: "dc.blank_fields_body",
+      name: "Blank Fields Body",
+      kind: "board",
+      observedName: "Blank Fields Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const laterCandidateId = "candidate.open_dc.public_bodies.blank_fields";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId: laterCandidateId,
+      sourceItemKey: "open-dc-blank-fields-row",
+      proposedEntityId: "dc.blank_fields_body",
+      name: "Blank Fields Body",
+      kind: "board",
+      officialUrl: "https://open.dc.gov/public-bodies/blank-fields-body",
+      observedName: "Blank Fields Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    `select official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.blank_fields_body'`,
+  ).get() as {
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const laterCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(laterCandidateId) as { reviewStatus: string } | undefined;
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: laterCandidateId,
+  });
+  workbench.close();
+
+  assertEquals(laterCandidate?.reviewStatus, "accepted");
+  assertEquals(canonical.officialUrl, "https://open.dc.gov/public-bodies/blank-fields-body");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [firstCandidateId, laterCandidateId]);
+  assertEquals(openReview.length, 0);
+});
+
 Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

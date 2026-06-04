@@ -58,11 +58,22 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
   );
   if (candidates.length === 0) return;
   const order = new Map(mergedCandidateIds.map((candidateId, index) => [candidateId, index]));
-  const strongest = candidates.toSorted((a, b) => {
+  const strongestFirst = candidates.toSorted((a, b) => {
     const confidenceDelta = (b.confidence ?? 0) - (a.confidence ?? 0);
     if (confidenceDelta !== 0) return confidenceDelta;
     return (order.get(a.candidateId) ?? 0) - (order.get(b.candidateId) ?? 0);
-  })[0];
+  });
+  const strongest = strongestFirst[0];
+  if (!strongest) return;
+  const fillBlankField = (
+    currentValue: string | null | undefined,
+    field: "branch" | "cluster" | "officialUrl",
+  ): string | null => {
+    const strongestValue = strongest[field];
+    if (hasText(strongestValue)) return strongestValue;
+    if (hasText(currentValue)) return currentValue;
+    return strongestFirst.find((candidate) => hasText(candidate[field]))?.[field] ?? null;
+  };
   run(
     store.db,
     `update canonical_entities
@@ -76,13 +87,17 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
     [
       strongest.name,
       strongest.kind,
-      strongest.branch ?? current.branch ?? null,
-      strongest.cluster ?? current.cluster ?? null,
-      strongest.officialUrl ?? current.officialUrl ?? null,
+      fillBlankField(current.branch, "branch"),
+      fillBlankField(current.cluster, "cluster"),
+      fillBlankField(current.officialUrl, "officialUrl"),
       nowIso(),
       entityId,
     ],
   );
+}
+
+function hasText(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function hasManualFieldResolution(store: WorkbenchStore, entityId: string): boolean {
