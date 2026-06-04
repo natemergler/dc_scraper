@@ -51,10 +51,16 @@ export type PublicBodyVariantMatchKind =
   | "governance_suffix";
 
 export interface PublicBodyVariantMatchName {
+  candidateId: string;
+  proposedEntityId: string;
   normalizedName: string;
   displayName: string;
   sourceId: string;
   sourceTitle: string;
+  kind: string;
+  rawKind?: string | null;
+  officialUrl?: string | null;
+  reviewStatus: string;
 }
 
 export interface PublicBodyVariantMatch {
@@ -75,12 +81,16 @@ export interface PublicBodyComparisonReport {
 }
 
 interface PublicBodyComparisonCandidateRow {
+  candidateId: string;
+  proposedEntityId: string;
   normalizedName: string;
   displayName: string;
   sourceId: string;
   sourceTitle: string;
   kind: string;
   rawKind?: string | null;
+  officialUrl?: string | null;
+  reviewStatus: string;
 }
 
 export function upsertSource(
@@ -195,12 +205,16 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
   const rows = queryAll<PublicBodyComparisonCandidateRow>(
     store.db,
     `select
+       entity_candidates.candidate_id as candidateId,
+       entity_candidates.proposed_entity_id as proposedEntityId,
        entity_candidates.normalized_name as normalizedName,
        entity_candidates.name as displayName,
        sources.source_id as sourceId,
        sources.title as sourceTitle,
        entity_candidates.kind as kind,
-       entity_candidates.raw_kind as rawKind
+       entity_candidates.raw_kind as rawKind,
+       entity_candidates.official_url as officialUrl,
+       entity_candidates.review_status as reviewStatus
      from entity_candidates
      join source_items on source_items.source_item_id = entity_candidates.source_item_id
      join sources on sources.source_id = source_items.source_id
@@ -280,10 +294,16 @@ function buildConservativeVariantMatches(
   }>();
   for (const row of rows) {
     const entry: PublicBodyVariantMatchName = {
+      candidateId: row.candidateId,
+      proposedEntityId: row.proposedEntityId,
       normalizedName: row.normalizedName,
       displayName: row.displayName,
       sourceId: row.sourceId,
       sourceTitle: row.sourceTitle,
+      kind: row.kind,
+      rawKind: row.rawKind,
+      officialUrl: row.officialUrl,
+      reviewStatus: row.reviewStatus,
     };
     for (const key of comparisonKeysForVariantMatching(row)) {
       const groupKey = normalizedComparisonKey(key.variantName);
