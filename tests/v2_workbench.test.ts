@@ -4778,7 +4778,7 @@ Deno.test("accepted-endpoint scoped Council oversight no longer waits for batch 
     ),
   );
   assertEquals(remainingOversight.length, 0);
-  assertEquals(blockedOversight.count, 1);
+  assertEquals(blockedOversight.count, 0);
 });
 
 Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no longer wait for batch accept-safe", async () => {
@@ -5415,7 +5415,7 @@ Deno.test("batch defer-default defers only scoped default-defer relationship ite
   reopened.close();
   assertEquals(openOversight.length, 0);
   assertEquals(deferredOversight.length, 1);
-  assert(blockedOversight.count >= 2);
+  assertEquals(blockedOversight.count, 1);
 });
 
 Deno.test("batch defer-default requires a scoped review slice", async () => {

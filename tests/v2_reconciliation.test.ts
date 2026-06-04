@@ -838,6 +838,88 @@ Deno.test("council oversight legacy exact-name aliases can auto-promote direct b
   assertEquals(blockedCount.count, 0);
 });
 
+Deno.test("council oversight alias-backed agency names can auto-promote direct bodies and accept the relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-on-health/">Committee on Health</a>
+            </body></html>
+          `;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return `
+            <html><body>
+              <h1>Committee on Health</h1>
+              <h2>Oversight</h2>
+              <ul>
+                <li>Department of Health</li>
+              </ul>
+            </body></html>
+          `;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const seededCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = 'candidate.council.committees.relationship_council_committees_committee_on_health_oversight_1_from_endpoint'`,
+  ).get() as {
+    candidateId: string;
+    proposedEntityId: string;
+    reviewStatus: string;
+  } | undefined;
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.dc_health'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.dc_health:overseen_by:dc.committee_on_health'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_on_health_oversight_1'
+       and state = 'blocked'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assert(seededCandidate);
+  assertEquals(seededCandidate.proposedEntityId, "dc.dc_health");
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.dc_health");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.dc_health:overseen_by:dc.committee_on_health",
+  );
+  assertEquals(blockedCount.count, 0);
+});
+
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

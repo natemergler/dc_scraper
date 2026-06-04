@@ -10,6 +10,8 @@ import {
   type ReviewItemInput,
 } from "../domain.ts";
 import {
+  buildKnownEntityRef,
+  defaultActionForCouncilOversightTarget,
   extractScopedCouncilOversightBaseName,
   isScopedCouncilOversightTarget,
 } from "../connectors/shared.ts";
@@ -139,10 +141,17 @@ function seedableFromRelationshipEndpointName(
     return undefined;
   }
   if (
-    buildEntityId(observedName) === relationshipCandidate.fromEntityRef &&
     !isGroupedCommitteeOversightTarget(observedName)
   ) {
-    return observedName;
+    if (buildEntityId(observedName) === relationshipCandidate.fromEntityRef) {
+      return observedName;
+    }
+    if (
+      defaultActionForCouncilOversightTarget(observedName) === "accept" &&
+      buildKnownEntityRef(observedName) === relationshipCandidate.fromEntityRef
+    ) {
+      return observedName;
+    }
   }
   const scopedBaseName = extractScopedCouncilOversightBaseName(observedName);
   if (
