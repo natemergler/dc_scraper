@@ -273,6 +273,16 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
           rawValue: detail.governingAgency,
         },
       });
+    } else if (detail.governingAgency && shouldReviewOpenDcAgencyLabel(detail.governingAgency)) {
+      reviewItems.push(
+        buildOpenDcAgencyLabelReviewItem({
+          itemKey,
+          detailName: detail.name,
+          detailUrl,
+          fieldPath: "governingAgency",
+          rawValue: detail.governingAgency,
+        }),
+      );
     }
     const administeringAgencyRef = detail.administeringAgency
       ? openDcRelationshipEndpointRef(detail.administeringAgency, proposedEntityId)
@@ -304,6 +314,18 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
           rawValue: detail.administeringAgency,
         },
       });
+    } else if (
+      detail.administeringAgency && shouldReviewOpenDcAgencyLabel(detail.administeringAgency)
+    ) {
+      reviewItems.push(
+        buildOpenDcAgencyLabelReviewItem({
+          itemKey,
+          detailName: detail.name,
+          detailUrl,
+          fieldPath: "administeringAgency",
+          rawValue: detail.administeringAgency,
+        }),
+      );
     }
     if (detail.enablingAuthority) {
       const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
@@ -328,17 +350,61 @@ function openDcRelationshipEndpointRef(
   label: string,
   subjectEntityRef: string,
 ): string | undefined {
-  if (openDcNonRelationshipAgencyLabels.has(normalizeName(label).toLowerCase())) {
+  const normalizedLabel = normalizeName(label).toLowerCase();
+  if (
+    openDcNonRelationshipAgencyLabels.has(normalizedLabel) ||
+    openDcReviewableNonRelationshipAgencyLabels.has(normalizedLabel)
+  ) {
     return undefined;
   }
   const endpointRef = buildKnownEntityRef(label);
   return endpointRef === subjectEntityRef ? undefined : endpointRef;
 }
 
+function shouldReviewOpenDcAgencyLabel(label: string): boolean {
+  return openDcReviewableNonRelationshipAgencyLabels.has(normalizeName(label).toLowerCase());
+}
+
+function buildOpenDcAgencyLabelReviewItem(input: {
+  itemKey: string;
+  detailName: string;
+  detailUrl: string;
+  fieldPath: "governingAgency" | "administeringAgency";
+  rawValue: string;
+}): ReviewItemInput {
+  const subjectId = openDcSource.sourceId;
+  return {
+    reviewItemId: buildReviewItemId(
+      subjectId,
+      `${input.itemKey}-${input.fieldPath}-${input.rawValue}`,
+    ),
+    itemType: "source_status",
+    subjectId,
+    reason: "Review Open DC agency label that did not map to a relationship endpoint",
+    defaultAction: "defer",
+    details: {
+      needsReview: true,
+      sourceId: openDcSource.sourceId,
+      endpointId: "open_dc.public_bodies.detail",
+      itemKey: input.itemKey,
+      detailName: input.detailName,
+      detailUrl: input.detailUrl,
+      fieldPath: input.fieldPath,
+      rawValue: input.rawValue,
+      relationshipType: "governed_by",
+      whyDeferred:
+        "Open DC label looks like an agency endpoint but did not map to an accepted relationship endpoint.",
+    },
+  };
+}
+
 const openDcNonRelationshipAgencyLabels = new Set([
   "board of trustees",
-  "department of eduaction",
   "independent agency",
+]);
+
+const openDcReviewableNonRelationshipAgencyLabels = new Set([
+  "department of eduaction",
   "mayor's office of general counsel",
 ]);
 

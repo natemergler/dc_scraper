@@ -386,6 +386,12 @@ function importParsedOutput(
     itemIndex,
     parsed.legalRefs ?? [],
   );
+  deleteStaleSourceStatusReviewItemsForParsedItems(
+    store,
+    sourceId,
+    itemIndex,
+    parsed.reviewItems ?? [],
+  );
   for (const candidate of parsed.entityCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
     const candidateEvidenceIds: string[] = [];
@@ -780,6 +786,34 @@ function deleteStaleLegalRefsForParsedItems(
     store.db,
     `delete from legal_refs where legal_ref_id in (${stalePlaceholders})`,
     staleLegalRefs,
+  );
+}
+
+function deleteStaleSourceStatusReviewItemsForParsedItems(
+  store: WorkbenchStore,
+  sourceId: string,
+  itemIndex: Map<string, ParsedSourceItemRecord & { artifactPath: string }>,
+  reviewItems: ReviewItemInput[],
+): void {
+  const itemKeys = [...itemIndex.keys()];
+  if (itemKeys.length === 0) return;
+  const retainedReviewItemIds = new Set(
+    reviewItems
+      .filter((reviewItem) => reviewItem.itemType === "source_status")
+      .map((reviewItem) => reviewItem.reviewItemId),
+  );
+  const itemPlaceholders = itemKeys.map(() => "?").join(", ");
+  const retainedClause = retainedReviewItemIds.size === 0
+    ? ""
+    : `and review_item_id not in (${[...retainedReviewItemIds].map(() => "?").join(", ")})`;
+  run(
+    store.db,
+    `delete from review_items
+     where item_type = 'source_status'
+       and subject_id = ?
+       and json_extract(details_json, '$.itemKey') in (${itemPlaceholders})
+       ${retainedClause}`,
+    [sourceId, ...itemKeys, ...retainedReviewItemIds],
   );
 }
 

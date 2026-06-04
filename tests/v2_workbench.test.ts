@@ -1441,6 +1441,107 @@ Deno.test("Open DC keeps taxonomy-only agency labels as evidence instead of rela
   assertEquals(detail?.items?.[0]?.body.governingAgency, "Independent Agency");
 });
 
+Deno.test("Open DC surfaces suspicious agency labels as source review work", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body><a href="/public-bodies/common-lottery-board">Common Lottery Board</a></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/common-lottery-board":
+          return `<html><body>
+            <h1 class="page-title">Common Lottery Board</h1>
+            <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+              <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+              <div class="field-items"><div class="field-item even">Department of Eduaction</div></div>
+            </div>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({
+    fetcher,
+  }));
+  const detail = result.endpointResults[1].parsed;
+  assertEquals(detail?.relationshipCandidates?.length ?? 0, 0);
+  const sourceReview = detail?.reviewItems?.find((item) => item.itemType === "source_status");
+  assert(sourceReview);
+  assertEquals(sourceReview.subjectId, "open_dc.public_bodies");
+  assertEquals(sourceReview.defaultAction, "defer");
+  assertEquals(sourceReview.details.needsReview, true);
+  assertEquals(sourceReview.details.rawValue, "Department of Eduaction");
+  assertEquals(sourceReview.details.fieldPath, "governingAgency");
+});
+
+Deno.test("Open DC refetch removes stale suspicious agency source review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const connector = getConnector("open_dc.public_bodies");
+  const fetcherForAgencyLabel = (agencyLabel: string) => async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body><a href="/public-bodies/common-lottery-board">Common Lottery Board</a></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/common-lottery-board":
+          return `<html><body>
+            <h1 class="page-title">Common Lottery Board</h1>
+            <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+              <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+              <div class="field-items"><div class="field-item even">${agencyLabel}</div></div>
+            </div>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await connector.run(createConnectorContext({
+      fetcher: fetcherForAgencyLabel("Department of Eduaction"),
+    })),
+    dataDir,
+  );
+
+  const firstReviewCount = workbench.db.prepare(
+    `select count(*) as count
+     from review_items
+     where item_type = 'source_status'
+       and json_extract(details_json, '$.rawValue') = 'Department of Eduaction'`,
+  ).get() as { count: number };
+  assertEquals(firstReviewCount.count, 1);
+
+  await workbench.importConnectorResult(
+    await connector.run(createConnectorContext({
+      fetcher: fetcherForAgencyLabel("Independent Agency"),
+    })),
+    dataDir,
+  );
+
+  const staleReviewCount = workbench.db.prepare(
+    `select count(*) as count
+     from review_items
+     where item_type = 'source_status'
+       and json_extract(details_json, '$.rawValue') = 'Department of Eduaction'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(staleReviewCount.count, 0);
+});
+
 Deno.test("Open DC governing agency labels can resolve qualified deputy mayor aliases", async () => {
   const indexFixture = `
   <html><body>

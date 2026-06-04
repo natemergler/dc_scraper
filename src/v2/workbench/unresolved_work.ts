@@ -372,6 +372,7 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
               entity_source.source_id,
               relationship_source.source_id,
               legal_source.source_id,
+              case when review_items.item_type = 'source_status' then review_items.subject_id end,
               case when review_items.item_type = 'placeholder_entity' then 'workbench' end,
               'unknown'
             ) as sourceId,
@@ -393,7 +394,6 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
      left join source_items as legal_source
        on legal_source.source_item_id = legal_refs.source_item_id
      where review_items.status = 'open'
-       and review_items.item_type != 'source_status'
      order by review_items.updated_at, review_items.review_item_id`,
   ).map((row) => ({
     nodeId: decisionNodeId(row.reviewItemId),

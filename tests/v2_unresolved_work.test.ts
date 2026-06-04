@@ -6,6 +6,7 @@ import {
   projectOpenHumanDecisionWork,
   summarizeUnresolvedReconciliation,
 } from "../src/v2/workbench/unresolved_work.ts";
+import { reviewDecisionSummary } from "../src/v2/workbench/review.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -206,6 +207,44 @@ Deno.test("open human decision projection excludes browse-only source-backed add
   assertEquals(projection.summary.browseOnlyOpenReviewItemCount, 2);
   assertEquals(projection.summary.filteredHumanDecisionOpenReviewItemCount, 1);
   assertEquals(projection.summary.filteredBrowseOnlyOpenReviewItemCount, 2);
+});
+
+Deno.test("open human decision projection includes source status items marked for review", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+  workbench.db.prepare(
+    `insert into review_items(
+      review_item_id,
+      item_type,
+      subject_id,
+      reason,
+      default_action,
+      status,
+      details_json,
+      created_at,
+      updated_at
+    ) values(
+      'review.source_status.needs_review',
+      'source_status',
+      'open_dc.public_bodies',
+      'Review source label that did not map to a relationship endpoint',
+      'defer',
+      'open',
+      '{"needsReview":true,"rawValue":"Department of Eduaction"}',
+      datetime('now'),
+      datetime('now')
+    )`,
+  ).run();
+
+  const projection = projectOpenHumanDecisionWork(workbench);
+  const summary = reviewDecisionSummary(workbench);
+  workbench.close();
+
+  assertEquals(summary.humanDecisionOpen, 1);
+  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 1);
+  assertEquals(projection.items[0]?.reviewItem.itemType, "source_status");
+  assertEquals(projection.items[0]?.decision.sourceId, "open_dc.public_bodies");
 });
 
 Deno.test("unresolved reconciliation summary groups repeated blocked families by source relationship and blocker", async () => {
