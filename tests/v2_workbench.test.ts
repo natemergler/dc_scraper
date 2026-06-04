@@ -13,6 +13,7 @@ import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildKnownEntityRef } from "../src/v2/connectors/shared.ts";
 import {
   buildEntityId,
+  buildReviewItemId,
   type ConnectorResult,
   inverseRelationshipType,
   parseLegalReference,
@@ -4978,6 +4979,137 @@ Deno.test("entity candidates that conflict with accepted kind default to defer",
   assertEquals(candidate.reviewStatus, "pending");
   assertEquals(canonical.kind, "agency");
   assertEquals(canonical.mergedCandidateIds, "[]");
+});
+
+Deno.test("legal refs for unresolved same-entity kind conflicts stay unattached until candidate acceptance", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.conflicted_legal_body', 'Conflicted Legal Body', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  const parsedRef = parseLegalReference(
+    "D.C. Official Code § 1-204.04",
+    "https://code.dccouncil.us/us/dc/council/code/sections/1-204.04",
+  );
+  const candidateId = "candidate.test.conflicted_entity_kind.legal_board";
+  const legalRefId = "legal.test.conflicted_entity_kind.legal_board_authority";
+  const connectorResult: ConnectorResult = {
+    source: {
+      sourceId: "test.conflicted_entity_kind_legal_refs",
+      title: "Test Conflicted Entity Kind Legal Refs",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/conflicted-entity-kind-legal-refs",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.conflicted_entity_kind_legal_refs.main",
+        sourceId: "test.conflicted_entity_kind_legal_refs",
+        title: "Conflicted entity legal ref rows",
+        kind: "fixture",
+        url: "https://example.com/conflicted-entity-kind-legal-refs",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/conflicted-entity-kind-legal-refs",
+        contentText: JSON.stringify({ candidateId, legalRefId }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "conflicted-legal-row",
+          itemType: "fixture_row",
+          title: "Conflicted legal row",
+          body: { name: "Conflicted Legal Body" },
+        }],
+        entityCandidates: [{
+          candidateId,
+          sourceItemKey: "conflicted-legal-row",
+          proposedEntityId: "dc.conflicted_legal_body",
+          name: "Conflicted Legal Body",
+          kind: "board",
+          confidence: 0.99,
+          evidence: [{
+            fieldPath: "name",
+            observedValue: "Conflicted Legal Body",
+          }],
+        }],
+        legalRefs: [{
+          legalRefId,
+          sourceItemKey: "conflicted-legal-row",
+          refType: parsedRef.refType,
+          citationText: "D.C. Official Code § 1-204.04",
+          normalizedCitation: parsedRef.normalizedCitation,
+          url: "https://code.dccouncil.us/us/dc/council/code/sections/1-204.04",
+          needsReview: true,
+          attachEntityRef: "dc.conflicted_legal_body",
+          evidence: [{
+            fieldPath: "authority",
+            observedValue: "D.C. Official Code § 1-204.04",
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: buildReviewItemId(candidateId, "entity-review"),
+          itemType: "entity_candidate",
+          subjectId: candidateId,
+          reason: "Review fixture entity candidate",
+          defaultAction: "accept",
+          details: {
+            name: "Conflicted Legal Body",
+            kind: "board",
+          },
+        }],
+      },
+    }],
+  };
+
+  await workbench.importConnectorResult(connectorResult, dataDir);
+
+  const candidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(candidateId) as { reviewStatus: string };
+  const legalRef = workbench.db.prepare(
+    "select review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+  ).get(legalRefId) as { reviewStatus: string };
+  assertEquals(candidate.reviewStatus, "pending");
+  assertEquals(legalRef.reviewStatus, "pending");
+  assertEquals(workbench.entityLegalRefs(), []);
+  assertEquals(workbench.entityView("dc.conflicted_legal_body").legalRefs, []);
+
+  await buildV2Release(workbench, outDir);
+  const releasedEntityLegalRefs = JSON.parse(
+    await Deno.readTextFile(join(outDir, "entity_legal_refs.json")),
+  );
+  assertEquals(releasedEntityLegalRefs, []);
+
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: candidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  assertEquals(workbench.entityLegalRefs(), [{
+    entity_id: "dc.conflicted_legal_body",
+    entity_name: "Conflicted Legal Body",
+    legal_ref_id: legalRefId,
+    ref_type: "dc_code",
+    citation_text: "D.C. Official Code § 1-204.04",
+    normalized_citation: "D.C. Code 1-204.04",
+    url: "https://code.dccouncil.us/us/dc/council/code/sections/1-204.04",
+    review_status: "pending",
+  }]);
+  workbench.close();
 });
 
 Deno.test("safe seeded Council oversight endpoints auto-promote and auto-accept the unblocked relationship", async () => {

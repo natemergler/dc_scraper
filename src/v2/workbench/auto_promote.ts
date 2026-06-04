@@ -2,6 +2,7 @@ import { normalizeName, nowIso } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
+import { materializeEntityLegalRefsForAcceptedCandidate } from "./entity_legal_ref_attachments.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_PROMOTE_SOURCE_ALLOWLIST = new Set([
@@ -220,6 +221,11 @@ function acceptEntityCandidateDirect(
     store.db,
     "update entity_candidates set review_status = 'accepted' where candidate_id = ?",
     [candidate.candidateId],
+  );
+  materializeEntityLegalRefsForAcceptedCandidate(
+    store,
+    candidate.candidateId,
+    candidate.proposedEntityId,
   );
   refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);
   run(

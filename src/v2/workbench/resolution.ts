@@ -16,6 +16,7 @@ import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationship
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
+import { materializeEntityLegalRefsForAcceptedCandidate } from "./entity_legal_ref_attachments.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
@@ -756,6 +757,7 @@ function acceptEntityCandidate(
     }
   }
   setEntityCandidateStatus(store, candidateId, "accepted");
+  materializeEntityLegalRefsForAcceptedCandidate(store, candidateId, entityId);
   refreshCanonicalEntityFieldsFromAcceptedCandidates(store, entityId);
   resolveReviewBySubject(store, candidateId);
 }
