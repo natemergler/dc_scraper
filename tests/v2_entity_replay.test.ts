@@ -213,6 +213,83 @@ Deno.test("accepted alias-backed entity candidates attach provenance without rep
   assertEquals(openReview.length, 0);
 });
 
+Deno.test("generic appointment public-body candidates attach provenance without replacing official kind", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const officialCandidateId = "candidate.bega.structure.board_of_ethics";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "bega.structure",
+      candidateId: officialCandidateId,
+      sourceItemKey: "bega-structure-row",
+      proposedEntityId: "dc.board_of_ethics_and_government_accountability",
+      name: "Board of Ethics and Government Accountability",
+      kind: "agency",
+      branch: "Independent",
+      cluster: "Ethics and Open Government",
+      officialUrl: "https://bega.dc.gov/",
+      observedName: "Board of Ethics and Government Accountability",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+
+  const appointmentCandidateId =
+    "candidate.mota.quickbase.board_of_ethics_and_government_accountability_bega";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "mota.quickbase",
+      candidateId: appointmentCandidateId,
+      sourceItemKey: "quickbase-bega-row",
+      proposedEntityId: "dc.board_of_ethics_and_government_accountability",
+      name: "Board of Ethics and Government Accountability (BEGA)",
+      kind: "public_body",
+      observedName: "Board of Ethics and Government Accountability (BEGA)",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const appointmentCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(appointmentCandidateId) as { reviewStatus: string } | undefined;
+  const canonical = workbench.db.prepare(
+    `select kind,
+            branch,
+            cluster,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.board_of_ethics_and_government_accountability'`,
+  ).get() as {
+    kind: string;
+    branch: string;
+    cluster: string;
+    officialUrl: string;
+    mergedCandidateIds: string;
+  };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: appointmentCandidateId,
+  });
+  workbench.close();
+
+  assertEquals(appointmentCandidate?.reviewStatus, "accepted");
+  assertEquals(canonical.kind, "agency");
+  assertEquals(canonical.branch, "Independent");
+  assertEquals(canonical.cluster, "Ethics and Open Government");
+  assertEquals(canonical.officialUrl, "https://bega.dc.gov/");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [
+    officialCandidateId,
+    appointmentCandidateId,
+  ]);
+  assertEquals(openReview.length, 0);
+});
+
 Deno.test("same-id public-body refinement fills canonical fields without opening entity review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

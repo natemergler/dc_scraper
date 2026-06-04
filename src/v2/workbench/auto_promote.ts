@@ -165,7 +165,8 @@ function groupIsSafeToAutoPromote(
   if (!canonical) return true;
   if (canonical.isPlaceholder === 1) return false;
   if (canonical.kind !== first.kind) {
-    return classifySameEntityKindMerge(store, canonical, first).decision === "refinement";
+    const decision = classifySameEntityKindMerge(store, canonical, first).decision;
+    return decision === "compatible" || decision === "refinement";
   }
   if (normalizeName(canonical.name).toLowerCase() === first.normalizedName) return true;
   return entityId === first.proposedEntityId;

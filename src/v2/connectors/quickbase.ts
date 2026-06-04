@@ -5,7 +5,6 @@ import {
   buildRelationshipCandidateId,
   buildReviewItemId,
   type DatasetInput,
-  detectEntityKind,
   type EntityCandidateInput,
   type RelationshipCandidateInput,
   type ReviewItemInput,
@@ -305,14 +304,13 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
       seenBoards.set(board, "true");
       const candidateId = buildCandidateId(quickbaseSource.sourceId, board);
       const cluster = deriveQuickbaseCluster(board);
-      const kind = detectEntityKind(undefined, board);
       entityCandidates.push({
         candidateId,
         sourceItemKey: itemKey,
         proposedEntityId: boardEntityId,
         name: board,
-        kind,
-        rawKind: kind,
+        kind: "public_body",
+        rawKind: "appointment_body",
         cluster,
         confidence: 0.95,
         duplicateHint: board,
@@ -329,7 +327,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           {
             source: quickbaseSource.sourceId,
             name: board,
-            kind,
+            kind: "public_body",
             cluster,
             latestAppointmentStatus: appointmentStatus,
           },

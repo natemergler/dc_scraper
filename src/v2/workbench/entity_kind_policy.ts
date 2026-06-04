@@ -2,10 +2,12 @@ import { queryAll } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const PUBLIC_BODY_SPECIFIC_KINDS = new Set([
+  "agency",
   "board",
   "commission",
   "committee",
   "council",
+  "office",
   "task_force",
 ]);
 
@@ -35,6 +37,9 @@ export function classifySameEntityKindMerge(
   candidate: EntityKindPolicyCandidate,
 ): EntityKindMergeDecision {
   if (canonical.kind === candidate.kind) return { decision: "compatible" };
+  if (isGenericPublicBodyReference(canonical.kind, candidate.kind)) {
+    return { decision: "compatible" };
+  }
   if (isGenericPublicBodyRefinement(canonical.kind, candidate.kind)) {
     return { decision: "refinement" };
   }
@@ -66,6 +71,10 @@ export function compareEntityKindSpecificity(candidateKind: string, otherKind: s
 
 function isGenericPublicBodyRefinement(canonicalKind: string, candidateKind: string): boolean {
   return canonicalKind === "public_body" && PUBLIC_BODY_SPECIFIC_KINDS.has(candidateKind);
+}
+
+function isGenericPublicBodyReference(canonicalKind: string, candidateKind: string): boolean {
+  return candidateKind === "public_body" && PUBLIC_BODY_SPECIFIC_KINDS.has(canonicalKind);
 }
 
 function isAuthoritativeSourceRefinement(
