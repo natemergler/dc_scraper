@@ -27,6 +27,9 @@ Fetch every configured source when you need a full workbench refresh:
 deno task dc -- source fetch --all
 ```
 
+An all-source fetch may take a while. The command prints progress as source lanes run and ends with
+a succeeded/failed summary; wait for that final summary before opening review or building a release.
+
 Use the metadata-driven smoke profiles when you want a fresh temp-workbench pass:
 
 ```bash

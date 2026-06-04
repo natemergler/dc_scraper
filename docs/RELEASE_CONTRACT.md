@@ -46,8 +46,8 @@ The release contains exactly these public files:
     source.
   - `holds`, `represents`, `member_of`, `chairs`: observation or role entity -> seat, district,
     body, or committee role.
-- Pending, deferred, blocked, and stale work must stay visible in release summaries instead of being
-  silently treated as complete.
+- Pending, deferred, blocked, and stale work must stay visible in `status`, `audit`, and
+  `release verify` before handoff instead of being silently treated as complete.
 - DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not
   inferred beyond bounded source-backed evidence.
 
