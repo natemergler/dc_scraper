@@ -7,6 +7,7 @@ import {
   sha256Hex,
   slugify,
 } from "../domain.ts";
+import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryOne, run } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
@@ -879,6 +880,7 @@ function mergeAcceptedEntityCandidate(
   run(store.db, "update entity_candidates set review_status = 'accepted' where candidate_id = ?", [
     candidateId,
   ]);
+  refreshCanonicalEntityFieldsFromAcceptedCandidates(store, entityId);
   return true;
 }
 
