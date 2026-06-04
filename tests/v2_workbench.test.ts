@@ -188,7 +188,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 16");
+  assertStringIncludes(statusText, "Schema version: 17");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Decisions: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -217,7 +217,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 16);
+  assertEquals(jsonStatus.schemaVersion, 17);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);

@@ -1,5 +1,5 @@
 import { nowIso } from "../domain.ts";
-import { queryAll, withTransaction } from "./db.ts";
+import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -12,7 +12,6 @@ interface RelationshipCandidateRow {
   relationshipType: string;
   rawValue?: string | null;
   needsReview: number;
-  reviewStatus: string;
 }
 
 interface ReconciliationStatements {
@@ -25,6 +24,7 @@ interface ReconciliationStatements {
 }
 
 export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
+  clearNonPendingRelationshipReconciliationState(store);
   const candidates = queryAll<RelationshipCandidateRow>(
     store.db,
     `select relationship_candidates.relationship_candidate_id as relationshipCandidateId,
@@ -33,10 +33,10 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
             to_entity_ref as toEntityRef,
             relationship_type as relationshipType,
             raw_value as rawValue,
-            needs_review as needsReview,
-            review_status as reviewStatus
+            needs_review as needsReview
      from relationship_candidates
-     join source_items on source_items.source_item_id = relationship_candidates.source_item_id`,
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.review_status = 'pending'`,
   );
   const endpointStatuses = endpointStatusMap(
     store,
@@ -46,10 +46,6 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
 
   withTransaction(store.db, () => {
     for (const candidate of candidates) {
-      if (candidate.reviewStatus !== "pending") {
-        clearRelationshipReconciliationState(statements, candidate.relationshipCandidateId);
-        continue;
-      }
       const fromStatus = endpointStatuses.get(candidate.fromEntityRef) ?? {
         entityId: candidate.fromEntityRef,
         state: "missing",
@@ -69,6 +65,44 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
       upsertRelationshipReviewItem(statements, candidate);
     }
   });
+}
+
+function clearNonPendingRelationshipReconciliationState(store: WorkbenchStore): void {
+  const staleRow = queryOne<{ count: number }>(
+    store.db,
+    `select count(*) as count
+     from reconciliation_items
+     where subject_type = 'relationship_candidate'
+       and exists (
+         select 1
+         from relationship_candidates
+         where relationship_candidates.relationship_candidate_id = reconciliation_items.subject_id
+           and relationship_candidates.review_status != 'pending'
+       )`,
+  );
+  if ((staleRow?.count ?? 0) === 0) return;
+  run(
+    store.db,
+    `delete from reconciliation_blockers
+     where subject_type = 'relationship_candidate'
+       and exists (
+         select 1
+         from relationship_candidates
+         where relationship_candidates.relationship_candidate_id = reconciliation_blockers.subject_id
+           and relationship_candidates.review_status != 'pending'
+       )`,
+  );
+  run(
+    store.db,
+    `delete from reconciliation_items
+     where subject_type = 'relationship_candidate'
+       and exists (
+         select 1
+         from relationship_candidates
+         where relationship_candidates.relationship_candidate_id = reconciliation_items.subject_id
+           and relationship_candidates.review_status != 'pending'
+       )`,
+  );
 }
 
 function prepareReconciliationStatements(store: WorkbenchStore): ReconciliationStatements {

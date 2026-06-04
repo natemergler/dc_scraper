@@ -29,11 +29,7 @@ interface AutoAcceptRelationshipRow {
 }
 
 interface AutoAcceptRelationshipStatements {
-  insertResolutionEvent: ReturnType<WorkbenchStore["db"]["prepare"]>;
   deleteRelationshipLegalRefs: ReturnType<WorkbenchStore["db"]["prepare"]>;
-  insertCanonicalRelationship: ReturnType<WorkbenchStore["db"]["prepare"]>;
-  updateRelationshipCandidate: ReturnType<WorkbenchStore["db"]["prepare"]>;
-  resolveReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
 }
 
 export function autoAcceptSafeRelationshipCandidates(
@@ -53,12 +49,13 @@ export function autoAcceptSafeRelationshipCandidates(
             json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
             json_extract(review_items.details_json, '$.replayConflict') as replayConflict,
             json_extract(review_items.details_json, '$.whyDeferred') as whyDeferred
-     from relationship_candidates
+     from review_items
+     join relationship_candidates
+       on relationship_candidates.relationship_candidate_id = review_items.subject_id
+      and relationship_candidates.review_status = 'pending'
      join source_items on source_items.source_item_id = relationship_candidates.source_item_id
-     join review_items
-       on review_items.subject_id = relationship_candidates.relationship_candidate_id
-      and review_items.item_type = 'relationship_candidate'
-     where relationship_candidates.review_status = 'pending'`,
+     where review_items.status = 'open'
+       and review_items.item_type = 'relationship_candidate'`,
   );
   const endpointStatuses = endpointStatusMap(
     store,
@@ -67,44 +64,26 @@ export function autoAcceptSafeRelationshipCandidates(
   const sameFactDeferredReviewKeys = sameFactDeferredReviewKeySet(store);
   const statements = prepareAutoAcceptRelationshipStatements(store);
 
-  let acceptedCount = 0;
-  withTransaction(store.db, () => {
-    for (const candidate of candidates) {
-      if (!isSafeToAutoAccept(store, endpointStatuses, sameFactDeferredReviewKeys, candidate)) {
-        continue;
-      }
-      acceptRelationshipCandidateDirect(statements, candidate);
-      acceptedCount += 1;
+  const safeCandidates: AutoAcceptRelationshipRow[] = [];
+  for (const candidate of candidates) {
+    if (isSafeToAutoAccept(store, endpointStatuses, sameFactDeferredReviewKeys, candidate)) {
+      safeCandidates.push(candidate);
     }
-  });
-  if (acceptedCount > 0) {
-    refreshLegalRefAttachments(store);
   }
-  return acceptedCount;
+  if (safeCandidates.length === 0) return 0;
+  withTransaction(store.db, () => {
+    acceptRelationshipCandidateBatch(store, statements, safeCandidates);
+  });
+  refreshLegalRefAttachments(store);
+  return safeCandidates.length;
 }
 
 function prepareAutoAcceptRelationshipStatements(
   store: Pick<WorkbenchStore, "db">,
 ): AutoAcceptRelationshipStatements {
   return {
-    insertResolutionEvent: store.db.prepare(
-      `insert or ignore into resolution_events(
-         event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at
-       ) values(?, 'accept_relationship_candidate', ?, ?, ?, 1, ?)`,
-    ),
     deleteRelationshipLegalRefs: store.db.prepare(
       "delete from relationship_legal_refs where relationship_id in (?, ?)",
-    ),
-    insertCanonicalRelationship: store.db.prepare(
-      `insert or ignore into canonical_relationships(
-         relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at
-       ) values(?, ?, ?, ?, 'accepted', ?, ?)`,
-    ),
-    updateRelationshipCandidate: store.db.prepare(
-      "update relationship_candidates set review_status = 'accepted' where relationship_candidate_id = ?",
-    ),
-    resolveReviewItem: store.db.prepare(
-      "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'relationship_candidate'",
     ),
   };
 }
@@ -136,7 +115,7 @@ function sameFactDeferredReviewKeySet(
     toEntityRef: string;
   }>(
     store.db,
-    `select distinct relationship_candidates.from_entity_ref as fromEntityRef,
+    `select relationship_candidates.from_entity_ref as fromEntityRef,
             relationship_candidates.relationship_type as relationshipType,
             relationship_candidates.to_entity_ref as toEntityRef
      from relationship_candidates
@@ -148,7 +127,10 @@ function sameFactDeferredReviewKeySet(
        and (
          review_items.default_action = 'defer'
          or json_extract(review_items.details_json, '$.whyDeferred') is not null
-       )`,
+       )
+     group by relationship_candidates.from_entity_ref,
+              relationship_candidates.relationship_type,
+              relationship_candidates.to_entity_ref`,
   );
   return new Set(rows.map((row) => relationshipFactKey(row)));
 }
@@ -217,41 +199,109 @@ function allowsNeedsReviewAutoAccept(candidate: AutoAcceptRelationshipRow): bool
     true;
 }
 
-function acceptRelationshipCandidateDirect(
+function acceptRelationshipCandidateBatch(
+  store: Pick<WorkbenchStore, "db">,
   statements: AutoAcceptRelationshipStatements,
-  candidate: AutoAcceptRelationshipRow,
+  candidates: AutoAcceptRelationshipRow[],
 ): void {
-  const eventId = `resolution.auto.relationship.${candidate.relationshipCandidateId}`;
   const acceptedAt = nowIso();
-  statements.insertResolutionEvent.run([
-    eventId,
-    candidate.relationshipCandidateId,
-    JSON.stringify({
-      auto: true,
-      reason: "safe_relationship_rule",
-      ruleVersion: 1,
-      sourceId: candidate.sourceId,
-      resolvedFromEntityId: candidate.fromEntityRef,
-      resolvedRelationshipType: candidate.relationshipType,
-      resolvedToEntityId: candidate.toEntityRef,
-    }),
-    `auto/relationship/${candidate.relationshipCandidateId}.jsonl`,
-    acceptedAt,
-  ]);
-  const relationshipId =
-    `${candidate.fromEntityRef}:${candidate.relationshipType}:${candidate.toEntityRef}`;
-  if (isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef)) {
-    statements.deleteRelationshipLegalRefs.run([candidate.relationshipCandidateId, relationshipId]);
-  } else {
-    statements.insertCanonicalRelationship.run([
-      relationshipId,
-      candidate.fromEntityRef,
-      candidate.relationshipType,
-      candidate.toEntityRef,
+  const resolutionRows: unknown[][] = [];
+  const canonicalRelationshipRows: unknown[][] = [];
+  const acceptedIds: string[] = [];
+  for (const candidate of candidates) {
+    const eventId = `resolution.auto.relationship.${candidate.relationshipCandidateId}`;
+    const relationshipId =
+      `${candidate.fromEntityRef}:${candidate.relationshipType}:${candidate.toEntityRef}`;
+    resolutionRows.push([
       eventId,
+      candidate.relationshipCandidateId,
+      JSON.stringify({
+        auto: true,
+        reason: "safe_relationship_rule",
+        ruleVersion: 1,
+        sourceId: candidate.sourceId,
+        resolvedFromEntityId: candidate.fromEntityRef,
+        resolvedRelationshipType: candidate.relationshipType,
+        resolvedToEntityId: candidate.toEntityRef,
+      }),
+      `auto/relationship/${candidate.relationshipCandidateId}.jsonl`,
       acceptedAt,
     ]);
+    if (isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef)) {
+      statements.deleteRelationshipLegalRefs.run(candidate.relationshipCandidateId, relationshipId);
+    } else {
+      canonicalRelationshipRows.push([
+        relationshipId,
+        candidate.fromEntityRef,
+        candidate.relationshipType,
+        candidate.toEntityRef,
+        eventId,
+        acceptedAt,
+      ]);
+    }
+    acceptedIds.push(candidate.relationshipCandidateId);
   }
-  statements.updateRelationshipCandidate.run([candidate.relationshipCandidateId]);
-  statements.resolveReviewItem.run([acceptedAt, candidate.relationshipCandidateId]);
+  bulkRunRows(
+    store.db,
+    `insert or ignore into resolution_events(
+       event_id, event_type, subject_id, payload_json, resolution_file, sequence_number, created_at
+     ) values`,
+    "(?, 'accept_relationship_candidate', ?, ?, ?, 1, ?)",
+    resolutionRows,
+  );
+  bulkRunRows(
+    store.db,
+    `insert or ignore into canonical_relationships(
+       relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at
+     ) values`,
+    "(?, ?, ?, ?, 'accepted', ?, ?)",
+    canonicalRelationshipRows,
+  );
+  runByIdChunks(
+    store.db,
+    "update relationship_candidates set review_status = 'accepted' where relationship_candidate_id in",
+    acceptedIds,
+  );
+  runByIdChunks(
+    store.db,
+    `update review_items
+     set status = 'resolved',
+         updated_at = ?
+     where item_type = 'relationship_candidate'
+       and subject_id in`,
+    acceptedIds,
+    [acceptedAt],
+  );
+}
+
+const BULK_WRITE_ROW_LIMIT = 500;
+
+function bulkRunRows(
+  db: WorkbenchStore["db"],
+  sqlPrefix: string,
+  rowValueSql: string,
+  rows: unknown[][],
+): void {
+  for (let offset = 0; offset < rows.length; offset += BULK_WRITE_ROW_LIMIT) {
+    const chunk = rows.slice(offset, offset + BULK_WRITE_ROW_LIMIT);
+    if (chunk.length === 0) continue;
+    db.prepare(`${sqlPrefix} ${chunk.map(() => rowValueSql).join(", ")}`).run(
+      ...(chunk.flat() as never[]),
+    );
+  }
+}
+
+function runByIdChunks(
+  db: WorkbenchStore["db"],
+  sqlPrefix: string,
+  ids: string[],
+  leadingParams: unknown[] = [],
+): void {
+  for (let offset = 0; offset < ids.length; offset += BULK_WRITE_ROW_LIMIT) {
+    const chunk = ids.slice(offset, offset + BULK_WRITE_ROW_LIMIT);
+    if (chunk.length === 0) continue;
+    db.prepare(`${sqlPrefix} (${chunk.map(() => "?").join(", ")})`).run(
+      ...([...leadingParams, ...chunk] as never[]),
+    );
+  }
 }

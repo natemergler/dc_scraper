@@ -47,10 +47,10 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schema.version, 16);
-  assertEquals(second.schema.version, 16);
+  assertEquals(first.schema.version, 17);
+  assertEquals(second.schema.version, 17);
   assertEquals(second.schema, {
-    version: 16,
+    version: 17,
     name: "v2_current_workbench_schema",
     initializedAt: second.schema.initializedAt,
   });
@@ -60,6 +60,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
     const indexName of [
       "source_runs_source_status_idx",
       "source_items_source_key_idx",
+      "entity_candidates_proposed_idx",
+      "relationship_candidates_pending_fact_idx",
       "review_items_queue_idx",
       "review_items_subject_type_idx",
       "canonical_relationships_to_idx",
@@ -97,6 +99,57 @@ Deno.test("workbench schema indexes replay and review lookup hot paths", async (
        and item_type = 'relationship_candidate'`,
     ["relationship.mota.quickbase.example"],
   );
+  const endpointCandidatePlan = queryPlanDetails(
+    workbench.db,
+    `select entity_candidates.proposed_entity_id as proposedEntityId,
+            source_items.source_id as sourceId,
+            source_runs.started_at as runStartedAt,
+            entity_candidates.review_status as reviewStatus
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     join source_runs on source_runs.run_id = source_items.run_id
+     where entity_candidates.proposed_entity_id in (?, ?)
+     order by source_runs.started_at desc,
+              entity_candidates.candidate_id desc`,
+    ["dc.example_one", "dc.example_two"],
+  );
+  const pendingRelationshipPlan = queryPlanDetails(
+    workbench.db,
+    `select relationship_candidates.relationship_candidate_id as relationshipCandidateId
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where relationship_candidates.review_status = 'pending'`,
+  );
+  const autoAcceptOpenPlan = queryPlanDetails(
+    workbench.db,
+    `select relationship_candidates.relationship_candidate_id as relationshipCandidateId
+     from review_items
+     join relationship_candidates
+       on relationship_candidates.relationship_candidate_id = review_items.subject_id
+      and relationship_candidates.review_status = 'pending'
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     where review_items.status = 'open'
+       and review_items.item_type = 'relationship_candidate'`,
+  );
+  const sameFactPlan = queryPlanDetails(
+    workbench.db,
+    `select relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.to_entity_ref as toEntityRef
+     from relationship_candidates
+     join review_items
+       on review_items.subject_id = relationship_candidates.relationship_candidate_id
+      and review_items.item_type = 'relationship_candidate'
+     where relationship_candidates.review_status = 'pending'
+       and review_items.status in ('open', 'deferred')
+       and (
+         review_items.default_action = 'defer'
+         or json_extract(review_items.details_json, '$.whyDeferred') is not null
+       )
+     group by relationship_candidates.from_entity_ref,
+              relationship_candidates.relationship_type,
+              relationship_candidates.to_entity_ref`,
+  );
   workbench.close();
 
   assert(
@@ -112,6 +165,37 @@ Deno.test("workbench schema indexes replay and review lookup hot paths", async (
   assert(
     reviewPlan.some((detail) => detail.includes("review_items_subject_type_idx")),
     `expected review lookup to use review_items_subject_type_idx; plan: ${reviewPlan.join(" | ")}`,
+  );
+  assert(
+    endpointCandidatePlan.some((detail) => detail.includes("entity_candidates_proposed_idx")),
+    `expected endpoint candidate lookup to use entity_candidates_proposed_idx; plan: ${
+      endpointCandidatePlan.join(" | ")
+    }`,
+  );
+  assert(
+    pendingRelationshipPlan.some((detail) =>
+      detail.includes("relationship_candidates_review_idx") ||
+      detail.includes("relationship_candidates_pending_fact_idx")
+    ),
+    `expected reconciliation to use an indexed pending relationship candidate lookup; plan: ${
+      pendingRelationshipPlan.join(" | ")
+    }`,
+  );
+  assert(
+    autoAcceptOpenPlan.some((detail) => detail.includes("review_items_queue_idx")),
+    `expected auto-accept to start from review_items_queue_idx; plan: ${
+      autoAcceptOpenPlan.join(" | ")
+    }`,
+  );
+  assert(
+    sameFactPlan.some((detail) => detail.includes("relationship_candidates_pending_fact_idx")),
+    `expected same-fact lookup to use relationship_candidates_pending_fact_idx; plan: ${
+      sameFactPlan.join(" | ")
+    }`,
+  );
+  assert(
+    sameFactPlan.every((detail) => !detail.includes("USE TEMP B-TREE")),
+    `expected same-fact lookup to avoid temp b-tree; plan: ${sameFactPlan.join(" | ")}`,
   );
 });
 
@@ -199,7 +283,7 @@ Deno.test("source list fails fast for non-current local workbench DBs", async ()
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -249,7 +333,7 @@ Deno.test("source list rejects a current schema record when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -270,6 +354,6 @@ Deno.test("source list rejects current schema records with unexpected local tabl
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });

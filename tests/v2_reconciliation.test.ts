@@ -185,6 +185,60 @@ Deno.test("relationship reconciliation resolves endpoint status in bulk", async 
   assertEquals(queryCounts.releaseCount, 1);
 });
 
+Deno.test("relationship reconciliation clears non-pending diagnostics set-wise", () => {
+  const dir = Deno.makeTempDirSync();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec(`
+    insert into sources(source_id, title, kind, access_method, base_url, updated_at)
+    values('test.reconcile.cleanup', 'Cleanup Test', 'fixture', 'fixture', 'https://example.test', datetime('now'));
+    insert into source_endpoints(endpoint_id, source_id, title, kind, url, method, capture_mode, updated_at)
+    values('test.reconcile.cleanup.main', 'test.reconcile.cleanup', 'Cleanup Test', 'fixture', 'https://example.test', 'GET', 'json', datetime('now'));
+    insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status)
+    values('run.reconcile.cleanup', 'test.reconcile.cleanup', 'test.reconcile.cleanup.main', datetime('now'), datetime('now'), 'success');
+    insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at)
+    values('artifact.reconcile.cleanup', 'run.reconcile.cleanup', 'test.reconcile.cleanup.main', 'json', 'cleanup.json', 'https://example.test', 'sha256:test', 2, datetime('now'));
+    insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json)
+    values('item.reconcile.cleanup', 'test.reconcile.cleanup', 'test.reconcile.cleanup.main', 'run.reconcile.cleanup', 'artifact.reconcile.cleanup', 'cleanup-row', 'fixture', 'Cleanup row', '{}');
+    insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at)
+    values('dc.cleanup_source', 'Cleanup Source', 'board', 'accepted', '[]', datetime('now'), datetime('now'));
+    insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at)
+    values('dc.cleanup_target', 'Cleanup Target', 'agency', 'accepted', '[]', datetime('now'), datetime('now'));
+    insert into relationship_candidates(relationship_candidate_id, source_item_id, from_entity_ref, to_entity_ref, relationship_type, raw_value, needs_review, review_status)
+    values
+      ('relationship.test.reconcile.cleanup.accepted', 'item.reconcile.cleanup', 'dc.missing_source', 'dc.missing_target', 'governed_by', 'Missing target', 0, 'accepted'),
+      ('relationship.test.reconcile.cleanup.pending', 'item.reconcile.cleanup', 'dc.cleanup_source', 'dc.cleanup_target', 'governed_by', 'Cleanup Target', 0, 'pending');
+    insert into reconciliation_items(subject_type, subject_id, state, reason, details_json, created_at, updated_at)
+    values
+      ('relationship_candidate', 'relationship.test.reconcile.cleanup.accepted', 'blocked', 'old', '{}', datetime('now'), datetime('now')),
+      ('relationship_candidate', 'relationship.test.reconcile.cleanup.pending', 'blocked', 'old', '{}', datetime('now'), datetime('now'));
+    insert into reconciliation_blockers(subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at)
+    values
+      ('relationship_candidate', 'relationship.test.reconcile.cleanup.accepted', 'dc.missing_target', 'endpoint', 'dc.missing_target', 'missing', '{}', datetime('now'), datetime('now')),
+      ('relationship_candidate', 'relationship.test.reconcile.cleanup.pending', 'dc.cleanup_target', 'endpoint', 'dc.cleanup_target', 'missing', '{}', datetime('now'), datetime('now'));
+  `);
+
+  reconcileRelationshipCandidates(workbench);
+
+  const staleAcceptedRows = workbench.db.prepare(
+    `select
+       (select count(*) from reconciliation_items where subject_id = 'relationship.test.reconcile.cleanup.accepted') as itemCount,
+       (select count(*) from reconciliation_blockers where subject_id = 'relationship.test.reconcile.cleanup.accepted') as blockerCount`,
+  ).get() as { itemCount: number; blockerCount: number };
+  const pendingReview = workbench.db.prepare(
+    `select count(*) as count
+     from review_items
+     where subject_id = 'relationship.test.reconcile.cleanup.pending'
+       and item_type = 'relationship_candidate'
+       and status = 'open'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(staleAcceptedRows, { itemCount: 0, blockerCount: 0 });
+  assertEquals(pendingReview.count, 1);
+});
+
 Deno.test("auto-promotion batches accepted candidate writes in one savepoint", () => {
   const dir = Deno.makeTempDirSync();
   const dbPath = join(dir, "workbench.sqlite");
