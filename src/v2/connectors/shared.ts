@@ -263,7 +263,7 @@ const knownEntityRefs = new Map<string, string>([
   ["department of health (doh)", "dc.dc_health"],
   [
     "dc taxicab commission (dctc)",
-    "dc.district_of_columbia_taxicab_commission_dctc",
+    "dc.district_of_columbia_taxicab_commission",
   ],
   ["dc public charter school board", "dc.public_charter_school_board_pcsb"],
   ["ccrc", "dc.criminal_code_reform_commission"],
