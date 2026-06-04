@@ -674,6 +674,7 @@ function shouldAutoAcceptRelationshipsAfterEvent(
   eventType: ResolutionEventInput["eventType"],
 ): boolean {
   return eventType === "accept_entity_candidate" ||
+    eventType === "accept_relationship_candidate" ||
     eventType === "accept_legal_ref" ||
     eventType === "merge_entity_candidates" ||
     eventType === "set_entity_fields";
