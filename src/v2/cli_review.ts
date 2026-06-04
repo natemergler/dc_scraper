@@ -48,8 +48,14 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
+    const filters = readReviewFilters(args);
     const { items, summaries } = await deps.withWorkbench((workbench) => {
-      const items = workbench.listReviewItems(readReviewFilters(args));
+      const limit = filters.decisionsOnly ? undefined : filters.limit;
+      const baseItems = workbench.listReviewItems({ ...filters, limit });
+      const filteredItems = filters.decisionsOnly
+        ? baseItems.filter(isHumanDecisionReviewItem).slice(0, filters.limit)
+        : baseItems;
+      const items = filteredItems;
       const sourceIds = reviewSubjectSourceIds(workbench, items);
       return {
         items: items.map((item) => ({
@@ -134,9 +140,12 @@ export function printReviewHelp(): void {
 Workflow:
   1. Run \`${dcCommand("status")}\` or \`${dcCommand("audit")}\` to see what remains
   2. Browse raw unresolved rows with \`${dcCommand("review list --mode relationships --limit 5")}\`
-  3. Inspect grouped decision work with \`${dcCommand("review packets --mode relationships")}\`
-  4. Run \`${dcCommand("review")}\` when the slice needs a human decision
-  5. Press Enter for the recommended packet or choose another ranked decision packet
+  3. Narrow raw browsing to actual human decisions with \`${
+    dcCommand("review list --decisions")
+  }\` when needed
+  4. Inspect grouped decision work with \`${dcCommand("review packets --mode relationships")}\`
+  5. Run \`${dcCommand("review")}\` when the slice needs a human decision
+  6. Press Enter for the recommended packet or choose another ranked decision packet
 
 Usage:
   ${
@@ -144,7 +153,7 @@ Usage:
   } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
   ${
     dcCommand("review list")
-  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--decisions] [--json]
   ${
     dcCommand("review packets")
   } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json] [--include-review-item-ids]
@@ -207,6 +216,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
   const refType = readFlag(args, "--ref-type");
   const sourceId = readFlag(args, "--source");
   const limit = readNumberFlag(args, "--limit");
+  const decisionsOnly = args.includes("--decisions");
   const positionalMode = isReviewMode(args[1]) ? args[1] : undefined;
   return {
     mode: modeFlag ?? positionalMode,
@@ -219,6 +229,7 @@ function readReviewFilters(args: string[]): ReviewItemFilters {
     refType: refType ?? undefined,
     sourceId: sourceId ?? undefined,
     limit,
+    decisionsOnly,
   };
 }
 

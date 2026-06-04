@@ -511,6 +511,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertStringIncludes(reviewText, "Workflow:");
   assertStringIncludes(reviewText, "Run `deno task dc -- status` or `deno task dc -- audit`");
   assertStringIncludes(reviewText, "Browse raw unresolved rows");
+  assertStringIncludes(reviewText, "review list --decisions");
   assertStringIncludes(reviewText, "Inspect grouped decision work");
   assertStringIncludes(
     reviewText,
@@ -4568,6 +4569,42 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
       item.humanDecision === true
     ),
   );
+
+  const decisionsJsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--status",
+      "open",
+      "--subject-prefix",
+      "review_list",
+      "--decisions",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  const decisionsJson = JSON.parse(new TextDecoder().decode(decisionsJsonOutput.stdout)) as {
+    count: number;
+    items: Array<{ subjectId: string; workKind: string; humanDecision: boolean }>;
+  };
+  assertEquals(decisionsJsonOutput.code, 0);
+  assertEquals(decisionsJson.count, 1);
+  assertEquals(
+    decisionsJson.items[0]?.subjectId,
+    "relationship.council.committees.review_list_oversight",
+  );
+  assertEquals(decisionsJson.items[0]?.workKind, "decision");
+  assertEquals(decisionsJson.items[0]?.humanDecision, true);
 
   const rawValueContainsJsonOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
