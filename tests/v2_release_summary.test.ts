@@ -14,6 +14,7 @@ import {
   syntheticEntitySourceResult,
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
+import { assertReleaseReadmeOmitsWorkbenchStatusLanguage } from "./helpers/v2_release_readme_assertions.ts";
 
 Deno.test("release summary surfaces unresolved review debt and placeholder risk neutrally", async () => {
   const dir = await Deno.makeTempDir();
@@ -436,42 +437,3 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   );
   assertEquals(inspectJson.releaseSummary.top_unresolved_review_items, undefined);
 });
-
-function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
-  const normalized = readme.toLowerCase();
-  for (
-    const snippet of [
-      "review_status",
-      "review",
-      "review status note:",
-      "review items by",
-      "review debt by",
-      "unresolved",
-      "unresolved workbench state:",
-      "unresolved rows",
-      "pending",
-      "deferred",
-      "blocked",
-      "stale review:",
-      "blocked by source:",
-      "blocked and stale counts report unresolved work",
-      "stay review-first",
-      "internal",
-      "caveat",
-      "gap",
-      "incomplete",
-      "coverage note",
-      "does not claim complete",
-      "current-schema",
-      "local db",
-      "local database",
-      "contract",
-      "workbench",
-      "legacy",
-      "migration",
-      "schema_migrations",
-    ]
-  ) {
-    assert(!normalized.includes(snippet), `README should not include ${snippet}`);
-  }
-}
