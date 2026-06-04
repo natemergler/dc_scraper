@@ -5075,7 +5075,7 @@ Deno.test("accepted-endpoint Quickbase appointee observation relationships no lo
   );
 });
 
-Deno.test("accepted-endpoint DC Courts structure relationships no longer wait for batch accept-safe", async () => {
+Deno.test("DC Courts structure entities auto-promote and structural relationships no longer wait for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -5106,6 +5106,19 @@ Deno.test("accepted-endpoint DC Courts structure relationships no longer wait fo
   );
   workbench.close();
 
+  const reopenedAfterImport = new Workbench(dbPath);
+  reopenedAfterImport.init();
+  const remainingEntityReview = reopenedAfterImport.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.dccourts.structure",
+  });
+  const acceptedAfterImport = reopenedAfterImport.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'part_of' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopenedAfterImport.close();
+  assertEquals(remainingEntityReview.length, 0);
+  assertEquals(acceptedAfterImport.length, 11);
+
   const entityBatch = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -5133,7 +5146,7 @@ Deno.test("accepted-endpoint DC Courts structure relationships no longer wait fo
   assertEquals(entityBatch.code, 0);
   assertStringIncludes(
     new TextDecoder().decode(entityBatch.stdout),
-    "Accepted 12 safe review item(s).",
+    "Accepted 0 safe review item(s).",
   );
 
   const relationshipBatch = await new Deno.Command(Deno.execPath(), {
@@ -5182,7 +5195,7 @@ Deno.test("accepted-endpoint DC Courts structure relationships no longer wait fo
   );
 });
 
-Deno.test("accepted-endpoint BEGA structure relationships no longer wait for batch accept-safe", async () => {
+Deno.test("BEGA structure entities auto-promote and structural relationships no longer wait for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -5213,6 +5226,19 @@ Deno.test("accepted-endpoint BEGA structure relationships no longer wait for bat
   );
   workbench.close();
 
+  const reopenedAfterImport = new Workbench(dbPath);
+  reopenedAfterImport.init();
+  const remainingEntityReview = reopenedAfterImport.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.bega.structure",
+  });
+  const acceptedAfterImport = reopenedAfterImport.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'part_of' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopenedAfterImport.close();
+  assertEquals(remainingEntityReview.length, 0);
+  assertEquals(acceptedAfterImport.length, 2);
+
   const entityBatch = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
@@ -5240,7 +5266,7 @@ Deno.test("accepted-endpoint BEGA structure relationships no longer wait for bat
   assertEquals(entityBatch.code, 0);
   assertStringIncludes(
     new TextDecoder().decode(entityBatch.stdout),
-    "Accepted 3 safe review item(s).",
+    "Accepted 0 safe review item(s).",
   );
 
   const relationshipBatch = await new Deno.Command(Deno.execPath(), {

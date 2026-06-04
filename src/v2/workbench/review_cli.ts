@@ -1,8 +1,10 @@
 import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
+import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
+import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
 import {
   renderReviewPacketHeader,
@@ -47,6 +49,8 @@ export async function runInteractiveReview(
   const activeFilters: ReviewItemFilters = filters.status === undefined
     ? { ...filters, status: "open" }
     : filters;
+  autoPromoteSafeEntityCandidates(workbench);
+  reconcileRelationshipCandidates(workbench);
   autoAcceptSafeRelationshipCandidates(workbench);
   let stickyPacketId: string | undefined;
   while (true) {

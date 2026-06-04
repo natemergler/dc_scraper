@@ -41,7 +41,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const { items, summaries } = await deps.withReadonlyWorkbench((workbench) => {
+    const { items, summaries } = await deps.withWorkbench((workbench) => {
       const items = workbench.listReviewItems(readReviewFilters(args));
       return {
         items,
@@ -64,7 +64,7 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
-    const packets = await deps.withReadonlyWorkbench((workbench) =>
+    const packets = await deps.withWorkbench((workbench) =>
       listReviewPackets(workbench, readReviewFilters(args))
     );
     if (options.json) {
@@ -109,7 +109,7 @@ Workflow:
   5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
   6. Apply a scoped batch deliberately, like \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.dccourts.structure",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils",
     )
   }\`
 
@@ -145,7 +145,7 @@ Workflow:
   }\`
   2. Accept safe work with \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.dccourts.structure",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils",
     )
   }\`
   3. Defer default-defer relationships with \`${
