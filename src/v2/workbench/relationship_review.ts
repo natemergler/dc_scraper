@@ -71,6 +71,9 @@ function reviewReason(candidate: RelationshipReviewCandidate): string {
       }
       if (candidate.relationshipType === "chairs") return "Review committee chair relationship";
       if (candidate.relationshipType === "member_of") {
+        if (candidate.needsReview === 1) {
+          return "Review Committee of the Whole roster/prose membership tension";
+        }
         return "Review committee member relationship";
       }
       return "Review committee to Council relationship";
@@ -100,6 +103,9 @@ function reviewDefaultAction(
 ): "accept" | "defer" {
   switch (candidate.sourceId) {
     case "council.committees":
+      if (candidate.relationshipType === "member_of" && candidate.needsReview === 1) {
+        return "defer";
+      }
       if (candidate.relationshipType !== "overseen_by") return "accept";
       return defaultActionForCouncilOversightTarget(candidate.rawValue);
     case "council.members":
@@ -124,6 +130,9 @@ function reviewWhyDeferred(
   if (defaultAction !== "defer") return undefined;
   switch (candidate.sourceId) {
     case "council.committees":
+      if (candidate.relationshipType === "member_of" && candidate.needsReview === 1) {
+        return "The source summary says all Councilmembers are part of this committee, but the explicit committee roster omits this member.";
+      }
       if (candidate.relationshipType !== "overseen_by") return undefined;
       return councilOversightReviewPolicy(candidate.rawValue).whyDeferred ??
         "This oversight edge stays deferred until a human confirms the committee relationship.";

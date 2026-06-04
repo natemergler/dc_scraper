@@ -15,7 +15,7 @@ import { artifact, buildCandidateReviewItem, fieldEvidence } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 import { normalizeName, slugify, stripHtml } from "../domain.ts";
 
-const councilMembersSource: SourceDefinition = {
+export const councilMembersSource: SourceDefinition = {
   sourceId: "council.members",
   title: "Council Members and Seats",
   kind: "official_page_html",
@@ -355,7 +355,7 @@ function buildRoleCandidate(
   };
 }
 
-function parseCouncilMemberBlocks(html: string): CouncilMemberBlock[] {
+export function parseCouncilMemberBlocks(html: string): CouncilMemberBlock[] {
   return [
     ...html.matchAll(/<h3[^>]*>\s*([^<]+?)\s*<\/h3>\s*([\s\S]*?)(?=<h3[^>]*>|<footer|<\/main>)/gsi),
   ]

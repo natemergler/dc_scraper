@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildEntityId } from "../src/v2/domain.ts";
@@ -1122,4 +1122,122 @@ Deno.test("Council committee chair, member, and part_of relationships auto-accep
 
   assertEquals(acceptedRelationships.length, 3);
   assertEquals(pendingCommitteeStructure.count, 0);
+});
+
+Deno.test("Committee of the Whole roster omissions become deferred relationship review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const cowWithMissingWard8 = `
+<html><body>
+  <h1>Committee of the Whole</h1>
+  <p>The Chairman of the Council is the Chairman of the Committee of the Whole (COW), and all Councilmembers are part of the committee.</p>
+  <main>
+    <h2>Councilmembers</h2>
+    <h4>Chairperson</h4>
+    <p><a href="https://dccouncil.gov/council/phil-mendelson/">Chairman Phil Mendelson</a></p>
+    <h4>Councilmembers</h4>
+    <ul>
+      <li><a href="https://dccouncil.gov/council/anita-bonds/">At-Large Councilmember Anita Bonds</a></li>
+      <li><a href="https://dccouncil.gov/council/robert-white/">At-Large Councilmember Robert C. White, Jr.</a></li>
+      <li><a href="https://dccouncil.gov/council/christina-henderson/">At-Large Councilmember Christina Henderson</a></li>
+      <li><a href="https://dccouncil.gov/council/doni-crawford/">At-Large Councilmember Doni Crawford</a></li>
+      <li><a href="https://dccouncil.gov/council/brianne-nadeau/">Ward 1 Councilmember Brianne K. Nadeau</a></li>
+      <li><a href="https://dccouncil.gov/council/brooke-pinto/">Ward 2 Councilmember Brooke Pinto</a></li>
+      <li><a href="https://dccouncil.gov/council/matthew-frumin/">Ward 3 Councilmember Matthew Frumin</a></li>
+      <li><a href="https://dccouncil.gov/council/janeese-lewis-george/">Ward 4 Councilmember Janeese Lewis George</a></li>
+      <li><a href="https://dccouncil.gov/council/zachary-parker/">Ward 5 Councilmember Zachary Parker</a></li>
+      <li><a href="https://dccouncil.gov/council/charles-allen/">Ward 6 Councilmember Charles Allen</a></li>
+      <li><a href="https://dccouncil.gov/council/wendell-felder/">Ward 7 Councilmember Wendell Felder</a></li>
+    </ul>
+  </main>
+</body></html>
+`;
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/councilmembers/":
+          return councilMembersFixture;
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return cowWithMissingWard8;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("council.members").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const ward7CowRelationshipId = `${
+    buildEntityId("Ward 7 Councilmember Wendell Felder")
+  }:member_of:${buildEntityId("Committee of the Whole")}`;
+  const ward8CowRelationshipId = `${
+    buildEntityId("Ward 8 Councilmember Trayon White, Jr.")
+  }:member_of:${buildEntityId("Committee of the Whole")}`;
+  const ward7Relationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
+  ).get(ward7CowRelationshipId) as { relationshipId: string } | undefined;
+  const ward8Relationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = ?",
+  ).get(ward8CowRelationshipId) as { relationshipId: string } | undefined;
+  const ward8Candidate = workbench.db.prepare(
+    `select relationship_candidate_id as relationshipCandidateId,
+            needs_review as needsReview,
+            review_status as reviewStatus,
+            raw_value as rawValue
+     from relationship_candidates
+     where from_entity_ref = ?
+       and to_entity_ref = ?
+       and relationship_type = 'member_of'`,
+  ).get(
+    buildEntityId("Ward 8 Councilmember Trayon White, Jr."),
+    buildEntityId("Committee of the Whole"),
+  ) as {
+    relationshipCandidateId: string;
+    needsReview: number;
+    reviewStatus: string;
+    rawValue: string;
+  } | undefined;
+  const ward8Review = ward8Candidate
+    ? workbench.listReviewItems({
+      mode: "relationships",
+      subjectPrefix: ward8Candidate.relationshipCandidateId,
+    })[0]
+    : undefined;
+  workbench.close();
+
+  assertEquals(ward7Relationship?.relationshipId, ward7CowRelationshipId);
+  assertEquals(ward8Relationship, undefined);
+  assertEquals(ward8Candidate?.needsReview, 1);
+  assertEquals(ward8Candidate?.reviewStatus, "pending");
+  assert(ward8Candidate?.rawValue.includes("absent from the explicit committee roster"));
+  assertEquals(
+    ward8Review?.reason,
+    "Review Committee of the Whole roster/prose membership tension",
+  );
+  assertEquals(ward8Review?.defaultAction, "defer");
+  assert(
+    String(ward8Review?.details.whyDeferred).includes(
+      "explicit committee roster omits this member",
+    ),
+  );
 });
