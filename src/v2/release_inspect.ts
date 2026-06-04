@@ -82,7 +82,7 @@ export async function renderReleaseInspection(
     `Release readiness: ${inspection.readiness}`,
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
-    `Review status: open=${summary.open_review_item_count ?? 0}, deferred=${
+    `Decision status: open=${summary.open_review_item_count ?? 0}, deferred=${
       summary.deferred_review_item_count ?? 0
     }, stale=${summary.stale_review_item_count ?? 0}, blocked=${
       summary.blocked_reconciliation_count ?? 0
@@ -90,7 +90,7 @@ export async function renderReleaseInspection(
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
-    `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
+    `Legal refs by status: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
   ].join("\n");
 }
 

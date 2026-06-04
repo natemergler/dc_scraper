@@ -108,7 +108,7 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(inspectText, "Release readiness: not-ready");
-  assertStringIncludes(inspectText, "Review status: open=");
+  assertStringIncludes(inspectText, "Decision status: open=");
   assert(!inspectText.includes("Blocked by source: council.committees="));
 
   const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
@@ -375,7 +375,7 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   }).output();
   const inspectText = new TextDecoder().decode(inspectOutput.stdout);
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Review status: open=1, deferred=1");
+  assertStringIncludes(inspectText, "Decision status: open=1, deferred=1");
   assert(!inspectText.includes("Review debt by type:"));
   assert(!inspectText.includes("Review debt by source:"));
   assert(!inspectText.includes("test.signature.entities(open=1,deferred=0)"));
