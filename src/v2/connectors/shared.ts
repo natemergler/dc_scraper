@@ -380,6 +380,36 @@ const knownEntityRefs = new Map<string, string>([
     "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
   ],
   [
+    "mayor's office of lesbian, gay, bisexual, transgender and questioning affairs (lgbtq) affairs",
+    "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
+  ],
+  [
+    "mayor's office of lesbian, gay, bisexual, transgender and questioning affairs affairs",
+    "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
+  ],
+  [
+    "office of neighbor safety and engagement (onse)",
+    "dc.office_of_neighborhood_safety_and_engagement",
+  ],
+  [
+    "office of neighbor safety and engagement",
+    "dc.office_of_neighborhood_safety_and_engagement",
+  ],
+  [
+    "office of the ombudsmen for children (ofc)",
+    "dc.office_of_the_ombudsperson_for_children",
+  ],
+  ["office of the ombudsmen for children", "dc.office_of_the_ombudsperson_for_children"],
+  ["dc department of human resources (dchr)", "dc.department_of_human_resources"],
+  ["dc department of human resources", "dc.department_of_human_resources"],
+  [
+    "department of youth rehabilitative services",
+    "dc.department_of_youth_rehabilitation_services",
+  ],
+  ["chief medical examiner (cme)", "dc.office_of_the_chief_medical_examiner"],
+  ["chief medical examiner", "dc.office_of_the_chief_medical_examiner"],
+  ["chief technology officer", "dc.office_of_the_chief_technology_officer"],
+  [
     "mayor's office on asian and pacific islander affairs",
     "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
   ],

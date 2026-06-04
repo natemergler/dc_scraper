@@ -63,6 +63,16 @@ export interface WorkbenchStatusSnapshot {
       rawValue?: string | null;
       blockers: Array<{ blockerId: string; blockerState: string; blockerLabel: string }>;
     };
+    topUnblocker?: {
+      reviewItemId: string;
+      itemType: string;
+      subjectId: string;
+      sourceId: string;
+      reason: string;
+      defaultAction: string;
+      downstreamBlockedCount: number;
+      reviewCommand: string;
+    };
   };
   canonical: {
     entities: number;
@@ -120,6 +130,12 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       blockedFamilies: reconciliation.blockedFamilies,
       blockedByReason: reconciliation.blockedByReason,
       firstBlocked: reconciliation.firstBlocked,
+      topUnblocker: reconciliation.topUnblocker
+        ? {
+          ...reconciliation.topUnblocker,
+          reviewCommand: reviewCommandForUnblocker(reconciliation.topUnblocker),
+        }
+        : undefined,
     },
     canonical: {
       entities,
@@ -189,6 +205,7 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       reconciliationDetails ? ` (${reconciliationDetails})` : ""
     }`,
     ...(blockedFamilySummary ? [`Blocked families: ${blockedFamilySummary}`] : []),
+    ...renderTopUnblockerSummary(status.reconciliation.topUnblocker),
     ...renderFirstBlockedSummary(status.reconciliation.firstBlocked),
     `Canonical: ${status.canonical.entities} entities, ${status.canonical.relationships} relationships`,
     `Readiness: ${status.unresolvedStateNote}`,
@@ -226,6 +243,17 @@ export function renderWorkbenchAudit(status: WorkbenchStatusSnapshot): string {
 
 function blockedInspectionCommand(sourceId: string): string {
   return dcCommand(`source inspect ${sourceId}`);
+}
+
+function renderTopUnblockerSummary(
+  topUnblocker: WorkbenchStatusSnapshot["reconciliation"]["topUnblocker"],
+): string[] {
+  if (!topUnblocker) return [];
+  const plural = topUnblocker.downstreamBlockedCount === 1 ? "" : "s";
+  return [
+    `Top unblocker: ${topUnblocker.reason} (${topUnblocker.downstreamBlockedCount} blocked relationship${plural})`,
+    `Review unblocker: ${topUnblocker.reviewCommand}`,
+  ];
 }
 
 function renderFirstBlockedSummary(
@@ -273,4 +301,30 @@ function renderBlockedDependency(
     ? "missing endpoint"
     : blocker.blockerState.replaceAll("_", " ");
   return `${label} (${state}; id ${blocker.blockerId})`;
+}
+
+function reviewCommandForUnblocker(
+  topUnblocker: NonNullable<ReturnType<typeof summarizeUnresolvedReconciliation>["topUnblocker"]>,
+): string {
+  return dcCommand(
+    `review ${
+      reviewModeForItemType(topUnblocker.itemType)
+    } --subject-prefix ${topUnblocker.subjectId}`,
+  );
+}
+
+function reviewModeForItemType(itemType: string): string {
+  switch (itemType) {
+    case "entity_candidate":
+    case "placeholder_entity":
+      return "entities";
+    case "legal_ref":
+      return "legal";
+    case "relationship_candidate":
+      return "relationships";
+    case "source_status":
+      return "sources";
+    default:
+      return "list";
+  }
 }
