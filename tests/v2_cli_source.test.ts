@@ -554,6 +554,8 @@ Deno.test("source fetch prints import substeps to stderr after connector returns
   ];
   const importProgress: ImportProgressEvent[] = [
     { phase: "parsed-row-insert", message: "Inserted parsed rows" },
+    { phase: "entity-replay", message: "Replayed entity decisions" },
+    { phase: "legal-ref-replay", message: "Replayed legal ref decisions" },
     { phase: "legal-auto-accept", message: "Auto-accepted safe legal refs" },
     { phase: "entity-auto-promote", message: "Auto-promoted safe entities" },
     { phase: "relationship-reconciliation", message: "Reconciled relationship candidates" },
@@ -595,6 +597,8 @@ Deno.test("source fetch prints import substeps to stderr after connector returns
   assertStringIncludes(progress, "[1/1] Starting mota.quickbase - MOTA QuickBase");
   assertStringIncludes(progress, "[1/1] Importing mota.quickbase after connector");
   assertStringIncludes(progress, "[1/1] mota.quickbase import: Inserted parsed rows");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Replayed entity decisions");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Replayed legal ref decisions");
   assertStringIncludes(progress, "[1/1] mota.quickbase import: Auto-accepted safe legal refs");
   assertStringIncludes(progress, "[1/1] mota.quickbase import: Auto-promoted safe entities");
   assertStringIncludes(progress, "[1/1] mota.quickbase import: Reconciled relationship candidates");

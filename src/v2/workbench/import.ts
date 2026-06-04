@@ -48,6 +48,8 @@ interface EntityReviewConflictContext {
 
 export type ImportProgressPhase =
   | "parsed-row-insert"
+  | "entity-replay"
+  | "legal-ref-replay"
   | "legal-auto-accept"
   | "entity-auto-promote"
   | "relationship-reconciliation"
@@ -170,7 +172,19 @@ export async function importConnectorResult(
           message: "Inserted parsed rows",
         });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
+        reportImportProgress(options, {
+          phase: "entity-replay",
+          sourceId: endpointResult.endpoint.sourceId,
+          endpointId: endpointResult.endpoint.endpointId,
+          message: "Replayed entity decisions",
+        });
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
+        reportImportProgress(options, {
+          phase: "legal-ref-replay",
+          sourceId: endpointResult.endpoint.sourceId,
+          endpointId: endpointResult.endpoint.endpointId,
+          message: "Replayed legal ref decisions",
+        });
         if (needsDerivedStateRefresh) {
           autoAcceptSafeLegalRefs(store);
           reportImportProgress(options, {
