@@ -61,6 +61,16 @@ import {
   syntheticCustomRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
+function queryPlanDetails(
+  db: Database,
+  sql: string,
+  params: string[] = [],
+): string[] {
+  return db.prepare(`explain query plan ${sql}`).all(...params).map((row) =>
+    (row as { detail: string }).detail
+  );
+}
+
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const dir = await Deno.makeTempDir();
   await ensureDir(join(dir, "data"));
@@ -76,8 +86,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schemaVersion, 12);
-  assertEquals(second.schemaVersion, 12);
+  assertEquals(first.schemaVersion, 13);
+  assertEquals(second.schemaVersion, 13);
   assertEquals(second.schemaMarkers.length, 1);
   assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
@@ -87,12 +97,58 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
       "source_runs_source_status_idx",
       "source_items_source_key_idx",
       "review_items_queue_idx",
+      "review_items_subject_type_idx",
       "canonical_relationships_to_idx",
       "resolution_events_file_sequence_idx",
+      "resolution_events_fact_signature_idx",
     ]
   ) {
     assert(indexes.has(indexName), `missing index ${indexName}`);
   }
+});
+
+Deno.test("workbench schema indexes replay and review lookup hot paths", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const replayPlan = queryPlanDetails(
+    workbench.db,
+    `select event_type as eventType,
+            event_id as eventId,
+            json_extract(payload_json, '$.evidence_hash') as evidenceHash
+     from resolution_events
+     where event_type in ('accept_relationship_candidate', 'reject_relationship_candidate')
+       and json_extract(payload_json, '$.fact_signature') = ?
+     order by created_at desc, event_id desc
+     limit 1`,
+    ["relationship.fact.signature"],
+  );
+  const reviewPlan = queryPlanDetails(
+    workbench.db,
+    `select status
+     from review_items
+     where subject_id = ?
+       and item_type = 'relationship_candidate'`,
+    ["relationship.mota.quickbase.example"],
+  );
+  workbench.close();
+
+  assert(
+    replayPlan.some((detail) => detail.includes("resolution_events_fact_signature_idx")),
+    `expected replay lookup to use resolution_events_fact_signature_idx; plan: ${
+      replayPlan.join(" | ")
+    }`,
+  );
+  assert(
+    replayPlan.every((detail) => !detail.includes("USE TEMP B-TREE")),
+    `expected replay lookup index order to avoid a temp sort; plan: ${replayPlan.join(" | ")}`,
+  );
+  assert(
+    reviewPlan.some((detail) => detail.includes("review_items_subject_type_idx")),
+    `expected review lookup to use review_items_subject_type_idx; plan: ${reviewPlan.join(" | ")}`,
+  );
 });
 
 Deno.test("workbench schema rejects orphan rows and invalid statuses", async () => {
@@ -295,7 +351,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 12");
+  assertStringIncludes(statusText, "Schema version: 13");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -324,7 +380,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 12);
+  assertEquals(jsonStatus.schemaVersion, 13);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
@@ -452,7 +508,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 12. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 13. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
@@ -483,7 +539,7 @@ Deno.test("source list rejects a current schema marker when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Unsupported local workbench schema version 12. Rebuild this ignored local DB or point --db at a current workbench.",
+    "Unsupported local workbench schema version 13. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 

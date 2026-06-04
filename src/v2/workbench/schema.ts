@@ -8,7 +8,7 @@ export interface SchemaMigrationRow {
   appliedAt: string;
 }
 
-const CURRENT_SCHEMA_VERSION = 12;
+const CURRENT_SCHEMA_VERSION = 13;
 const CURRENT_SCHEMA_NAME = "v2_current_workbench_schema";
 
 const CURRENT_SCHEMA_SQL = `create table sources(
@@ -181,6 +181,7 @@ create index legal_ref_evidence_ref_idx on legal_ref_evidence(legal_ref_id);
 create index datasets_source_item_idx on datasets(source_item_id);
 create index dataset_evidence_dataset_idx on dataset_evidence(dataset_id);
 create index review_items_queue_idx on review_items(status, item_type, subject_id);
+create index review_items_subject_type_idx on review_items(subject_id, item_type);
 create table resolution_events(
   event_id text primary key,
   event_type text not null check(event_type in('accept_entity_candidate', 'reject_entity_candidate', 'merge_entity_candidates', 'set_entity_fields', 'accept_relationship_candidate', 'reject_relationship_candidate', 'accept_legal_ref', 'reject_legal_ref', 'defer_review_item', 'reopen_review_item')),
@@ -191,6 +192,12 @@ create table resolution_events(
   created_at text not null
 );
 create unique index resolution_events_file_sequence_idx on resolution_events(resolution_file, sequence_number);
+create index resolution_events_fact_signature_idx on resolution_events(
+  json_extract(payload_json, '$.fact_signature'),
+  created_at desc,
+  event_id desc,
+  event_type
+);
 create table relationship_candidates(
   relationship_candidate_id text primary key,
   source_item_id text not null references source_items(source_item_id),
@@ -294,7 +301,9 @@ const EXPECTED_INDEXES = new Set([
   "datasets_source_item_idx",
   "dataset_evidence_dataset_idx",
   "review_items_queue_idx",
+  "review_items_subject_type_idx",
   "resolution_events_file_sequence_idx",
+  "resolution_events_fact_signature_idx",
   "canonical_relationships_from_idx",
   "canonical_relationships_to_idx",
   "reconciliation_items_state_idx",
