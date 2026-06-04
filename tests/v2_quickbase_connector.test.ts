@@ -212,17 +212,18 @@ Deno.test("quickbase connector keeps non-identical appointee observations distin
 "","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
 "","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Holdover","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
 "","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Agency Representative","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+"","Jane","Doe","","Reappointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","03-01-2020","jane.doe@dc.gov"
 `.trim();
   const result = await runQuickbaseConnector(changedRowsCsv);
 
   const parsed = result.endpointResults[1].parsed;
   assert(parsed);
-  assertEquals(parsed.items?.length, 3);
+  assertEquals(parsed.items?.length, 4);
   assertEquals(
     (parsed.entityCandidates ?? []).filter((candidate) =>
       candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
     ).length,
-    3,
+    4,
   );
   assertEquals(
     (parsed.relationshipCandidates ?? []).filter((candidate) =>
@@ -230,7 +231,7 @@ Deno.test("quickbase connector keeps non-identical appointee observations distin
       candidate.fromEntityRef.startsWith("observation.") &&
       candidate.fromEntityRef.includes("jane_doe")
     ).length,
-    3,
+    4,
   );
 });
 
