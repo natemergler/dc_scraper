@@ -24,6 +24,10 @@ const AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST = new Set([
   "oanc.anc_profiles",
 ]);
 
+const AUTO_PROMOTE_KIND_UPGRADE_SOURCE_PRECEDENCE = new Map<string, Set<string>>([
+  ["dccourts.structure", new Set(["dcgis.agencies"])],
+]);
+
 const AUTO_PROMOTE_MIN_CONFIDENCE = 0.9;
 
 interface AutoPromoteCandidateRow {
@@ -162,13 +166,37 @@ function groupIsSafeToAutoPromote(
   );
   if (!canonical) return true;
   if (canonical.isPlaceholder === 1) return false;
-  if (canonical.kind !== first.kind) return false;
+  if (canonical.kind !== first.kind) {
+    return canPromoteAuthoritativeKindUpgrade(store, canonical, first);
+  }
   if (normalizeName(canonical.name).toLowerCase() === first.normalizedName) return true;
   return entityId === first.proposedEntityId;
 }
 
 function isSeededRelationshipEndpointCandidate(candidateId: string): boolean {
   return candidateId.includes("_from_endpoint") || candidateId.includes("_to_endpoint");
+}
+
+function canPromoteAuthoritativeKindUpgrade(
+  store: WorkbenchStore,
+  canonical: CanonicalEntityRow,
+  candidate: AutoPromoteCandidateRow,
+): boolean {
+  const supersededSources = AUTO_PROMOTE_KIND_UPGRADE_SOURCE_PRECEDENCE.get(candidate.sourceId);
+  if (!supersededSources) return false;
+  const mergedCandidateIds = JSON.parse(canonical.mergedCandidateIds) as string[];
+  if (mergedCandidateIds.length === 0) return false;
+  const placeholders = mergedCandidateIds.map(() => "?").join(", ");
+  const sourceRows = queryAll<{ sourceId: string }>(
+    store.db,
+    `select distinct source_items.source_id as sourceId
+     from entity_candidates
+     join source_items on source_items.source_item_id = entity_candidates.source_item_id
+     where entity_candidates.candidate_id in (${placeholders})`,
+    mergedCandidateIds,
+  );
+  return sourceRows.length > 0 &&
+    sourceRows.every((row) => supersededSources.has(row.sourceId));
 }
 
 function acceptEntityCandidateDirect(

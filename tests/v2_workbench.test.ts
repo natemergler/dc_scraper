@@ -5538,7 +5538,65 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
   const resolutionsDir = join(dir, "resolutions");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  const fetcher = async (url: string) => ({
+  const dcgisRowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1014,
+        AGENCY_NAME: "DC Court of Appeals",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://www.dccourts.gov/court-of-appeals",
+        LEGISLATION: "",
+      },
+    }, {
+      attributes: {
+        AGENCY_ID: 1026,
+        AGENCY_NAME: "DC Superior Court",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://www.dccourts.gov/",
+        LEGISLATION: "",
+      },
+    }],
+  };
+  const dcgisFetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return dcgisRowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher: dcgisFetcher })),
+    dataDir,
+  );
+  const dcgisCourtKinds = workbench.db.prepare(
+    "select entity_id as entityId, kind from canonical_entities where entity_id in ('dc.court_of_appeals', 'dc.superior_court') order by entity_id",
+  ).all() as Array<{ entityId: string; kind: string }>;
+  assertEquals(dcgisCourtKinds, [
+    { entityId: "dc.court_of_appeals", kind: "agency" },
+    { entityId: "dc.superior_court", kind: "agency" },
+  ]);
+
+  const courtsFetcher = async (url: string) => ({
     status: 200,
     text: async () => {
       switch (url) {
@@ -5557,7 +5615,9 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
     },
   });
   await workbench.importConnectorResult(
-    await getConnector("dccourts.structure").run(createConnectorContext({ fetcher })),
+    await getConnector("dccourts.structure").run(
+      createConnectorContext({ fetcher: courtsFetcher }),
+    ),
     dataDir,
   );
   workbench.close();
@@ -5571,9 +5631,30 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
   const acceptedAfterImport = reopenedAfterImport.db.prepare(
     "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'part_of' order by relationship_id",
   ).all() as Array<{ relationshipId: string }>;
+  const courtRowsAfterImport = reopenedAfterImport.db.prepare(
+    "select entity_id as entityId, name, kind, branch, cluster from canonical_entities where entity_id in ('dc.court_of_appeals', 'dc.superior_court') order by entity_id",
+  ).all() as Array<
+    { entityId: string; name: string; kind: string; branch: string | null; cluster: string | null }
+  >;
   reopenedAfterImport.close();
   assertEquals(remainingEntityReview.length, 0);
   assertEquals(acceptedAfterImport.length, 11);
+  assertEquals(courtRowsAfterImport, [
+    {
+      entityId: "dc.court_of_appeals",
+      name: "Court of Appeals",
+      kind: "court",
+      branch: "Judicial",
+      cluster: "Judicial",
+    },
+    {
+      entityId: "dc.superior_court",
+      name: "Superior Court",
+      kind: "court",
+      branch: "Judicial",
+      cluster: "Judicial",
+    },
+  ]);
 
   const entityBatch = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
