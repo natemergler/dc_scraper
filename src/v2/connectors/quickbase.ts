@@ -973,6 +973,7 @@ function isSafeQuickbaseSeededAuthorityEndpoint(
   name: string,
   appointeeDesignation: string,
 ): boolean {
+  if (resolvesToExplicitKnownEntityRef(name)) return true;
   if (!/\bDC Agency Representative\b/i.test(appointeeDesignation)) return false;
   return quickbaseSafeSeededAuthorityEndpoints.has(normalizeQuickbasePolicyName(name));
 }

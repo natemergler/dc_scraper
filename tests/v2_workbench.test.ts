@@ -1857,6 +1857,13 @@ Deno.test("quickbase designee authority parsing normalizes trusted seats and ski
       name: "Office of the Chief of Staff",
     },
   ];
+  const explicitKnownAuthoritySeats = [
+    {
+      seat: "Mayor's Committee on Child Abuse and Neglect designee",
+      parent: "dc.mayor_s_advisory_committee_on_child_abuse_and_neglect",
+      name: "Mayor's Committee on Child Abuse and Neglect",
+    },
+  ];
   const csv = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
 "Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
@@ -1893,6 +1900,11 @@ ${
       `"Example Designating Only Board ${
         index + 1
       }","${seat}","Filled","Mayoral Appointee, DC Agency Representative","Active"`
+    ).join("\n")
+  }
+${
+    explicitKnownAuthoritySeats.map(({ seat }, index) =>
+      `"Example Known Alias Board ${index + 1}","${seat}","Filled","Mayoral Appointee","Active"`
     ).join("\n")
   }
 `.trim();
@@ -2044,6 +2056,18 @@ ${
       false,
       `${seat} should not emit governed_by`,
     );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "designated_by" &&
+        candidate.rawValue === seat &&
+        candidate.toEntityRef === parent &&
+        candidate.toEntityName === name &&
+        candidate.toEntitySafeToAutoAccept === true
+      ),
+      `${seat} should emit safe designated_by ${parent}`,
+    );
+  }
+  for (const { seat, parent, name } of explicitKnownAuthoritySeats) {
     assert(
       relationships.some((candidate) =>
         candidate.relationshipType === "designated_by" &&
@@ -4014,7 +4038,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Mayor's Committee on Child Abuse and Neglect"),
-    "dc.mayor_s_advisory_committee_on_child_abuse_and_neglect_maccan",
+    "dc.mayor_s_advisory_committee_on_child_abuse_and_neglect",
   );
   assertEquals(
     buildKnownEntityRef("Chief Medical Examiner (CME)"),
