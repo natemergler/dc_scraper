@@ -89,8 +89,9 @@ entity_legal_refs.csv/json
 relationship_legal_refs.csv/json
 ```
 
-If the release needs a review-status note, put it in README.md. Avoid language like "gaps" or
-"caveats" in the release surface unless there is no clearer wording.
+The generated release README is public package guidance only. Do not put review status, readiness,
+unresolved-work, or workbench caveat language there; keep that detail in status, audit, manifest,
+and inspect surfaces.
 
 ## Type safety
 
