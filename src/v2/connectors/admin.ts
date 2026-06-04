@@ -406,7 +406,12 @@ async function fetchEnterpriseDatasetInventoryCount(
   const countResponse = await context.fetcher(countUrl);
   const countText = await countResponse.text();
   const countPayload = JSON.parse(countText) as Record<string, unknown>;
-  const count = Math.max(0, Math.floor(Number(countPayload.count ?? 0)));
+  assertNoEnterpriseDatasetInventoryError("row count", countPayload);
+  const rawCount = Number(countPayload.count);
+  if (!Number.isFinite(rawCount) || rawCount < 0) {
+    throw new Error("admin.enterprise_dataset_inventory row count failed: missing numeric count");
+  }
+  const count = Math.floor(rawCount);
   return {
     count,
     artifact: artifact("schema", "json", countUrl, countText),
@@ -450,7 +455,13 @@ async function fetchEnterpriseDatasetInventoryPage(
   const pageResponse = await context.fetcher(plan.url);
   const pageText = await pageResponse.text();
   const pagePayload = JSON.parse(pageText) as Record<string, unknown>;
-  const features = (pagePayload.features ?? []) as Array<Record<string, unknown>>;
+  assertNoEnterpriseDatasetInventoryError(`rows page ${plan.pageNumber}`, pagePayload);
+  if (!Array.isArray(pagePayload.features)) {
+    throw new Error(
+      `admin.enterprise_dataset_inventory rows page ${plan.pageNumber} failed: missing features array`,
+    );
+  }
+  const features = pagePayload.features as Array<Record<string, unknown>>;
   context.onProgress?.({
     message:
       `Fetched Enterprise Dataset Inventory page ${plan.pageNumber} with ${features.length} row(s)`,
@@ -459,6 +470,17 @@ async function fetchEnterpriseDatasetInventoryPage(
     artifact: artifact("rows", "json", plan.url, pageText),
     features,
   };
+}
+
+function assertNoEnterpriseDatasetInventoryError(
+  context: string,
+  payload: Record<string, unknown>,
+): void {
+  const error = payload.error as Record<string, unknown> | undefined;
+  if (!error) return;
+  const message = String(error.message ?? "ArcGIS query failed");
+  const details = Array.isArray(error.details) ? `: ${error.details.join("; ")}` : "";
+  throw new Error(`admin.enterprise_dataset_inventory ${context} failed: ${message}${details}`);
 }
 
 async function mapConcurrent<T, U>(

@@ -7894,6 +7894,73 @@ Deno.test("Enterprise Dataset Inventory connector fetches counted row pages conc
   }
 });
 
+Deno.test("Enterprise Dataset Inventory connector fails loudly on invalid row count payloads", async () => {
+  await assertRejects(
+    () =>
+      getConnector("admin.enterprise_dataset_inventory").run(
+        createConnectorContext({
+          fetcher: async (url: string) => ({
+            status: 200,
+            text: async () => {
+              switch (url) {
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json":
+                  return JSON.stringify(governmentOperationsCatalogFixture);
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
+                  return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
+                  return JSON.stringify({ error: { message: "Count failed" } });
+                default:
+                  throw new Error(`Unexpected url ${url}`);
+              }
+            },
+            json: async <T>() => {
+              throw new Error(`No json fixture for ${url}`) as T;
+            },
+          }),
+        }),
+      ),
+    Error,
+    "admin.enterprise_dataset_inventory row count failed: Count failed",
+  );
+});
+
+Deno.test("Enterprise Dataset Inventory connector fails loudly on row page error payloads", async () => {
+  await assertRejects(
+    () =>
+      getConnector("admin.enterprise_dataset_inventory").run(
+        createConnectorContext({
+          fetcher: async (url: string) => ({
+            status: 200,
+            text: async () => {
+              switch (url) {
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json":
+                  return JSON.stringify(governmentOperationsCatalogFixture);
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
+                  return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
+                  return JSON.stringify({ count: 1 });
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1&f=json":
+                  return JSON.stringify({
+                    error: {
+                      message: "Failed to execute query.",
+                      details: ["Invalid field name"],
+                    },
+                  });
+                default:
+                  throw new Error(`Unexpected url ${url}`);
+              }
+            },
+            json: async <T>() => {
+              throw new Error(`No json fixture for ${url}`) as T;
+            },
+          }),
+        }),
+      ),
+    Error,
+    "admin.enterprise_dataset_inventory rows page 1 failed: Failed to execute query.: Invalid field name",
+  );
+});
+
 Deno.test("admin 311 connector fails safely for non-311 layer metadata", async () => {
   const result = await getConnector("admin.service_requests_311").run(
     createConnectorContext({
