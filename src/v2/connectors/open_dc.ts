@@ -70,7 +70,10 @@ export const openDcConnector: SourceConnector = {
     };
     const indexResponse = await context.fetcher(openDcSource.baseUrl);
     const indexHtml = await indexResponse.text();
-    const links = selectOpenDcLinks(parseOpenDcIndex(indexHtml), context.limit ?? 8);
+    const links = selectOpenDcLinks(
+      parseOpenDcIndex(indexHtml),
+      context.limit ?? Number.POSITIVE_INFINITY,
+    );
     const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
     const detailParsed = deriveOpenDcDetailParsed(detailRecords);
     return {
@@ -108,7 +111,8 @@ function selectOpenDcLinks(
   limit: number,
 ): Array<{ href: string; text: string; slug: string }> {
   const selected = new Map<string, { href: string; text: string; slug: string }>();
-  for (const link of links.slice(0, limit)) {
+  const limitedLinks = Number.isFinite(limit) ? links.slice(0, Math.max(0, limit)) : links;
+  for (const link of limitedLinks) {
     selected.set(link.href, link);
   }
   for (const link of links) {
@@ -239,7 +243,10 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         safeToAutoAccept: true,
       }),
     );
-    if (detail.governingAgency) {
+    const governingAgencyRef = detail.governingAgency
+      ? openDcRelationshipEndpointRef(detail.governingAgency, proposedEntityId)
+      : undefined;
+    if (detail.governingAgency && governingAgencyRef) {
       const relationshipCandidateId = buildRelationshipCandidateId(
         openDcSource.sourceId,
         `${itemKey}-governing-agency`,
@@ -248,7 +255,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         relationshipCandidateId,
         sourceItemKey: itemKey,
         fromEntityRef: proposedEntityId,
-        toEntityRef: buildKnownEntityRef(detail.governingAgency),
+        toEntityRef: governingAgencyRef,
         relationshipType: "governed_by",
         rawValue: detail.governingAgency,
         evidence: [fieldEvidence("governingAgency", detail.governingAgency, artifactIndex)],
@@ -261,13 +268,16 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         defaultAction: "accept",
         details: {
           fromEntityRef: proposedEntityId,
-          toEntityRef: buildKnownEntityRef(detail.governingAgency),
+          toEntityRef: governingAgencyRef,
           relationshipType: "governed_by",
           rawValue: detail.governingAgency,
         },
       });
     }
-    if (detail.administeringAgency) {
+    const administeringAgencyRef = detail.administeringAgency
+      ? openDcRelationshipEndpointRef(detail.administeringAgency, proposedEntityId)
+      : undefined;
+    if (detail.administeringAgency && administeringAgencyRef) {
       const relationshipCandidateId = buildRelationshipCandidateId(
         openDcSource.sourceId,
         `${itemKey}-administering-agency`,
@@ -276,7 +286,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         relationshipCandidateId,
         sourceItemKey: itemKey,
         fromEntityRef: proposedEntityId,
-        toEntityRef: buildKnownEntityRef(detail.administeringAgency),
+        toEntityRef: administeringAgencyRef,
         relationshipType: "governed_by",
         rawValue: detail.administeringAgency,
         evidence: [fieldEvidence("administeringAgency", detail.administeringAgency, artifactIndex)],
@@ -289,7 +299,7 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
         defaultAction: "accept",
         details: {
           fromEntityRef: proposedEntityId,
-          toEntityRef: buildKnownEntityRef(detail.administeringAgency),
+          toEntityRef: administeringAgencyRef,
           relationshipType: "governed_by",
           rawValue: detail.administeringAgency,
         },
@@ -313,6 +323,24 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
   }
   return { items, entityCandidates, relationshipCandidates, legalRefs, reviewItems };
 }
+
+function openDcRelationshipEndpointRef(
+  label: string,
+  subjectEntityRef: string,
+): string | undefined {
+  if (openDcNonRelationshipAgencyLabels.has(normalizeName(label).toLowerCase())) {
+    return undefined;
+  }
+  const endpointRef = buildKnownEntityRef(label);
+  return endpointRef === subjectEntityRef ? undefined : endpointRef;
+}
+
+const openDcNonRelationshipAgencyLabels = new Set([
+  "board of trustees",
+  "department of eduaction",
+  "independent agency",
+  "mayor's office of general counsel",
+]);
 
 function parseOpenDcDetail(
   html: string,
