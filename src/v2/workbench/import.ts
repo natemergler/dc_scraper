@@ -306,6 +306,7 @@ function importParsedOutput(
   const sourceItemRows: unknown[][] = [];
   const entityCandidateRows: unknown[][] = [];
   const entityCandidateEvidenceRows: unknown[][] = [];
+  const entityEvidenceIdsByCandidate = new Map<string, string[]>();
   const relationshipCandidateRows: unknown[][] = [];
   const relationshipCandidateEvidenceRows: unknown[][] = [];
   const relationshipEvidenceIdsByCandidate = new Map<string, string[]>();
@@ -387,6 +388,7 @@ function importParsedOutput(
   );
   for (const candidate of parsed.entityCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
+    const candidateEvidenceIds: string[] = [];
     entityCandidateRows.push([
       candidate.candidateId,
       sourceItem.sourceItemId,
@@ -403,12 +405,14 @@ function importParsedOutput(
       existingEntityCandidateStatuses.get(candidate.candidateId) ?? "pending",
     ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
+      const evidenceId = `${candidate.candidateId}:${index}`;
+      candidateEvidenceIds.push(evidenceId);
       const artifactRecord = artifactAt(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
       );
       entityCandidateEvidenceRows.push([
-        `${candidate.candidateId}:${index}`,
+        evidenceId,
         candidate.candidateId,
         sourceId,
         sourceItem.sourceItemId,
@@ -417,7 +421,13 @@ function importParsedOutput(
         artifactRecord.artifactPath,
       ]);
     }
+    entityEvidenceIdsByCandidate.set(candidate.candidateId, candidateEvidenceIds);
   }
+  deleteStaleCandidateEvidence(store, {
+    tableName: "entity_candidate_evidence",
+    candidateIdColumn: "candidate_id",
+    evidenceIdsByCandidate: entityEvidenceIdsByCandidate,
+  });
   bulkInsertRows(
     store.db,
     "entity_candidates",
@@ -542,7 +552,11 @@ function importParsedOutput(
             review_status = excluded.review_status`,
     },
   );
-  deleteStaleRelationshipCandidateEvidence(store, relationshipEvidenceIdsByCandidate);
+  deleteStaleCandidateEvidence(store, {
+    tableName: "relationship_candidate_evidence",
+    candidateIdColumn: "relationship_candidate_id",
+    evidenceIdsByCandidate: relationshipEvidenceIdsByCandidate,
+  });
   bulkInsertRows(
     store.db,
     "relationship_candidate_evidence",
@@ -832,24 +846,28 @@ function reviewStatusesById(
   return statuses;
 }
 
-function deleteStaleRelationshipCandidateEvidence(
+function deleteStaleCandidateEvidence(
   store: WorkbenchStore,
-  evidenceIdsByCandidate: Map<string, string[]>,
+  options: {
+    tableName: "entity_candidate_evidence" | "relationship_candidate_evidence";
+    candidateIdColumn: "candidate_id" | "relationship_candidate_id";
+    evidenceIdsByCandidate: Map<string, string[]>;
+  },
 ): void {
-  const candidateIds = [...evidenceIdsByCandidate.keys()];
+  const candidateIds = [...options.evidenceIdsByCandidate.keys()];
   for (const candidateIdChunk of chunks(candidateIds, 100)) {
     if (candidateIdChunk.length === 0) continue;
     const candidatePlaceholders = candidateIdChunk.map(() => "?").join(", ");
     const retainedEvidenceIds = candidateIdChunk.flatMap((candidateId) =>
-      evidenceIdsByCandidate.get(candidateId) ?? []
+      options.evidenceIdsByCandidate.get(candidateId) ?? []
     );
     const retainedClause = retainedEvidenceIds.length === 0
       ? ""
       : `and evidence_id not in (${retainedEvidenceIds.map(() => "?").join(", ")})`;
     run(
       store.db,
-      `delete from relationship_candidate_evidence
-       where relationship_candidate_id in (${candidatePlaceholders})
+      `delete from ${options.tableName}
+       where ${options.candidateIdColumn} in (${candidatePlaceholders})
        ${retainedClause}`,
       [...candidateIdChunk, ...retainedEvidenceIds],
     );

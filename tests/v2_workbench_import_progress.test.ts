@@ -125,6 +125,28 @@ Deno.test("workbench relationship evidence refetch removes stale rows", async ()
   }]);
 });
 
+Deno.test("workbench entity evidence refetch removes stale rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+
+  await workbench.importConnectorResult(bulkEvidenceFixtureResult(3), join(dir, "artifacts"));
+  await workbench.importConnectorResult(
+    bulkEvidenceFixtureResult(1, { entityValuePrefix: "refetched-entity-value" }),
+    join(dir, "artifacts"),
+  );
+
+  const entityEvidence = workbench.db.prepare(
+    "select evidence_id as evidenceId, observed_value as observedValue from entity_candidate_evidence where candidate_id = 'candidate.test.bulk_evidence' order by evidence_id",
+  ).all() as Array<{ evidenceId: string; observedValue: string }>;
+  workbench.close();
+
+  assertEquals(entityEvidence, [{
+    evidenceId: "candidate.test.bulk_evidence:0",
+    observedValue: "refetched-entity-value-0",
+  }]);
+});
+
 Deno.test("workbench import bulk inserts parsed source items and candidates", async () => {
   const dir = await Deno.makeTempDir();
   const workbench = new Workbench(join(dir, "workbench.sqlite"));
@@ -478,8 +500,9 @@ function bulkParsedRowsFixtureResult(
 
 function bulkEvidenceFixtureResult(
   evidenceCount: number,
-  options: { relationshipValuePrefix?: string } = {},
+  options: { entityValuePrefix?: string; relationshipValuePrefix?: string } = {},
 ): ConnectorResult {
+  const entityValuePrefix = options.entityValuePrefix ?? "entity-value";
   const relationshipValuePrefix = options.relationshipValuePrefix ?? "relationship-value";
   return {
     source: {
@@ -521,7 +544,7 @@ function bulkEvidenceFixtureResult(
           kind: "board",
           evidence: Array.from({ length: evidenceCount }, (_, index) => ({
             fieldPath: `entity-field-${index}`,
-            observedValue: `entity-value-${index}`,
+            observedValue: `${entityValuePrefix}-${index}`,
           })),
         }],
         relationshipCandidates: [{
