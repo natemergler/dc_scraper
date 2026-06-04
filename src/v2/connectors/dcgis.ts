@@ -57,6 +57,29 @@ const dcgisBoardsCommissionsCouncilsSource: SourceDefinition = {
   ],
 };
 
+const dcgisAgencyRowFields = [
+  "OBJECTID",
+  "AGENCY_ID",
+  "AGENCY_NAME",
+  "TYPE",
+  "WEB_URL",
+  "BRANCH",
+  "MAYORAL_CLUSTER",
+  "LEGISLATION",
+];
+
+const dcgisBoardsCommissionsCouncilsRowFields = [
+  "OBJECTID",
+  "ENTITY_ID",
+  "NAME",
+  "SHORT_NAME",
+  "TYPE",
+  "WEB_URL",
+  "GOVERNING_AGENCY",
+  "AUTHORIZING_ORDER_LAW",
+  "CLUSTER_DC",
+];
+
 export const dcgisAgenciesConnector: SourceConnector = {
   sourceId: dcgisAgenciesSource.sourceId,
   source: dcgisAgenciesSource,
@@ -67,6 +90,7 @@ export const dcgisAgenciesConnector: SourceConnector = {
       itemType: "agency_row",
       entityReason: "Review agency candidate from DCGIS",
       relationshipReason: "Review agency relationship inferred from branch metadata",
+      rowFields: dcgisAgencyRowFields,
     });
   },
 };
@@ -81,6 +105,7 @@ export const dcgisBoardsCommissionsCouncilsConnector: SourceConnector = {
       itemType: "public_body_row",
       entityReason: "Review public-body candidate from DCGIS",
       relationshipReason: "Review public-body relationship from DCGIS metadata",
+      rowFields: dcgisBoardsCommissionsCouncilsRowFields,
     });
   },
 };
@@ -94,6 +119,7 @@ async function runDcgisTableSource(
     itemType: string;
     entityReason: string;
     relationshipReason: string;
+    rowFields: string[];
   },
 ): Promise<ConnectorResult> {
   const endpoint: SourceEndpointDefinition = {
@@ -106,17 +132,53 @@ async function runDcgisTableSource(
     captureMode: "schema_rows",
   };
   const metadataUrl = `${source.baseUrl}?f=json`;
-  const rowsUrl =
-    `${source.baseUrl}/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json`;
+  context.onProgress?.({ message: "Fetching DCGIS table metadata" });
   const metadataResponse = await context.fetcher(metadataUrl);
-  const rowsResponse = await context.fetcher(rowsUrl);
   const metadataText = await metadataResponse.text();
-  const rowsText = await rowsResponse.text();
   const metadata = JSON.parse(metadataText);
-  const rowsPayload = JSON.parse(rowsText);
-  const rows = parseDcgisRows(rowsPayload);
+  const maxRecordCount = Math.max(1, Number(metadata.maxRecordCount ?? 1000));
+  const requestedLimit = typeof context.limit === "number"
+    ? Math.max(0, Math.floor(context.limit))
+    : undefined;
+  const rowArtifacts: ReturnType<typeof artifact>[] = [];
+  const fetchedRows: DcgisFetchedRow[] = [];
+  let offset = 0;
+  let pageNumber = 1;
+  while (requestedLimit === undefined || offset < requestedLimit) {
+    const remainingLimit = requestedLimit === undefined ? maxRecordCount : requestedLimit - offset;
+    const pageSize = Math.min(maxRecordCount, remainingLimit);
+    if (pageSize <= 0) break;
+    const rowsUrl = buildArcGisQueryUrl(source.baseUrl, {
+      where: "1=1",
+      outFields: options.rowFields.join(","),
+      orderByFields: "OBJECTID",
+      returnGeometry: "false",
+      resultOffset: String(offset),
+      resultRecordCount: String(pageSize),
+      f: "json",
+    });
+    context.onProgress?.({
+      message: `Fetching DCGIS rows starting at ${
+        offset + 1
+      } (page ${pageNumber}, up to ${pageSize})`,
+    });
+    const rowsResponse = await context.fetcher(rowsUrl);
+    const rowsText = await rowsResponse.text();
+    const artifactIndex = rowArtifacts.length + 1;
+    rowArtifacts.push(artifact("rows", "json", rowsUrl, rowsText));
+    const rowsPayload = JSON.parse(rowsText);
+    assertNoArcGisError(source, rowsPayload);
+    const pageRows = parseDcgisRows(rowsPayload);
+    const consumedRows = pageRows.slice(0, pageSize);
+    for (const row of consumedRows) {
+      fetchedRows.push({ row, artifactIndex });
+    }
+    if (consumedRows.length < pageSize) break;
+    offset += consumedRows.length;
+    pageNumber += 1;
+  }
   const fields = buildDcgisFields(metadata);
-  const items = buildDcgisItems(rows, options.itemType);
+  const items = buildDcgisItems(fetchedRows, options.itemType);
   const entityCandidates = buildDcgisEntityCandidates(source, items);
   const relationshipCandidates = buildDcgisRelationshipCandidates(source, items);
   const legalRefs = buildDcgisLegalRefs(source, items);
@@ -133,7 +195,7 @@ async function runDcgisTableSource(
       status: "success",
       artifacts: [
         artifact("schema", "json", metadataUrl, metadataText),
-        artifact("rows", "json", rowsUrl, rowsText),
+        ...rowArtifacts,
       ],
       parsed: {
         fields,
@@ -145,6 +207,19 @@ async function runDcgisTableSource(
       },
     }],
   };
+}
+
+interface DcgisFetchedRow {
+  row: Record<string, unknown>;
+  artifactIndex: number;
+}
+
+function assertNoArcGisError(source: SourceDefinition, rowsPayload: Record<string, unknown>): void {
+  const error = rowsPayload.error as Record<string, unknown> | undefined;
+  if (!error) return;
+  const message = String(error.message ?? "ArcGIS query failed");
+  const details = Array.isArray(error.details) ? `: ${error.details.join("; ")}` : "";
+  throw new Error(`${source.sourceId} ${message}${details}`);
 }
 
 function parseDcgisRows(rowsPayload: Record<string, unknown>): Record<string, unknown>[] {
@@ -169,14 +244,25 @@ function buildDcgisFields(metadata: Record<string, unknown>): SourceFieldInput[]
   }));
 }
 
-function buildDcgisItems(rows: Record<string, unknown>[], itemType: string): SourceItemInput[] {
-  return rows.map((row) => ({
+function buildDcgisItems(rows: DcgisFetchedRow[], itemType: string): SourceItemInput[] {
+  return rows.map(({ row, artifactIndex }) => ({
     itemKey: String(row.AGENCY_ID ?? row.ENTITY_ID ?? row.OBJECTID),
     itemType,
     title: String(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME ?? row.OBJECTID),
     body: row,
-    artifactIndex: 1,
+    artifactIndex,
   }));
+}
+
+function buildArcGisQueryUrl(
+  baseUrl: string,
+  params: Record<string, string>,
+): string {
+  const url = new URL(`${baseUrl}/query`);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url.toString();
 }
 
 function buildDcgisEntityCandidates(
@@ -187,6 +273,7 @@ function buildDcgisEntityCandidates(
   const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
     const name = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? item.title;
+    const artifactIndex = dcgisRowArtifactIndex(item);
     return {
       candidateId: buildCandidateId(source.sourceId, item.itemKey),
       sourceItemKey: item.itemKey,
@@ -200,11 +287,11 @@ function buildDcgisEntityCandidates(
       confidence: 0.95,
       duplicateHint: maybeString(row.WEB_URL),
       evidence: [
-        fieldEvidence("NAME", row.AGENCY_NAME ?? row.NAME, 1),
-        fieldEvidence("TYPE", row.TYPE, 1),
-        fieldEvidence("BRANCH", row.BRANCH, 1),
-        fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, 1),
-        fieldEvidence("WEB_URL", row.WEB_URL, 1),
+        fieldEvidence("NAME", row.AGENCY_NAME ?? row.NAME, artifactIndex),
+        fieldEvidence("TYPE", row.TYPE, artifactIndex),
+        fieldEvidence("BRANCH", row.BRANCH, artifactIndex),
+        fieldEvidence("MAYORAL_CLUSTER", row.MAYORAL_CLUSTER ?? row.CLUSTER_DC, artifactIndex),
+        fieldEvidence("WEB_URL", row.WEB_URL, artifactIndex),
       ],
     };
   });
@@ -226,7 +313,7 @@ function buildDcgisEntityCandidates(
       kind: "branch",
       rawKind: "branch",
       confidence: 0.99,
-      evidence: [fieldEvidence("BRANCH", branch, 1)],
+      evidence: [fieldEvidence("BRANCH", branch, dcgisRowArtifactIndex(item))],
     });
   }
   return [...agencyCandidates, ...branchCandidates];
@@ -254,7 +341,7 @@ function buildDcgisRelationshipCandidates(
         relationshipType: "part_of",
         rawValue: branch,
         needsReview: branch === "Other",
-        evidence: [fieldEvidence("BRANCH", branch, 1)],
+        evidence: [fieldEvidence("BRANCH", branch, dcgisRowArtifactIndex(item))],
       });
     }
 
@@ -271,7 +358,7 @@ function buildDcgisRelationshipCandidates(
       relationshipType: "governed_by",
       rawValue: governingAgency,
       needsReview: false,
-      evidence: [fieldEvidence("GOVERNING_AGENCY", governingAgency, 1)],
+      evidence: [fieldEvidence("GOVERNING_AGENCY", governingAgency, dcgisRowArtifactIndex(item))],
     });
   }
   return relationshipCandidates;
@@ -296,11 +383,15 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
       normalizedCitation: parsed.normalizedCitation,
       url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
       needsReview: parsed.needsReview,
-      evidence: [fieldEvidence(legislationField, legislation, 1)],
+      evidence: [fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item))],
       attachEntityRef: buildKnownEntityRef(entityName),
     });
   }
   return legalRefs;
+}
+
+function dcgisRowArtifactIndex(item: SourceItemInput): number {
+  return item.artifactIndex ?? 1;
 }
 
 function buildDcgisReviewItems(
