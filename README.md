@@ -43,8 +43,8 @@ for orientation. Use `deno task dc -- source fetch --all` when you need the full
 workbench. A full fetch can take a while because it walks several public source lanes; expect
 per-source progress and a final succeeded/failed summary before moving on.
 
-V2 local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and
-refetch a fresh one. Ignored local DBs outside the current schema contract are scratch state.
+Local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and refetch a
+fresh one. Ignored local DBs outside the current schema contract are scratch state.
 
 ## Happy Path
 
@@ -70,7 +70,7 @@ current. Use a single-source fetch or a smoke profile when you only need a quick
 
 `dc review` is the human path for true ambiguity, conflicts, edits, rejects, and deferrals. Safe
 materialized facts should be audited, browsed, verified, and released without turning them into
-manual queue work. When review is needed, it opens with a ranked decision inbox for the current
+manual review work. When review is needed, it opens with a ranked decision inbox for the current
 slice. Press Enter for the recommended packet or choose another packet from the list, then inspect
 the evidence and decide. Quit is safe; rerun `dc review` to resume.
 
@@ -119,7 +119,7 @@ of the full workbench database.
 
 ## How To Know It Is Healthy
 
-- `deno task dc -- status` shows the current work queue and the next suggested command.
+- `deno task dc -- status` shows current unresolved work and the next suggested command.
 - `deno task dc -- audit` shows blocked reconciliation and review reasons when status alone is not
   enough.
 - `deno task dc -- release verify` fails fast when release work is still unresolved, source artifact
@@ -129,7 +129,7 @@ of the full workbench database.
 
 ## Current Docs
 
-- [DESIGN.md](DESIGN.md) is the live architecture note for the v2 model.
+- [DESIGN.md](DESIGN.md) is the live architecture note for the current model.
 - [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) is the maintainer workflow.
 - [docs/CONNECTOR_AUTHORING.md](docs/CONNECTOR_AUTHORING.md) is the contributor seam for source
   work.

@@ -1,21 +1,25 @@
 # Data Hygiene
 
-Current status:
+Current ignored generated paths:
 
 - Generated workbench data is ignored: `data/`, `resolutions/`, `snapshots/`, `candidates/`,
   `candidates_patched/`, `records/`, `checks/`, `patches/`, and `releases/`.
+- Keep release outputs under ignored paths such as `releases/`; do not commit generated packages.
+
+Repository history status:
+
 - The current tracked tree no longer contains the old generated data surfaces.
 - Active writable branch history was best-effort rewritten for the current repository branches.
 - Fresh normal clones should not expose the old generated paths from branch history.
 - `src/v2/connectors/quickbase.ts` is still tracked intentionally; it is source code for a public
   civic-data connector, not a captured Quickbase artifact.
 
-Old generated artifact paths that should not be reintroduced:
+Historical generated artifact paths that should not be restored to the tracked tree:
 
 - `snapshots/**`
 - `candidates/**`
 - `records/**`
-- `releases/**`
+- generated `releases/**`
 - `checks/**`
 - `patches/**`
 
@@ -32,9 +36,6 @@ objects.
 
 Operator notes:
 
-- Prefer fresh clones after the rewrite.
-- Do not push from pre-rewrite local branches unless they are first rebased or recreated from the
-  rewritten remote branch.
 - Keep local workbench data under ignored paths.
 - If an ignored local workbench DB is outside the current schema contract, rebuild and refetch it.
   Do not silently repair or commit generated local data.

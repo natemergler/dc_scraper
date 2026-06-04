@@ -1,6 +1,6 @@
 # Operator Guide
 
-This is the maintainer path for running the v2 workbench without guessing which command matters
+This is the maintainer path for running the local workbench without guessing which command matters
 next.
 
 ## Setup
@@ -43,7 +43,7 @@ deno task dc -- smoke inventory
 
 Smoke profiles always create a fresh temp workspace and print the DB path they used. Use
 `source fetch --all --db <path> --data-dir <path>` when you need to fetch into explicit local paths.
-V2 local workbench DBs are current-schema only: connect to a current preexisting DB, or create and
+Local workbench DBs are current-schema only: connect to a current preexisting DB, or create and
 refetch a fresh one. Ignored local DBs outside the current schema contract are scratch state.
 
 ## Audit And Review
@@ -57,7 +57,7 @@ deno task dc -- entity search accountancy --db "$WORKBENCH_DB"
 deno task dc -- entity show dc.board_of_accountancy --db "$WORKBENCH_DB"
 ```
 
-Safe materialized facts are not manual queue work. Browse them with `status`, `audit`, entity
+Safe materialized facts are not manual review work. Browse them with `status`, `audit`, entity
 commands, and release verification. Use the manual path when those surfaces point at true ambiguity,
 conflicts, edits, rejects, or deferrals:
 

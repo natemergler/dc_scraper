@@ -6,7 +6,7 @@ Accepted
 
 ## Decision
 
-The live v2 workbench uses SQLite as the local index, review, and release-preparation layer.
+The current local workbench uses SQLite as the local index, review, and release-preparation layer.
 
 ## Why
 
