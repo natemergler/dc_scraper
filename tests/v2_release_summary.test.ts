@@ -487,12 +487,18 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "review status note:",
       "review items by",
       "review debt by",
+      "unresolved",
       "Unresolved workbench state:",
       "unresolved rows",
+      "deferred",
+      "blocked",
       "stale review:",
       "blocked by source:",
       "Blocked and stale counts report unresolved work",
       "stay review-first",
+      "caveat",
+      "coverage note",
+      "does not claim complete",
     ]
   ) {
     assert(!readme.includes(snippet), `README should not include ${snippet}`);

@@ -1,4 +1,26 @@
+import { dcCommand } from "../command_prefix.ts";
 import type { ReviewItemFilters } from "./review.ts";
+
+export function renderReviewCommand(
+  filters: ReviewItemFilters = {},
+  options: {
+    browseSubcommand?: "list" | "packets";
+    includeType?: boolean;
+  } = {},
+): string {
+  const parts = ["review"];
+  if (options.browseSubcommand) parts.push(options.browseSubcommand);
+  const mode = reviewModeSubcommand(filters.mode);
+  const usePositionalMode = Boolean(mode && !options.browseSubcommand);
+  if (mode && usePositionalMode) parts.push(mode);
+  parts.push(
+    ...reviewFilterArgs(filters, {
+      includeMode: !usePositionalMode,
+      includeType: options.includeType ?? true,
+    }),
+  );
+  return dcCommand(parts.join(" "));
+}
 
 export function reviewFilterArgs(
   filters: ReviewItemFilters,

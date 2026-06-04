@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { ReviewItemRecord } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -103,6 +103,59 @@ Deno.test("review subject lookup centralizes source and evidence for review item
     "workbench",
   );
   workbench.close();
+});
+
+Deno.test("review list json includes source and label context", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_list.entities",
+      candidateId: "candidate.test.review_list.entity",
+      sourceItemKey: "review-list-entity-row",
+      proposedEntityId: "dc.review_list_board",
+      name: "Review List Board",
+      kind: "board",
+      observedName: "Review List Board",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "list",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--limit",
+      "1",
+      "--json",
+    ],
+  }).output();
+  const stdout = new TextDecoder().decode(output.stdout);
+  const stderr = new TextDecoder().decode(output.stderr);
+  assertEquals(output.code, 0, stderr);
+  const parsed = JSON.parse(stdout) as {
+    count: number;
+    items: Array<{ sourceId?: string; label?: string; subjectId: string }>;
+  };
+  assertEquals(parsed.count, 1);
+  assertEquals(parsed.items[0].sourceId, "test.review_list.entities");
+  assertEquals(parsed.items[0].label, "Review List Board");
+  assertStringIncludes(parsed.items[0].subjectId, "candidate.test.review_list.entity");
 });
 
 function findReviewItem(

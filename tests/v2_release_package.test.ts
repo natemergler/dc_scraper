@@ -330,7 +330,6 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertEquals(releaseDbContactHits.count, 0);
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
-  assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(
     readme,
     "`README.md`: package overview, model semantics, and release counts",
@@ -371,7 +370,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.",
+    "DC city/county distinctions are not inferred beyond source-backed civic structure labels.",
   );
   assertStringIncludes(readme, "entities: total=2");
   assertStringIncludes(readme, "relationships: total=1");
@@ -552,9 +551,15 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "review items by",
       "review debt by",
       "Unresolved workbench state:",
+      "open review",
+      "top unresolved",
+      "coverage note",
       "unresolved rows",
       "stale review:",
       "blocked by source:",
+      "candidate.",
+      "relationship.",
+      "legal.",
       "Blocked and stale counts report unresolved work",
       "stay review-first",
     ]
