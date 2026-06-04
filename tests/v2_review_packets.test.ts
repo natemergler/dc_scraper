@@ -223,7 +223,11 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   const textBody = new TextDecoder().decode(textOutput.stdout);
   assertStringIncludes(textBody, "Review packets: 1");
   assertStringIncludes(textBody, "[2] test.review_packets.group_a relationship_candidate");
-  assertEquals(textBody.includes("next:"), false);
+  assertStringIncludes(
+    textBody,
+    "review: deno task dc -- review relationships --source test.review_packets.group_a --subject-prefix relationship.test.review_packets.group_a --relationship-type overseen_by",
+  );
+  assertEquals(textBody.includes("packet_id:"), false);
 
   const narrowedOutput = await runDc([
     "review",

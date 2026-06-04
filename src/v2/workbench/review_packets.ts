@@ -1,5 +1,6 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import type { ReviewItemFilters } from "./review.ts";
+import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -124,8 +125,43 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     packet.toEntityRef ? `to_entity_ref: ${packet.toEntityRef}` : undefined,
     packet.whyDeferred ? `why_deferred: ${packet.whyDeferred}` : undefined,
     packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
-    `packet_id: ${packet.packetId}`,
+    `review: ${reviewPacketCommand(packet)}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
+function reviewPacketCommand(packet: ReviewPacketRecord): string {
+  const parts = ["deno", "task", "dc", "--", "review"];
+  const mode = reviewModeSubcommand(modeForPacket(packet));
+  if (mode) parts.push(mode);
+  parts.push(
+    ...reviewFilterArgs(
+      {
+        mode,
+        sourceId: packet.sourceId === "unknown" ? undefined : packet.sourceId,
+        type: mode ? undefined : packet.itemType,
+        subjectPrefix: packet.subjectPrefix,
+        relationshipType: packet.relationshipType,
+        refType: packet.refType,
+      },
+      { includeMode: false, includeType: true },
+    ),
+  );
+  return parts.join(" ");
+}
+
+function modeForPacket(packet: ReviewPacketRecord): ReviewItemFilters["mode"] {
+  switch (packet.itemType) {
+    case "entity_candidate":
+    case "placeholder_entity":
+      return "entities";
+    case "relationship_candidate":
+      return "relationships";
+    case "legal_ref":
+      return "legal";
+    case "dataset":
+    case "source_status":
+      return "sources";
+  }
 }
 
 export function renderReviewPacketHeader(packet: ReviewPacketRecord): string {

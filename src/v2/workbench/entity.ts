@@ -187,8 +187,57 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
   );
   const reviewItems = queryAll<EntityReviewItemRow>(
     store.db,
-    "select review_item_id as reviewItemId, item_type as itemType, subject_id as subjectId, reason, default_action as defaultAction, status, details_json as detailsJson from review_items where status != 'resolved' and (subject_id = ? or subject_id like ?)",
-    [entityId, `%${entityId}%`],
+    `select review_items.review_item_id as reviewItemId,
+            review_items.item_type as itemType,
+            review_items.subject_id as subjectId,
+            review_items.reason,
+            review_items.default_action as defaultAction,
+            review_items.status,
+            review_items.details_json as detailsJson
+     from review_items
+     where review_items.status != 'resolved'
+       and review_items.subject_id = ?
+     union
+     select review_items.review_item_id as reviewItemId,
+            review_items.item_type as itemType,
+            review_items.subject_id as subjectId,
+            review_items.reason,
+            review_items.default_action as defaultAction,
+            review_items.status,
+            review_items.details_json as detailsJson
+     from review_items
+     join entity_candidates
+       on entity_candidates.candidate_id = review_items.subject_id
+     where review_items.status != 'resolved'
+       and entity_candidates.proposed_entity_id = ?
+     union
+     select review_items.review_item_id as reviewItemId,
+            review_items.item_type as itemType,
+            review_items.subject_id as subjectId,
+            review_items.reason,
+            review_items.default_action as defaultAction,
+            review_items.status,
+            review_items.details_json as detailsJson
+     from review_items
+     join relationship_candidates
+       on relationship_candidates.relationship_candidate_id = review_items.subject_id
+     where review_items.status != 'resolved'
+       and (relationship_candidates.from_entity_ref = ? or relationship_candidates.to_entity_ref = ?)
+     union
+     select review_items.review_item_id as reviewItemId,
+            review_items.item_type as itemType,
+            review_items.subject_id as subjectId,
+            review_items.reason,
+            review_items.default_action as defaultAction,
+            review_items.status,
+            review_items.details_json as detailsJson
+     from review_items
+     join entity_legal_refs
+       on entity_legal_refs.legal_ref_id = review_items.subject_id
+     where review_items.status != 'resolved'
+       and entity_legal_refs.entity_id = ?
+     order by status, itemType, subjectId`,
+    [entityId, entityId, entityId, entityId, entityId],
   );
   const legalRefs = queryAll<EntityLegalRefRow>(
     store.db,

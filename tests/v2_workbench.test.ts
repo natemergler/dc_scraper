@@ -4763,6 +4763,10 @@ Deno.test("entity candidates that conflict with accepted kind default to defer",
     JSON.stringify(reviewItem.details),
     "Candidate kind board conflicts with accepted agency for the same entity id.",
   );
+  const entityView = workbench.entityView("dc.conflicted_body");
+  assertEquals(entityView.reviewItems.length, 1);
+  assertEquals(entityView.reviewItems[0]?.subjectId, "candidate.test.conflicted_entity_kind.board");
+  assertEquals(entityView.reviewItems[0]?.defaultAction, "defer");
   workbench.close();
 
   const batchOutput = await new Deno.Command(Deno.execPath(), {
