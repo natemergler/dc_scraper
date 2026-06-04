@@ -5777,6 +5777,97 @@ Deno.test("DC Courts structure entities auto-promote and structural relationship
   );
 });
 
+Deno.test("BEGA structure upgrades earlier DCGIS taxonomy for the same entity", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const dcgisRowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1138,
+        AGENCY_NAME: "Board of Ethics and Government Accountability",
+        TYPE: "Agency",
+        BRANCH: "Other",
+        MAYORAL_CLUSTER: "Government Operations",
+        WEB_URL: "https://bega.dc.gov/",
+        LEGISLATION: "",
+      },
+    }],
+  };
+  const dcgisFetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(dcgisRowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return dcgisRowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher: dcgisFetcher })),
+    dataDir,
+  );
+  const dcgisBega = workbench.db.prepare(
+    "select kind, branch, cluster from canonical_entities where entity_id = 'dc.board_of_ethics_and_government_accountability'",
+  ).get() as { kind: string; branch: string | null; cluster: string | null };
+  assertEquals(dcgisBega, { kind: "board", branch: null, cluster: null });
+
+  const begaFetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://bega.dc.gov/node/61616/":
+          return begaAboutFixture;
+        case "https://bega.dc.gov/page/office-government-ethics":
+          return begaOgeFixture;
+        case "https://www.open-dc.gov/office-open-government":
+          return begaOogFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("bega.structure").run(createConnectorContext({ fetcher: begaFetcher })),
+    dataDir,
+  );
+
+  const remainingBegaReview = workbench.listReviewItems({
+    mode: "entities",
+    sourceId: "bega.structure",
+  });
+  const upgradedBega = workbench.db.prepare(
+    "select kind, branch, cluster, official_url as officialUrl from canonical_entities where entity_id = 'dc.board_of_ethics_and_government_accountability'",
+  ).get() as { kind: string; branch: string | null; cluster: string | null; officialUrl: string };
+  workbench.close();
+  assertEquals(remainingBegaReview.length, 0);
+  assertEquals(upgradedBega, {
+    kind: "agency",
+    branch: "Independent",
+    cluster: "Ethics and Open Government",
+    officialUrl: "https://bega.dc.gov/node/61616/",
+  });
+});
+
 Deno.test("BEGA structure entities auto-promote and structural relationships no longer wait for batch accept-safe", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

@@ -25,6 +25,7 @@ const AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST = new Set([
 ]);
 
 const AUTO_PROMOTE_KIND_UPGRADE_SOURCE_PRECEDENCE = new Map<string, Set<string>>([
+  ["bega.structure", new Set(["dcgis.agencies"])],
   ["dccourts.structure", new Set(["dcgis.agencies"])],
 ]);
 
