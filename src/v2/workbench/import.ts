@@ -10,6 +10,7 @@ import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationship
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
+import { materializeEntityLegalRefAttachmentIfResolved } from "./entity_legal_ref_attachments.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
@@ -331,15 +332,11 @@ function importParsedOutput(
       );
     }
     if (legalRef.attachEntityRef) {
-      run(
-        store.db,
-        "insert or ignore into entity_legal_refs(entity_legal_ref_id, entity_id, legal_ref_id) values(?, ?, ?)",
-        [
-          `${legalRef.attachEntityRef}:${legalRef.legalRefId}`,
-          legalRef.attachEntityRef,
-          legalRef.legalRefId,
-        ],
-      );
+      materializeEntityLegalRefAttachmentIfResolved(store, {
+        sourceItemId: sourceItem.sourceItemId,
+        attachEntityRef: legalRef.attachEntityRef,
+        legalRefId: legalRef.legalRefId,
+      });
     }
     if (legalRef.attachRelationshipRef) {
       if (isMaterializedRelationshipAttachment(store, legalRef.attachRelationshipRef)) {
