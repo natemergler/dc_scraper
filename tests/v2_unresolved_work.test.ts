@@ -2,10 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import {
-  downstreamBlockedCountByReviewItem,
-  summarizeUnresolvedReconciliation,
-} from "../src/v2/workbench/unresolved_work.ts";
+import { summarizeUnresolvedReconciliation } from "../src/v2/workbench/unresolved_work.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -372,7 +369,7 @@ Deno.test("unresolved work graph links placeholder review items to placeholder b
   workbench.close();
 });
 
-Deno.test("downstream blocked count helper matches actionable unresolved graph decisions", async () => {
+Deno.test("unresolved work graph reports actionable downstream impact", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -458,30 +455,21 @@ Deno.test("downstream blocked count helper matches actionable unresolved graph d
     dataDir,
   );
 
-  const items = workbench.listReviewItems({ status: "open" });
-  const impacts = downstreamBlockedCountByReviewItem(workbench, items);
   const graph = workbench.unresolvedWorkGraph();
-
-  for (const decision of graph.decisions) {
-    assertEquals(
-      impacts.get(decision.reviewItemId),
-      decision.downstreamBlockedCount,
-      `impact mismatch for ${decision.reviewItemId}`,
-    );
-  }
-
   const decisionsBySubject = new Map(
     graph.decisions.map((decision) => [decision.subjectId, decision]),
   );
   assertEquals(
-    impacts.get(
-      decisionsBySubject.get("candidate.test.unresolved_work.pending_target")!.reviewItemId,
-    ),
+    decisionsBySubject.get("candidate.test.unresolved_work.pending_target")
+      ?.downstreamBlockedCount,
     1,
   );
-  assertEquals(impacts.get(decisionsBySubject.get("dc.placeholder_target")!.reviewItemId), 1);
   assertEquals(
-    impacts.get(decisionsBySubject.get("legal.test.unresolved_work.mixed_authority")!.reviewItemId),
+    decisionsBySubject.get("dc.placeholder_target")?.downstreamBlockedCount,
+    1,
+  );
+  assertEquals(
+    decisionsBySubject.get("legal.test.unresolved_work.mixed_authority")?.downstreamBlockedCount,
     1,
   );
   assertEquals(
