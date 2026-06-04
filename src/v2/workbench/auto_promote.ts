@@ -2,7 +2,7 @@ import { normalizeName, nowIso } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
-import { materializeEntityLegalRefsForAcceptedCandidate } from "./entity_legal_ref_attachments.ts";
+import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 const AUTO_PROMOTE_SOURCE_ALLOWLIST = new Set([
@@ -98,6 +98,9 @@ export function autoPromoteSafeEntityCandidates(store: WorkbenchStore): number {
       }
     }
   });
+  if (acceptedCount > 0) {
+    refreshLegalRefAttachments(store);
+  }
 
   return acceptedCount;
 }
@@ -224,11 +227,6 @@ function acceptEntityCandidateDirect(
     store.db,
     "update entity_candidates set review_status = 'accepted' where candidate_id = ?",
     [candidate.candidateId],
-  );
-  materializeEntityLegalRefsForAcceptedCandidate(
-    store,
-    candidate.candidateId,
-    candidate.proposedEntityId,
   );
   if (existing) {
     refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);

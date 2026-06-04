@@ -10,11 +10,10 @@ import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationship
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
-import { materializeEntityLegalRefAttachmentIfResolved } from "./entity_legal_ref_attachments.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
+import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
-import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import {
   buildEntityDecisionHint,
   buildLegalRefDecisionHint,
@@ -416,32 +415,6 @@ function importParsedOutput(
         ],
       );
     }
-    if (legalRef.attachEntityRef) {
-      materializeEntityLegalRefAttachmentIfResolved(store, {
-        sourceItemId: sourceItem.sourceItemId,
-        attachEntityRef: legalRef.attachEntityRef,
-        legalRefId: legalRef.legalRefId,
-      });
-    }
-    if (legalRef.attachRelationshipRef) {
-      if (isMaterializedRelationshipAttachment(store, legalRef.attachRelationshipRef)) {
-        run(
-          store.db,
-          "insert or ignore into relationship_legal_refs(relationship_legal_ref_id, relationship_id, legal_ref_id) values(?, ?, ?)",
-          [
-            `${legalRef.attachRelationshipRef}:${legalRef.legalRefId}`,
-            legalRef.attachRelationshipRef,
-            legalRef.legalRefId,
-          ],
-        );
-      } else {
-        run(
-          store.db,
-          "delete from relationship_legal_refs where relationship_id = ? and legal_ref_id = ?",
-          [legalRef.attachRelationshipRef, legalRef.legalRefId],
-        );
-      }
-    }
     const reviewItemId = buildReviewItemId(legalRef.legalRefId, "legal-ref");
     run(
       store.db,
@@ -458,6 +431,9 @@ function importParsedOutput(
         nowIso(),
       ],
     );
+  }
+  if ((parsed.legalRefs ?? []).length > 0) {
+    refreshLegalRefAttachments(store);
   }
   for (const dataset of parsed.datasets ?? []) {
     const sourceItem = requireItem(itemIndex, dataset.sourceItemKey);
@@ -703,19 +679,6 @@ function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
   if (legalRef.refType === "unknown") return "defer";
   if (legalRef.needsReview === true && !legalRef.normalizedCitation) return "defer";
   return "accept";
-}
-
-function isMaterializedRelationshipAttachment(
-  store: WorkbenchStore,
-  relationshipRef: string,
-): boolean {
-  const candidate = queryOne<{ relationshipType: string; toEntityRef: string }>(
-    store.db,
-    "select relationship_type as relationshipType, to_entity_ref as toEntityRef from relationship_candidates where relationship_candidate_id = ?",
-    [relationshipRef],
-  );
-  if (!candidate) return true;
-  return !isLegalAuthorityRelationship(candidate.relationshipType, candidate.toEntityRef);
 }
 
 function legalReviewReason(legalRef: LegalRefInput): string {

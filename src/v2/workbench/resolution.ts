@@ -16,8 +16,8 @@ import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationship
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
-import { materializeEntityLegalRefsForAcceptedCandidate } from "./entity_legal_ref_attachments.ts";
 import { endpointStatus } from "./endpoint_status.ts";
+import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -113,6 +113,7 @@ export async function appendResolutionEvents(
       ) {
         autoAcceptSafeRelationshipCandidates(store as WorkbenchStore);
       }
+      refreshLegalRefAttachments(store as WorkbenchStore);
     }
   });
   await ensureDir(dayDir);
@@ -601,6 +602,7 @@ function applyResolutionEventInCurrentTransaction(
     if (shouldAutoAcceptRelationshipsAfterEvent(event.eventType)) {
       autoAcceptSafeRelationshipCandidates(store);
     }
+    refreshLegalRefAttachments(store);
   }
 }
 
@@ -664,6 +666,7 @@ export async function replayResolutionDirectory(
     autoAcceptSafeLegalRefs(store);
     reconcileRelationshipCandidates(store);
     autoAcceptSafeRelationshipCandidates(store);
+    refreshLegalRefAttachments(store);
   });
 }
 
@@ -757,7 +760,6 @@ function acceptEntityCandidate(
     }
   }
   setEntityCandidateStatus(store, candidateId, "accepted");
-  materializeEntityLegalRefsForAcceptedCandidate(store, candidateId, entityId);
   refreshCanonicalEntityFieldsFromAcceptedCandidates(store, entityId);
   resolveReviewBySubject(store, candidateId);
 }

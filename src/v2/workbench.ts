@@ -30,6 +30,7 @@ import {
   type ImportConnectorOptions,
   importConnectorResult as importConnectorIntoWorkbench,
 } from "./workbench/import.ts";
+import { refreshLegalRefAttachments } from "./workbench/legal_ref_attachments.ts";
 import { reconcileRelationshipCandidates } from "./workbench/reconciliation.ts";
 import { buildUnresolvedWorkGraph } from "./workbench/unresolved_work.ts";
 import {
@@ -94,6 +95,7 @@ export class Workbench implements WorkbenchStore {
     autoPromoteSafeEntityCandidates(this);
     reconcileRelationshipCandidates(this);
     autoAcceptSafeRelationshipCandidates(this);
+    refreshLegalRefAttachments(this);
     return meta;
   }
 

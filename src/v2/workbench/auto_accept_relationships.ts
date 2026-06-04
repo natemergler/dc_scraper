@@ -1,6 +1,7 @@
 import { nowIso, type RelationshipType } from "../domain.ts";
 import { queryAll, withTransaction } from "./db.ts";
 import { endpointStatusMap } from "./endpoint_status.ts";
+import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -70,6 +71,9 @@ export function autoAcceptSafeRelationshipCandidates(
       acceptedCount += 1;
     }
   });
+  if (acceptedCount > 0) {
+    refreshLegalRefAttachments(store);
+  }
   return acceptedCount;
 }
 
