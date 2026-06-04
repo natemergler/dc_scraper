@@ -333,7 +333,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(
     readme,
-    "`README.md`: release summary, model semantics, and readiness notes",
+    "`README.md`: package overview, model semantics, and release counts",
   );
   assertStringIncludes(
     readme,
@@ -371,19 +371,14 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "Release tables keep their own `review_status`: accepted entity/relationship rows are materialized canonical facts, while inventory/reference rows such as datasets and legal refs can remain pending or deferred and stay visible in the summary.",
-  );
-  assertStringIncludes(
-    readme,
-    "Blocked and stale counts report unresolved work instead of marking it complete.",
-  );
-  assertStringIncludes(
-    readme,
     "DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.",
   );
+  assertStringIncludes(readme, "entities: total=2");
+  assertStringIncludes(readme, "relationships: total=1");
   assertStringIncludes(readme, "entity legal refs: total=1");
   assertStringIncludes(readme, "relationship legal refs: total=1");
-  assertStringIncludes(readme, "legal refs by review_status: pending=1");
+  assertStringIncludes(readme, "legal refs: total=1");
+  assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(
@@ -547,6 +542,25 @@ async function makeMinimalReleaseDir(): Promise<string> {
   const outDir = await Deno.makeTempDir();
   await Deno.writeTextFile(join(outDir, "manifest.json"), "{}");
   return outDir;
+}
+
+function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
+  for (
+    const snippet of [
+      "review_status",
+      "review status note:",
+      "review items by",
+      "review debt by",
+      "Unresolved workbench state:",
+      "unresolved rows",
+      "stale review:",
+      "blocked by source:",
+      "Blocked and stale counts report unresolved work",
+      "stay review-first",
+    ]
+  ) {
+    assert(!readme.includes(snippet), `README should not include ${snippet}`);
+  }
 }
 
 async function fileByteSha(path: string): Promise<string> {

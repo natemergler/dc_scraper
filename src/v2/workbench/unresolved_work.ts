@@ -5,6 +5,7 @@ import {
   type ReviewStatus,
 } from "../domain.ts";
 import { queryAll } from "./db.ts";
+import { isHumanDecisionReviewItem } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface UnresolvedDecisionNode {
@@ -359,7 +360,7 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
     details: parseDetails(row.detailsJson),
     downstreamBlockedCount: 0,
     blockedSubjectIds: [],
-  }));
+  })).filter(isHumanDecisionReviewItem);
 }
 
 function readDiagnosticNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDiagnosticNode[] {

@@ -1,13 +1,16 @@
 import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 import { handleSourceCommand, type SourceCommandDeps } from "../src/v2/cli_source.ts";
-import type { SourceConnector } from "../src/v2/connectors/shared.ts";
+import type { ConnectorContext, SourceConnector } from "../src/v2/connectors/shared.ts";
 import type { ConnectorResult } from "../src/v2/domain.ts";
 import type { PublicBodyComparisonReport } from "../src/v2/workbench/catalog.ts";
 
 function fixtureConnector(
   sourceId: string,
   title: string,
-  resultFactory: (limit?: number) => Promise<ConnectorResult>,
+  resultFactory: (
+    limit?: number,
+    onProgress?: ConnectorContext["onProgress"],
+  ) => Promise<ConnectorResult>,
 ): SourceConnector {
   return {
     sourceId,
@@ -18,7 +21,7 @@ function fixtureConnector(
       accessMethod: "fixture",
       baseUrl: `https://example.com/${sourceId}`,
     },
-    run: async (context) => await resultFactory(context.limit),
+    run: async (context) => await resultFactory(context.limit, context.onProgress),
   };
 }
 
@@ -222,28 +225,31 @@ Deno.test("source fetch --all continues through failures and throws a summary er
 
 Deno.test("source fetch --all keeps json output free of progress logs", async () => {
   const connectors = [
-    fixtureConnector("alpha.source", "Alpha Source", async () => ({
-      source: {
-        sourceId: "alpha.source",
-        title: "Alpha Source",
-        kind: "fixture",
-        accessMethod: "fixture",
-        baseUrl: "https://example.com/alpha",
-      },
-      endpointResults: [{
-        endpoint: {
-          endpointId: "alpha.source.main",
+    fixtureConnector("alpha.source", "Alpha Source", async (_limit, onProgress) => {
+      onProgress?.({ message: "Fetching rows 1-2 of 3 (page 1/2)" });
+      return {
+        source: {
           sourceId: "alpha.source",
-          title: "Alpha endpoint",
+          title: "Alpha Source",
           kind: "fixture",
-          url: "https://example.com/alpha",
-          method: "GET",
-          captureMode: "rows",
+          accessMethod: "fixture",
+          baseUrl: "https://example.com/alpha",
         },
-        status: "success",
-        artifacts: [],
-      }],
-    })),
+        endpointResults: [{
+          endpoint: {
+            endpointId: "alpha.source.main",
+            sourceId: "alpha.source",
+            title: "Alpha endpoint",
+            kind: "fixture",
+            url: "https://example.com/alpha",
+            method: "GET",
+            captureMode: "rows",
+          },
+          status: "success",
+          artifacts: [],
+        }],
+      };
+    }),
   ];
   const deps: SourceCommandDeps = {
     connectors,
@@ -286,6 +292,69 @@ Deno.test("source fetch --all keeps json output free of progress logs", async ()
       endpointStatuses: ["alpha.source.main:success"],
     }],
   });
+});
+
+Deno.test("source fetch prints connector substep progress", async () => {
+  const connectors = [
+    fixtureConnector("paged.source", "Paged Source", async (_limit, onProgress) => {
+      onProgress?.({ message: "Fetching rows 1-2 of 3 (page 1/2)" });
+      return {
+        source: {
+          sourceId: "paged.source",
+          title: "Paged Source",
+          kind: "fixture",
+          accessMethod: "fixture",
+          baseUrl: "https://example.com/paged",
+        },
+        endpointResults: [{
+          endpoint: {
+            endpointId: "paged.source.main",
+            sourceId: "paged.source",
+            title: "Paged endpoint",
+            kind: "fixture",
+            url: "https://example.com/paged",
+            method: "GET",
+            captureMode: "rows",
+          },
+          status: "success",
+          artifacts: [],
+        }],
+      };
+    }),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit, onProgress }) => ({
+      fetcher: async () => {
+        throw new Error("unused");
+      },
+      limit,
+      onProgress,
+    }),
+    importConnectorResult: async () => {},
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, lines } = await captureConsoleLogs(async () =>
+    await handleSourceCommand(["source", "fetch", "--all"], {}, deps)
+  );
+
+  assertEquals(result, true);
+  assertStringIncludes(
+    lines.join("\n"),
+    "[1/1] paged.source: Fetching rows 1-2 of 3 (page 1/2)",
+  );
 });
 
 Deno.test("source compare public-bodies labels conservative variant matches separately from exact overlaps", async () => {

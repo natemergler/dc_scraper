@@ -17,7 +17,12 @@ import {
   adminProcurementConnector,
   adminPropertyConnector,
 } from "./admin.ts";
-import type { ConnectorContext, Fetcher, SourceConnector } from "./shared.ts";
+import type {
+  ConnectorContext,
+  ConnectorProgressEvent,
+  Fetcher,
+  SourceConnector,
+} from "./shared.ts";
 import { defaultFetcher } from "./shared.ts";
 
 export const connectors: SourceConnector[] = [
@@ -49,10 +54,15 @@ export function getConnector(sourceId: string): SourceConnector {
 }
 
 export function createConnectorContext(
-  options: { fetcher?: Fetcher; limit?: number },
+  options: {
+    fetcher?: Fetcher;
+    limit?: number;
+    onProgress?: (event: ConnectorProgressEvent) => void;
+  },
 ): ConnectorContext {
   return {
     fetcher: options.fetcher ?? defaultFetcher,
     limit: options.limit,
+    onProgress: options.onProgress,
   };
 }

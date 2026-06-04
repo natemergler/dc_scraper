@@ -1,5 +1,9 @@
 import { dcCommand } from "./command_prefix.ts";
-import type { ConnectorContext, SourceConnector } from "./connectors/shared.ts";
+import type {
+  ConnectorContext,
+  ConnectorProgressEvent,
+  SourceConnector,
+} from "./connectors/shared.ts";
 import type { ConnectorResult } from "./domain.ts";
 import type {
   PublicBodyComparisonReport,
@@ -15,7 +19,9 @@ export interface SourceCommandOptions {
 export interface SourceCommandDeps {
   connectors: SourceConnector[];
   getConnector(sourceId: string): SourceConnector;
-  createConnectorContext(options: { limit?: number }): ConnectorContext;
+  createConnectorContext(
+    options: { limit?: number; onProgress?: (event: ConnectorProgressEvent) => void },
+  ): ConnectorContext;
   importConnectorResult(result: ConnectorResult): Promise<void>;
   readSourceSummary(sourceId: string): Promise<SourceSummary>;
   readPublicBodyComparison(): Promise<PublicBodyComparisonReport>;
@@ -36,7 +42,8 @@ interface SourceFetchProgressEvent {
   title: string;
   index: number;
   total: number;
-  phase: "start" | "import" | "success" | "failed";
+  phase: "start" | "connector-progress" | "import" | "success" | "failed";
+  message?: string;
   connectorDurationMs?: number;
   importDurationMs?: number;
   totalDurationMs?: number;
@@ -263,7 +270,24 @@ export async function fetchSources(
     const sourceStartedAt = performance.now();
     const connectorStartedAt = performance.now();
     try {
-      const result = await connector.run(deps.createConnectorContext({ limit: options.limit }));
+      const result = await connector.run(
+        deps.createConnectorContext({
+          limit: options.limit,
+          onProgress: onProgress
+            ? (event) =>
+              onProgress({
+                sourceId: connector.sourceId,
+                title: connector.source.title,
+                index: sourceIndex,
+                total,
+                phase: "connector-progress",
+                message: event.message,
+                connectorDurationMs: performance.now() - connectorStartedAt,
+                totalDurationMs: performance.now() - sourceStartedAt,
+              })
+            : undefined,
+        }),
+      );
       const connectorDurationMs = performance.now() - connectorStartedAt;
       const importStartedAt = performance.now();
       onProgress?.({
@@ -446,6 +470,10 @@ function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
         formatDuration(event.importDurationMs)
       })`,
     );
+    return;
+  }
+  if (event.phase === "connector-progress") {
+    console.log(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}`);
     return;
   }
   if (event.phase === "import") {

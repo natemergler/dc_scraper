@@ -42,6 +42,7 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
       name: "Pending Target",
       kind: "agency",
       observedName: "Pending Target",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -70,10 +71,10 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
   );
 
   assert(prerequisiteDecision);
-  assert(unrelatedDecision);
   assertEquals(prerequisiteDecision.itemType, "entity_candidate");
+  assertEquals(prerequisiteDecision.details.needsReview, true);
   assertEquals(prerequisiteDecision.downstreamBlockedCount, 1);
-  assertEquals(unrelatedDecision.downstreamBlockedCount, 0);
+  assertEquals(unrelatedDecision, undefined);
   assertEquals(
     prerequisiteDecision.blockedSubjectIds,
     ["relationship.test.unresolved_work.pending_dependency"],
@@ -92,13 +93,6 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
       edge.toNodeId === blockedDiagnostic.nodeId &&
       edge.kind === "unblocks"
     ),
-  );
-  assertEquals(
-    blockedGraph.decisions.findIndex((decision) =>
-      decision.nodeId === prerequisiteDecision.nodeId
-    ) <
-      blockedGraph.decisions.findIndex((decision) => decision.nodeId === unrelatedDecision.nodeId),
-    true,
   );
   const summary = summarizeUnresolvedReconciliation(blockedGraph);
   assertEquals(summary.blockedCount, 1);
@@ -304,6 +298,7 @@ Deno.test("unresolved work graph links legal ref decisions to legal endpoint blo
       "legal.test.unresolved_work.authority",
       "D.C. Code § 3-1202.03",
       "https://code.dccouncil.us/us/dc/council/code/sections/3-1202.03",
+      { needsReview: true },
     ),
     dataDir,
   );
@@ -318,6 +313,7 @@ Deno.test("unresolved work graph links legal ref decisions to legal endpoint blo
 
   assert(legalDecision);
   assert(diagnostic);
+  assertEquals(legalDecision.details.needsReview, true);
   assertEquals(diagnostic.blockers[0].blockerId, "legal.d_c_code_3_1202_03");
   assertEquals(diagnostic.blockers[0].blockerState, "pending_candidate");
   assertEquals(diagnostic.blockers[0].hasActionablePrerequisite, true);
@@ -411,6 +407,7 @@ Deno.test("downstream blocked count helper matches actionable unresolved graph d
       name: "Pending Target",
       kind: "agency",
       observedName: "Pending Target",
+      needsReview: true,
     }),
     dataDir,
   );
@@ -444,6 +441,7 @@ Deno.test("downstream blocked count helper matches actionable unresolved graph d
       "legal.test.unresolved_work.mixed_authority",
       "D.C. Code § 3-1202.03",
       "https://code.dccouncil.us/us/dc/council/code/sections/3-1202.03",
+      { needsReview: true },
     ),
     dataDir,
   );
@@ -487,8 +485,8 @@ Deno.test("downstream blocked count helper matches actionable unresolved graph d
     1,
   );
   assertEquals(
-    impacts.get(decisionsBySubject.get("candidate.test.unresolved_work.unrelated")!.reviewItemId),
-    0,
+    decisionsBySubject.has("candidate.test.unresolved_work.unrelated"),
+    false,
   );
   workbench.close();
 });
