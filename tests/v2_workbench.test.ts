@@ -188,7 +188,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Schema version: 16");
+  assertStringIncludes(statusText, "Schema version: 17");
   assertStringIncludes(statusText, "Sources: 0/");
   assertStringIncludes(statusText, "Decisions: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
@@ -217,7 +217,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
     reconciliation: { blocked: number };
     nextCommand: string;
   };
-  assertEquals(jsonStatus.schemaVersion, 16);
+  assertEquals(jsonStatus.schemaVersion, 17);
   assertEquals(jsonStatus.sources.fetched, 0);
   assertEquals(jsonStatus.review.open, 0);
   assertEquals(jsonStatus.reconciliation.blocked, 0);
@@ -1330,6 +1330,67 @@ Deno.test("Open DC second detail-page shape yields administered relationship, le
       legalRef.attachEntityRef === "dc.commission_on_example_services" &&
       legalRef.attachRelationshipRef === undefined
     ),
+  );
+});
+
+Deno.test("Open DC keeps non-legal authority text as source evidence instead of legal ref work", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/apple-tree-early-learning-pcs">Apple Tree Early Learning PCS</a>
+            <a href="/public-bodies/working-group-jobs-wages-and-benefits">Working Group on Jobs, Wages and Benefits</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/apple-tree-early-learning-pcs":
+          return `<html><body>
+            <h1 class="page-title">Apple Tree Early Learning PCS</h1>
+            <div class="field field-name-field-enabling-statute-mayoral-order field-type-text field-label-inline clearfix">
+              <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+              <div class="field-items"><div class="field-item even"><a href="https://www.appletreeinstitute.org/">N/A</a></div></div>
+            </div>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/working-group-jobs-wages-and-benefits":
+          return `<html><body>
+            <h1 class="page-title">Working Group on Jobs, Wages and Benefits</h1>
+            <div class="field field-name-field-enabling-statute-mayoral-order field-type-text field-label-inline clearfix">
+              <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+              <div class="field-items"><div class="field-item even">MO 2016-083</div></div>
+            </div>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assertEquals(
+    detail.items?.find((item) => item.itemKey === "apple-tree-early-learning-pcs")?.body
+      .enablingAuthority,
+    "N/A",
+  );
+  assertEquals(
+    detail.legalRefs?.map((legalRef) => ({
+      legalRefId: legalRef.legalRefId,
+      citationText: legalRef.citationText,
+      normalizedCitation: legalRef.normalizedCitation,
+      refType: legalRef.refType,
+    })),
+    [{
+      legalRefId: "legal.open_dc.public_bodies.working_group_jobs_wages_and_benefits_authority",
+      citationText: "MO 2016-083",
+      normalizedCitation: "Mayor's Order 2016-083",
+      refType: "mayors_order",
+    }],
   );
 });
 
@@ -4375,6 +4436,16 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   );
   assertEquals(parseLegalReference("D.C. Law 22-155").refType, "dc_law");
   assertEquals(parseLegalReference("D.C. Law 22-155").normalizedCitation, "D.C. Law 22-155");
+  assertEquals(parseLegalReference("MO 2016-083").normalizedCitation, "Mayor's Order 2016-083");
+  assertEquals(parseLegalReference("33 U.S. Code § 1267").refType, "us_code");
+  assertEquals(parseLegalReference("33 U.S. Code § 1267").normalizedCitation, "33 U.S.C. § 1267");
+  assertEquals(
+    parseLegalReference(
+      "1993-148; amended by 2001-79 and 2012-154",
+      "https://www.open-dc.gov/Mayors_Order_2012-154",
+    ).normalizedCitation,
+    "Mayor's Order 1993-148; amended by 2001-79 and 2012-154",
+  );
   assertEquals(
     parseLegalReference("D.C. Law 22-228. Boxing and Wrestling Commission Amendment Act of 2018")
       .normalizedCitation,
