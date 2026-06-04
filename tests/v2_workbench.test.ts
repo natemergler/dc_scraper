@@ -4950,7 +4950,6 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
         "Alcoholic Beverages and Cannabis Administration",
         "agency",
       ],
-      ["dc.mayor", "Mayor", "office"],
     ] as const
   ) {
     workbench.db.prepare(
