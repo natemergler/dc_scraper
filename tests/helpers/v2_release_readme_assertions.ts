@@ -24,6 +24,7 @@ export function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) 
       "decide",
       "decision",
       "readiness",
+      "release summary",
       "usable-with-warnings",
       "warning",
       "warnings",

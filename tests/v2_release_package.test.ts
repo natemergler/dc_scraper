@@ -398,11 +398,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "DCGov Release");
   assertStringIncludes(
     readme,
-    "`README.md`: package overview, model semantics, and release counts",
+    "`README.md`: package overview, model semantics, and package counts",
   );
   assertStringIncludes(
     readme,
-    "`manifest.json`: package metadata, file hashes, source inventory/artifact summary, and release summary",
+    "`manifest.json`: package metadata, file hashes, and source inventory/artifact summary",
   );
   assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
   assertStringIncludes(
@@ -410,6 +410,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "`relationship_legal_refs.*`: relationship-linked legal reference attachments",
   );
   assertStringIncludes(readme, "## Model semantics");
+  assertStringIncludes(readme, "## Package counts");
   assertStringIncludes(
     readme,
     "`entities.*`: canonical civic entities such as public bodies, offices, seats/roles, status markers, and source-backed public official observations.",
