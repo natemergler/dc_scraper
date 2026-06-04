@@ -717,7 +717,7 @@ Deno.test("review packets keep stale prior-decision work grouped for review", as
   assertEquals(body.packets[0].nextCommand, undefined);
 });
 
-Deno.test("interactive review shows packet context before the current item", async () => {
+Deno.test("interactive review shows defer packet context in the inbox before the current item", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -785,8 +785,13 @@ Deno.test("interactive review shows packet context before the current item", asy
   const stdout = new TextDecoder().decode(output.stdout);
   assertStringIncludes(
     stdout,
+    "1. [recommended] Alt Agency - test.review_packets.relationships overseen_by [default defer; packet 2 open]",
+  );
+  assertStringIncludes(
+    stdout,
     "Packet: test.review_packets.relationships overseen_by -> dc.alt_agency (2 item(s); open=2, deferred=0)",
   );
+  assertStringIncludes(stdout, "Review: Committee on Education");
   assertStringIncludes(stdout, "Review stopped. 2 item(s) remain.");
 });
 

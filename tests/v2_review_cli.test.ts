@@ -751,6 +751,10 @@ Deno.test("interactive review starts with an inbox summary for the current slice
     stdout,
     "1. [recommended] Alt Agency - test.review_cli.inbox overseen_by [default defer; packet 1 open]",
   );
+  assertStringIncludes(
+    stdout,
+    "2. Target Agency - test.review_cli.inbox overseen_by [default defer; packet 1 open]",
+  );
 });
 
 Deno.test("interactive review gives deferred relationship packets packet-level inbox titles", async () => {

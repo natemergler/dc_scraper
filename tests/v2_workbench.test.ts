@@ -6769,7 +6769,6 @@ Deno.test("batch defer-default leaves auto-materialized accept-default relations
   assertEquals(openOversight.length, 0);
   assertEquals(acceptedRelationship.count, 1);
 });
-
 Deno.test("plain batch defer is not available", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
