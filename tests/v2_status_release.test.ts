@@ -243,7 +243,7 @@ Deno.test("status surfaces stale review debt from prior decisions", async () => 
   );
 });
 
-Deno.test("status surfaces unresolved review debt by source and type", async () => {
+Deno.test("status reports browse-only and deferred work without review ledgers", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -289,12 +289,8 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Review ledger by type:");
-  assertStringIncludes(statusText, "entity_candidate(open=1,deferred=0)");
-  assertStringIncludes(statusText, "legal_ref(open=0,deferred=1)");
-  assertStringIncludes(statusText, "Review ledger by source:");
-  assertStringIncludes(statusText, "test.signature.entities(open=1,deferred=0)");
-  assertStringIncludes(statusText, "test.signature.legal_refs(open=0,deferred=1)");
+  assert(!statusText.includes("Review ledger by type:"));
+  assert(!statusText.includes("Review ledger by source:"));
 
   const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -319,36 +315,12 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
       humanDecisionOpen: number;
       browseOnlyOpen: number;
       deferred: number;
-      byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
-      bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
     };
   };
   assertEquals(jsonStatus.review.open, 1);
   assertEquals(jsonStatus.review.humanDecisionOpen, 0);
   assertEquals(jsonStatus.review.browseOnlyOpen, 1);
   assertEquals(jsonStatus.review.deferred, 1);
-  assert(
-    jsonStatus.review.byType.some((row) =>
-      row.itemType === "entity_candidate" && row.openCount === 1 && row.deferredCount === 0
-    ),
-  );
-  assert(
-    jsonStatus.review.byType.some((row) =>
-      row.itemType === "legal_ref" && row.openCount === 0 && row.deferredCount === 1
-    ),
-  );
-  assert(
-    jsonStatus.review.bySource.some((row) =>
-      row.sourceId === "test.signature.entities" && row.openCount === 1 &&
-      row.deferredCount === 0
-    ),
-  );
-  assert(
-    jsonStatus.review.bySource.some((row) =>
-      row.sourceId === "test.signature.legal_refs" && row.openCount === 0 &&
-      row.deferredCount === 1
-    ),
-  );
   assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "open decisions=0");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "browse rows=1");

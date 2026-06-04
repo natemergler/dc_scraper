@@ -3,7 +3,6 @@ import { dcCommand } from "./command_prefix.ts";
 import { Workbench } from "./workbench.ts";
 import { renderReviewCommand } from "./workbench/review_command_args.ts";
 import { reviewDecisionSummary } from "./workbench/review.ts";
-import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
 export interface WorkbenchStatusSnapshot {
@@ -18,8 +17,6 @@ export interface WorkbenchStatusSnapshot {
     humanDecisionOpen: number;
     browseOnlyOpen: number;
     deferred: number;
-    byType: Array<{ itemType: string; openCount: number; deferredCount: number }>;
-    bySource: Array<{ sourceId: string; openCount: number; deferredCount: number }>;
   };
   staleReview: {
     count: number;
@@ -111,7 +108,6 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const reviewDecisions = reviewDecisionSummary(workbench);
-  const reviewDebt = reviewPacketDebtSummary(workbench);
   const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
   const unresolvedWork = workbench.unresolvedWorkGraph();
@@ -141,8 +137,6 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       humanDecisionOpen: reviewDecisions.humanDecisionOpen,
       browseOnlyOpen: reviewDecisions.browseOnlyOpen,
       deferred: reviewDecisions.deferred,
-      byType: reviewDebt.byType,
-      bySource: reviewDebt.bySource,
     },
     staleReview,
     placeholders,
@@ -206,16 +200,6 @@ function nextWorkbenchCommand(input: WorkbenchStatusPlanInput): string {
 }
 
 export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
-  const reviewDebtByType = status.review.byType.length > 0
-    ? status.review.byType
-      .map((row) => `${row.itemType}(open=${row.openCount},deferred=${row.deferredCount})`)
-      .join(", ")
-    : undefined;
-  const reviewDebtBySource = status.review.bySource.length > 0
-    ? status.review.bySource
-      .map((row) => `${row.sourceId}(open=${row.openCount},deferred=${row.deferredCount})`)
-      .join(", ")
-    : undefined;
   const reconciliationDetails = [
     status.reconciliation.blockedByRelationshipType.length > 0
       ? status.reconciliation.blockedByRelationshipType
@@ -247,8 +231,6 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
     `Decisions: ${status.review.humanDecisionOpen} open${browseOnlySuffix}, ${status.review.deferred} deferred`,
-    ...(reviewDebtByType ? [`Review ledger by type: ${reviewDebtByType}`] : []),
-    ...(reviewDebtBySource ? [`Review ledger by source: ${reviewDebtBySource}`] : []),
     `Stale review: ${status.staleReview.count}${
       status.staleReview.firstStale?.priorDecisionState
         ? ` from prior ${status.staleReview.firstStale.priorDecisionState} decision`
