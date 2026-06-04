@@ -55,8 +55,17 @@ export async function buildV2Release(
     phase: "read-workbench",
     message: "Reading accepted release rows",
   });
-  const entities: EntityRow[] = workbench.canonicalEntities();
-  const relationships: RelationshipRow[] = workbench.canonicalRelationships();
+  const allEntities: EntityRow[] = workbench.canonicalEntities();
+  const entities: EntityRow[] = acceptedReleaseEntities(allEntities);
+  const releaseEntityIds = new Set(entities.map((row) => row.id));
+  const excludedEntityIds = new Set(
+    allEntities.filter((row) => !releaseEntityIds.has(row.id)).map((row) => row.id),
+  );
+  const relationships: RelationshipRow[] = acceptedReleaseRelationships(
+    workbench.canonicalRelationships(),
+    excludedEntityIds,
+  );
+  const releaseRelationshipIds = new Set(relationships.map((row) => row.id));
   const sources: SourceRow[] = workbench.sourceInventory();
   const datasets: DatasetRow[] = workbench.datasets();
   const legalRefs: LegalRefRow[] = acceptedReleaseLegalRefs(workbench.legalRefs());
@@ -64,11 +73,11 @@ export async function buildV2Release(
   const entityLegalRefs: EntityLegalRefRow[] = acceptedReleaseLegalAttachments(
     workbench.entityLegalRefs(),
     legalRefIds,
-  );
+  ).filter((row) => releaseEntityIds.has(row.entity_id));
   const relationshipLegalRefs: RelationshipLegalRefRow[] = acceptedReleaseLegalAttachments(
     workbench.relationshipLegalRefs(),
     legalRefIds,
-  );
+  ).filter((row) => releaseRelationshipIds.has(row.relationship_id));
   const sourceArtifacts: SourceArtifactRow[] = workbench.sourceArtifacts();
   emitReleaseProgress(options, {
     phase: "summarize",
@@ -277,7 +286,33 @@ function emitReleaseProgress(
 }
 
 function acceptedReleaseLegalRefs(rows: LegalRefRow[]): LegalRefRow[] {
-  return rows.filter((row) => row.review_status === "accepted");
+  return rows.filter((row) => row.review_status === "accepted" && row.ref_type !== "unknown");
+}
+
+function acceptedReleaseEntities(rows: EntityRow[]): EntityRow[] {
+  return rows.filter((row) =>
+    row.review_status === "accepted" &&
+    !(row.kind === "budgetary" && /^[0-9]+$/.test(row.name)) &&
+    !isOpenDcNonBodyReleaseEntity(row)
+  );
+}
+
+function acceptedReleaseRelationships(
+  rows: RelationshipRow[],
+  excludedEntityIds: ReadonlySet<string>,
+): RelationshipRow[] {
+  return rows.filter((row) =>
+    row.review_status === "accepted" &&
+    !excludedEntityIds.has(row.from_entity_id) && !excludedEntityIds.has(row.to_entity_id)
+  );
+}
+
+function isOpenDcNonBodyReleaseEntity(row: EntityRow): boolean {
+  return Boolean(
+    row.official_url?.match(
+      /^https:\/\/www\.open-dc\.gov\/public-bodies\/.*(?:-recess|-duplicate)(?:[/?#]|$)/i,
+    ),
+  );
 }
 
 function acceptedReleaseLegalAttachments<

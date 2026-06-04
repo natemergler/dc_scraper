@@ -1546,6 +1546,60 @@ Deno.test("Open DC acronym parentheticals reuse the base public-body identity", 
   );
 });
 
+Deno.test("Open DC recess and duplicate detail titles stay as source evidence only", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const recessTitle = "April Board of Accountancy - (RECESS)";
+  const duplicateTitle = "April Board of Accountancy - (DUPLICATE)";
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/april-board-of-accountancy-recess">${recessTitle}</a>
+            <a href="/public-bodies/april-board-of-accountancy-duplicate">${duplicateTitle}</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/april-board-of-accountancy-recess":
+          return `<html><body><h1 class="page-title">${recessTitle}</h1></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/april-board-of-accountancy-duplicate":
+          return `<html><body><h1 class="page-title">${duplicateTitle}</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assert(detail.items);
+  assertEquals(detail.items.map((item) => item.title), [recessTitle, duplicateTitle]);
+  assertEquals(detail.entityCandidates, []);
+  assertEquals(detail.relationshipCandidates, []);
+  assertEquals(detail.legalRefs, []);
+
+  await workbench.importConnectorResult(result, dataDir);
+  const sourceItemCount = workbench.db.prepare(
+    "select count(*) as count from source_items where item_key like 'april-board-of-accountancy-%'",
+  ).get() as { count: number };
+  const candidateCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where candidate_id like 'candidate.open_dc.public_bodies.april_board_of_accountancy%'",
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(sourceItemCount.count, 4);
+  assertEquals(candidateCount.count, 0);
+});
+
 Deno.test("Open DC acronym parentheticals still honor known entity aliases", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
@@ -4719,6 +4773,20 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
     "mayors_order",
   );
   assertEquals(
+    parseLegalReference("Mayor’s Order 83-25 (January 2, 1983)").normalizedCitation,
+    "Mayor's Order 83-25",
+  );
+  assertEquals(
+    parseLegalReference("Mayor's Orders 2017-314").normalizedCitation,
+    "Mayor's Order 2017-314",
+  );
+  assertEquals(parseLegalReference("Mayor's Order 20012-49"), {
+    refType: "unknown",
+    citationText: "Mayor's Order 20012-49",
+    normalizedCitation: undefined,
+    needsReview: true,
+  });
+  assertEquals(
     parseLegalReference("71 D.C. Register 012345").normalizedCitation,
     "71 D.C. Register 012345",
   );
@@ -4738,6 +4806,18 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
     parseLegalReference("DC Municipal Regulations and DC Register", "https://www.dcregs.dc.gov/")
       .normalizedCitation,
     "DCMR and D.C. Register",
+  );
+  assertEquals(
+    parseLegalReference(
+      "Climate Commitment Amendment Act of 2022",
+      "https://code.dccouncil.gov/us/dc/council/laws/24-176",
+    ),
+    {
+      refType: "unknown",
+      citationText: "Climate Commitment Amendment Act of 2022",
+      normalizedCitation: undefined,
+      needsReview: true,
+    },
   );
   assertEquals(parseLegalReference("§ 25–202").normalizedCitation, "D.C. Code 25-202");
   assertEquals(parseLegalReference("4-1303.01a").normalizedCitation, "D.C. Code 4-1303.01a");
@@ -7706,6 +7786,73 @@ Deno.test("dcgis agency taxonomy labels do not create branch review slices", asy
   assertEquals(candidateCount.count, 5);
   assertEquals(relationshipCount.count, 0);
   assertEquals(remainingItems.length, 0);
+});
+
+Deno.test("dcgis budgetary agency rows without human-readable names stay as source evidence only", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 3099,
+        AGENCY_NAME: null,
+        TYPE: "Budgetary",
+        BRANCH: "Other",
+        MAYORAL_CLUSTER: "",
+        WEB_URL: "",
+        LEGISLATION: "",
+      },
+    }],
+  };
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return rowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const sourceItemCount = workbench.db.prepare(
+    "select count(*) as count from source_items where source_id = 'dcgis.agencies'",
+  ).get() as { count: number };
+  const entityCandidateCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidates where candidate_id like 'candidate.dcgis.agencies.%'",
+  ).get() as { count: number };
+  const reviewItemCount = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: "candidate.dcgis.agencies",
+  }).length;
+  workbench.close();
+
+  assertEquals(sourceItemCount.count, 1);
+  assertEquals(entityCandidateCount.count, 0);
+  assertEquals(reviewItemCount, 0);
 });
 
 Deno.test("batch defer-default marks a scoped relationship review slice deferred", async () => {

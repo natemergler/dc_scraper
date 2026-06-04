@@ -332,13 +332,21 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  const mayorMatch = text.match(/Mayor['’]?s?\s+Order\s+([0-9]{4}-[0-9]{2,3})/i);
+  const mayorMatch = text.match(/Mayor['’]?s?\s+Orders?\s+([0-9]{2,4}-[0-9]{2,3})/i);
   if (mayorMatch) {
     return {
       refType: "mayors_order",
       citationText: text,
       normalizedCitation: `Mayor's Order ${mayorMatch[1]}`,
       needsReview: false,
+    };
+  }
+  if (/Mayor['’]?s?\s+Orders?\s+[0-9]/i.test(text)) {
+    return {
+      refType: "unknown",
+      citationText: text,
+      normalizedCitation: undefined,
+      needsReview: true,
     };
   }
   const mayorShorthandMatch = text.match(/\bMO\s+([0-9]{4}-[0-9]{2,3})\b/i);
@@ -429,12 +437,20 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  if (/Mayor['’]?s?\s+Orders?/i.test(text) || url?.includes("mayor.dc.gov/page/mayors-orders")) {
+  if (/^Mayor['’]?s?\s+Orders?$/i.test(text) || url?.includes("mayor.dc.gov/page/mayors-orders")) {
     return {
       refType: "mayors_order",
       citationText: text,
       normalizedCitation: "Mayor's Orders",
       needsReview: false,
+    };
+  }
+  if (/\bAct of [12][0-9]{3}\b/i.test(text)) {
+    return {
+      refType: "unknown",
+      citationText: text,
+      normalizedCitation: undefined,
+      needsReview: true,
     };
   }
   const registerMatch = text.match(/D\.?\s*C\.?\s+Register|DCMR|Municipal\s+Regulations/i);
