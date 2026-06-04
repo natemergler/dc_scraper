@@ -12,6 +12,7 @@ const AUTO_PROMOTE_SOURCE_ALLOWLIST = new Set([
   "dccourts.structure",
   "open_dc.public_bodies",
   "council.members",
+  "mayor.office",
   "council.committees",
   "oanc.anc_profiles",
   "mota.quickbase",
@@ -23,6 +24,7 @@ const AUTO_PROMOTE_KIND_BLOCKLIST = new Set([
 
 const AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST = new Set([
   "council.members",
+  "mayor.office",
   "oanc.anc_profiles",
 ]);
 

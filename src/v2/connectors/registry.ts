@@ -4,6 +4,7 @@ import { dcCourtsConnector } from "./courts.ts";
 import { openDcConnector } from "./open_dc.ts";
 import { councilCommitteesConnector, councilLimsConnector } from "./council.ts";
 import { councilMembersConnector } from "./council_members.ts";
+import { mayorOfficeConnector } from "./mayor.ts";
 import { oancAncProfilesConnector } from "./oanc.ts";
 import { quickbaseConnector } from "./quickbase.ts";
 import { legalEntrypointsConnector } from "./legal.ts";
@@ -31,6 +32,7 @@ export const connectors: SourceConnector[] = [
   dcCourtsConnector,
   begaConnector,
   openDcConnector,
+  mayorOfficeConnector,
   councilMembersConnector,
   councilCommitteesConnector,
   councilLimsConnector,
