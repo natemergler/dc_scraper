@@ -1211,6 +1211,63 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
   );
 });
 
+Deno.test("interactive review resume command preserves source filters", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_cli.source_resume",
+      candidateId: "candidate.test.review_cli.source_resume.board",
+      sourceItemKey: "review-cli-source-resume-row",
+      proposedEntityId: "dc.source_resume_board",
+      name: "Source Resume Board",
+      kind: "board",
+      observedName: "Source Resume Board",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--source",
+      "test.review_cli.source_resume",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(
+    reviewText,
+    "Resume with deno task dc -- review --source test.review_cli.source_resume.",
+  );
+});
+
 Deno.test("interactive relationship review quit reports filtered resume command", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

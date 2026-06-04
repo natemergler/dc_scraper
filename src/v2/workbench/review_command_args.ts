@@ -9,6 +9,8 @@ export function reviewFilterArgs(
     options.includeMode && filters.mode ? quoteShellArg(filters.mode) : undefined,
     filters.status && filters.status !== "open" ? "--status" : undefined,
     filters.status && filters.status !== "open" ? quoteShellArg(filters.status) : undefined,
+    filters.sourceId ? "--source" : undefined,
+    filters.sourceId ? quoteShellArg(filters.sourceId) : undefined,
     options.includeType && filters.type ? "--type" : undefined,
     options.includeType && filters.type ? quoteShellArg(filters.type) : undefined,
     filters.subjectPrefix ? "--subject-prefix" : undefined,
