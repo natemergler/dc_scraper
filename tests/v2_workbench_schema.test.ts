@@ -32,6 +32,9 @@ async function runSourceList(dbPath: string): Promise<Deno.CommandOutput> {
   }).output();
 }
 
+const CURRENT_WORKBENCH_REQUIRED_MESSAGE =
+  "Local workbench DB is not a current dc_scraper workbench. Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.";
+
 Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const dir = await Deno.makeTempDir();
   await ensureDir(join(dir, "data"));
@@ -283,8 +286,21 @@ Deno.test("source list fails fast for non-current local workbench DBs", async ()
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
+});
+
+Deno.test("source list accepts exact current workbench shape regardless of historical schema version", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec("update workbench_schema set version = 16");
+  workbench.close();
+
+  const sourceListOutput = await runSourceList(dbPath);
+  assertEquals(sourceListOutput.code, 0);
+  assertEquals(new TextDecoder().decode(sourceListOutput.stderr), "");
 });
 
 Deno.test("source list does not mutate non-current databases", async () => {
@@ -306,7 +322,7 @@ Deno.test("source list does not mutate non-current databases", async () => {
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 0). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 
   const reopened = new Database(dbPath);
@@ -333,7 +349,7 @@ Deno.test("source list rejects a current schema record when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });
 
@@ -354,6 +370,6 @@ Deno.test("source list rejects current schema records with unexpected local tabl
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });

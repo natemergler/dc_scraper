@@ -314,8 +314,8 @@ const EXPECTED_INDEXES = new Set([
   "reconciliation_blockers_subject_idx",
 ]);
 
-function currentSchemaRequiredMessage(version: number): string {
-  return `Local workbench DB is not a current dc_scraper workbench (found schema version ${version}). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.`;
+function currentSchemaRequiredMessage(): string {
+  return "Local workbench DB is not a current dc_scraper workbench. Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.";
 }
 
 function workbenchSchemaTableExists(store: WorkbenchStore): boolean {
@@ -348,25 +348,20 @@ function assertCurrentWorkbenchContract(
   store: WorkbenchStore,
   schemaRow: WorkbenchSchemaContractRow | undefined,
 ): void {
-  const version = schemaRow?.version ?? 0;
-  if (
-    !schemaRow ||
-    schemaRow.version !== CURRENT_WORKBENCH_SCHEMA_VERSION ||
-    schemaRow.name !== CURRENT_WORKBENCH_SCHEMA_NAME
-  ) {
-    throw new Error(currentSchemaRequiredMessage(version));
+  if (!schemaRow || schemaRow.name !== CURRENT_WORKBENCH_SCHEMA_NAME) {
+    throw new Error(currentSchemaRequiredMessage());
   }
   const tableNames = userTableNames(store);
   const missingTables = [...EXPECTED_TABLES].filter((name) => !tableNames.has(name));
   const unexpectedTables = [...tableNames].filter((name) => !EXPECTED_TABLES.has(name));
   if (missingTables.length > 0 || unexpectedTables.length > 0) {
-    throw new Error(currentSchemaRequiredMessage(version));
+    throw new Error(currentSchemaRequiredMessage());
   }
   const indexNames = userIndexNames(store);
   const missingIndexes = [...EXPECTED_INDEXES].filter((name) => !indexNames.has(name));
   const unexpectedIndexes = [...indexNames].filter((name) => !EXPECTED_INDEXES.has(name));
   if (missingIndexes.length > 0 || unexpectedIndexes.length > 0) {
-    throw new Error(currentSchemaRequiredMessage(version));
+    throw new Error(currentSchemaRequiredMessage());
   }
 }
 
@@ -381,7 +376,7 @@ export function initWorkbench(store: WorkbenchStore): WorkbenchMeta {
     };
   }
   if (existingTables.size > 0) {
-    throw new Error(currentSchemaRequiredMessage(0));
+    throw new Error(currentSchemaRequiredMessage());
   }
   withTransaction(store.db, () => {
     store.db.exec(`
@@ -403,7 +398,7 @@ create table workbench_schema (
 
 export function readWorkbenchMeta(store: WorkbenchStore): WorkbenchMeta {
   if (!workbenchSchemaTableExists(store)) {
-    throw new Error(currentSchemaRequiredMessage(0));
+    throw new Error(currentSchemaRequiredMessage());
   }
   const schema = readWorkbenchSchemaContract(store);
   assertCurrentWorkbenchContract(store, schema);
@@ -420,14 +415,14 @@ function readWorkbenchSchemaContract(store: WorkbenchStore): WorkbenchSchemaCont
     ),
   );
   if (!columns.has("version") || !columns.has("name") || !columns.has("initialized_at")) {
-    throw new Error(currentSchemaRequiredMessage(0));
+    throw new Error(currentSchemaRequiredMessage());
   }
   const schema = queryAll<WorkbenchSchemaContractRow>(
     store.db,
     "select version, name, initialized_at as initializedAt from workbench_schema",
   );
   if (schema.length !== 1) {
-    throw new Error(currentSchemaRequiredMessage(schema.at(-1)?.version ?? 0));
+    throw new Error(currentSchemaRequiredMessage());
   }
   return schema[0];
 }
