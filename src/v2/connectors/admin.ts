@@ -285,7 +285,8 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
         const attributes = (feature.attributes ?? {}) as Record<string, unknown>;
         const objectId = Number(attributes.OBJECTID ?? 0);
         const rawDatasetId = String(attributes.DATASET_ID ?? `objectid-${objectId}`);
-        const datasetName = String(attributes.DATASET_NAME ?? rawDatasetId);
+        const rawDatasetName = String(attributes.DATASET_NAME ?? rawDatasetId);
+        const datasetName = rawDatasetName.trim() || rawDatasetId;
         const datasetUrl = toPublicHttpUrl(
           enterpriseDatasetInventorySource.baseUrl,
           toOptionalString(attributes.DATASET_URL),
@@ -302,6 +303,7 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
             publicationStatus: toOptionalString(attributes.PUBLICATION_STATUS),
             agencyName: toOptionalString(attributes.AGENCY_NAME),
             datasetName,
+            rawDatasetName,
             datasetCategory: toOptionalString(attributes.DATASET_CATEGORY),
             datasetStatus: toOptionalString(attributes.DATASET_STATUS),
             datasetUrl,
