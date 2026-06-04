@@ -1374,8 +1374,8 @@ Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyo
   );
 });
 
-Deno.test("Open DC default fetch reaches beyond the old bounded sample", async () => {
-  const slugs = Array.from({ length: 12 }, (_, index) => `body-${index + 1}`);
+Deno.test("Open DC default fetch reaches every canonical detail page", async () => {
+  const slugs = Array.from({ length: 20 }, (_, index) => `body-${index + 1}`);
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -1400,7 +1400,7 @@ Deno.test("Open DC default fetch reaches beyond the old bounded sample", async (
   const result = await getConnector("open_dc.public_bodies").run(
     createConnectorContext({ fetcher }),
   );
-  assertEquals(result.endpointResults[1].artifacts.length, 12);
+  assertEquals(result.endpointResults[1].artifacts.length, 20);
 });
 
 Deno.test("Open DC default fetch keeps all canonical detail pages and prefers cleaner duplicate slugs", async () => {
@@ -4351,7 +4351,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   assertEquals(buildKnownEntityRef("DOEE"), "dc.department_of_energy_and_environment");
   assertEquals(
     buildKnownEntityRef("DC Taxicab Commission (DCTC)"),
-    "dc.district_of_columbia_taxicab_commission_dctc",
+    "dc.district_of_columbia_taxicab_commission",
   );
   assertEquals(
     buildKnownEntityRef("Department of Forensic Sciences/DFS"),

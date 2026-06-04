@@ -46,7 +46,6 @@ const priorityPublicBodySlugs = new Set([
   "juvenile-abscondence-review-committee",
   "tax-revision-commission",
 ]);
-const defaultOpenDcDetailLimit = 16;
 const openDcDetailFetchConcurrency = 6;
 
 export const openDcConnector: SourceConnector = {
@@ -75,7 +74,7 @@ export const openDcConnector: SourceConnector = {
     const indexHtml = await indexResponse.text();
     const links = selectOpenDcLinks(
       parseOpenDcIndex(indexHtml),
-      context.limit ?? defaultOpenDcDetailLimit,
+      context.limit,
     );
     const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
     const detailParsed = deriveOpenDcDetailParsed(detailRecords);
