@@ -10,6 +10,9 @@ import type {
   SourceListRow,
   SourceSummary,
 } from "./workbench/catalog.ts";
+import type { ImportConnectorOptions, ImportProgressEvent } from "./workbench/import.ts";
+
+export type { ImportProgressEvent };
 
 export interface SourceCommandOptions {
   json?: boolean;
@@ -22,7 +25,7 @@ export interface SourceCommandDeps {
   createConnectorContext(
     options: { limit?: number; onProgress?: (event: ConnectorProgressEvent) => void },
   ): ConnectorContext;
-  importConnectorResult(result: ConnectorResult): Promise<void>;
+  importConnectorResult(result: ConnectorResult, options?: ImportConnectorOptions): Promise<void>;
   readSourceSummary(sourceId: string): Promise<SourceSummary>;
   readPublicBodyComparison(): Promise<PublicBodyComparisonReport>;
   readSourceRows(): Promise<SourceListRow[]>;
@@ -42,8 +45,9 @@ export interface SourceFetchProgressEvent {
   title: string;
   index: number;
   total: number;
-  phase: "start" | "connector-progress" | "import" | "success" | "failed";
+  phase: "start" | "connector-progress" | "import" | "import-progress" | "success" | "failed";
   message?: string;
+  importProgress?: ImportProgressEvent;
   connectorDurationMs?: number;
   importDurationMs?: number;
   totalDurationMs?: number;
@@ -301,7 +305,26 @@ export async function fetchSources(
       });
       let importDurationMs = 0;
       try {
-        await deps.importConnectorResult(result);
+        await deps.importConnectorResult(
+          result,
+          onProgress
+            ? {
+              onProgress: (event) =>
+                onProgress({
+                  sourceId: connector.sourceId,
+                  title: connector.source.title,
+                  index: sourceIndex,
+                  total,
+                  phase: "import-progress",
+                  message: event.message,
+                  importProgress: event,
+                  connectorDurationMs,
+                  importDurationMs: performance.now() - importStartedAt,
+                  totalDurationMs: performance.now() - sourceStartedAt,
+                }),
+            }
+            : undefined,
+        );
         importDurationMs = performance.now() - importStartedAt;
       } catch (error) {
         onProgress?.({
@@ -459,11 +482,11 @@ function flagConsumesValue(value: string): boolean {
 export function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
   const prefix = `[${event.index}/${event.total}]`;
   if (event.phase === "start") {
-    console.log(`${prefix} Starting ${event.sourceId} - ${event.title}`);
+    console.error(`${prefix} Starting ${event.sourceId} - ${event.title}`);
     return;
   }
   if (event.phase === "success") {
-    console.log(
+    console.error(
       `${prefix} Finished ${event.sourceId} in ${
         formatDuration(event.totalDurationMs)
       } (connector ${formatDuration(event.connectorDurationMs)}, import ${
@@ -476,18 +499,25 @@ export function logSourceFetchProgress(event: SourceFetchProgressEvent): void {
     const elapsed = event.connectorDurationMs === undefined
       ? ""
       : ` (${formatDuration(event.connectorDurationMs)})`;
-    console.log(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}${elapsed}`);
+    console.error(`${prefix} ${event.sourceId}: ${event.message ?? "Working"}${elapsed}`);
     return;
   }
   if (event.phase === "import") {
-    console.log(
+    console.error(
       `${prefix} Importing ${event.sourceId} after connector ${
         formatDuration(event.connectorDurationMs)
       }`,
     );
     return;
   }
-  console.log(
+  if (event.phase === "import-progress") {
+    const elapsed = event.importDurationMs === undefined
+      ? ""
+      : ` (${formatDuration(event.importDurationMs)})`;
+    console.error(`${prefix} ${event.sourceId} import: ${event.message ?? "Working"}${elapsed}`);
+    return;
+  }
+  console.error(
     `${prefix} Fetch failed ${event.sourceId} after ${formatDuration(event.totalDurationMs)} (${
       event.importDurationMs && event.importDurationMs > 0
         ? `connector ${formatDuration(event.connectorDurationMs)}, import ${

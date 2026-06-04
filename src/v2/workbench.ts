@@ -26,7 +26,10 @@ import {
   replayResolutionDirectory as replayResolutionLog,
 } from "./workbench/resolution.ts";
 import { initWorkbench, readWorkbenchMeta } from "./workbench/schema.ts";
-import { importConnectorResult as importConnectorIntoWorkbench } from "./workbench/import.ts";
+import {
+  type ImportConnectorOptions,
+  importConnectorResult as importConnectorIntoWorkbench,
+} from "./workbench/import.ts";
 import { reconcileRelationshipCandidates } from "./workbench/reconciliation.ts";
 import { buildUnresolvedWorkGraph } from "./workbench/unresolved_work.ts";
 import {
@@ -98,8 +101,12 @@ export class Workbench implements WorkbenchStore {
     return readWorkbenchMeta(this);
   }
 
-  async importConnectorResult(result: ConnectorResult, dataDir: string): Promise<void> {
-    await importConnectorIntoWorkbench(this, result, dataDir);
+  async importConnectorResult(
+    result: ConnectorResult,
+    dataDir: string,
+    options: ImportConnectorOptions = {},
+  ): Promise<void> {
+    await importConnectorIntoWorkbench(this, result, dataDir, options);
   }
 
   upsertSource(

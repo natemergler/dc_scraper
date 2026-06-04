@@ -31,11 +31,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     connectors,
     getConnector,
     createConnectorContext,
-    importConnectorResult: async (result) =>
+    importConnectorResult: async (result, options) =>
       await withWorkbench(
         dbPath,
         async (workbench) => {
-          await workbench.importConnectorResult(result, dataDir);
+          await workbench.importConnectorResult(result, dataDir, options);
         },
         { refreshDerivedState: false },
       ),
@@ -108,11 +108,11 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
           getConnector,
           createConnectorContext: ({ limit, onProgress }) =>
             createConnectorContext({ limit, onProgress }),
-          importConnectorResult: async (result) =>
+          importConnectorResult: async (result, options) =>
             await withWorkbench(
               paths.dbPath,
               async (workbench) => {
-                await workbench.importConnectorResult(result, paths.dataDir);
+                await workbench.importConnectorResult(result, paths.dataDir, options);
               },
               { refreshDerivedState: false },
             ),
