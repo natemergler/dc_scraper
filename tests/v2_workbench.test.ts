@@ -4720,6 +4720,83 @@ Deno.test("batch accept-safe writes JSONL resolution events and leaves risky rev
   assert(blockedRelationships.count > 0);
 });
 
+Deno.test("entity candidates that conflict with accepted kind default to defer", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.conflicted_body', 'Conflicted Body', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.conflicted_entity_kind",
+      candidateId: "candidate.test.conflicted_entity_kind.board",
+      sourceItemKey: "conflicted-entity-row",
+      proposedEntityId: "dc.conflicted_body",
+      name: "Conflicted Body",
+      kind: "board",
+      observedName: "Conflicted Body",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+  const reviewItem = workbench.listReviewItems({ type: "entity_candidate" })[0];
+  assertEquals(reviewItem.defaultAction, "defer");
+  assertEquals(
+    reviewItem.reason,
+    "Resolve entity candidate that conflicts with an accepted entity",
+  );
+  assertStringIncludes(
+    JSON.stringify(reviewItem.details),
+    "Candidate kind board conflicts with accepted agency for the same entity id.",
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const candidate = reopened.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = 'candidate.test.conflicted_entity_kind.board'",
+  ).get() as { reviewStatus: string };
+  const canonical = reopened.db.prepare(
+    "select kind, merged_candidate_ids as mergedCandidateIds from canonical_entities where entity_id = 'dc.conflicted_body'",
+  ).get() as { kind: string; mergedCandidateIds: string };
+  reopened.close();
+  assertEquals(candidate.reviewStatus, "pending");
+  assertEquals(canonical.kind, "agency");
+  assertEquals(canonical.mergedCandidateIds, "[]");
+});
+
 Deno.test("safe seeded Council oversight endpoints auto-promote and auto-accept the unblocked relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
