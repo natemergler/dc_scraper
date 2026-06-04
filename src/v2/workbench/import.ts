@@ -308,6 +308,7 @@ function importParsedOutput(
   const entityCandidateEvidenceRows: unknown[][] = [];
   const relationshipCandidateRows: unknown[][] = [];
   const relationshipCandidateEvidenceRows: unknown[][] = [];
+  const relationshipEvidenceIdsByCandidate = new Map<string, string[]>();
   for (const field of parsed.fields ?? []) {
     const artifactRecord = artifactAt(artifactRecords, field.artifactIndex);
     run(
@@ -485,6 +486,7 @@ function importParsedOutput(
   }
   for (const candidate of parsed.relationshipCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
+    const candidateEvidenceIds: string[] = [];
     relationshipCandidateRows.push([
       candidate.relationshipCandidateId,
       sourceItem.sourceItemId,
@@ -496,12 +498,14 @@ function importParsedOutput(
       existingRelationshipCandidateStatuses.get(candidate.relationshipCandidateId) ?? "pending",
     ]);
     for (const [index, evidence] of candidate.evidence.entries()) {
+      const evidenceId = `${candidate.relationshipCandidateId}:${index}`;
+      candidateEvidenceIds.push(evidenceId);
       const artifactRecord = artifactAt(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
       );
       relationshipCandidateEvidenceRows.push([
-        `${candidate.relationshipCandidateId}:${index}`,
+        evidenceId,
         candidate.relationshipCandidateId,
         sourceId,
         sourceItem.sourceItemId,
@@ -510,6 +514,7 @@ function importParsedOutput(
         artifactRecord.artifactPath,
       ]);
     }
+    relationshipEvidenceIdsByCandidate.set(candidate.relationshipCandidateId, candidateEvidenceIds);
   }
   bulkInsertRows(
     store.db,
@@ -537,6 +542,7 @@ function importParsedOutput(
             review_status = excluded.review_status`,
     },
   );
+  deleteStaleRelationshipCandidateEvidence(store, relationshipEvidenceIdsByCandidate);
   bulkInsertRows(
     store.db,
     "relationship_candidate_evidence",
@@ -824,6 +830,30 @@ function reviewStatusesById(
     }
   }
   return statuses;
+}
+
+function deleteStaleRelationshipCandidateEvidence(
+  store: WorkbenchStore,
+  evidenceIdsByCandidate: Map<string, string[]>,
+): void {
+  const candidateIds = [...evidenceIdsByCandidate.keys()];
+  for (const candidateIdChunk of chunks(candidateIds, 100)) {
+    if (candidateIdChunk.length === 0) continue;
+    const candidatePlaceholders = candidateIdChunk.map(() => "?").join(", ");
+    const retainedEvidenceIds = candidateIdChunk.flatMap((candidateId) =>
+      evidenceIdsByCandidate.get(candidateId) ?? []
+    );
+    const retainedClause = retainedEvidenceIds.length === 0
+      ? ""
+      : `and evidence_id not in (${retainedEvidenceIds.map(() => "?").join(", ")})`;
+    run(
+      store.db,
+      `delete from relationship_candidate_evidence
+       where relationship_candidate_id in (${candidatePlaceholders})
+       ${retainedClause}`,
+      [...candidateIdChunk, ...retainedEvidenceIds],
+    );
+  }
 }
 
 function reviewItemWithWorkbenchContext(

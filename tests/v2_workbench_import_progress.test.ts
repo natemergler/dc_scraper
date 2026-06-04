@@ -103,6 +103,28 @@ Deno.test("workbench import preserves evidence across bulk insert chunks", async
   assertEquals(relationshipLast?.observedValue, "relationship-value-1199");
 });
 
+Deno.test("workbench relationship evidence refetch removes stale rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+
+  await workbench.importConnectorResult(bulkEvidenceFixtureResult(3), join(dir, "artifacts"));
+  await workbench.importConnectorResult(
+    bulkEvidenceFixtureResult(1, { relationshipValuePrefix: "refetched-relationship-value" }),
+    join(dir, "artifacts"),
+  );
+
+  const relationshipEvidence = workbench.db.prepare(
+    "select evidence_id as evidenceId, observed_value as observedValue from relationship_candidate_evidence where relationship_candidate_id = 'relationship.test.bulk_evidence' order by evidence_id",
+  ).all() as Array<{ evidenceId: string; observedValue: string }>;
+  workbench.close();
+
+  assertEquals(relationshipEvidence, [{
+    evidenceId: "relationship.test.bulk_evidence:0",
+    observedValue: "refetched-relationship-value-0",
+  }]);
+});
+
 Deno.test("workbench import bulk inserts parsed source items and candidates", async () => {
   const dir = await Deno.makeTempDir();
   const workbench = new Workbench(join(dir, "workbench.sqlite"));
@@ -454,7 +476,11 @@ function bulkParsedRowsFixtureResult(
   };
 }
 
-function bulkEvidenceFixtureResult(evidenceCount: number): ConnectorResult {
+function bulkEvidenceFixtureResult(
+  evidenceCount: number,
+  options: { relationshipValuePrefix?: string } = {},
+): ConnectorResult {
+  const relationshipValuePrefix = options.relationshipValuePrefix ?? "relationship-value";
   return {
     source: {
       sourceId: "test.import.bulk_evidence",
@@ -508,7 +534,7 @@ function bulkEvidenceFixtureResult(evidenceCount: number): ConnectorResult {
           needsReview: false,
           evidence: Array.from({ length: evidenceCount }, (_, index) => ({
             fieldPath: `relationship-field-${index}`,
-            observedValue: `relationship-value-${index}`,
+            observedValue: `${relationshipValuePrefix}-${index}`,
           })),
         }],
       },
