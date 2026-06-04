@@ -317,7 +317,7 @@ const knownEntityRefs = new Map<string, string>([
   ],
   [
     "mayor's committee on child abuse and neglect",
-    "dc.mayor_s_advisory_committee_on_child_abuse_and_neglect_maccan",
+    "dc.mayor_s_advisory_committee_on_child_abuse_and_neglect",
   ],
   [
     "office of neighbor safety and engagement (onse)",
