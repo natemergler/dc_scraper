@@ -46,8 +46,8 @@ The release contains exactly these public files:
     source.
   - `holds`, `represents`, `member_of`, `chairs`: observation or role entity -> seat, district,
     body, or committee role.
-- Pending, deferred, blocked, and stale work must stay visible in `status`, `audit`, and
-  `release verify` before handoff instead of being silently treated as complete.
+- Pending, deferred, blocked, and stale work must stay visible in status, audit, manifest, or
+  inspect surfaces before handoff instead of being silently treated as complete.
 - DC city/county distinctions, legal coverage, personnel coverage, and dataset coverage are not
   inferred beyond bounded source-backed evidence.
 
@@ -75,11 +75,11 @@ deno task dc -- release verify
 deno task dc -- release inspect
 ```
 
-`release verify` checks unresolved release work, source-artifact provenance, and repeatable
-row-family provenance in the workbench before a public handoff. It checks that accepted entity and
-relationship rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to
-source-backed workbench decisions or references; the compact release rows remain short facts, not a
-copy of manual review items.
+`release verify` checks source-artifact provenance, release blockers, and repeatable row-family
+provenance in the workbench before a public handoff. It checks that accepted entity and relationship
+rows, dataset rows, legal-ref rows, and legal-ref attachment rows still trace to source-backed
+workbench decisions or references; visible review decisions stay in status, audit, manifest, and
+inspect surfaces without automatically invalidating source-backed release rows.
 
 `release inspect` checks the built release directory against `manifest.json`: expected file count,
 actual file count, file hashes, missing files, and unexpected entries. Package-integrity problems

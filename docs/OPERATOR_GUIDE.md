@@ -99,7 +99,7 @@ deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out
 deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 ```
 
-`release verify` checks workbench readiness and source-backed provenance before build.
+`release verify` checks source-backed provenance and release blockers before build.
 `release inspect` checks the built package on disk against the manifest and reports package
 integrity plus release readiness.
 
@@ -107,8 +107,8 @@ integrity plus release readiness.
 
 - `dc status` answers "what is left?"
 - `dc audit` answers "what is blocked and why?"
-- `dc release verify` answers "is this workbench ready to hand off, and do accepted release rows
-  still trace to source-backed decisions?"
+- `dc release verify` answers "do accepted release rows still trace to source-backed decisions, and
+  are there provenance or blocker problems?"
 - `dc release inspect` answers "does the built release package still match its manifest?" Use
   `dc release inspect --json` when you need structured readiness drilldowns from the manifest.
 

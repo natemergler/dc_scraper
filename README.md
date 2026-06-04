@@ -122,8 +122,9 @@ of the full workbench database.
 - `deno task dc -- status` shows current unresolved work and the next suggested command.
 - `deno task dc -- audit` shows blocked reconciliation and review reasons when status alone is not
   enough.
-- `deno task dc -- release verify` fails fast when release work is still unresolved, source artifact
-  provenance is not clean, or release rows no longer trace to source-backed decisions or references.
+- `deno task dc -- release verify` fails fast when source artifact provenance is not clean, release
+  blockers remain, or release rows no longer trace to source-backed decisions or references. Visible
+  review decisions remain visible without automatically invalidating source-backed release rows.
 - `deno task dc -- release inspect` checks the built package on disk against the manifest and
   reports package integrity plus release readiness.
 
