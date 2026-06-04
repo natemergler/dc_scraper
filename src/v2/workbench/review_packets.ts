@@ -22,6 +22,10 @@ export interface ReviewPacketRecord {
   reviewItemIds: string[];
 }
 
+export type ReviewPacketJsonRecord = Omit<ReviewPacketRecord, "reviewItemIds"> & {
+  reviewItemIds?: string[];
+};
+
 export interface ReviewDebtSummary {
   byType: Array<{
     itemType: ReviewItemRecord["itemType"];
@@ -116,6 +120,15 @@ export function reviewPacketsFromItems(
     left.reason.localeCompare(right.reason)
   );
   return options.limit === undefined ? sortedPackets : sortedPackets.slice(0, options.limit);
+}
+
+export function reviewPacketJsonRecord(
+  packet: ReviewPacketRecord,
+  options: { includeReviewItemIds?: boolean } = {},
+): ReviewPacketJsonRecord {
+  if (options.includeReviewItemIds) return packet;
+  const { reviewItemIds: _reviewItemIds, ...compactPacket } = packet;
+  return compactPacket;
 }
 
 export function reviewPacketDebtSummary(
