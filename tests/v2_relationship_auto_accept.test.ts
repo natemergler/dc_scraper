@@ -316,26 +316,15 @@ Deno.test("Quickbase trusted governing-agency seat relationships auto-accept whe
   assertEquals(reviewItems.length, 0);
 });
 
-Deno.test("Quickbase accepted-endpoint seat structure and authority relationships auto-accept during import", async () => {
+Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts unblocked relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  for (
-    const [entityId, name, kind] of [
-      [
-        "dc.alcoholic_beverage_and_cannabis_administration",
-        "Alcoholic Beverages and Cannabis Administration",
-        "agency",
-      ],
-      ["dc.mayor", "Mayor", "office"],
-    ] as const
-  ) {
-    workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name, kind);
-  }
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.alcoholic_beverage_and_cannabis_administration', 'Alcoholic Beverages and Cannabis Administration', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
 
   const appointmentsCsvWithAlias = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
@@ -367,6 +356,21 @@ Deno.test("Quickbase accepted-endpoint seat structure and authority relationship
   const acceptedRelationships = workbench.db.prepare(
     "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
   ).all() as Array<{ relationshipId: string }>;
+  const mayor = workbench.db.prepare(
+    "select entity_id as entityId, name, kind, review_status as reviewStatus from canonical_entities where entity_id = 'dc.mayor'",
+  ).get() as { entityId: string; name: string; kind: string; reviewStatus: string } | undefined;
+  const seededMayor = workbench.db.prepare(
+    `select entity_candidates.name,
+            entity_candidates.kind,
+            entity_candidates.review_status as reviewStatus,
+            entity_candidate_evidence.observed_value as observedValue
+     from entity_candidates
+     join entity_candidate_evidence
+       on entity_candidate_evidence.candidate_id = entity_candidates.candidate_id
+     where entity_candidates.proposed_entity_id = 'dc.mayor'`,
+  ).get() as
+    | { name: string; kind: string; reviewStatus: string; observedValue: string }
+    | undefined;
   const remainingReviewItems = workbench.listReviewItems({
     mode: "relationships",
     subjectPrefix: "relationship.mota.quickbase",
@@ -380,6 +384,18 @@ Deno.test("Quickbase accepted-endpoint seat structure and authority relationship
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
     "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:has_status:status.filled",
   ]);
+  assertEquals(mayor, {
+    entityId: "dc.mayor",
+    name: "Mayor",
+    kind: "office",
+    reviewStatus: "accepted",
+  });
+  assertEquals(seededMayor, {
+    name: "Mayor",
+    kind: "office",
+    reviewStatus: "accepted",
+    observedValue: "Mayoral Appointee",
+  });
   assertEquals(remainingReviewItems.length, 0);
 });
 

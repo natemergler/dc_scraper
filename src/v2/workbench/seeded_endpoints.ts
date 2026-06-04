@@ -87,6 +87,23 @@ function seededRelationshipEndpointCandidatesForRelationship(
       ),
     );
   }
+  const seedableToEndpoint = seedableToRelationshipEndpoint(
+    sourceId,
+    relationshipCandidate,
+    observedName,
+  );
+  if (seedableToEndpoint) {
+    candidates.push(
+      buildSeededRelationshipEndpointCandidate(
+        sourceId,
+        relationshipCandidate,
+        seedableToEndpoint.name,
+        relationshipCandidate.toEntityRef,
+        "to-endpoint",
+        seedableToEndpoint.kind,
+      ),
+    );
+  }
   const seedableFromName = seedableFromRelationshipEndpointName(
     sourceId,
     relationshipCandidate,
@@ -112,6 +129,7 @@ function buildSeededRelationshipEndpointCandidate(
   observedName: string,
   proposedEntityId: string,
   suffix: string,
+  kind = detectEntityKind(undefined, observedName),
 ): EntityCandidateInput {
   return {
     candidateId: buildCandidateId(
@@ -121,12 +139,25 @@ function buildSeededRelationshipEndpointCandidate(
     sourceItemKey: relationshipCandidate.sourceItemKey,
     proposedEntityId,
     name: observedName,
-    kind: detectEntityKind(undefined, observedName),
-    evidence: relationshipCandidate.evidence.map((evidence) => ({
-      ...evidence,
-      observedValue: observedName,
-    })),
+    kind,
+    evidence: relationshipCandidate.evidence.map((evidence) => ({ ...evidence })),
   };
+}
+
+function seedableToRelationshipEndpoint(
+  sourceId: string,
+  relationshipCandidate: RelationshipCandidateInput,
+  observedName: string,
+): { name: string; kind?: string } | undefined {
+  if (
+    sourceId === "mota.quickbase" &&
+    relationshipCandidate.relationshipType === "appointed_by" &&
+    observedName.toLowerCase() === "mayoral appointee" &&
+    relationshipCandidate.toEntityRef === buildKnownEntityRef("Mayor")
+  ) {
+    return { name: "Mayor", kind: "office" };
+  }
+  return undefined;
 }
 
 function seedableFromRelationshipEndpointName(
@@ -190,7 +221,8 @@ export function isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(
 ): boolean {
   return isSafeCouncilSeededEndpointCandidate(candidateId) ||
     isSafeCouncilMemberContainerEndpointCandidate(candidateId) ||
-    isSafeDcgisGoverningEndpointCandidate(candidateId);
+    isSafeDcgisGoverningEndpointCandidate(candidateId) ||
+    isSafeQuickbaseMayoralEndpointCandidate(candidateId);
 }
 
 function isSafeCouncilSeededEndpointCandidate(candidateId: string): boolean {
@@ -205,6 +237,12 @@ function isSafeDcgisGoverningEndpointCandidate(candidateId: string): boolean {
 
 function isSafeCouncilMemberContainerEndpointCandidate(candidateId: string): boolean {
   return candidateId.startsWith("candidate.council.members.relationship_") &&
+    candidateId.endsWith("_to_endpoint");
+}
+
+function isSafeQuickbaseMayoralEndpointCandidate(candidateId: string): boolean {
+  return candidateId.startsWith("candidate.mota.quickbase.relationship_") &&
+    candidateId.includes("_appointed_by_mayor") &&
     candidateId.endsWith("_to_endpoint");
 }
 
