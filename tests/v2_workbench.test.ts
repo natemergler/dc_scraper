@@ -7850,12 +7850,13 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
               return JSON.stringify(governmentOperationsCatalogFixture);
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
               return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
-              return JSON.stringify({ count: 3 });
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageOneFixture);
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=2&f=json":
               return JSON.stringify(enterpriseDatasetInventoryRowsPageTwoFixture);
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=4&resultRecordCount=2&f=json":
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=6&resultRecordCount=2&f=json":
+              return JSON.stringify({ features: [] });
             default:
               throw new Error(`Unexpected url ${url}`);
           }
@@ -7867,16 +7868,27 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
     }),
   );
   assertEquals(result.endpointResults.length, 3);
-  assertEquals(progressMessages, [
-    "Fetching Government Operations catalog metadata",
-    "Fetching Enterprise Dataset Inventory table metadata",
-    "Fetching Enterprise Dataset Inventory row count",
-    "Fetching Enterprise Dataset Inventory rows 1-3 in 2 page(s) of up to 2",
-    "Fetching Enterprise Dataset Inventory rows starting at 1 (page 1, up to 2)",
-    "Fetching Enterprise Dataset Inventory rows starting at 3 (page 2, up to 1)",
-    "Fetched Enterprise Dataset Inventory page 1 with 2 row(s)",
-    "Fetched Enterprise Dataset Inventory page 2 with 1 row(s)",
-  ]);
+  assertEquals(progressMessages.includes("Fetching Enterprise Dataset Inventory row count"), false);
+  assert(
+    progressMessages.includes(
+      "Fetching Enterprise Dataset Inventory row page batch starting at 1 (4 page(s) of up to 2)",
+    ),
+  );
+  assert(
+    progressMessages.includes(
+      "Fetching Enterprise Dataset Inventory rows starting at 1 (page 1, up to 2)",
+    ),
+  );
+  assert(
+    progressMessages.includes(
+      "Fetching Enterprise Dataset Inventory rows starting at 3 (page 2, up to 2)",
+    ),
+  );
+  assert(
+    progressMessages.includes(
+      "Fetched 3 Enterprise Dataset Inventory row(s) across 2 page artifact(s)",
+    ),
+  );
   assert(result.endpointResults.every((endpoint) => endpoint.status === "success"));
   const catalogParsed = result.endpointResults[0].parsed;
   const metadataParsed = result.endpointResults[1].parsed;
@@ -7904,7 +7916,7 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
     ),
   );
   assertEquals(metadataParsed.fields?.length, 9);
-  assertEquals(result.endpointResults[1].artifacts.length, 2);
+  assertEquals(result.endpointResults[1].artifacts.length, 1);
   assertEquals(result.endpointResults[2].artifacts.length, 2);
   assertEquals(rowsParsed.items?.length, 3);
   assertEquals(rowsParsed.datasets?.length, 3);
@@ -7925,7 +7937,7 @@ Deno.test("Enterprise Dataset Inventory connector captures rows and classifies G
   );
 });
 
-Deno.test("Enterprise Dataset Inventory connector fetches counted row pages concurrently", async () => {
+Deno.test("Enterprise Dataset Inventory connector fetches row pages concurrently without a count request", async () => {
   const allFeatures = [
     ...enterpriseDatasetInventoryRowsPageOneFixture.features,
     ...enterpriseDatasetInventoryRowsPageTwoFixture.features,
@@ -7945,14 +7957,14 @@ Deno.test("Enterprise Dataset Inventory connector fetches counted row pages conc
                 ...enterpriseDatasetInventoryMetadataFixture,
                 maxRecordCount: 1,
               });
-            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
-              return JSON.stringify({ count: allFeatures.length });
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1&f=json":
               return delayedRowPage({ features: [allFeatures[0]], exceededTransferLimit: true });
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=1&resultRecordCount=1&f=json":
               return delayedRowPage({ features: [allFeatures[1]], exceededTransferLimit: true });
             case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=2&resultRecordCount=1&f=json":
               return delayedRowPage({ features: [allFeatures[2]] });
+            case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=3&resultRecordCount=1&f=json":
+              return delayedRowPage({ features: [] });
             default:
               throw new Error(`Unexpected url ${url}`);
           }
@@ -7964,7 +7976,7 @@ Deno.test("Enterprise Dataset Inventory connector fetches counted row pages conc
     }),
   );
 
-  assertEquals(maxActiveRowRequests, 3);
+  assertEquals(maxActiveRowRequests, 4);
   assertEquals(result.endpointResults[2].parsed?.datasets?.length, 3);
 
   async function delayedRowPage(payload: Record<string, unknown>): Promise<string> {
@@ -7974,36 +7986,6 @@ Deno.test("Enterprise Dataset Inventory connector fetches counted row pages conc
     activeRowRequests -= 1;
     return JSON.stringify(payload);
   }
-});
-
-Deno.test("Enterprise Dataset Inventory connector fails loudly on invalid row count payloads", async () => {
-  await assertRejects(
-    () =>
-      getConnector("admin.enterprise_dataset_inventory").run(
-        createConnectorContext({
-          fetcher: async (url: string) => ({
-            status: 200,
-            text: async () => {
-              switch (url) {
-                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer?f=json":
-                  return JSON.stringify(governmentOperationsCatalogFixture);
-                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
-                  return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
-                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
-                  return JSON.stringify({ error: { message: "Count failed" } });
-                default:
-                  throw new Error(`Unexpected url ${url}`);
-              }
-            },
-            json: async <T>() => {
-              throw new Error(`No json fixture for ${url}`) as T;
-            },
-          }),
-        }),
-      ),
-    Error,
-    "admin.enterprise_dataset_inventory row count failed: Count failed",
-  );
 });
 
 Deno.test("Enterprise Dataset Inventory connector fails loudly on row page error payloads", async () => {
@@ -8019,9 +8001,7 @@ Deno.test("Enterprise Dataset Inventory connector fails loudly on row page error
                   return JSON.stringify(governmentOperationsCatalogFixture);
                 case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5?f=json":
                   return JSON.stringify(enterpriseDatasetInventoryMetadataFixture);
-                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&returnCountOnly=true&f=json":
-                  return JSON.stringify({ count: 1 });
-                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1&f=json":
+                case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/5/query?where=1%3D1&outFields=OBJECTID%2CDATASET_ID%2CPUBLICATION_STATUS%2CAGENCY_NAME%2CDATASET_NAME%2CDATASET_CATEGORY%2CDATASET_STATUS%2CDATASET_URL%2CSYSTEM_UPDATED_ON&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=2&f=json":
                   return JSON.stringify({
                     error: {
                       message: "Failed to execute query.",
