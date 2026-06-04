@@ -4,7 +4,7 @@ import { Database } from "@db/sqlite";
 import { readGitCommit } from "./git.ts";
 import { Workbench } from "./workbench.ts";
 import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
-import { buildWorkbenchStatus } from "./status.ts";
+import { buildReleaseSummary, type ReleaseSummary } from "./release_summary.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 import { containsLocalPath } from "./url_safety.ts";
 import { withTransaction } from "./workbench/db.ts";
@@ -74,8 +74,7 @@ export async function buildV2Release(
       legalRefs: legalRefs.length,
     },
   });
-  const summary = buildReleaseSummary(
-    workbench,
+  const summary = buildReleaseSummary(workbench, {
     entities,
     relationships,
     sources,
@@ -83,7 +82,7 @@ export async function buildV2Release(
     legalRefs,
     entityLegalRefs,
     relationshipLegalRefs,
-  );
+  });
   assertNoContactInfo("release_summary", JSON.stringify(summary));
   const files = new Map<string, string>();
   files.set("entities.json", JSON.stringify(entities, null, 2));
@@ -540,7 +539,7 @@ async function buildReleaseSqlite(
   }
 }
 
-function buildReadme(summary: ReturnType<typeof buildReleaseSummary>): string {
+function buildReadme(summary: ReleaseSummary): string {
   const legalByType =
     summary.legal_refs_by_type.map((item) => `${item.ref_type}=${item.count}`).join(", ") || "none";
   return `# DCGov Release
@@ -584,87 +583,6 @@ DC city/county distinctions are not inferred beyond source-backed civic structur
 - entity legal refs: total=${summary.entity_legal_refs_count}
 - relationship legal refs: total=${summary.relationship_legal_refs_count}
 `;
-}
-
-function buildReleaseSummary(
-  workbench: Workbench,
-  entities: EntityRow[],
-  relationships: RelationshipRow[],
-  sources: SourceRow[],
-  datasets: DatasetRow[],
-  legalRefs: LegalRefRow[],
-  entityLegalRefs: EntityLegalRefRow[],
-  relationshipLegalRefs: RelationshipLegalRefRow[],
-) {
-  const status = buildWorkbenchStatus(workbench);
-  return {
-    entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
-    relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
-    review_debt_by_type: status.review.byType.map((row) => ({
-      item_type: row.itemType,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
-    review_debt_by_source: status.review.bySource.map((row) => ({
-      source_id: row.sourceId,
-      open_count: row.openCount,
-      deferred_count: row.deferredCount,
-    })),
-    open_review_item_count: status.review.open,
-    open_human_decision_review_item_count: status.review.humanDecisionOpen,
-    browse_only_open_review_item_count: status.review.browseOnlyOpen,
-    deferred_review_item_count: status.review.deferred,
-    stale_review_item_count: status.staleReview.count,
-    stale_review_by_prior_decision_state: status.staleReview.byPriorDecisionState.map((row) => ({
-      prior_decision_state: row.priorDecisionState,
-      count: row.count,
-    })),
-    blocked_reconciliation_count: status.reconciliation.blocked,
-    blocked_reconciliation_by_source: status.reconciliation.blockedBySource.map((row) => ({
-      source_id: row.sourceId,
-      count: row.count,
-    })),
-    placeholder_entity_count: status.placeholders.count,
-    source_count: sources.length,
-    failed_source_count: status.sources.failed,
-    dataset_count: datasets.length,
-    legal_refs_by_type: countByRefType(legalRefs, (row) => row.ref_type),
-    legal_refs_by_review_status: countByReviewStatus(legalRefs, (row) => row.review_status),
-    entity_legal_refs_count: entityLegalRefs.length,
-    relationship_legal_refs_count: relationshipLegalRefs.length,
-  };
-}
-
-function countByReviewStatus<T>(
-  rows: T[],
-  value: (row: T) => string,
-): Array<{ review_status: string; count: number }> {
-  const grouped = new Map<string, number>();
-  for (const row of rows) {
-    const key = value(row);
-    grouped.set(key, (grouped.get(key) ?? 0) + 1);
-  }
-  return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map((
-    [review_status, count],
-  ) => ({
-    review_status,
-    count,
-  }));
-}
-
-function countByRefType<T>(
-  rows: T[],
-  value: (row: T) => string,
-): Array<{ ref_type: string; count: number }> {
-  const grouped = new Map<string, number>();
-  for (const row of rows) {
-    const key = value(row);
-    grouped.set(key, (grouped.get(key) ?? 0) + 1);
-  }
-  return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([ref_type, count]) => ({
-    ref_type,
-    count,
-  }));
 }
 
 function totalReviewStatusCount(rows: Array<{ count: number }>): number {

@@ -1,5 +1,9 @@
 import { sha256BytesHex } from "./domain.ts";
 import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
+import {
+  releaseReadinessInputFromSummary,
+  type ReleaseSummaryProjection,
+} from "./release_summary.ts";
 
 export interface ReleaseManifest {
   manifest_version?: number;
@@ -9,34 +13,7 @@ export interface ReleaseManifest {
   source_profile?: string;
   generated_at?: string;
   files?: Array<{ name: string; sha256?: string }>;
-  release_summary?: {
-    entities_by_review_status?: Array<{ review_status: string; count: number }>;
-    relationships_by_review_status?: Array<{ review_status: string; count: number }>;
-    legal_refs_by_type?: Array<{ ref_type: string; count: number }>;
-    legal_refs_by_review_status?: Array<{ review_status: string; count: number }>;
-    open_review_item_count?: number;
-    open_human_decision_review_item_count?: number;
-    browse_only_open_review_item_count?: number;
-    deferred_review_item_count?: number;
-    stale_review_item_count?: number;
-    stale_review_by_prior_decision_state?: Array<{ prior_decision_state: string; count: number }>;
-    review_debt_by_type?: Array<{
-      item_type: string;
-      open_count: number;
-      deferred_count: number;
-    }>;
-    review_debt_by_source?: Array<{
-      source_id: string;
-      open_count: number;
-      deferred_count: number;
-    }>;
-    blocked_reconciliation_count?: number;
-    blocked_reconciliation_by_source?: Array<{ source_id: string; count: number }>;
-    placeholder_entity_count?: number;
-    source_count?: number;
-    failed_source_count?: number;
-    dataset_count?: number;
-  };
+  release_summary?: ReleaseSummaryProjection;
 }
 
 export interface ReleasePackageProblem {
@@ -60,7 +37,7 @@ export interface ReleaseInspection {
   packageIntegrity: "ok" | "problem" | "unknown";
   packageProblems: ReleasePackageProblem[];
   readiness: ReleaseReadiness;
-  releaseSummary: NonNullable<ReleaseManifest["release_summary"]>;
+  releaseSummary: ReleaseSummaryProjection;
 }
 
 export async function renderReleaseInspection(
@@ -111,16 +88,11 @@ export async function buildReleaseInspection(
     expectedFileCount: packageInspection.expectedFileCount,
     packageIntegrity: packageInspection.packageIntegrity,
     packageProblems: packageInspection.packageProblems,
-    readiness: classifyReleaseReadiness({
-      sourceCount: releaseSummary.source_count ?? 0,
-      failedSourceCount: releaseSummary.failed_source_count,
-      openReviewItemCount: releaseSummary.open_review_item_count,
-      deferredReviewItemCount: releaseSummary.deferred_review_item_count,
-      staleReviewItemCount: releaseSummary.stale_review_item_count,
-      blockedReconciliationCount: releaseSummary.blocked_reconciliation_count,
-      placeholderEntityCount: releaseSummary.placeholder_entity_count,
-      blockingProblemCount: packageInspection.packageIntegrity === "ok" ? 0 : 1,
-    }),
+    readiness: classifyReleaseReadiness(
+      releaseReadinessInputFromSummary(releaseSummary, {
+        blockingProblemCount: packageInspection.packageIntegrity === "ok" ? 0 : 1,
+      }),
+    ),
     releaseSummary,
   };
 }
