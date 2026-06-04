@@ -1418,7 +1418,67 @@ Deno.test("interactive review browse commands preserve source filters for plain 
   );
 });
 
-Deno.test("interactive relationship review quit reports filtered resume command", async () => {
+Deno.test("interactive review points to audit when only blocked reconciliation remains", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.blocked_only",
+      relationshipCandidateId: "relationship.test.review_cli.blocked_only.governed_by",
+      sourceItemKey: "review-cli-blocked-only-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.missing_agency",
+      relationshipType: "governed_by",
+      rawValue: "Missing Agency",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--source",
+      "test.review_cli.blocked_only",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(
+    reviewText,
+    "No direct review decisions remain. 1 blocked reconciliation item remains.",
+  );
+  assertStringIncludes(
+    reviewText,
+    "First blocked: Missing Agency [governed_by from test.review_cli.blocked_only]",
+  );
+  assertStringIncludes(reviewText, "Inspect blocked dependencies with deno task dc -- audit.");
+  assertEquals(reviewText.includes("No review items remain."), false);
+});
+
+Deno.test("interactive relationship review reports filtered blocked reconciliation", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1467,7 +1527,13 @@ Deno.test("interactive relationship review quit reports filtered resume command"
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "No review items remain.");
+  assertStringIncludes(
+    reviewText,
+    "No direct review decisions remain. 2 blocked reconciliation items remain.",
+  );
+  assertStringIncludes(reviewText, "First blocked:");
+  assertStringIncludes(reviewText, "[governed_by from open_dc.public_bodies]");
+  assertStringIncludes(reviewText, "Inspect blocked dependencies with deno task dc -- audit.");
 });
 
 Deno.test("interactive review auto-accepts accepted-endpoint additive relationships before rendering", async () => {

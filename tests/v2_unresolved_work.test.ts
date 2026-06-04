@@ -2,7 +2,10 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import { summarizeUnresolvedReconciliation } from "../src/v2/workbench/unresolved_work.ts";
+import {
+  projectOpenHumanDecisionWork,
+  summarizeUnresolvedReconciliation,
+} from "../src/v2/workbench/unresolved_work.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticCustomRelationshipSourceResult,
@@ -139,6 +142,70 @@ Deno.test("unresolved work graph links actionable prerequisites to blocked relat
     ),
   );
   workbench.close();
+});
+
+Deno.test("open human decision projection excludes browse-only source-backed additions", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.projection.relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.projection.pending_dependency",
+      sourceItemKey: "projection-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.projection_pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Projection Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.projection.entities",
+      candidateId: "candidate.test.unresolved_work.projection.pending_target",
+      sourceItemKey: "projection-human-decision-row",
+      proposedEntityId: "dc.projection_pending_target",
+      name: "Projection Pending Target",
+      kind: "agency",
+      observedName: "Projection Pending Target",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.projection.entities",
+      candidateId: "candidate.test.unresolved_work.projection.browse_only",
+      sourceItemKey: "projection-browse-only-row",
+      proposedEntityId: "dc.projection_browse_only",
+      name: "Projection Browse Only",
+      kind: "agency",
+      observedName: "Projection Browse Only",
+    }),
+    dataDir,
+  );
+
+  const projection = projectOpenHumanDecisionWork(workbench);
+  workbench.close();
+
+  assertEquals(
+    projection.items.map((item) => item.decision.subjectId),
+    ["candidate.test.unresolved_work.projection.pending_target"],
+  );
+  assertEquals(
+    projection.items[0].reviewItem.subjectId,
+    "candidate.test.unresolved_work.projection.pending_target",
+  );
+  assertEquals(projection.summary.openReviewItemCount, 3);
+  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 1);
+  assertEquals(projection.summary.browseOnlyOpenReviewItemCount, 2);
+  assertEquals(projection.summary.filteredHumanDecisionOpenReviewItemCount, 1);
+  assertEquals(projection.summary.filteredBrowseOnlyOpenReviewItemCount, 2);
 });
 
 Deno.test("unresolved reconciliation summary groups repeated blocked families by source relationship and blocker", async () => {
@@ -477,6 +544,102 @@ Deno.test("unresolved work graph reports actionable downstream impact", async ()
     false,
   );
   workbench.close();
+});
+
+Deno.test("open human decision projection preserves graph impact order and source filters", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.projection_impact.relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.projection_impact.high.first",
+      sourceItemKey: "projection-impact-high-first-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.projection_high_impact_target",
+      relationshipType: "governed_by",
+      rawValue: "Projection High Impact Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.projection_impact.relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.projection_impact.high.second",
+      sourceItemKey: "projection-impact-high-second-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.projection_high_impact_target",
+      relationshipType: "overseen_by",
+      rawValue: "Projection High Impact Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.unresolved_work.projection_impact.relationships",
+      relationshipCandidateId: "relationship.test.unresolved_work.projection_impact.low",
+      sourceItemKey: "projection-impact-low-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.projection_low_impact_target",
+      relationshipType: "governed_by",
+      rawValue: "Projection Low Impact Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.projection_impact.high_entities",
+      candidateId: "candidate.test.unresolved_work.projection_impact.high",
+      sourceItemKey: "projection-impact-high-entity-row",
+      proposedEntityId: "dc.projection_high_impact_target",
+      name: "Projection High Impact Target",
+      kind: "agency",
+      observedName: "Projection High Impact Target",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.unresolved_work.projection_impact.low_entities",
+      candidateId: "candidate.test.unresolved_work.projection_impact.low",
+      sourceItemKey: "projection-impact-low-entity-row",
+      proposedEntityId: "dc.projection_low_impact_target",
+      name: "Projection Low Impact Target",
+      kind: "agency",
+      observedName: "Projection Low Impact Target",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+
+  const projection = projectOpenHumanDecisionWork(workbench);
+  const filteredProjection = projectOpenHumanDecisionWork(workbench, {
+    sourceId: "test.unresolved_work.projection_impact.low_entities",
+  });
+  workbench.close();
+
+  assertEquals(
+    projection.items.map((item) => [
+      item.decision.subjectId,
+      item.decision.downstreamBlockedCount,
+    ]),
+    [
+      ["candidate.test.unresolved_work.projection_impact.high", 2],
+      ["candidate.test.unresolved_work.projection_impact.low", 1],
+    ],
+  );
+  assertEquals(
+    filteredProjection.items.map((item) => item.reviewItem.subjectId),
+    ["candidate.test.unresolved_work.projection_impact.low"],
+  );
+  assertEquals(filteredProjection.summary.filteredOpenReviewItemCount, 1);
+  assertEquals(filteredProjection.summary.filteredHumanDecisionOpenReviewItemCount, 1);
+  assertEquals(filteredProjection.summary.filteredBrowseOnlyOpenReviewItemCount, 0);
 });
 
 function seedAcceptedEntity(
