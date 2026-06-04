@@ -8,7 +8,7 @@ import {
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
-import { queryAll, queryOne, run, withTransaction } from "./db.ts";
+import { queryAll, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
@@ -33,6 +33,17 @@ interface ArtifactRecord {
 interface ParsedSourceItemRecord {
   sourceItemId: string;
   artifactIndex: number;
+}
+
+interface EntityReviewConflictContext {
+  candidateKind: string;
+  candidateName: string;
+  candidateSourceId: string;
+  candidateBodyJson: string;
+  existingEntityId: string;
+  existingName: string;
+  existingKind: string;
+  existingMergedCandidateIds: string;
 }
 
 export type ImportProgressPhase =
@@ -490,12 +501,17 @@ function importParsedOutput(
       );
     }
   }
+  const entityReviewContext = entityReviewConflictContextBySubject(store, parsed.reviewItems ?? []);
   for (const reviewItem of parsed.reviewItems ?? []) {
     if (reviewItem.itemType === "relationship_candidate") {
       // Relationship review visibility is derived from reconciled candidate state.
       continue;
     }
-    const resolvedReviewItem = reviewItemWithWorkbenchContext(store, reviewItem);
+    const resolvedReviewItem = reviewItemWithWorkbenchContext(
+      store,
+      reviewItem,
+      entityReviewContext,
+    );
     runPrepared(
       insertReviewItem,
       [
@@ -604,39 +620,12 @@ function bulkInsertRows(
 function reviewItemWithWorkbenchContext(
   store: WorkbenchStore,
   reviewItem: ReviewItemInput,
+  entityReviewContext: Map<string, EntityReviewConflictContext>,
 ): ReviewItemInput {
   if (reviewItem.itemType !== "entity_candidate" || reviewItem.defaultAction === "defer") {
     return reviewItem;
   }
-  const conflict = queryOne<{
-    candidateKind: string;
-    candidateName: string;
-    candidateSourceId: string;
-    candidateBodyJson: string;
-    existingEntityId: string;
-    existingName: string;
-    existingKind: string;
-    existingMergedCandidateIds: string;
-  }>(
-    store.db,
-    `select entity_candidates.kind as candidateKind,
-            entity_candidates.name as candidateName,
-            source_items.source_id as candidateSourceId,
-            source_items.body_json as candidateBodyJson,
-            canonical_entities.entity_id as existingEntityId,
-            canonical_entities.name as existingName,
-            canonical_entities.kind as existingKind,
-            canonical_entities.merged_candidate_ids as existingMergedCandidateIds
-     from entity_candidates
-     join source_items
-       on source_items.source_item_id = entity_candidates.source_item_id
-     join canonical_entities
-       on canonical_entities.entity_id = entity_candidates.proposed_entity_id
-     where entity_candidates.candidate_id = ?
-       and canonical_entities.review_status = 'accepted'
-       and canonical_entities.kind != entity_candidates.kind`,
-    [reviewItem.subjectId],
-  );
+  const conflict = entityReviewContext.get(reviewItem.subjectId);
   if (!conflict) return reviewItem;
   const mergeDecision = classifySameEntityKindMerge(
     store,
@@ -665,6 +654,49 @@ function reviewItemWithWorkbenchContext(
       ...sourceIdentityConflictDetails(conflict),
     },
   };
+}
+
+function entityReviewConflictContextBySubject(
+  store: WorkbenchStore,
+  reviewItems: ReviewItemInput[],
+): Map<string, EntityReviewConflictContext> {
+  const subjectIds = [
+    ...new Set(
+      reviewItems.filter((reviewItem) =>
+        reviewItem.itemType === "entity_candidate" && reviewItem.defaultAction !== "defer"
+      ).map((reviewItem) => reviewItem.subjectId),
+    ),
+  ];
+  const contexts = new Map<string, EntityReviewConflictContext>();
+  for (const subjectIdChunk of chunks(subjectIds, 500)) {
+    if (subjectIdChunk.length === 0) continue;
+    const placeholders = subjectIdChunk.map(() => "?").join(", ");
+    const rows = queryAll<EntityReviewConflictContext & { candidateId: string }>(
+      store.db,
+      `select entity_candidates.candidate_id as candidateId,
+              entity_candidates.kind as candidateKind,
+              entity_candidates.name as candidateName,
+              source_items.source_id as candidateSourceId,
+              source_items.body_json as candidateBodyJson,
+              canonical_entities.entity_id as existingEntityId,
+              canonical_entities.name as existingName,
+              canonical_entities.kind as existingKind,
+              canonical_entities.merged_candidate_ids as existingMergedCandidateIds
+       from entity_candidates
+       join source_items
+         on source_items.source_item_id = entity_candidates.source_item_id
+       join canonical_entities
+         on canonical_entities.entity_id = entity_candidates.proposed_entity_id
+       where entity_candidates.candidate_id in (${placeholders})
+         and canonical_entities.review_status = 'accepted'
+         and canonical_entities.kind != entity_candidates.kind`,
+      subjectIdChunk,
+    );
+    for (const row of rows) {
+      contexts.set(row.candidateId, row);
+    }
+  }
+  return contexts;
 }
 
 function sourceIdentityConflictDetails(conflict: {
@@ -714,6 +746,14 @@ function sourceBodyString(body: Record<string, unknown>, key: string): string | 
 
 function sameText(left: string, right: string): boolean {
   return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
+function chunks<T>(values: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    result.push(values.slice(index, index + size));
+  }
+  return result;
 }
 
 function legalDefaultAction(legalRef: LegalRefInput): "accept" | "defer" {
