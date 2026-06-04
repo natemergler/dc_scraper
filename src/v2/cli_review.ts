@@ -1,6 +1,10 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
-import { listReviewPackets, renderReviewPacketSummary } from "./workbench/review_packets.ts";
+import {
+  listOpenDecisionReviewPackets,
+  listReviewPackets,
+  renderReviewPacketSummary,
+} from "./workbench/review_packets.ts";
 import { reviewItemLabel, reviewSubjectSourceIds } from "./workbench/review_subject.ts";
 import {
   renderReviewItemSummary,
@@ -70,8 +74,11 @@ export async function handleReviewCommand(
       printReviewHelp();
       return true;
     }
+    const filters = readReviewFilters(args);
     const packets = await deps.withWorkbench((workbench) =>
-      listReviewPackets(workbench, readReviewFilters(args))
+      filters.status === undefined
+        ? listOpenDecisionReviewPackets(workbench, filters)
+        : listReviewPackets(workbench, filters)
     );
     if (options.json) {
       console.log(JSON.stringify({ count: packets.length, packets }, null, 2));

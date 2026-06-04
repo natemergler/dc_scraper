@@ -3,6 +3,7 @@ import type { ReviewItemFilters } from "./review.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
+import { projectOpenHumanDecisionWork } from "./unresolved_work.ts";
 
 export interface ReviewPacketRecord {
   packetId: string;
@@ -43,6 +44,22 @@ export function listReviewPackets(
   const { itemFilters, packetLimit } = packetListFilters(filters);
   const items = store.listReviewItems(itemFilters);
   return reviewPacketsFromItems(store, items, { limit: packetLimit });
+}
+
+export function listOpenDecisionReviewPackets(
+  store: WorkbenchStore,
+  filters?: ReviewItemFilters,
+): ReviewPacketRecord[] {
+  const { itemFilters, packetLimit } = packetListFilters(filters);
+  const projection = projectOpenHumanDecisionWork(store, {
+    ...itemFilters,
+    limit: undefined,
+  });
+  return reviewPacketsFromItems(
+    store,
+    projection.items.map((item) => item.reviewItem),
+    { limit: packetLimit },
+  );
 }
 
 export function reviewPacketsFromItems(

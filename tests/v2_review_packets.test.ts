@@ -71,12 +71,36 @@ Deno.test("review packets group explicit-safe and high-confidence entity work wi
   };
 
   assertEquals(output.code, 0);
-  assertEquals(body.packets.length, 1);
-  assertEquals(body.packets[0].itemType, "entity_candidate");
-  assertEquals(body.packets[0].sourceId, "test.packet.mixed_entities");
-  assertEquals(body.packets[0].count, 2);
-  assertEquals(body.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
-  assertEquals(body.packets[0].nextCommand, undefined);
+  assertEquals(body.packets.length, 0);
+
+  const rawOutput = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "entities",
+    "--status",
+    "all",
+    "--db",
+    dbPath,
+    "--json",
+  ]);
+  const rawBody = JSON.parse(new TextDecoder().decode(rawOutput.stdout)) as {
+    packets: Array<{
+      itemType: string;
+      sourceId: string;
+      count: number;
+      subjectPrefix?: string;
+      nextCommand?: string;
+    }>;
+  };
+
+  assertEquals(rawOutput.code, 0);
+  assertEquals(rawBody.packets.length, 1);
+  assertEquals(rawBody.packets[0].itemType, "entity_candidate");
+  assertEquals(rawBody.packets[0].sourceId, "test.packet.mixed_entities");
+  assertEquals(rawBody.packets[0].count, 2);
+  assertEquals(rawBody.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
+  assertEquals(rawBody.packets[0].nextCommand, undefined);
 });
 
 Deno.test("review packet source lookup does not scale queries per item", async () => {
@@ -520,6 +544,37 @@ Deno.test("review packet limits apply after grouping related work", async () => 
   assertEquals(body.packets[0].count, 2);
   assertEquals(body.packets[1].sourceId, "test.review_packets.group_b");
   assertEquals(body.packets[1].count, 1);
+
+  const rawOutput = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "relationships",
+    "--status",
+    "all",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--limit",
+    "2",
+    "--json",
+  ]);
+
+  assertEquals(rawOutput.code, 0);
+  const rawBody = JSON.parse(new TextDecoder().decode(rawOutput.stdout)) as {
+    count: number;
+    packets: Array<{
+      sourceId: string;
+      count: number;
+    }>;
+  };
+  assertEquals(rawBody.count, 2);
+  assertEquals(rawBody.packets.length, 2);
+  assertEquals(rawBody.packets[0].sourceId, "test.review_packets.group_a");
+  assertEquals(rawBody.packets[0].count, 2);
+  assertEquals(rawBody.packets[1].sourceId, "test.review_packets.group_b");
+  assertEquals(rawBody.packets[1].count, 1);
 });
 
 Deno.test("review packets preserve resolved status filters", async () => {
