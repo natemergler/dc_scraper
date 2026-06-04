@@ -2715,6 +2715,192 @@ Deno.test("DCGIS connector fails loudly on ArcGIS query error payloads", async (
   );
 });
 
+Deno.test("DCGIS legal refs resolve exact D.C. law titles through the official law index", async () => {
+  const lawIndexUrl = "https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json";
+  const rowsWithLawTitle = {
+    features: [{
+      attributes: {
+        OBJECTID: 1,
+        AGENCY_ID: 1172,
+        AGENCY_NAME: "District of Columbia Green Finance Authority",
+        TYPE: "Authority",
+        BRANCH: "Independent",
+        MAYORAL_CLUSTER: null,
+        WEB_URL: "https://dcgreenbank.com/",
+        LEGISLATION: "District of Columbia Green Finance Authority Establishment Act of 2018",
+      },
+    }],
+  };
+  const lawIndexFixture = [{
+    citation: "D.C. Law 22-155",
+    heading: "Green Finance Authority Establishment Act of 2018",
+    path: "/us/dc/council/laws/22-155",
+  }];
+  const fetchedUrls: string[] = [];
+  const fetcher = async (url: string) => {
+    fetchedUrls.push(url);
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsWithLawTitle);
+        case lawIndexUrl:
+          return JSON.stringify(lawIndexFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0].parsed;
+  const legalRef = parsed?.legalRefs?.[0];
+  assertEquals(fetchedUrls.includes(lawIndexUrl), true);
+  assertEquals(result.endpointResults[0].artifacts.length, 3);
+  assertEquals(result.endpointResults[0].artifacts[2].fetchedUrl, lawIndexUrl);
+  assertEquals(legalRef?.refType, "dc_law");
+  assertEquals(
+    legalRef?.citationText,
+    "District of Columbia Green Finance Authority Establishment Act of 2018",
+  );
+  assertEquals(legalRef?.normalizedCitation, "D.C. Law 22-155");
+  assertEquals(legalRef?.url, "https://code.dccouncil.gov/us/dc/council/laws/22-155");
+  assertEquals(legalRef?.needsReview, false);
+  assertEquals(legalRef?.evidence?.map((row) => row.fieldPath), [
+    "LEGISLATION",
+    "DCCouncil law index",
+  ]);
+  assertEquals(legalRef?.evidence?.[1]?.artifactIndex, 2);
+});
+
+Deno.test("DCGIS resolved law-title legal refs import as accepted entity attachments", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const lawIndexUrl = "https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json";
+  const rowsWithLawTitle = {
+    features: [{
+      attributes: {
+        OBJECTID: 1,
+        AGENCY_ID: 1172,
+        AGENCY_NAME: "District of Columbia Green Finance Authority",
+        TYPE: "Authority",
+        BRANCH: "Independent",
+        MAYORAL_CLUSTER: null,
+        WEB_URL: "https://dcgreenbank.com/",
+        LEGISLATION: "District of Columbia Green Finance Authority Establishment Act of 2018",
+      },
+    }],
+  };
+  const lawIndexFixture = [{
+    citation: "D.C. Law 22-155",
+    heading: "D.C. Law 22-155. Green Finance Authority Establishment Act of 2018.",
+    path: "/us/dc/council/laws/22-155",
+  }];
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsWithLawTitle);
+        case lawIndexUrl:
+          return JSON.stringify(lawIndexFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  await workbench.importConnectorResult(result, dataDir);
+  const entityId = buildEntityId("District of Columbia Green Finance Authority");
+  const legalRef = workbench.db.prepare(
+    "select ref_type as refType, normalized_citation as normalizedCitation, review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+  ).get("legal.dcgis.agencies.1172_legislation") as {
+    refType: string;
+    normalizedCitation: string;
+    reviewStatus: string;
+  };
+  const attachment = workbench.db.prepare(
+    "select entity_id as entityId from entity_legal_refs where legal_ref_id = ?",
+  ).get("legal.dcgis.agencies.1172_legislation") as { entityId: string };
+  const openReviewCount = workbench.db.prepare(
+    "select count(*) as count from review_items where subject_id = ? and status = 'open'",
+  ).get("legal.dcgis.agencies.1172_legislation") as { count: number };
+  workbench.close();
+
+  assertEquals(legalRef, {
+    refType: "dc_law",
+    normalizedCitation: "D.C. Law 22-155",
+    reviewStatus: "accepted",
+  });
+  assertEquals(attachment.entityId, entityId);
+  assertEquals(openReviewCount.count, 0);
+});
+
+Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels", async () => {
+  const rowsWithMalformedAct = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 76,
+        NAME: "Out of School Time Grants and Youth Outcomes Commission",
+        SHORT_NAME: "OST Commission",
+        TYPE: "Commission",
+        WEB_URL: "https://example.dc.gov/ost",
+        GOVERNING_AGENCY: null,
+        AUTHORIZING_ORDER_LAW: "D.G. AGT 21-679",
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetchedUrls: string[] = [];
+  const fetcher = async (url: string) => {
+    fetchedUrls.push(url);
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsWithMalformedAct);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  const legalRef = result.endpointResults[0].parsed?.legalRefs?.[0];
+  assertEquals(
+    fetchedUrls.includes("https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json"),
+    false,
+  );
+  assertEquals(result.endpointResults[0].artifacts.length, 2);
+  assertEquals(legalRef?.refType, "unknown");
+  assertEquals(legalRef?.normalizedCitation, undefined);
+  assertEquals(legalRef?.needsReview, true);
+});
+
 Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps conservatively", async () => {
   const rowsWithCompoundLegalRef = {
     features: [
