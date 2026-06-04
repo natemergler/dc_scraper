@@ -73,6 +73,9 @@ export async function renderReleaseInspection(
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
     `Legal refs by status: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
+    `Legal attachments: entity=${summary.entity_legal_refs_count ?? 0}, relationship=${
+      summary.relationship_legal_refs_count ?? 0
+    }`,
   ].join("\n");
 }
 
