@@ -2901,6 +2901,57 @@ Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels"
   assertEquals(legalRef?.needsReview, true);
 });
 
+Deno.test("DCGIS legal refs keep duplicate D.C. law title matches in review", async () => {
+  const lawIndexUrl = "https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json";
+  const rowsWithDuplicateTitle = {
+    features: [{
+      attributes: {
+        OBJECTID: 1,
+        AGENCY_ID: 2001,
+        AGENCY_NAME: "Duplicate Title Agency",
+        TYPE: "Agency",
+        WEB_URL: "https://example.dc.gov/duplicate-title",
+        LEGISLATION: "District of Columbia Reused Amendment Act of 2013",
+      },
+    }],
+  };
+  const lawIndexFixture = [{
+    t: "D.C. Law 20-1. Reused Amendment Act of 2013.",
+    p: "/us/dc/council/laws/20-1",
+    sc: "D.C. Law 20-1",
+  }, {
+    t: "D.C. Law 20-2. Reused Amendment Act of 2013.",
+    p: "/us/dc/council/laws/20-2",
+    sc: "D.C. Law 20-2",
+  }];
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=OBJECTID%2CAGENCY_ID%2CAGENCY_NAME%2CTYPE%2CWEB_URL%2CBRANCH%2CMAYORAL_CLUSTER%2CLEGISLATION&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsWithDuplicateTitle);
+        case lawIndexUrl:
+          return JSON.stringify(lawIndexFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const legalRef = result.endpointResults[0].parsed?.legalRefs?.[0];
+  assertEquals(legalRef?.refType, "unknown");
+  assertEquals(legalRef?.normalizedCitation, undefined);
+  assertEquals(legalRef?.needsReview, true);
+  assertEquals(legalRef?.evidence?.map((row) => row.fieldPath), ["LEGISLATION"]);
+});
+
 Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps conservatively", async () => {
   const rowsWithCompoundLegalRef = {
     features: [

@@ -11,6 +11,7 @@ records/
 checks/
 patches/
 releases/
+.tmp*/
 *.sqlite
 *.sqlite-*
 *.db
