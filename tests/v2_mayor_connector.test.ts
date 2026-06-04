@@ -7,6 +7,7 @@ import { buildV2Release } from "../src/v2/release.ts";
 
 const mayorHomeFixture = `
 <html><body>
+  <a href="#main-content">Skip to main content</a>
   <h6 class="site-slogan">Executive Office of the Mayor</h6>
   <div class="caption-text-wrapper">
     <h2 class="cat-main">Mayor Muriel Bowser</h2>
