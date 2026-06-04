@@ -7,6 +7,7 @@ import { nowIso, sha256BytesHex, type SmokeProfile } from "./domain.ts";
 import { buildWorkbenchStatus } from "./status.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 import { containsLocalPath } from "./url_safety.ts";
+import { withTransaction } from "./workbench/db.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -22,6 +23,22 @@ export interface BuildReleaseOptions {
   repoRoot?: string;
   gitCommit?: string;
   toolVersion?: string;
+  onProgress?: (event: ReleaseBuildProgressEvent) => void;
+}
+
+export interface ReleaseBuildProgressEvent {
+  phase:
+    | "prepare"
+    | "read-workbench"
+    | "summarize"
+    | "write-files"
+    | "write-sqlite"
+    | "write-manifest";
+  message: string;
+  counts?: Partial<
+    Record<"entities" | "relationships" | "sources" | "datasets" | "legalRefs", number>
+  >;
+  fileCount?: number;
 }
 
 export async function buildV2Release(
@@ -29,7 +46,15 @@ export async function buildV2Release(
   outDir: string,
   options: BuildReleaseOptions = {},
 ): Promise<{ outDir: string; fileNames: string[] }> {
+  emitReleaseProgress(options, {
+    phase: "prepare",
+    message: `Preparing release directory ${outDir}`,
+  });
   await resetReleaseDirectory(outDir);
+  emitReleaseProgress(options, {
+    phase: "read-workbench",
+    message: "Reading accepted workbench rows",
+  });
   const entities: EntityRow[] = workbench.canonicalEntities();
   const relationships: RelationshipRow[] = workbench.canonicalRelationships();
   const sources: SourceRow[] = workbench.sourceInventory();
@@ -38,6 +63,17 @@ export async function buildV2Release(
   const entityLegalRefs: EntityLegalRefRow[] = workbench.entityLegalRefs();
   const relationshipLegalRefs: RelationshipLegalRefRow[] = workbench.relationshipLegalRefs();
   const sourceArtifacts: SourceArtifactRow[] = workbench.sourceArtifacts();
+  emitReleaseProgress(options, {
+    phase: "summarize",
+    message: "Building release summary",
+    counts: {
+      entities: entities.length,
+      relationships: relationships.length,
+      sources: sources.length,
+      datasets: datasets.length,
+      legalRefs: legalRefs.length,
+    },
+  });
   const summary = buildReleaseSummary(
     workbench,
     entities,
@@ -161,9 +197,25 @@ export async function buildV2Release(
     ),
   );
   assertReleaseFilesDoNotContainContactInfo(files);
+  emitReleaseProgress(options, {
+    phase: "write-files",
+    message: "Writing CSV and JSON exports",
+    fileCount: files.size,
+  });
   for (const [name, content] of files) {
     await Deno.writeTextFile(join(outDir, name), content);
   }
+  emitReleaseProgress(options, {
+    phase: "write-sqlite",
+    message: "Writing dcgov.sqlite",
+    counts: {
+      entities: entities.length,
+      relationships: relationships.length,
+      sources: sources.length,
+      datasets: datasets.length,
+      legalRefs: legalRefs.length,
+    },
+  });
   await buildReleaseSqlite(join(outDir, "dcgov.sqlite"), {
     entities,
     relationships,
@@ -172,6 +224,11 @@ export async function buildV2Release(
     legalRefs,
     entityLegalRefs,
     relationshipLegalRefs,
+  });
+  emitReleaseProgress(options, {
+    phase: "write-manifest",
+    message: "Writing README and manifest",
+    fileCount: files.size + 3,
   });
   const readme = buildReadme(summary);
   await Deno.writeTextFile(join(outDir, "README.md"), readme);
@@ -203,6 +260,13 @@ export async function buildV2Release(
     outDir,
     fileNames: [...Array.from(manifest.files, (file) => file.name), "manifest.json"],
   };
+}
+
+function emitReleaseProgress(
+  options: BuildReleaseOptions,
+  event: ReleaseBuildProgressEvent,
+): void {
+  options.onProgress?.(event);
 }
 
 function buildReleaseId(generatedAt: string, gitCommit: string): string {
@@ -357,117 +421,119 @@ async function buildReleaseSqlite(
         foreign key (legal_ref_id) references legal_refs(id)
       );
     `);
-    const insertEntity = db.prepare(
-      "insert into entities(id, name, kind, branch, cluster, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.entities) {
-      insertEntity.run([
-        row.id,
-        row.name,
-        row.kind,
-        row.branch ?? null,
-        row.cluster ?? null,
-        row.official_url ?? null,
-        row.review_status,
-      ]);
-    }
-    const insertRelationship = db.prepare(
-      "insert into relationships(id, from_entity_id, relationship_type, to_entity_id, review_status) values(?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.relationships) {
-      insertRelationship.run([
-        row.id,
-        row.from_entity_id,
-        row.relationship_type,
-        row.to_entity_id,
-        row.review_status,
-      ]);
-    }
-    const insertSource = db.prepare(
-      "insert into sources(source_id, title, kind, access_method, latest_status, latest_run_finished_at, latest_endpoint_id, latest_artifact_kind, latest_fetched_url, latest_content_hash, latest_size_bytes, latest_observed_at) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.sources) {
-      insertSource.run([
-        row.source_id,
-        row.title,
-        row.kind,
-        row.access_method,
-        row.latest_status ?? null,
-        row.latest_run_finished_at ?? null,
-        row.latest_endpoint_id ?? null,
-        row.latest_artifact_kind ?? null,
-        row.latest_fetched_url ?? null,
-        row.latest_content_hash ?? null,
-        row.latest_size_bytes ?? null,
-        row.latest_observed_at ?? null,
-      ]);
-    }
-    const insertDataset = db.prepare(
-      "insert into datasets(id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.datasets) {
-      insertDataset.run([
-        row.id,
-        row.name,
-        row.category,
-        row.owner_name ?? null,
-        row.access_method,
-        row.artifact_depth,
-        row.official_url ?? null,
-        row.review_status,
-      ]);
-    }
-    const insertLegalRef = db.prepare(
-      "insert into legal_refs(id, ref_type, citation_text, normalized_citation, url, source_id, source_item_id, source_url, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.legalRefs) {
-      insertLegalRef.run([
-        row.id,
-        row.ref_type,
-        row.citation_text,
-        row.normalized_citation ?? null,
-        row.url ?? null,
-        row.source_id,
-        row.source_item_id,
-        row.source_url ?? null,
-        row.needs_review,
-        row.review_status,
-      ]);
-    }
-    const insertEntityLegalRef = db.prepare(
-      "insert into entity_legal_refs(entity_id, entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.entityLegalRefs) {
-      insertEntityLegalRef.run([
-        row.entity_id,
-        row.entity_name,
-        row.legal_ref_id,
-        row.ref_type,
-        row.citation_text,
-        row.normalized_citation ?? null,
-        row.url ?? null,
-        row.review_status,
-      ]);
-    }
-    const insertRelationshipLegalRef = db.prepare(
-      "insert into relationship_legal_refs(relationship_id, from_entity_id, from_entity_name, relationship_type, to_entity_id, to_entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    );
-    for (const row of rows.relationshipLegalRefs) {
-      insertRelationshipLegalRef.run([
-        row.relationship_id,
-        row.from_entity_id,
-        row.from_entity_name,
-        row.relationship_type,
-        row.to_entity_id,
-        row.to_entity_name,
-        row.legal_ref_id,
-        row.ref_type,
-        row.citation_text,
-        row.normalized_citation ?? null,
-        row.url ?? null,
-        row.review_status,
-      ]);
-    }
+    withTransaction(db, () => {
+      const insertEntity = db.prepare(
+        "insert into entities(id, name, kind, branch, cluster, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.entities) {
+        insertEntity.run([
+          row.id,
+          row.name,
+          row.kind,
+          row.branch ?? null,
+          row.cluster ?? null,
+          row.official_url ?? null,
+          row.review_status,
+        ]);
+      }
+      const insertRelationship = db.prepare(
+        "insert into relationships(id, from_entity_id, relationship_type, to_entity_id, review_status) values(?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.relationships) {
+        insertRelationship.run([
+          row.id,
+          row.from_entity_id,
+          row.relationship_type,
+          row.to_entity_id,
+          row.review_status,
+        ]);
+      }
+      const insertSource = db.prepare(
+        "insert into sources(source_id, title, kind, access_method, latest_status, latest_run_finished_at, latest_endpoint_id, latest_artifact_kind, latest_fetched_url, latest_content_hash, latest_size_bytes, latest_observed_at) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.sources) {
+        insertSource.run([
+          row.source_id,
+          row.title,
+          row.kind,
+          row.access_method,
+          row.latest_status ?? null,
+          row.latest_run_finished_at ?? null,
+          row.latest_endpoint_id ?? null,
+          row.latest_artifact_kind ?? null,
+          row.latest_fetched_url ?? null,
+          row.latest_content_hash ?? null,
+          row.latest_size_bytes ?? null,
+          row.latest_observed_at ?? null,
+        ]);
+      }
+      const insertDataset = db.prepare(
+        "insert into datasets(id, name, category, owner_name, access_method, artifact_depth, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.datasets) {
+        insertDataset.run([
+          row.id,
+          row.name,
+          row.category,
+          row.owner_name ?? null,
+          row.access_method,
+          row.artifact_depth,
+          row.official_url ?? null,
+          row.review_status,
+        ]);
+      }
+      const insertLegalRef = db.prepare(
+        "insert into legal_refs(id, ref_type, citation_text, normalized_citation, url, source_id, source_item_id, source_url, needs_review, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.legalRefs) {
+        insertLegalRef.run([
+          row.id,
+          row.ref_type,
+          row.citation_text,
+          row.normalized_citation ?? null,
+          row.url ?? null,
+          row.source_id,
+          row.source_item_id,
+          row.source_url ?? null,
+          row.needs_review,
+          row.review_status,
+        ]);
+      }
+      const insertEntityLegalRef = db.prepare(
+        "insert into entity_legal_refs(entity_id, entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.entityLegalRefs) {
+        insertEntityLegalRef.run([
+          row.entity_id,
+          row.entity_name,
+          row.legal_ref_id,
+          row.ref_type,
+          row.citation_text,
+          row.normalized_citation ?? null,
+          row.url ?? null,
+          row.review_status,
+        ]);
+      }
+      const insertRelationshipLegalRef = db.prepare(
+        "insert into relationship_legal_refs(relationship_id, from_entity_id, from_entity_name, relationship_type, to_entity_id, to_entity_name, legal_ref_id, ref_type, citation_text, normalized_citation, url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      );
+      for (const row of rows.relationshipLegalRefs) {
+        insertRelationshipLegalRef.run([
+          row.relationship_id,
+          row.from_entity_id,
+          row.from_entity_name,
+          row.relationship_type,
+          row.to_entity_id,
+          row.to_entity_name,
+          row.legal_ref_id,
+          row.ref_type,
+          row.citation_text,
+          row.normalized_citation ?? null,
+          row.url ?? null,
+          row.review_status,
+        ]);
+      }
+    });
   } finally {
     db.close();
   }

@@ -2,7 +2,8 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { buildV2Release } from "../src/v2/release.ts";
+import { buildV2Release, type ReleaseBuildProgressEvent } from "../src/v2/release.ts";
+import { renderReleaseBuildProgress } from "../src/v2/cli_release.ts";
 import { buildReleaseInspection } from "../src/v2/release_inspect.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import { syntheticEntitySourceResult } from "./helpers/v2_reconciliation_helpers.ts";
@@ -90,6 +91,77 @@ Deno.test("release inspection treats missing file manifest as not-ready", async 
 
   assertEquals(inspection.packageIntegrity, "unknown");
   assertEquals(inspection.readiness, "not-ready");
+});
+
+Deno.test("release builder reports progress phases for long package builds", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+  const events: ReleaseBuildProgressEvent[] = [];
+
+  await buildV2Release(workbench, join(dir, "release"), {
+    gitCommit: "fixture",
+    repoRoot: dir,
+    onProgress: (event) => events.push(event),
+  });
+  workbench.close();
+
+  assertEquals(events.map((event) => event.phase), [
+    "prepare",
+    "read-workbench",
+    "summarize",
+    "write-files",
+    "write-sqlite",
+    "write-manifest",
+  ]);
+  assertEquals(events.find((event) => event.phase === "summarize")?.counts?.entities, 0);
+  assertEquals(events.find((event) => event.phase === "write-files")?.fileCount, 14);
+  assertEquals(events.find((event) => event.phase === "write-manifest")?.fileCount, 17);
+
+  assertStringIncludes(
+    renderReleaseBuildProgress(events.find((event) => event.phase === "write-sqlite")!),
+    "Release build: Writing dcgov.sqlite",
+  );
+  assertStringIncludes(
+    renderReleaseBuildProgress(events.find((event) => event.phase === "summarize")!),
+    "entities=0 relationships=0 sources=0 datasets=0 legal_refs=0",
+  );
+});
+
+Deno.test("release build CLI keeps final success on stdout and progress on stderr", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const outDir = join(dir, "release");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "build",
+      "--db",
+      dbPath,
+      "--out",
+      outDir,
+    ],
+  }).output();
+  const stdout = new TextDecoder().decode(output.stdout);
+  const stderr = new TextDecoder().decode(output.stderr);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, `Built v2 release ${outDir}`);
+  assert(!stdout.includes("Writing dcgov.sqlite"));
+  assertStringIncludes(stderr, "Release build: Preparing release directory");
+  assertStringIncludes(stderr, "Release build: Writing dcgov.sqlite");
+  assertStringIncludes(stderr, "Release build: Writing README and manifest files=17");
 });
 
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
