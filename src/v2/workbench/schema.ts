@@ -354,12 +354,14 @@ function assertCurrentWorkbenchSchema(
   }
   const tableNames = userTableNames(store);
   const missingTables = [...EXPECTED_TABLES].filter((name) => !tableNames.has(name));
-  if (missingTables.length > 0) {
+  const unexpectedTables = [...tableNames].filter((name) => !EXPECTED_TABLES.has(name));
+  if (missingTables.length > 0 || unexpectedTables.length > 0) {
     throw new Error(unsupportedWorkbenchMessage(version));
   }
   const indexNames = userIndexNames(store);
   const missingIndexes = [...EXPECTED_INDEXES].filter((name) => !indexNames.has(name));
-  if (missingIndexes.length > 0) {
+  const unexpectedIndexes = [...indexNames].filter((name) => !EXPECTED_INDEXES.has(name));
+  if (missingIndexes.length > 0 || unexpectedIndexes.length > 0) {
     throw new Error(unsupportedWorkbenchMessage(version));
   }
 }
