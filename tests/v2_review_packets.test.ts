@@ -921,6 +921,10 @@ Deno.test("interactive review shows defer packet context in the inbox before the
     "Packet: test.review_packets.relationships overseen_by -> dc.alt_agency (2 item(s); open=2, deferred=0)",
   );
   assertStringIncludes(stdout, "Review: Committee on Education");
+  assertStringIncludes(
+    stdout,
+    "question: Should this directed relationship be accepted, edited, rejected, or deferred?",
+  );
   assertStringIncludes(stdout, "Review stopped. 2 item(s) remain.");
 });
 
