@@ -31,6 +31,32 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
   ]);
 });
 
+Deno.test("workbench import preserves evidence across bulk insert chunks", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+
+  await workbench.importConnectorResult(bulkEvidenceFixtureResult(1200), join(dir, "artifacts"));
+  const entityCount = workbench.db.prepare(
+    "select count(*) as count from entity_candidate_evidence where candidate_id = 'candidate.test.bulk_evidence'",
+  ).get() as { count: number };
+  const entityLast = workbench.db.prepare(
+    "select observed_value as observedValue from entity_candidate_evidence where evidence_id = 'candidate.test.bulk_evidence:1199'",
+  ).get() as { observedValue: string } | undefined;
+  const relationshipCount = workbench.db.prepare(
+    "select count(*) as count from relationship_candidate_evidence where relationship_candidate_id = 'relationship.test.bulk_evidence'",
+  ).get() as { count: number };
+  const relationshipLast = workbench.db.prepare(
+    "select observed_value as observedValue from relationship_candidate_evidence where evidence_id = 'relationship.test.bulk_evidence:1199'",
+  ).get() as { observedValue: string } | undefined;
+  workbench.close();
+
+  assertEquals(entityCount.count, 1200);
+  assertEquals(entityLast?.observedValue, "entity-value-1199");
+  assertEquals(relationshipCount.count, 1200);
+  assertEquals(relationshipLast?.observedValue, "relationship-value-1199");
+});
+
 function progressFixtureResult(): ConnectorResult {
   return {
     source: {
@@ -98,6 +124,68 @@ function progressFixtureResult(): ConnectorResult {
             fieldPath: "target",
             observedValue: "Progress Target",
           }],
+        }],
+      },
+    }],
+  };
+}
+
+function bulkEvidenceFixtureResult(evidenceCount: number): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.import.bulk_evidence",
+      title: "Import Bulk Evidence Fixture",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/import-bulk-evidence",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.import.bulk_evidence.main",
+        sourceId: "test.import.bulk_evidence",
+        title: "Import bulk evidence rows",
+        kind: "fixture",
+        url: "https://example.com/import-bulk-evidence",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/import-bulk-evidence",
+        contentText: JSON.stringify({ fixture: true }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "row-1",
+          itemType: "fixture_row",
+          title: "Bulk evidence row",
+          body: { name: "Bulk Evidence Target" },
+        }],
+        entityCandidates: [{
+          candidateId: "candidate.test.bulk_evidence",
+          sourceItemKey: "row-1",
+          proposedEntityId: "dc.bulk_candidate",
+          name: "Bulk Evidence Candidate",
+          kind: "board",
+          evidence: Array.from({ length: evidenceCount }, (_, index) => ({
+            fieldPath: `entity-field-${index}`,
+            observedValue: `entity-value-${index}`,
+          })),
+        }],
+        relationshipCandidates: [{
+          relationshipCandidateId: "relationship.test.bulk_evidence",
+          sourceItemKey: "row-1",
+          fromEntityRef: "dc.bulk_source",
+          toEntityRef: "dc.bulk_target",
+          relationshipType: "governed_by",
+          rawValue: "Bulk Evidence Target",
+          needsReview: false,
+          evidence: Array.from({ length: evidenceCount }, (_, index) => ({
+            fieldPath: `relationship-field-${index}`,
+            observedValue: `relationship-value-${index}`,
+          })),
         }],
       },
     }],
