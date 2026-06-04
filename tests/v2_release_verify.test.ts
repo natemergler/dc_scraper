@@ -120,7 +120,7 @@ Deno.test("release verify accepts source-backed entity rows", async () => {
   assertEquals(body.entityProvenanceProblems, []);
 });
 
-Deno.test("release verify treats unresolved review as usable with warnings", async () => {
+Deno.test("release verify treats browse-only review as usable with warnings", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -141,10 +141,10 @@ Deno.test("release verify treats unresolved review as usable with warnings", asy
     relationshipProvenanceCheckedCount: number;
     relationshipProvenanceProblems: unknown[];
   };
-  assertEquals(result.code, 1);
-  assertEquals(body.ready, false);
+  assertEquals(result.code, 0);
+  assertEquals(body.ready, true);
   assertEquals(body.readiness, "usable-with-warnings");
-  assertEquals(body.reasons, ["open review items: 1"]);
+  assertEquals(body.reasons, []);
   assertEquals(body.sourceArtifactProblems, []);
   assertEquals(body.relationshipProvenanceCheckedCount, 0);
   assertEquals(body.relationshipProvenanceProblems, []);
@@ -524,7 +524,7 @@ Deno.test("release verify accepts camelCase relationship decision payloads", asy
   assertEquals(body.relationshipProvenanceProblems, []);
 });
 
-Deno.test("release verify fails fast on unresolved work and bad artifact provenance", async () => {
+Deno.test("release verify fails fast on bad artifact provenance without treating review warnings as blockers", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -557,7 +557,6 @@ Deno.test("release verify fails fast on unresolved work and bad artifact provena
   const stdout = new TextDecoder().decode(output.stdout);
   const stderr = new TextDecoder().decode(output.stderr);
   assertStringIncludes(stdout, "Release verify: not ready");
-  assertStringIncludes(stdout, "open review items: 1");
   assertStringIncludes(stdout, "source artifact provenance: 1 problem");
   assertStringIncludes(stdout, "fetched_url is not a public http/https URL");
   assertEquals(stderr, "");

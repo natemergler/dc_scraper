@@ -37,6 +37,13 @@ export interface StaleReviewSummary {
   };
 }
 
+export interface ReviewDecisionSummary {
+  open: number;
+  humanDecisionOpen: number;
+  browseOnlyOpen: number;
+  deferred: number;
+}
+
 export function listReviewItems(
   store: WorkbenchStore,
   filters: ReviewItemFilters = {},
@@ -175,6 +182,18 @@ export function isHumanDecisionReviewItem(item: ReviewItemRecord): boolean {
       typeof item.details.candidateKind === "string";
   }
   return false;
+}
+
+export function reviewDecisionSummary(store: WorkbenchStore): ReviewDecisionSummary {
+  const openItems = listReviewItems(store, { status: "open" });
+  const humanDecisionOpen = openItems.filter(isHumanDecisionReviewItem).length;
+  const deferred = listReviewItems(store, { status: "deferred" }).length;
+  return {
+    open: openItems.length,
+    humanDecisionOpen,
+    browseOnlyOpen: openItems.length - humanDecisionOpen,
+    deferred,
+  };
 }
 
 export function staleReviewSummary(store: WorkbenchStore): StaleReviewSummary {

@@ -402,7 +402,7 @@ Deno.test("entity conflict review rendering explains defer impact", async () => 
   assert(!text.includes("accept promotes this candidate into canonical entities"));
 });
 
-Deno.test("DCGIS public-body agency-name conflict review asks the source identity question", async () => {
+Deno.test("DCGIS public-body agency-name rows derive distinct public body before review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -413,7 +413,7 @@ Deno.test("DCGIS public-body agency-name conflict review asks the source identit
       attributes: {
         ENTITY_ID: 26,
         NAME: "Alcoholic Beverage and Cannabis Administration",
-        SHORT_NAME: "ABC Board",
+        SHORT_NAME: "Alcoholic Beverage and Cannabis Administration",
         ACRONYM: null,
         GOVERNING_AGENCY: "Alcoholic Beverage and Cannabis Administration",
         ADDRESS: null,
@@ -455,29 +455,30 @@ Deno.test("DCGIS public-body agency-name conflict review asks the source identit
     dataDir,
   );
 
+  const candidate = workbench.db.prepare(
+    `select proposed_entity_id as proposedEntityId,
+            name,
+            kind,
+            review_status as reviewStatus
+       from entity_candidates
+      where candidate_id = ?`,
+  ).get("candidate.dcgis.boards_commissions_councils.26") as {
+    proposedEntityId: string;
+    name: string;
+    kind: string;
+    reviewStatus: string;
+  } | undefined;
   const item = workbench.listReviewItems({
     mode: "entities",
     subjectPrefix: "candidate.dcgis.boards_commissions_councils.26",
   })[0];
-  const text = renderReviewItem(workbench, item);
   workbench.close();
 
-  assertStringIncludes(
-    text,
-    "question: Is this source row naming a distinct public body from the governing agency?",
-  );
-  assertStringIncludes(
-    text,
-    "sourceGoverningAgency: Alcoholic Beverage and Cannabis Administration",
-  );
-  assertStringIncludes(text, "sourceShortName: ABC Board");
-  assertStringIncludes(text, "sourceUrl: https://abca.dc.gov/page/abc-board");
-  assertStringIncludes(
-    text,
-    "impact: decide whether this board source row is a distinct public body before attaching it to existing agency dc.alcoholic_beverage_and_cannabis_administration.",
-  );
-  assertStringIncludes(text, "evidence:");
-  assertStringIncludes(text, "GOVERNING_AGENCY <- Alcoholic Beverage and Cannabis Administration");
+  assertEquals(candidate?.proposedEntityId, "dc.alcoholic_beverage_and_cannabis_board");
+  assertEquals(candidate?.name, "Alcoholic Beverage and Cannabis Board");
+  assertEquals(candidate?.kind, "board");
+  assertEquals(candidate?.reviewStatus, "accepted");
+  assertEquals(item, undefined);
 });
 
 Deno.test("interactive review Enter accepts the default action for an explicit entity decision", async () => {
