@@ -2717,6 +2717,26 @@ Deno.test("DCGIS connector fails loudly on ArcGIS query error payloads", async (
 });
 
 Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps conservatively", async () => {
+  const rowsWithCompoundLegalRef = {
+    features: [
+      ...dcgisBoardsCommissionsCouncilsRowsFixture.features,
+      {
+        attributes: {
+          ENTITY_ID: 126,
+          NAME: "Forensic Science Advisory Board",
+          SHORT_NAME: "Forensic Science Advisory Board",
+          ACRONYM: null,
+          GOVERNING_AGENCY: "Office of the Chief Medical Examiner",
+          ADDRESS: null,
+          TYPE: "Board",
+          WEB_URL: "https://ocme.dc.gov/",
+          AUTHORIZING_ORDER_LAW:
+            "DC. ST. D.I., T.1, Ch 15, Subch. III, Pt. 1, 1979 Plan 2 (IV. B. (2)); 5-1402 et seq.",
+          CLUSTER_DC: null,
+        },
+      },
+    ],
+  };
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -2724,7 +2744,7 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
           return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
-          return JSON.stringify(dcgisBoardsCommissionsCouncilsRowsFixture);
+          return JSON.stringify(rowsWithCompoundLegalRef);
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -2738,16 +2758,31 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
   );
   const parsed = result.endpointResults[0].parsed;
   assert(parsed);
-  assertEquals(parsed.items?.length, 3);
-  assertEquals(parsed.entityCandidates?.length, 3);
-  assertEquals(parsed.relationshipCandidates?.length, 2);
-  assertEquals(parsed.legalRefs?.length, 3);
+  assertEquals(parsed.items?.length, 4);
+  assertEquals(parsed.entityCandidates?.length, 4);
+  assertEquals(parsed.relationshipCandidates?.length, 3);
+  assertEquals(parsed.legalRefs?.length, 5);
   const ancLegalRef = parsed.legalRefs?.find((legalRef) =>
     legalRef.legalRefId === "legal.dcgis.boards_commissions_councils.25_legislation"
   );
   assertEquals(ancLegalRef?.refType, "dc_bill");
   assertEquals(ancLegalRef?.normalizedCitation, "D.C. Bill B21-0697");
   assertEquals(ancLegalRef?.evidence?.[0]?.fieldPath, "AUTHORIZING_ORDER_LAW");
+  const compoundLegalRefs = parsed.legalRefs
+    ?.filter((legalRef) => legalRef.sourceItemKey === "126")
+    .map((legalRef) => ({
+      refType: legalRef.refType,
+      normalizedCitation: legalRef.normalizedCitation,
+      needsReview: legalRef.needsReview,
+    }));
+  assertEquals(compoundLegalRefs, [
+    {
+      refType: "reorganization_plan",
+      normalizedCitation: "Reorganization Plan No. 2 of 1979",
+      needsReview: false,
+    },
+    { refType: "dc_code", normalizedCitation: "D.C. Code 5-1402", needsReview: false },
+  ]);
   assert(
     parsed.entityCandidates?.some((candidate) =>
       candidate.name === "Board of Accountancy" && candidate.duplicateHint ===

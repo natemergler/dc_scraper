@@ -62,7 +62,6 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
       placeholder_entity_count: number;
       blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
       failed_source_count: number;
-      review_status_note: string;
     };
   };
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -83,21 +82,12 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
       count: row.count,
     })),
   );
-  assertEquals(manifest.release_summary.review_status_note, releaseStatusNote(status));
   assert(manifest.release_summary.blocked_reconciliation_count > 0);
   assertEquals(manifest.release_summary.placeholder_entity_count, 1);
   assert(
     manifest.release_summary.blocked_reconciliation_by_source.some((row) =>
       row.source_id === "council.committees" && row.count > 0
     ),
-  );
-  assertStringIncludes(
-    manifest.release_summary.review_status_note,
-    "Unresolved workbench state:",
-  );
-  assertStringIncludes(
-    manifest.release_summary.review_status_note,
-    "Release rows keep review_status visible; unresolved rows are not silently treated as complete.",
   );
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
@@ -191,7 +181,6 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
       stale_review_item_count: number;
       stale_review_by_prior_decision_state: Array<{ prior_decision_state: string; count: number }>;
       failed_source_count: number;
-      review_status_note: string;
     };
   };
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
@@ -206,14 +195,12 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
     })),
   );
   assertEquals(manifest.release_summary.failed_source_count, status.sources.failed);
-  assertEquals(manifest.release_summary.review_status_note, releaseStatusNote(status));
   assertEquals(manifest.release_summary.stale_review_item_count, 1);
   assert(
     manifest.release_summary.stale_review_by_prior_decision_state.some((row) =>
       row.prior_decision_state === "accepted" && row.count === 1
     ),
   );
-  assertStringIncludes(manifest.release_summary.review_status_note, "stale review=1");
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
   const inspectOutput = await new Deno.Command(Deno.execPath(), {
@@ -449,10 +436,6 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   );
   assertEquals(inspectJson.releaseSummary.top_unresolved_review_items, undefined);
 });
-
-function releaseStatusNote(status: ReturnType<typeof buildWorkbenchStatus>): string {
-  return `${status.unresolvedStateNote} Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
-}
 
 function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
   const normalized = readme.toLowerCase();

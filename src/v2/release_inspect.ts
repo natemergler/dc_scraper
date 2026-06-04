@@ -31,7 +31,6 @@ export interface ReleaseManifest {
     blocked_reconciliation_count?: number;
     blocked_reconciliation_by_source?: Array<{ source_id: string; count: number }>;
     placeholder_entity_count?: number;
-    review_status_note?: string;
     source_count?: number;
     failed_source_count?: number;
     dataset_count?: number;
@@ -92,7 +91,6 @@ export async function renderReleaseInspection(
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
     `Legal refs by review: ${renderReviewStatusCounts(summary.legal_refs_by_review_status ?? [])}`,
-    `Review note: ${summary.review_status_note ?? "none"}`,
   ].join("\n");
 }
 

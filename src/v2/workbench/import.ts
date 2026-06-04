@@ -8,7 +8,7 @@ import {
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
-import { queryOne, run, withTransaction } from "./db.ts";
+import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { materializeEntityLegalRefAttachmentIfResolved } from "./entity_legal_ref_attachments.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
@@ -302,6 +302,13 @@ function importParsedOutput(
       ],
     );
   }
+  deleteStaleLegalRefsForParsedItems(
+    store,
+    sourceId,
+    endpointId,
+    itemIndex,
+    parsed.legalRefs ?? [],
+  );
   for (const candidate of parsed.entityCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
     runPrepared(
@@ -511,6 +518,63 @@ function importParsedOutput(
       ],
     );
   }
+}
+
+function deleteStaleLegalRefsForParsedItems(
+  store: WorkbenchStore,
+  sourceId: string,
+  endpointId: string,
+  itemIndex: Map<string, ParsedSourceItemRecord & { artifactPath: string }>,
+  legalRefs: LegalRefInput[],
+): void {
+  const itemKeys = [...itemIndex.keys()];
+  if (itemKeys.length === 0) return;
+  const retainedLegalRefIds = new Set(legalRefs.map((legalRef) => legalRef.legalRefId));
+  const itemPlaceholders = itemKeys.map(() => "?").join(", ");
+  const retainedClause = retainedLegalRefIds.size === 0
+    ? ""
+    : `and legal_refs.legal_ref_id not in (${[...retainedLegalRefIds].map(() => "?").join(", ")})`;
+  const staleLegalRefs = queryAll<{ legalRefId: string }>(
+    store.db,
+    `select distinct legal_refs.legal_ref_id as legalRefId
+     from legal_refs
+     join source_items
+       on source_items.source_item_id = legal_refs.source_item_id
+     where source_items.source_id = ?
+       and source_items.endpoint_id = ?
+       and source_items.item_key in (${itemPlaceholders})
+       ${retainedClause}`,
+    [sourceId, endpointId, ...itemKeys, ...retainedLegalRefIds],
+  ).map((row) => row.legalRefId);
+  if (staleLegalRefs.length === 0) return;
+  const stalePlaceholders = staleLegalRefs.map(() => "?").join(", ");
+  run(
+    store.db,
+    `delete from review_items
+     where item_type = 'legal_ref'
+       and subject_id in (${stalePlaceholders})`,
+    staleLegalRefs,
+  );
+  run(
+    store.db,
+    `delete from entity_legal_refs where legal_ref_id in (${stalePlaceholders})`,
+    staleLegalRefs,
+  );
+  run(
+    store.db,
+    `delete from relationship_legal_refs where legal_ref_id in (${stalePlaceholders})`,
+    staleLegalRefs,
+  );
+  run(
+    store.db,
+    `delete from legal_ref_evidence where legal_ref_id in (${stalePlaceholders})`,
+    staleLegalRefs,
+  );
+  run(
+    store.db,
+    `delete from legal_refs where legal_ref_id in (${stalePlaceholders})`,
+    staleLegalRefs,
+  );
 }
 
 function runPrepared(

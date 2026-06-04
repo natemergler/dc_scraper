@@ -631,7 +631,6 @@ function buildReleaseSummary(
       count: row.count,
     })),
     placeholder_entity_count: status.placeholders.count,
-    review_status_note: releaseReviewStatusNote(status.unresolvedStateNote),
     source_count: sources.length,
     failed_source_count: status.sources.failed,
     dataset_count: datasets.length,
@@ -640,10 +639,6 @@ function buildReleaseSummary(
     entity_legal_refs_count: entityLegalRefs.length,
     relationship_legal_refs_count: relationshipLegalRefs.length,
   };
-}
-
-function releaseReviewStatusNote(unresolvedNote: string): string {
-  return `${unresolvedNote} Release rows keep review_status visible; unresolved rows are not silently treated as complete.`;
 }
 
 function countByReviewStatus<T>(

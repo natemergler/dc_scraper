@@ -154,9 +154,10 @@ export function syntheticLegalRefSourceResult(
   legalRefId: string,
   citationText: string,
   url: string,
-  options: { needsReview?: boolean } = {},
+  options: { needsReview?: boolean; sourceItemKey?: string } = {},
 ): ConnectorResult {
   const parsed = parseLegalReference(citationText, url);
+  const sourceItemKey = options.sourceItemKey ?? "example-legal-row";
   return {
     source: {
       sourceId: "test.signature.legal_refs",
@@ -184,14 +185,14 @@ export function syntheticLegalRefSourceResult(
       }],
       parsed: {
         items: [{
-          itemKey: "example-legal-row",
+          itemKey: sourceItemKey,
           itemType: "fixture_row",
           title: "Example legal row",
           body: { citationText, url },
         }],
         legalRefs: [{
           legalRefId,
-          sourceItemKey: "example-legal-row",
+          sourceItemKey,
           refType: parsed.refType,
           citationText,
           normalizedCitation: parsed.normalizedCitation,
