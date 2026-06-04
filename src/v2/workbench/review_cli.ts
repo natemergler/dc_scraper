@@ -112,7 +112,9 @@ export async function runInteractiveReview(
     const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
     const event = await actionToEvent(item, action);
     if (!event) {
-      console.log("That action is not available for this item.");
+      console.log(
+        `That action is not available. Use ${sentenceList(availableActionLabels(item))}.`,
+      );
       continue;
     }
     await workbench.appendResolutionEvent(event, resolutionsDir);
@@ -695,6 +697,12 @@ function availableActionLabels(item: ReviewItemRecord): string[] {
     if (key === "q") return "q quit";
     return key;
   });
+}
+
+function sentenceList(values: string[]): string {
+  if (values.length <= 1) return values.join("");
+  if (values.length === 2) return `${values[0]} or ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")}, or ${values.at(-1)}`;
 }
 
 function availableActionKeys(item: ReviewItemRecord): string[] {
