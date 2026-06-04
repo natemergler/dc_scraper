@@ -3079,7 +3079,7 @@ Deno.test("DCGIS boards, commissions, and councils connector preserves overlaps 
   );
 });
 
-Deno.test("DCGIS public-body agency-name conflicts show source identity context", async () => {
+Deno.test("DCGIS public-body rows named for a governing agency derive the public body name", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -3090,7 +3090,7 @@ Deno.test("DCGIS public-body agency-name conflicts show source identity context"
       attributes: {
         ENTITY_ID: 26,
         NAME: "Alcoholic Beverage and Cannabis Administration",
-        SHORT_NAME: "ABC Board",
+        SHORT_NAME: "Alcoholic Beverage and Cannabis Administration",
         ACRONYM: null,
         GOVERNING_AGENCY: "Alcoholic Beverage and Cannabis Administration",
         ADDRESS: null,
@@ -3133,6 +3133,19 @@ Deno.test("DCGIS public-body agency-name conflicts show source identity context"
     dataDir,
   );
 
+  const candidate = workbench.db.prepare(
+    `select proposed_entity_id as proposedEntityId,
+            name,
+            kind,
+            review_status as reviewStatus
+     from entity_candidates
+     where candidate_id = ?`,
+  ).get("candidate.dcgis.boards_commissions_councils.26") as {
+    proposedEntityId: string;
+    name: string;
+    kind: string;
+    reviewStatus: string;
+  } | undefined;
   const reviewItem = workbench.listReviewItems({
     type: "entity_candidate",
     subjectPrefix: "candidate.dcgis.boards_commissions_councils.26",
@@ -3140,25 +3153,115 @@ Deno.test("DCGIS public-body agency-name conflicts show source identity context"
   const evidenceFields = workbench.db.prepare(
     "select field_path as fieldPath from entity_candidate_evidence where candidate_id = ? order by field_path",
   ).all("candidate.dcgis.boards_commissions_councils.26") as Array<{ fieldPath: string }>;
+  const relationship = workbench.db.prepare(
+    `select from_entity_ref as fromEntityRef,
+            relationship_type as relationshipType,
+            to_entity_ref as toEntityRef,
+            review_status as reviewStatus
+       from relationship_candidates
+      where relationship_candidate_id = ?`,
+  ).get("relationship.dcgis.boards_commissions_councils.26_governing_agency") as {
+    fromEntityRef: string;
+    relationshipType: string;
+    toEntityRef: string;
+    reviewStatus: string;
+  } | undefined;
+  const legalAttachment = workbench.db.prepare(
+    `select entity_id as entityId,
+            legal_ref_id as legalRefId
+       from entity_legal_refs
+      where legal_ref_id = ?`,
+  ).get("legal.dcgis.boards_commissions_councils.26_legislation") as {
+    entityId: string;
+    legalRefId: string;
+  } | undefined;
   workbench.close();
 
-  assertEquals(reviewItem.defaultAction, "defer");
+  assertEquals(candidate?.proposedEntityId, "dc.alcoholic_beverage_and_cannabis_board");
+  assertEquals(candidate?.name, "Alcoholic Beverage and Cannabis Board");
+  assertEquals(candidate?.kind, "board");
+  assertEquals(candidate?.reviewStatus, "accepted");
+  assertEquals(reviewItem, undefined);
+  assertEquals(relationship?.fromEntityRef, "dc.alcoholic_beverage_and_cannabis_board");
+  assertEquals(relationship?.relationshipType, "governed_by");
+  assertEquals(relationship?.toEntityRef, "dc.alcoholic_beverage_and_cannabis_administration");
+  assertEquals(relationship?.reviewStatus, "accepted");
+  assertEquals(legalAttachment?.entityId, "dc.alcoholic_beverage_and_cannabis_board");
   assertEquals(
-    reviewItem.details.identityQuestion,
-    "Is this source row naming a distinct public body from the governing agency?",
-  );
-  assertEquals(
-    reviewItem.details.sourceGoverningAgency,
-    "Alcoholic Beverage and Cannabis Administration",
-  );
-  assertEquals(reviewItem.details.sourceShortName, "ABC Board");
-  assertEquals(reviewItem.details.sourceUrl, "https://abca.dc.gov/page/abc-board");
-  assertStringIncludes(
-    String(reviewItem.details.whyDeferred),
-    "Source row is a board whose label matches the accepted agency",
+    legalAttachment?.legalRefId,
+    "legal.dcgis.boards_commissions_councils.26_legislation",
   );
   assert(evidenceFields.some((row) => row.fieldPath === "GOVERNING_AGENCY"));
   assert(evidenceFields.some((row) => row.fieldPath === "AUTHORIZING_ORDER_LAW"));
+});
+
+Deno.test("DCGIS public-body derivation requires source URL and legal-authority evidence", async () => {
+  const rows = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 5001,
+        NAME: "Example Administration",
+        SHORT_NAME: "Example Administration",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Example Administration",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://example.dc.gov/",
+        AUTHORIZING_ORDER_LAW: "D.C. Code § 1-123",
+        CLUSTER_DC: null,
+      },
+    }, {
+      attributes: {
+        ENTITY_ID: 5002,
+        NAME: "Sample Administration",
+        SHORT_NAME: "Sample Administration",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Sample Administration",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://example.dc.gov/page/sample-board",
+        AUTHORIZING_ORDER_LAW: null,
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rows);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  const parsed = result.endpointResults[0].parsed;
+
+  assertEquals(
+    parsed?.entityCandidates?.map((candidate) => candidate.name),
+    ["Example Administration", "Sample Administration"],
+  );
+  assertEquals(parsed?.relationshipCandidates?.length, 0);
+  assert(
+    parsed?.reviewItems?.some((item) =>
+      item.subjectId === "candidate.dcgis.boards_commissions_councils.5001"
+    ),
+  );
+  assert(
+    parsed?.reviewItems?.some((item) =>
+      item.subjectId === "candidate.dcgis.boards_commissions_councils.5002"
+    ),
+  );
 });
 
 Deno.test("Council members connector captures seats and ward representations", async () => {

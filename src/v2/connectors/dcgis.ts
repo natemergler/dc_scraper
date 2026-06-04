@@ -276,14 +276,14 @@ function buildDcgisEntityCandidates(
   const agencyTaxonomyOnly = source.sourceId === "dcgis.agencies";
   const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
-    const name = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? item.title;
+    const identity = dcgisEntityIdentity(row, item.title, agencyTaxonomyOnly);
     const artifactIndex = dcgisRowArtifactIndex(item);
     return {
       candidateId: buildCandidateId(source.sourceId, item.itemKey),
       sourceItemKey: item.itemKey,
-      proposedEntityId: buildKnownEntityRef(name),
-      name,
-      kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
+      proposedEntityId: identity.entityRef,
+      name: identity.name,
+      kind: detectEntityKind(String(row.TYPE ?? "agency"), identity.name),
       rawKind: String(row.TYPE ?? "agency"),
       branch: agencyTaxonomyOnly ? undefined : maybeString(row.BRANCH),
       cluster: agencyTaxonomyOnly ? undefined : maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
@@ -328,6 +328,76 @@ function buildDcgisEntityCandidates(
   return [...agencyCandidates, ...branchCandidates];
 }
 
+interface DcgisEntityIdentity {
+  name: string;
+  entityRef: string;
+  governingAgency?: string;
+  governingAgencyRef?: string;
+}
+
+function dcgisEntityIdentity(
+  row: Record<string, unknown>,
+  itemTitle: string,
+  agencyTaxonomyOnly: boolean,
+): DcgisEntityIdentity {
+  const rawName = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? itemTitle;
+  const name = agencyTaxonomyOnly ? rawName : publicBodyCandidateName(row, rawName);
+  const governingAgency = maybeString(row.GOVERNING_AGENCY);
+  return {
+    name,
+    entityRef: buildKnownEntityRef(name),
+    governingAgency,
+    governingAgencyRef: governingAgency ? buildKnownEntityRef(governingAgency) : undefined,
+  };
+}
+
+function publicBodyCandidateName(row: Record<string, unknown>, rawName: string): string {
+  const governingAgency = maybeString(row.GOVERNING_AGENCY);
+  const rawType = maybeString(row.TYPE);
+  if (!governingAgency || !rawType) return rawName;
+  if (governingAgency.toLowerCase() !== rawName.toLowerCase()) return rawName;
+  const bodyType = publicBodyTypeName(rawType);
+  if (!bodyType) return rawName;
+  if (!maybeString(row.AUTHORIZING_ORDER_LAW)) return rawName;
+  if (!publicBodyUrlPathIncludesType(maybeString(row.WEB_URL), bodyType)) return rawName;
+  const replaced = rawName.replace(
+    /\b(?:Administration|Agency|Department|Office)\b\s*$/i,
+    bodyType,
+  );
+  return replaced !== rawName ? replaced : rawName;
+}
+
+function publicBodyTypeName(rawType: string): string | undefined {
+  switch (rawType.trim().toLowerCase()) {
+    case "board":
+      return "Board";
+    case "commission":
+      return "Commission";
+    case "council":
+      return "Council";
+    case "committee":
+      return "Committee";
+    case "task force":
+      return "Task Force";
+    default:
+      return undefined;
+  }
+}
+
+function publicBodyUrlPathIncludesType(rawUrl: string | undefined, bodyType: string): boolean {
+  if (!rawUrl) return false;
+  let pathSegment: string;
+  try {
+    const url = new URL(rawUrl);
+    pathSegment = decodeURIComponent(url.pathname).split("/").filter(Boolean).at(-1) ?? "";
+  } catch {
+    return false;
+  }
+  const slugTokens = pathSegment.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const typeTokens = bodyType.toLowerCase().split(/\s+/);
+  return typeTokens.every((token) => slugTokens.includes(token));
+}
+
 function buildDcgisRelationshipCandidates(
   source: SourceDefinition,
   items: SourceItemInput[],
@@ -335,8 +405,8 @@ function buildDcgisRelationshipCandidates(
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
-    const name = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
-    const entityRef = buildKnownEntityRef(name);
+    const identity = dcgisEntityIdentity(row, item.title, source.sourceId === "dcgis.agencies");
+    const entityRef = identity.entityRef;
     const branch = source.sourceId === "dcgis.agencies" ? undefined : maybeString(row.BRANCH);
     if (branch) {
       relationshipCandidates.push({
@@ -354,8 +424,11 @@ function buildDcgisRelationshipCandidates(
       });
     }
 
-    const governingAgency = maybeString(row.GOVERNING_AGENCY);
-    if (!governingAgency || governingAgency.toLowerCase() === name.toLowerCase()) continue;
+    const governingAgency = identity.governingAgency;
+    if (
+      !governingAgency || !identity.governingAgencyRef ||
+      identity.governingAgencyRef === identity.entityRef
+    ) continue;
     relationshipCandidates.push({
       relationshipCandidateId: buildRelationshipCandidateId(
         source.sourceId,
@@ -363,7 +436,7 @@ function buildDcgisRelationshipCandidates(
       ),
       sourceItemKey: item.itemKey,
       fromEntityRef: entityRef,
-      toEntityRef: buildKnownEntityRef(governingAgency),
+      toEntityRef: identity.governingAgencyRef,
       relationshipType: "governed_by",
       rawValue: governingAgency,
       needsReview: false,
@@ -422,7 +495,7 @@ function buildDcgisLegalRefs(
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     const citationParts = splitDcgisLegalAuthority(legislation);
-    const entityName = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
+    const identity = dcgisEntityIdentity(row, item.title, source.sourceId === "dcgis.agencies");
     citationParts.forEach((citationText, index) => {
       const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
       const lawTitleMatch = parsed.refType === "unknown"
@@ -452,7 +525,7 @@ function buildDcgisLegalRefs(
             ]
             : []),
         ],
-        attachEntityRef: buildKnownEntityRef(entityName),
+        attachEntityRef: identity.entityRef,
       });
     });
   }
