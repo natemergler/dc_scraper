@@ -22,6 +22,10 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
   workbench.close();
 
   assertEquals(events.map((event) => event.phase), [
+    "parsed-source-items",
+    "parsed-entity-candidates",
+    "parsed-relationship-candidates",
+    "parsed-legal-refs",
     "parsed-row-insert",
     "entity-replay",
     "legal-ref-replay",
@@ -30,6 +34,12 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
     "relationship-reconciliation",
     "relationship-replay",
     "relationship-auto-accept",
+  ]);
+  assertEquals(events.slice(0, 4).map((event) => event.message), [
+    "Indexed source items items=1 fields=0",
+    "Inserted entity candidates candidates=1 evidence=1",
+    "Inserted relationship candidates candidates=1 evidence=1",
+    "Inserted legal refs refs=1 evidence=1",
   ]);
 });
 

@@ -48,6 +48,12 @@ interface EntityReviewConflictContext {
 }
 
 export type ImportProgressPhase =
+  | "parsed-source-items"
+  | "parsed-entity-candidates"
+  | "parsed-relationship-candidates"
+  | "parsed-legal-refs"
+  | "parsed-datasets"
+  | "parsed-review-items"
   | "parsed-row-insert"
   | "entity-replay"
   | "legal-ref-replay"
@@ -164,6 +170,13 @@ export async function importConnectorResult(
             runId,
             artifactRecords,
             parsed,
+            (phase, message) =>
+              reportImportProgress(options, {
+                phase,
+                sourceId: endpointResult.endpoint.sourceId,
+                endpointId: endpointResult.endpoint.endpointId,
+                message,
+              }),
           );
         });
         reportImportProgress(options, {
@@ -284,6 +297,7 @@ function importParsedOutput(
   runId: string,
   artifactRecords: ArtifactRecord[],
   parsed: ConnectorResult["endpointResults"][number]["parsed"],
+  onProgress?: (phase: ImportProgressPhase, message: string) => void,
 ): void {
   if (!parsed) return;
   const insertReviewItem = store.db.prepare(
@@ -346,6 +360,10 @@ function importParsedOutput(
       "body_json",
     ],
     sourceItemRows,
+  );
+  onProgress?.(
+    "parsed-source-items",
+    `Indexed source items items=${sourceItemRows.length} fields=${parsed.fields?.length ?? 0}`,
   );
   deleteStaleLegalRefsForParsedItems(
     store,
@@ -422,6 +440,12 @@ function importParsedOutput(
     ],
     entityCandidateEvidenceRows,
   );
+  if ((parsed.entityCandidates?.length ?? 0) > 0) {
+    onProgress?.(
+      "parsed-entity-candidates",
+      `Inserted entity candidates candidates=${entityCandidateRows.length} evidence=${entityCandidateEvidenceRows.length}`,
+    );
+  }
   for (const candidate of parsed.relationshipCandidates ?? []) {
     const sourceItem = requireItem(itemIndex, candidate.sourceItemKey);
     relationshipCandidateRows.push([
@@ -480,6 +504,13 @@ function importParsedOutput(
     ],
     relationshipCandidateEvidenceRows,
   );
+  if ((parsed.relationshipCandidates?.length ?? 0) > 0) {
+    onProgress?.(
+      "parsed-relationship-candidates",
+      `Inserted relationship candidates candidates=${relationshipCandidateRows.length} evidence=${relationshipCandidateEvidenceRows.length}`,
+    );
+  }
+  let legalRefEvidenceCount = 0;
   for (const legalRef of parsed.legalRefs ?? []) {
     const sourceItem = requireItem(itemIndex, legalRef.sourceItemKey);
     run(
@@ -496,6 +527,7 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of legalRef.evidence.entries()) {
+      legalRefEvidenceCount += 1;
       const artifactRecord = artifactAt(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
@@ -533,7 +565,12 @@ function importParsedOutput(
   }
   if ((parsed.legalRefs ?? []).length > 0) {
     refreshLegalRefAttachments(store);
+    onProgress?.(
+      "parsed-legal-refs",
+      `Inserted legal refs refs=${parsed.legalRefs?.length ?? 0} evidence=${legalRefEvidenceCount}`,
+    );
   }
+  let datasetEvidenceCount = 0;
   for (const dataset of parsed.datasets ?? []) {
     const sourceItem = requireItem(itemIndex, dataset.sourceItemKey);
     run(
@@ -552,6 +589,7 @@ function importParsedOutput(
       ],
     );
     for (const [index, evidence] of dataset.evidence.entries()) {
+      datasetEvidenceCount += 1;
       const artifactRecord = artifactAt(
         artifactRecords,
         evidence.artifactIndex ?? sourceItem.artifactIndex,
@@ -571,7 +609,14 @@ function importParsedOutput(
       );
     }
   }
+  if ((parsed.datasets ?? []).length > 0) {
+    onProgress?.(
+      "parsed-datasets",
+      `Inserted datasets datasets=${parsed.datasets?.length ?? 0} evidence=${datasetEvidenceCount}`,
+    );
+  }
   const entityReviewContext = entityReviewConflictContextBySubject(store, parsed.reviewItems ?? []);
+  let reviewItemCount = 0;
   for (const reviewItem of parsed.reviewItems ?? []) {
     if (reviewItem.itemType === "relationship_candidate") {
       // Relationship review visibility is derived from reconciled candidate state.
@@ -597,6 +642,10 @@ function importParsedOutput(
         nowIso(),
       ],
     );
+    reviewItemCount += 1;
+  }
+  if (reviewItemCount > 0) {
+    onProgress?.("parsed-review-items", `Inserted review items items=${reviewItemCount}`);
   }
 }
 
