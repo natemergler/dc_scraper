@@ -23,6 +23,7 @@ import {
 } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 import { normalizeName, slugify, stripHtml } from "../domain.ts";
+import { councilMembersSource, parseCouncilMemberBlocks } from "./council_members.ts";
 
 const councilCommitteesSource: SourceDefinition = {
   sourceId: "council.committees",
@@ -69,6 +70,10 @@ export const councilCommitteesConnector: SourceConnector = {
     const html = await response.text();
     const committees = parseCouncilCommittees(html).slice(0, context.limit ?? 12);
     const committeeDetails = await fetchCommitteeDetails(context.fetcher, committees);
+    const councilMembersForCow = await fetchCouncilMembersForCowConsistencyCheck(
+      context.fetcher,
+      committeeDetails,
+    );
     const items: SourceItemInput[] = committees.map((committee) => ({
       itemKey: committee.slug,
       itemType: "committee_page",
@@ -95,6 +100,14 @@ export const councilCommitteesConnector: SourceConnector = {
           committee: detail.committee.name,
           chairperson: detail.chairperson,
           members: detail.members,
+          allCouncilmembersClaim: hasAllCouncilmembersClaim(detail.html),
+          omittedCurrentCouncilmembers: councilMembersForCow &&
+              detail.committee.slug === "committee-of-the-whole" &&
+              hasAllCouncilmembersClaim(detail.html)
+            ? omittedCurrentCouncilmembers(detail, councilMembersForCow.members).map((member) =>
+              member.name
+            )
+            : [],
         },
       });
     }
@@ -153,6 +166,15 @@ export const councilCommitteesConnector: SourceConnector = {
           ...buildCommitteeMemberRelationships(detail.committee, member, false),
         );
       }
+      if (councilMembersForCow) {
+        relationshipCandidates.push(
+          ...buildAllCouncilmembersReviewRelationships(
+            detail,
+            councilMembersForCow.members,
+            councilMembersForCow.artifactIndex,
+          ),
+        );
+      }
     }
     const reviewItems: ReviewItemInput[] = [
       ...entityCandidates.map((candidate) =>
@@ -200,6 +222,9 @@ export const councilCommitteesConnector: SourceConnector = {
           ...committeeDetails.map((detail) =>
             artifact("page", "html", detail.committee.url, detail.html)
           ),
+          ...(councilMembersForCow
+            ? [artifact("page", "html", councilMembersSource.baseUrl, councilMembersForCow.html)]
+            : []),
         ],
         parsed: {
           items,
@@ -344,6 +369,12 @@ interface CommitteeDetailRecord {
   members: Array<{ name: string; url: string }>;
 }
 
+interface CouncilMembersForCowConsistencyCheck {
+  html: string;
+  artifactIndex: number;
+  members: Array<{ name: string; url: string }>;
+}
+
 async function fetchCommitteeDetails(
   fetcher: ConnectorContext["fetcher"],
   committees: Array<{ slug: string; name: string; url: string }>,
@@ -361,6 +392,96 @@ async function fetchCommitteeDetails(
     });
   }
   return records;
+}
+
+async function fetchCouncilMembersForCowConsistencyCheck(
+  fetcher: ConnectorContext["fetcher"],
+  committeeDetails: CommitteeDetailRecord[],
+): Promise<CouncilMembersForCowConsistencyCheck | undefined> {
+  if (
+    !committeeDetails.some((detail) =>
+      detail.committee.slug === "committee-of-the-whole" && hasAllCouncilmembersClaim(detail.html)
+    )
+  ) {
+    return undefined;
+  }
+  const response = await fetcher(councilMembersSource.baseUrl);
+  const html = await response.text();
+  const members = distinctCouncilmembers(
+    parseCouncilMemberBlocks(html).flatMap((section) => section.people),
+  );
+  return {
+    html,
+    artifactIndex: committeeDetails.length + 1,
+    members,
+  };
+}
+
+function distinctCouncilmembers(
+  members: Array<{ name: string; url: string }>,
+): Array<{ name: string; url: string }> {
+  const seen = new Set<string>();
+  const results: Array<{ name: string; url: string }> = [];
+  for (const member of members) {
+    const memberId = buildEntityId(member.name);
+    if (seen.has(memberId)) continue;
+    seen.add(memberId);
+    results.push(member);
+  }
+  return results;
+}
+
+function buildAllCouncilmembersReviewRelationships(
+  detail: CommitteeDetailRecord,
+  currentCouncilmembers: Array<{ name: string; url: string }>,
+  councilMembersArtifactIndex: number,
+): RelationshipCandidateInput[] {
+  if (detail.committee.slug !== "committee-of-the-whole") return [];
+  if (!hasAllCouncilmembersClaim(detail.html)) return [];
+  return omittedCurrentCouncilmembers(detail, currentCouncilmembers).map((member) => ({
+    relationshipCandidateId: buildRelationshipCandidateId(
+      councilCommitteesSource.sourceId,
+      `${detail.committee.slug}-${slugify(member.url)}-all-councilmembers-member-of`,
+    ),
+    sourceItemKey: `${detail.committee.slug}:members`,
+    fromEntityRef: buildEntityId(member.name),
+    toEntityRef: buildEntityId(detail.committee.name),
+    relationshipType: "member_of",
+    rawValue:
+      `${member.name} is listed on the Councilmembers page and implied by the Committee of the Whole all-Councilmembers summary, but is absent from the explicit committee roster.`,
+    needsReview: true,
+    evidence: [
+      fieldEvidence(
+        "summary",
+        "all Councilmembers are part of the committee",
+        detail.artifactIndex,
+      ),
+      fieldEvidence("councilmembersRoster", member.name, councilMembersArtifactIndex),
+      fieldEvidence(
+        "explicitRosterOmission",
+        `${member.name} is absent from the explicit Committee of the Whole roster`,
+        detail.artifactIndex,
+      ),
+    ],
+  }));
+}
+
+function omittedCurrentCouncilmembers(
+  detail: CommitteeDetailRecord,
+  currentCouncilmembers: Array<{ name: string; url: string }>,
+): Array<{ name: string; url: string }> {
+  const explicitMemberIds = new Set(
+    [detail.chairperson, ...detail.members]
+      .filter((member): member is { name: string; url: string } => member !== undefined)
+      .map((member) => buildEntityId(member.name)),
+  );
+  return currentCouncilmembers.filter((member) =>
+    !explicitMemberIds.has(buildEntityId(member.name))
+  );
+}
+
+function hasAllCouncilmembersClaim(html: string): boolean {
+  return /all\s+Councilmembers\s+are\s+part\s+of\s+the\s+committee/i.test(stripHtml(html));
 }
 
 function parseOversightTargets(html: string): string[] {
