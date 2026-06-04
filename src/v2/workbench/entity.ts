@@ -357,7 +357,29 @@ export function sourceInventory(store: WorkbenchStore): Array<{
 }> {
   return queryAll(
     store.db,
-    `select
+    `with ranked_artifacts as (
+       select
+         source_runs.source_id as source_id,
+         source_artifacts.endpoint_id as endpoint_id,
+         source_artifacts.kind as artifact_kind,
+         source_artifacts.fetched_url as fetched_url,
+         source_artifacts.content_hash as content_hash,
+         source_artifacts.size_bytes as size_bytes,
+         source_artifacts.created_at as observed_at,
+         row_number() over (
+           partition by source_runs.source_id
+           order by
+             case
+               when source_artifacts.fetched_url like source_endpoints.url || '%' then 0
+               else 1
+             end,
+             source_artifacts.created_at desc
+         ) as source_rank
+       from source_artifacts
+       join source_runs on source_runs.run_id = source_artifacts.run_id
+       join source_endpoints on source_endpoints.endpoint_id = source_artifacts.endpoint_id
+     )
+     select
        sources.source_id as source_id,
        sources.title as title,
        sources.kind as kind,
@@ -375,45 +397,39 @@ export function sourceInventory(store: WorkbenchStore): Array<{
          limit 1
        ) as latest_run_finished_at,
        (
-         select source_artifacts.endpoint_id from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select endpoint_id from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_endpoint_id,
        (
-         select source_artifacts.kind from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select artifact_kind from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_artifact_kind,
        (
-         select source_artifacts.fetched_url from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select fetched_url from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_fetched_url,
        (
-         select source_artifacts.content_hash from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select content_hash from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_content_hash,
        (
-         select source_artifacts.size_bytes from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select size_bytes from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_size_bytes,
        (
-         select source_artifacts.created_at from source_artifacts
-         join source_runs on source_runs.run_id = source_artifacts.run_id
-         where source_runs.source_id = sources.source_id
-         order by source_artifacts.created_at desc
+         select observed_at from ranked_artifacts
+         where ranked_artifacts.source_id = sources.source_id
+           and ranked_artifacts.source_rank = 1
          limit 1
        ) as latest_observed_at
      from sources

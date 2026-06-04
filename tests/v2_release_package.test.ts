@@ -264,6 +264,11 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   workbench.db.prepare(
     "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.privacy', 'run.privacy', 'open_dc.public_bodies.detail', 'page', 'open_dc/public-bodies/detail.html', 'https://www.open-dc.gov/public-bodies/board-accountancy', 'sha256:fixture', 100, datetime('now'))",
   ).run();
+  const auxiliaryArtifactUrl =
+    "https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json";
+  workbench.db.prepare(
+    "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.auxiliary', 'run.privacy', 'open_dc.public_bodies.detail', 'json', 'open_dc/public-bodies/auxiliary.json', ?, 'sha256:auxiliary', 101, datetime('now', '+1 second'))",
+  ).run(auxiliaryArtifactUrl);
   workbench.db.prepare(
     "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ).run([
@@ -440,6 +445,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "legal refs: total=1");
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
   assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
+  assertStringIncludes(sourcesCsv, "https://www.open-dc.gov/public-bodies/board-accountancy");
+  assert(!sourcesCsv.includes(auxiliaryArtifactUrl));
+  assertStringIncludes(manifestText, auxiliaryArtifactUrl);
   assert(!sourcesCsv.includes("/tmp/"));
   assertStringIncludes(
     legalRefsCsv,
