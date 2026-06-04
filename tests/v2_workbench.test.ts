@@ -1496,6 +1496,7 @@ Deno.test(
   async () => {
     const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
 "Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+"Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)","Office of the State Superintendent of Education (OSSE) Designee Office of the State Superintendent of Education (OSSE) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
 `;
     const result = await getConnector("mota.quickbase").run(
       createConnectorContext({
@@ -1522,7 +1523,7 @@ Deno.test(
     assertEquals(result.endpointResults[1].status, "success");
     const parsed = result.endpointResults[1].parsed;
     assert(parsed);
-    assertEquals(parsed.items?.length, 6);
+    assertEquals(parsed.items?.length, 7);
     assert(
       parsed.entityCandidates?.some((candidate) =>
         candidate.name === "Downtown Revitalization Committee"
@@ -1548,6 +1549,21 @@ Deno.test(
         candidate.kind === "seat" && candidate.name ===
           "District of Columbia Rental Housing Commission Chairperson"
       ),
+    );
+    assert(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.kind === "seat" && candidate.name ===
+          "Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN) Office of the State Superintendent of Education Designee"
+      ),
+    );
+    assertEquals(
+      parsed.entityCandidates?.some((candidate) =>
+        candidate.kind === "seat" &&
+        candidate.name.includes(
+          "Office of the State Superintendent of Education Designee Office of the State Superintendent of Education Designee",
+        )
+      ),
+      false,
     );
     assertEquals(boardCandidate?.officialUrl, undefined);
     assertEquals(seatCandidate?.officialUrl, undefined);
@@ -1607,6 +1623,13 @@ Deno.test(
         candidate.relationshipType === "appointed_by" &&
         candidate.rawValue === "Mayoral Appointee" &&
         candidate.toEntityRef === "dc.mayor"
+      ),
+    );
+    assert(
+      parsed.relationshipCandidates?.some((candidate) =>
+        candidate.relationshipType === "has_seat" &&
+        candidate.rawValue ===
+          "Office of the State Superintendent of Education (OSSE) Designee Office of the State Superintendent of Education (OSSE) Designee"
       ),
     );
     assert(
