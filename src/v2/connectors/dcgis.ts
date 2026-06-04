@@ -333,6 +333,7 @@ interface DcgisEntityIdentity {
   entityRef: string;
   governingAgency?: string;
   governingAgencyRef?: string;
+  governingAgencyNeedsReview?: boolean;
 }
 
 function dcgisEntityIdentity(
@@ -343,11 +344,18 @@ function dcgisEntityIdentity(
   const rawName = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? itemTitle;
   const name = agencyTaxonomyOnly ? rawName : publicBodyCandidateName(row, rawName);
   const governingAgency = maybeString(row.GOVERNING_AGENCY);
+  const governingAgencyNeedsReview = !agencyTaxonomyOnly &&
+    Boolean(
+      governingAgency &&
+        governingAgency.toLowerCase() === rawName.toLowerCase() &&
+        name.toLowerCase() !== rawName.toLowerCase(),
+    );
   return {
     name,
     entityRef: buildKnownEntityRef(name),
     governingAgency,
     governingAgencyRef: governingAgency ? buildKnownEntityRef(governingAgency) : undefined,
+    governingAgencyNeedsReview,
   };
 }
 
@@ -439,7 +447,7 @@ function buildDcgisRelationshipCandidates(
       toEntityRef: identity.governingAgencyRef,
       relationshipType: "governed_by",
       rawValue: governingAgency,
-      needsReview: false,
+      needsReview: identity.governingAgencyNeedsReview ?? false,
       evidence: [fieldEvidence("GOVERNING_AGENCY", governingAgency, dcgisRowArtifactIndex(item))],
     });
   }
