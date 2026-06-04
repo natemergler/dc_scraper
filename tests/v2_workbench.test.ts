@@ -5479,8 +5479,19 @@ Deno.test("relationship raw-value filter narrows branch review slices and safe b
       {
         attributes: {
           AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Residual Agency",
+          TYPE: "Agency",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+      {
+        attributes: {
+          AGENCY_ID: 3002,
           AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Fund",
+          TYPE: "Budgetary",
           BRANCH: "Other",
           MAYORAL_CLUSTER: "",
           WEB_URL: "",
@@ -5657,8 +5668,19 @@ Deno.test("batch defer-default marks a scoped relationship review slice deferred
       {
         attributes: {
           AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Residual Agency",
+          TYPE: "Agency",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+      {
+        attributes: {
+          AGENCY_ID: 3002,
           AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Fund",
+          TYPE: "Budgetary",
           BRANCH: "Other",
           MAYORAL_CLUSTER: "",
           WEB_URL: "",

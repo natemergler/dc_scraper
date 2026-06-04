@@ -1316,8 +1316,19 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
       {
         attributes: {
           AGENCY_ID: 3001,
+          AGENCY_NAME: "Example Residual Agency",
+          TYPE: "Agency",
+          BRANCH: "Other",
+          MAYORAL_CLUSTER: "",
+          WEB_URL: "",
+          LEGISLATION: "",
+        },
+      },
+      {
+        attributes: {
+          AGENCY_ID: 3002,
           AGENCY_NAME: "Example Settlement Fund",
-          TYPE: "Fund",
+          TYPE: "Budgetary",
           BRANCH: "Other",
           MAYORAL_CLUSTER: "",
           WEB_URL: "",
@@ -1385,6 +1396,71 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
   assertEquals(executiveItem, undefined);
   assertEquals(acceptedRelationships.count > 0, true);
   assertEquals(otherItem?.defaultAction, "defer");
+});
+
+Deno.test("dcgis other-branch review skips known non-structural types", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify({
+            features: [
+              {
+                attributes: {
+                  AGENCY_ID: 3001,
+                  AGENCY_NAME: "Example Residual Agency",
+                  TYPE: "Agency",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+              {
+                attributes: {
+                  AGENCY_ID: 3002,
+                  AGENCY_NAME: "Example Settlement Fund",
+                  TYPE: "Budgetary",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+              {
+                attributes: {
+                  AGENCY_ID: 3003,
+                  AGENCY_NAME: "Example Transit Authority",
+                  TYPE: "Non-DC Government",
+                  BRANCH: "Other",
+                  MAYORAL_CLUSTER: "",
+                  WEB_URL: "",
+                  LEGISLATION: "",
+                },
+              },
+            ],
+          });
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const parsed = result.endpointResults[0]?.parsed;
+  if (!parsed) throw new Error("Expected parsed DCGIS output");
+  const otherBranchRelationships = (parsed.relationshipCandidates ?? []).filter((candidate) =>
+    candidate.relationshipType === "part_of" && candidate.rawValue === "Other"
+  );
+
+  assertEquals(otherBranchRelationships.length, 1);
+  assertEquals(otherBranchRelationships[0]?.fromEntityRef, "dc.example_residual_agency");
 });
 
 Deno.test("accepted prerequisite refetch clears stale blocker and reprocesses dependent relationship", async () => {

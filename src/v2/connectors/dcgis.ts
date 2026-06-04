@@ -236,7 +236,8 @@ function buildDcgisRelationshipCandidates(
     const row = item.body as Record<string, unknown>;
     const name = String(row.AGENCY_NAME ?? row.NAME ?? item.title);
     const branch = maybeString(row.BRANCH);
-    if (branch) {
+    const type = maybeString(row.TYPE);
+    if (branch && shouldEmitDcgisBranchRelationship(branch, type)) {
       relationshipCandidates.push({
         relationshipCandidateId: buildRelationshipCandidateId(
           source.sourceId,
@@ -269,6 +270,15 @@ function buildDcgisRelationshipCandidates(
     });
   }
   return relationshipCandidates;
+}
+
+function shouldEmitDcgisBranchRelationship(branch: string, type?: string): boolean {
+  if (branch !== "Other") return true;
+  return !isNonStructuralDcgisOtherBranchType(type);
+}
+
+function isNonStructuralDcgisOtherBranchType(type?: string): boolean {
+  return type === "Budgetary" || type === "Non-DC Government";
 }
 
 function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[]): LegalRefInput[] {
