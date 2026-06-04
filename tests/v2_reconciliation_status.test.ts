@@ -89,10 +89,12 @@ Deno.test("status surfaces repeated blocked reconciliation families in json and 
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
 
-  for (const relationshipCandidateId of [
-    "relationship.test.reconciliation.family.first",
-    "relationship.test.reconciliation.family.second",
-  ]) {
+  for (
+    const relationshipCandidateId of [
+      "relationship.test.reconciliation.family.first",
+      "relationship.test.reconciliation.family.second",
+    ]
+  ) {
     await workbench.importConnectorResult(
       syntheticCustomRelationshipSourceResult({
         sourceId: "test.reconciliation.family.relationships",

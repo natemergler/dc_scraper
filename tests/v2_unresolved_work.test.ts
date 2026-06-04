@@ -158,10 +158,12 @@ Deno.test("unresolved reconciliation summary groups repeated blocked families by
   workbench.init();
   seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
 
-  for (const relationshipCandidateId of [
-    "relationship.test.unresolved_work.family.first",
-    "relationship.test.unresolved_work.family.second",
-  ]) {
+  for (
+    const relationshipCandidateId of [
+      "relationship.test.unresolved_work.family.first",
+      "relationship.test.unresolved_work.family.second",
+    ]
+  ) {
     await workbench.importConnectorResult(
       syntheticCustomRelationshipSourceResult({
         sourceId: "test.unresolved_work.family.relationships",
