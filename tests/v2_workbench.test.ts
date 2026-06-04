@@ -595,6 +595,42 @@ Deno.test("source list rejects a current schema record when required tables are 
   );
 });
 
+Deno.test("source list rejects current schema record with leftover migration tables", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec(`
+    create table schema_migrations (
+      version integer primary key,
+      name text not null
+    );
+  `);
+  workbench.close();
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+
+  assertEquals(sourceListOutput.code, 1);
+  assertStringIncludes(
+    new TextDecoder().decode(sourceListOutput.stderr),
+    "Unsupported local workbench schema version 16. Rebuild this ignored local DB or point --db at a current workbench.",
+  );
+});
+
 Deno.test("CLI command errors print a concise message", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
