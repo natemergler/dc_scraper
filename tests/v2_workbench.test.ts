@@ -1832,6 +1832,146 @@ Deno.test("Open DC non-acronym parenthetical refinements reuse accepted-style pu
   assertEquals(openReview.length, 0);
 });
 
+Deno.test("Open DC long-form citizen review panel detail reuses the accepted short-form alias identity", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId: "candidate.open_dc.public_bodies.citizen_review_panel_child_abuse_and_neglect",
+      sourceItemKey: "open-dc-citizen-review-panel-child-abuse-and-neglect",
+      proposedEntityId: buildKnownEntityRef("Citizen Review Panel for Child Abuse and Neglect"),
+      name: "Citizen Review Panel for Child Abuse and Neglect",
+      kind: "public_body",
+      officialUrl:
+        "https://www.open-dc.gov/public-bodies/citizen-review-panel-child-abuse-and-neglect",
+      observedName: "Citizen Review Panel for Child Abuse and Neglect",
+      confidence: 0.92,
+    }),
+    dataDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "council.committees",
+      candidateId: "candidate.council.committees.citizen_review_panel_on_child_abuse_and_neglect",
+      sourceItemKey: "council-citizen-review-panel-oversight-endpoint",
+      proposedEntityId: buildKnownEntityRef("Citizen Review Panel on Child Abuse and Neglect"),
+      name: "Citizen Review Panel on Child Abuse and Neglect",
+      kind: "public_body",
+      observedName: "Citizen Review Panel on Child Abuse and Neglect",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    `select entity_id as entityId,
+            name,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.citizen_review_panel_for_child_abuse_and_neglect'`,
+  ).get() as {
+    entityId: string;
+    name: string;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const splitCanonical = workbench.db.prepare(
+    `select count(*) as count
+     from canonical_entities
+     where entity_id = 'dc.citizen_review_panel_on_child_abuse_and_neglect'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(canonical.entityId, "dc.citizen_review_panel_for_child_abuse_and_neglect");
+  assertEquals(
+    canonical.officialUrl,
+    "https://www.open-dc.gov/public-bodies/citizen-review-panel-child-abuse-and-neglect",
+  );
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [
+    "candidate.open_dc.public_bodies.citizen_review_panel_child_abuse_and_neglect",
+    "candidate.council.committees.citizen_review_panel_on_child_abuse_and_neglect",
+  ]);
+  assertEquals(splitCanonical.count, 0);
+});
+
+Deno.test("Open DC long-form sentencing commission detail absorbs later short-form public-body aliases", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId: "candidate.open_dc.public_bodies.district_columbia_sentencing_commission",
+      sourceItemKey: "open-dc-district-columbia-sentencing-commission",
+      proposedEntityId: buildKnownEntityRef("District of Columbia Sentencing Commission"),
+      name: "District of Columbia Sentencing Commission",
+      kind: "commission",
+      officialUrl: "https://www.open-dc.gov/public-bodies/district-columbia-sentencing-commission",
+      observedName: "District of Columbia Sentencing Commission",
+      confidence: 0.92,
+    }),
+    dataDir,
+  );
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "mota.quickbase",
+      candidateId: "candidate.mota.quickbase.sentencing_commission",
+      sourceItemKey: "quickbase-sentencing-commission",
+      proposedEntityId: buildKnownEntityRef("Sentencing Commission"),
+      name: "Sentencing Commission",
+      kind: "public_body",
+      observedName: "Sentencing Commission",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    `select entity_id as entityId,
+            name,
+            kind,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.district_of_columbia_sentencing_commission'`,
+  ).get() as {
+    entityId: string;
+    name: string;
+    kind: string;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const splitCanonical = workbench.db.prepare(
+    `select count(*) as count
+     from canonical_entities
+     where entity_id = 'dc.sentencing_commission'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(canonical.entityId, "dc.district_of_columbia_sentencing_commission");
+  assertEquals(canonical.kind, "commission");
+  assertEquals(
+    canonical.officialUrl,
+    "https://www.open-dc.gov/public-bodies/district-columbia-sentencing-commission",
+  );
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [
+    "candidate.open_dc.public_bodies.district_columbia_sentencing_commission",
+    "candidate.mota.quickbase.sentencing_commission",
+  ]);
+  assertEquals(splitCanonical.count, 0);
+});
+
 Deno.test("Open DC keeps taxonomy-only agency labels as evidence instead of relationship endpoints", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
@@ -4643,7 +4783,11 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Citizen Review Panel on Child Abuse and Neglect"),
-    "dc.citizen_review_panel_on_child_abuse_and_neglect",
+    "dc.citizen_review_panel_for_child_abuse_and_neglect",
+  );
+  assertEquals(
+    buildKnownEntityRef("Sentencing Commission"),
+    "dc.district_of_columbia_sentencing_commission",
   );
   assertEquals(
     buildKnownEntityRef("Commission on Nightlife and Culture"),
