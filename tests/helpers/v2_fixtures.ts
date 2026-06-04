@@ -424,6 +424,7 @@ export const ancProfile6cFixture = `
       <tr><td>6C01</td><td>Jeremiah Foxwell</td><td>private address</td><td>202-555-0101</td><td>foxwell@example.com</td></tr>
       <tr><td>6C02</td><td>Karen Wirt Chairperson</td><td>private address</td><td>202-555-0102</td><td>wirt@example.com</td></tr>
       <tr><td>6C03</td><td>Jay Adelstein Treasurer</td><td>private address</td><td>202-555-0103</td><td>adelstein@example.com</td></tr>
+      <tr><td>6C04</td><td><div>Audra Grant</div><div><em>Vice-Chairperson</em></div></td><td>private address</td><td>202-555-0104</td><td>audra@example.com</td></tr>
     </tbody>
   </table>
 </body></html>
@@ -439,6 +440,8 @@ export const ancProfile34gFixture = `
     <tbody>
       <tr><td>3/4G01</td><td>Ada Sample Vice Chairperson</td><td>private address</td><td>202-555-0111</td><td>ada@example.com</td></tr>
       <tr><td>3/4G02</td><td>Ben Example Secretary</td><td>private address</td><td>202-555-0112</td><td>ben@example.com</td></tr>
+      <tr><td>3/4G03</td><td><div>Brian A. Glover</div><div><em>Sergeant-at-Arms</em></div></td><td>private address</td><td>202-555-0113</td><td>brian@example.com</td></tr>
+      <tr><td>3/4G04</td><td><div>Carole L. Feld</div><div><em>Chairperson/Secretary</em></div></td><td>private address</td><td>202-555-0114</td><td>carole@example.com</td></tr>
     </tbody>
   </table>
 </body></html>

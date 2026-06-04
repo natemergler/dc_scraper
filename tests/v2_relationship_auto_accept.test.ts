@@ -256,7 +256,7 @@ Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts un
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.alcoholic_beverage_and_cannabis_administration', 'Alcoholic Beverages and Cannabis Administration', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.alcoholic_beverage_and_cannabis_administration', 'Alcoholic Beverage and Cannabis Administration', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run();
 
   const appointmentsCsvWithAlias = `
@@ -318,10 +318,10 @@ Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts un
   workbench.close();
 
   assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
-    "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
-    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
-    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
-    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:has_status:status.filled",
+    "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:appointed_by:dc.mayor",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
+    "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:has_status:status.filled",
   ]);
   assertEquals(mayor, {
     entityId: "dc.mayor",
@@ -1024,6 +1024,81 @@ Deno.test("DCGIS governing agency relationships auto-accept when alias endpoints
 
   assertEquals(relationships.length, 2);
   assertEquals(reviewItems.length, 0);
+});
+
+Deno.test("DCGIS rewritten self-governing public-body rows stay pending for human review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run(
+    "dc.alcoholic_beverage_and_cannabis_administration",
+    "Alcoholic Beverage and Cannabis Administration",
+  );
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify({
+            features: [{
+              attributes: {
+                ENTITY_ID: 26,
+                NAME: "Alcoholic Beverage and Cannabis Administration",
+                SHORT_NAME: "Alcoholic Beverage and Cannabis Administration",
+                ACRONYM: null,
+                GOVERNING_AGENCY: "Alcoholic Beverage and Cannabis Administration",
+                ADDRESS: null,
+                TYPE: "Board",
+                WEB_URL: "https://abca.dc.gov/page/abc-board",
+                AUTHORIZING_ORDER_LAW: "D.C. Code § 25-201",
+                OBJECTID: 26,
+                CLUSTER_DC: null,
+              },
+            }],
+          });
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  await workbench.importConnectorResult(
+    await getConnector("dcgis.boards_commissions_councils").run(
+      createConnectorContext({ fetcher }),
+    ),
+    dataDir,
+  );
+
+  const relationship = workbench.db.prepare(
+    `select review_status as reviewStatus
+       from relationship_candidates
+      where relationship_candidate_id = 'relationship.dcgis.boards_commissions_councils.26_governing_agency'`,
+  ).get() as { reviewStatus: string } | undefined;
+  const canonicalRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+       from canonical_relationships
+      where relationship_id = 'dc.alcoholic_beverage_and_cannabis_board:governed_by:dc.alcoholic_beverage_and_cannabis_administration'`,
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils.26_governing_agency",
+  });
+  workbench.close();
+
+  assertEquals(relationship?.reviewStatus, "pending");
+  assertEquals(canonicalRelationship, undefined);
+  assertEquals(reviewItems.length, 1);
+  assertEquals(reviewItems[0]?.defaultAction, "defer");
 });
 
 Deno.test("OANC commissioner entities auto-promote and explicit ANC structure relationships auto-accept", async () => {

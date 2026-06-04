@@ -377,8 +377,18 @@ function splitCommissionerName(value: string): { name: string; role?: string } {
   const text = normalizeName(value);
   if (!text || /^vacant$/i.test(text)) return { name: text };
   const match = text.match(
-    /^(.*?)(?:\s+(Chairperson|Vice Chairperson|Secretary|Treasurer|Chair|Vice Chair))$/i,
+    new RegExp(
+      `^(.*?)(?:\\s+((?:${ANC_ROLE_PATTERN})(?:\\s*/\\s*(?:${ANC_ROLE_PATTERN}))*))$`,
+      "i",
+    ),
   );
   if (!match) return { name: text };
-  return { name: normalizeName(match[1]), role: match[2] };
+  return { name: normalizeName(match[1]), role: normalizeAncRole(match[2]) };
+}
+
+const ANC_ROLE_PATTERN =
+  "Vice[- ]Chairperson|Chairperson|Secretary|Treasurer|Chair|Vice Chair|Sergeant-at-Arms|Sargent at Arms|Parliamentarian";
+
+function normalizeAncRole(value: string): string {
+  return normalizeName(value.replaceAll(/\s*\/\s*/g, "/"));
 }

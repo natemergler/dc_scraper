@@ -115,7 +115,8 @@ function reviewDefaultAction(
       return "accept";
     case "dcgis.agencies":
     case "dcgis.boards_commissions_councils":
-      return candidate.rawValue === "Other" ? "defer" : "accept";
+      if (candidate.rawValue === "Other") return "defer";
+      return candidate.needsReview === 1 ? "defer" : "accept";
     case "mota.quickbase":
       return "accept";
     case "open_dc.public_bodies":
@@ -139,9 +140,15 @@ function reviewWhyDeferred(
       return councilOversightReviewPolicy(candidate.rawValue).whyDeferred ??
         "This oversight edge stays deferred until a human confirms the committee relationship.";
     case "dcgis.agencies":
-    case "dcgis.boards_commissions_councils":
       if (candidate.rawValue !== "Other") return undefined;
       return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
+    case "dcgis.boards_commissions_councils":
+      if (candidate.rawValue === "Other") {
+        return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
+      }
+      if (candidate.needsReview !== 1) return undefined;
+      if (candidate.relationshipType !== "governed_by") return undefined;
+      return "The source row names the same organization as both the public body and its governing agency, so this derived relationship needs a human decision.";
     default:
       if (candidate.needsReview === 1) {
         return "The source marked this relationship candidate as needing review.";

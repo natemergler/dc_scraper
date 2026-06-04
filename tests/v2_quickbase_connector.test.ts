@@ -279,6 +279,58 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
   assert(!publicFacts.includes("private contact metadata"));
 });
 
+Deno.test("quickbase connector keeps source typos and role punctuation out of canonical names", async () => {
+  const liveStyleCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"x","Berta","Mata","","Reappointment","State Rehabilitation Council (SRC)","Representative of a disability advocacy group representing a cross section of individuals with physical, cognitive, sensory, and mental disabilities","Active / filled seat","Mayoral Appointee, Public Member","11-28-2018",""
+"","Sandra","Mattavous-Frye","","Reappointment","Sustainable Energy Utility Advisory Board (SEU)","The People's Counsel deisgnee","Active / filled seat","Mayoral Appointee, DC Agency Representative","01-01-2026","sandra.mattavous-frye@dc.gov"
+"","Shyra","Dowling","","Reappointment","Juvenile Justice Advisory Group (JJAG)","DCPS--Representatives from law enforcement and juvenile justice agencies, including juvenile and family court judges, prosecutors, counsel for children and youth, and probation workers","Active / filled seat","Mayoral Appointee, DC Agency Representative","06-20-2014","shyra.gregory@dcbc.dc.gov"
+"","Japer","Bowles","","New Appointment","Advisory Committee to the Office of Lesbian, Gay, Bisexual, Transgender, and Questioning Affairs (LGBTQ)","Mayor's Office of Lesbian, Gay, Bisexual, Transgender and Questioning Affairs (LGBTQ) Affairs Designee","Active / filled seat","Mayoral Appointee, DC Agency Representative","",""
+"","Sarah","Fashbaugh","","New Appointment","Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Active / filled seat","Mayoral Appointee, DC Agency Representative","",""
+`;
+  const result = await runQuickbaseConnector(liveStyleCsv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  const entityNames = (parsed.entityCandidates ?? []).map((candidate) => candidate.name);
+  assert(entityNames.includes("Berta Mata"));
+  assertEquals(entityNames.some((name) => name.includes("x Berta Mata")), false);
+  assertEquals(entityNames.some((name) => name.includes("deisgnee")), false);
+  assertEquals(entityNames.some((name) => name.includes("--")), false);
+  assertEquals(entityNames.some((name) => name.includes("Affairs Affairs")), false);
+  assertEquals(
+    entityNames.some((name) => name.includes("Alcoholic Beverages and Cannabis Administration")),
+    false,
+  );
+  assert(
+    entityNames.some((name) =>
+      name.includes("Sustainable Energy Utility Advisory Board") &&
+      name.includes("The People's Counsel Designee")
+    ),
+  );
+  assert(
+    entityNames.some((name) =>
+      name.includes("Juvenile Justice Advisory Group") &&
+      name.includes("DCPS Representatives")
+    ),
+  );
+  assert(
+    (parsed.relationshipCandidates ?? []).some((candidate) =>
+      candidate.rawValue === "The People's Counsel deisgnee"
+    ),
+  );
+  assert(
+    (parsed.relationshipCandidates ?? []).some((candidate) =>
+      candidate.rawValue?.includes("DCPS--Representatives")
+    ),
+  );
+  assert(
+    (parsed.relationshipCandidates ?? []).some((candidate) =>
+      candidate.rawValue === "Alcoholic Beverages and Cannabis Administration (ABCA) Designee"
+    ),
+  );
+});
+
 Deno.test("quickbase designee authority parsing normalizes trusted seats and skips unsupported role/category seats", async () => {
   const parserResidueSeats = [
     "Chief Information Security Officer (CISO) Designee",

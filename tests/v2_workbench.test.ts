@@ -2300,6 +2300,10 @@ Deno.test("DCGIS public-body rows named for a governing agency derive the public
     type: "entity_candidate",
     subjectPrefix: "candidate.dcgis.boards_commissions_councils.26",
   })[0];
+  const relationshipReviewItem = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils.26_governing_agency",
+  })[0];
   const evidenceFields = workbench.db.prepare(
     "select field_path as fieldPath from entity_candidate_evidence where candidate_id = ? order by field_path",
   ).all("candidate.dcgis.boards_commissions_councils.26") as Array<{ fieldPath: string }>;
@@ -2316,6 +2320,13 @@ Deno.test("DCGIS public-body rows named for a governing agency derive the public
     toEntityRef: string;
     reviewStatus: string;
   } | undefined;
+  const canonicalRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+       from canonical_relationships
+      where relationship_id = ?`,
+  ).get(
+    "dc.alcoholic_beverage_and_cannabis_board:governed_by:dc.alcoholic_beverage_and_cannabis_administration",
+  ) as { relationshipId: string } | undefined;
   const legalAttachment = workbench.db.prepare(
     `select entity_id as entityId,
             legal_ref_id as legalRefId
@@ -2335,7 +2346,13 @@ Deno.test("DCGIS public-body rows named for a governing agency derive the public
   assertEquals(relationship?.fromEntityRef, "dc.alcoholic_beverage_and_cannabis_board");
   assertEquals(relationship?.relationshipType, "governed_by");
   assertEquals(relationship?.toEntityRef, "dc.alcoholic_beverage_and_cannabis_administration");
-  assertEquals(relationship?.reviewStatus, "accepted");
+  assertEquals(relationship?.reviewStatus, "pending");
+  assertEquals(relationshipReviewItem?.defaultAction, "defer");
+  assertStringIncludes(
+    String(relationshipReviewItem?.details.whyDeferred),
+    "same organization as both the public body and its governing agency",
+  );
+  assertEquals(canonicalRelationship, undefined);
   assertEquals(legalAttachment?.entityId, "dc.alcoholic_beverage_and_cannabis_board");
   assertEquals(
     legalAttachment?.legalRefId,
@@ -2676,16 +2693,31 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
   const anc6cItem = parsed.items?.find((item) => item.itemKey === "anc-6c");
   const anc34gBody = anc34gItem?.body as {
     wardNumbers?: number[];
-    commissioners?: Array<{ name: string; role?: string }>;
+    commissioners?: Array<{ smd: string; name: string; role?: string }>;
   };
   const anc6cBody = anc6cItem?.body as {
     wardNumbers?: number[];
-    commissioners?: Array<{ name: string; role?: string }>;
+    commissioners?: Array<{ smd: string; name: string; role?: string }>;
   };
   assertEquals(anc34gBody.wardNumbers, [3, 4]);
   assertEquals(anc6cBody.wardNumbers, [6]);
   assertEquals(anc34gBody.commissioners?.[0].role, "Vice Chairperson");
   assertEquals(anc6cBody.commissioners?.[1].role, "Chairperson");
+  assertEquals(anc6cBody.commissioners?.[3], {
+    smd: "6C04",
+    name: "Audra Grant",
+    role: "Vice-Chairperson",
+  });
+  assertEquals(anc34gBody.commissioners?.[2], {
+    smd: "3/4G03",
+    name: "Brian A. Glover",
+    role: "Sergeant-at-Arms",
+  });
+  assertEquals(anc34gBody.commissioners?.[3], {
+    smd: "3/4G04",
+    name: "Carole L. Feld",
+    role: "Chairperson/Secretary",
+  });
   assert(
     parsed.entityCandidates?.some((candidate) =>
       candidate.name === "Advisory Neighborhood Commissions"
@@ -2695,6 +2727,17 @@ Deno.test("OANC ANC profiles connector captures wards, SMDs, and commissioners w
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 3"));
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Ward 4"));
   assert(parsed.entityCandidates?.some((candidate) => candidate.name === "SMD 6C01"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Audra Grant"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Brian A. Glover"));
+  assert(parsed.entityCandidates?.some((candidate) => candidate.name === "Carole L. Feld"));
+  assertEquals(
+    parsed.entityCandidates?.some((candidate) =>
+      candidate.name.includes("Vice-Chairperson") ||
+      candidate.name.includes("Sergeant-at-Arms") ||
+      candidate.name.includes("Chairperson/Secretary")
+    ),
+    false,
+  );
   assert(
     parsed.relationshipCandidates?.some((candidate) =>
       candidate.relationshipType === "part_of" && candidate.toEntityRef === buildEntityId("Ward 3")
@@ -3434,7 +3477,7 @@ Deno.test("dc review relationships can edit endpoints before accepting", async (
     ]
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+      "insert or ignore into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
     ).run(entityId, name, kind);
   }
   await workbench.importConnectorResult(
@@ -3650,7 +3693,7 @@ Deno.test("entity show review context explains deferred relationship candidates"
     ]
   ) {
     workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+      "insert or ignore into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
     ).run(entityId, name, kind);
   }
   const fetcher = async (url: string) => ({
@@ -5801,7 +5844,7 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
   for (
     const subjectId of [
       "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc",
-      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc_seat_alcoholic_beverages_and_cannabis_administration_designee",
+      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc_seat_alcoholic_beverage_and_cannabis_administration_designee",
       "candidate.mota.quickbase.appointment_status_filled",
     ]
   ) {
@@ -5809,19 +5852,6 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
       { eventType: "accept_entity_candidate", subjectId, payload: {} },
       resolutionsDir,
     );
-  }
-  for (
-    const [entityId, name, kind] of [
-      [
-        "dc.alcoholic_beverage_and_cannabis_administration",
-        "Alcoholic Beverages and Cannabis Administration",
-        "agency",
-      ],
-    ] as const
-  ) {
-    workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name, kind);
   }
   workbench.close();
 
@@ -5868,7 +5898,7 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
     args: [
       ...commonArgs,
       "--subject-prefix",
-      "relationship.mota.quickbase.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
+      "relationship.mota.quickbase.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee",
       "--relationship-type",
       "has_status",
     ],
@@ -5925,22 +5955,22 @@ Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no 
   const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
   assert(
     relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee",
+      "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee",
     ),
   );
   assert(
     relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:appointed_by:dc.mayor",
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:appointed_by:dc.mayor",
     ),
   );
   assert(
     relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
     ),
   );
   assert(
     relationshipIds.includes(
-      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverages_and_cannabis_administration_designee:has_status:status.filled",
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:has_status:status.filled",
     ),
   );
   assertEquals(remainingSeatRelationships.length, 0);

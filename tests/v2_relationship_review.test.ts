@@ -57,3 +57,21 @@ Deno.test("dc courts structure keeps safe part_of relationships accept-default",
 
   assertEquals(draft.defaultAction, "accept");
 });
+
+Deno.test("dcgis public-body relationships can defer ambiguous governing-agency rewrites", () => {
+  const draft = buildRelationshipReviewDraft({
+    relationshipCandidateId: "relationship.test.relationship_review.dcgis_ambiguous",
+    sourceId: "dcgis.boards_commissions_councils",
+    fromEntityRef: "dc.alcoholic_beverage_and_cannabis_board",
+    toEntityRef: "dc.alcoholic_beverage_and_cannabis_administration",
+    relationshipType: "governed_by",
+    rawValue: "Alcoholic Beverage and Cannabis Administration",
+    needsReview: 1,
+  });
+
+  assertEquals(draft.defaultAction, "defer");
+  assertEquals(
+    draft.details.whyDeferred,
+    "The source row names the same organization as both the public body and its governing agency, so this derived relationship needs a human decision.",
+  );
+});

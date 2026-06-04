@@ -750,7 +750,8 @@ function derivePublicAppointeeName(row: Record<string, string>): AppointeeNameRe
   const firstName = maybeString(row[quickbaseColumns.firstName]);
   const lastName = maybeString(row[quickbaseColumns.lastName]);
   const suffix = maybeString(row[quickbaseColumns.suffix]);
-  const parts = [prefix, firstName, lastName, suffix].filter((value): value is string =>
+  const publicPrefix = prefix && isPublicNamePrefix(prefix) ? prefix : undefined;
+  const parts = [publicPrefix, firstName, lastName, suffix].filter((value): value is string =>
     Boolean(value)
   );
   if (parts.length > 0) {
@@ -773,6 +774,11 @@ function derivePublicAppointeeName(row: Record<string, string>): AppointeeNameRe
     name: fallback,
     evidence: [fieldEvidence(quickbaseColumns.appointee, fallback)],
   };
+}
+
+function isPublicNamePrefix(value: string): boolean {
+  return /^(?:mr\.?|mrs\.?|ms\.?|dr\.?|hon\.?|captain|capt\.?|cmdr\.?|chief|lt\.?|eac|ac|director|deputy mayor)$/i
+    .test(value.trim());
 }
 
 function looksLikePublicAppointeeName(value: string): boolean {
@@ -803,8 +809,8 @@ function parseSeatAuthorities(
 }
 
 function extractSeatLabel(seat: string): string {
-  const withoutParens = seat.replace(/\([^)]*\)/g, " ").replaceAll(/\s+/g, " ").trim();
-  return collapseAdjacentDuplicatePhrase(withoutParens) || seat.trim();
+  const withoutParens = normalizeSeatLabelText(seat.replace(/\([^)]*\)/g, " "));
+  return collapseAdjacentDuplicatePhrase(withoutParens) || normalizeSeatLabelText(seat);
 }
 
 function collapseAdjacentDuplicatePhrase(value: string): string {
@@ -821,8 +827,25 @@ function collapseAdjacentDuplicatePhrase(value: string): string {
   return words.join(" ");
 }
 
+function normalizeSeatLabelText(value: string): string {
+  return value
+    .replaceAll("--", " ")
+    .replace(/\bdeisgnee\b/gi, "Designee")
+    .replace(
+      /\bAlcoholic Beverages and Cannabis Administration\b/g,
+      "Alcoholic Beverage and Cannabis Administration",
+    )
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter((word, index, words) =>
+      index === 0 || word.toLowerCase() !== words[index - 1].toLowerCase()
+    )
+    .join(" ");
+}
+
 function parseDesignatingAuthorityFromSeat(seat: string): string | undefined {
-  const rawValue = maybeString(seat);
+  const rawValue = maybeString(normalizeSeatLabelText(seat));
   if (!rawValue || !/\bdesignee\b/i.test(rawValue)) return undefined;
   const organization = parseDesignatingOrganizationFromSeat(rawValue);
   if (organization) {
