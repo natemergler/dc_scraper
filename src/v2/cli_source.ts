@@ -53,6 +53,8 @@ export interface SourceFetchProgressEvent {
   totalDurationMs?: number;
 }
 
+const SOURCE_FETCH_CONNECTOR_CONCURRENCY = 4;
+
 export async function handleSourceCommand(
   args: string[],
   options: SourceCommandOptions,
@@ -260,110 +262,58 @@ export async function fetchSources(
   onProgress?: (event: SourceFetchProgressEvent) => void,
 ): Promise<SourceFetchOutcome[]> {
   const outcomes: SourceFetchOutcome[] = [];
-  for (const [index, sourceId] of sourceIds.entries()) {
-    const connector = deps.getConnector(sourceId);
-    const total = sourceIds.length;
-    const sourceIndex = index + 1;
+  const total = sourceIds.length;
+  const fetchRecords = await mapConcurrent(
+    sourceIds.map((sourceId, index) => ({ sourceId, sourceIndex: index + 1 })),
+    SOURCE_FETCH_CONNECTOR_CONCURRENCY,
+    async ({ sourceId, sourceIndex }) =>
+      await fetchConnectorResult(sourceId, sourceIndex, total, options, deps, onProgress),
+  );
+  for (const record of fetchRecords) {
+    const { connector, sourceIndex, sourceStartedAt, connectorDurationMs } = record;
+    if (record.status === "failed") {
+      outcomes.push({
+        sourceId: connector.sourceId,
+        title: connector.source.title,
+        status: "failed",
+        endpointStatuses: [],
+        errorText: record.errorText,
+      });
+      continue;
+    }
+    const importStartedAt = performance.now();
     onProgress?.({
       sourceId: connector.sourceId,
       title: connector.source.title,
       index: sourceIndex,
       total,
-      phase: "start",
+      phase: "import",
+      connectorDurationMs,
+      totalDurationMs: performance.now() - sourceStartedAt,
     });
-    const sourceStartedAt = performance.now();
-    const connectorStartedAt = performance.now();
+    let importDurationMs = 0;
     try {
-      const result = await connector.run(
-        deps.createConnectorContext({
-          limit: options.limit,
-          onProgress: onProgress
-            ? (event) =>
+      await deps.importConnectorResult(
+        record.result,
+        onProgress
+          ? {
+            onProgress: (event) =>
               onProgress({
                 sourceId: connector.sourceId,
                 title: connector.source.title,
                 index: sourceIndex,
                 total,
-                phase: "connector-progress",
+                phase: "import-progress",
                 message: event.message,
-                connectorDurationMs: performance.now() - connectorStartedAt,
+                importProgress: event,
+                connectorDurationMs,
+                importDurationMs: performance.now() - importStartedAt,
                 totalDurationMs: performance.now() - sourceStartedAt,
-              })
-            : undefined,
-        }),
+              }),
+          }
+          : undefined,
       );
-      const connectorDurationMs = performance.now() - connectorStartedAt;
-      const importStartedAt = performance.now();
-      onProgress?.({
-        sourceId: connector.sourceId,
-        title: connector.source.title,
-        index: sourceIndex,
-        total,
-        phase: "import",
-        connectorDurationMs,
-        totalDurationMs: performance.now() - sourceStartedAt,
-      });
-      let importDurationMs = 0;
-      try {
-        await deps.importConnectorResult(
-          result,
-          onProgress
-            ? {
-              onProgress: (event) =>
-                onProgress({
-                  sourceId: connector.sourceId,
-                  title: connector.source.title,
-                  index: sourceIndex,
-                  total,
-                  phase: "import-progress",
-                  message: event.message,
-                  importProgress: event,
-                  connectorDurationMs,
-                  importDurationMs: performance.now() - importStartedAt,
-                  totalDurationMs: performance.now() - sourceStartedAt,
-                }),
-            }
-            : undefined,
-        );
-        importDurationMs = performance.now() - importStartedAt;
-      } catch (error) {
-        onProgress?.({
-          sourceId: connector.sourceId,
-          title: connector.source.title,
-          index: sourceIndex,
-          total,
-          phase: "failed",
-          connectorDurationMs,
-          importDurationMs: performance.now() - importStartedAt,
-          totalDurationMs: performance.now() - sourceStartedAt,
-        });
-        outcomes.push({
-          sourceId: connector.sourceId,
-          title: connector.source.title,
-          status: "failed",
-          endpointStatuses: [],
-          errorText: error instanceof Error ? error.message : String(error),
-        });
-        continue;
-      }
-      onProgress?.({
-        sourceId: connector.sourceId,
-        title: connector.source.title,
-        index: sourceIndex,
-        total,
-        phase: "success",
-        connectorDurationMs,
-        importDurationMs,
-        totalDurationMs: performance.now() - sourceStartedAt,
-      });
-      outcomes.push({
-        sourceId: connector.sourceId,
-        title: connector.source.title,
-        status: "success",
-        endpointStatuses: result.endpointResults.map((item) =>
-          `${item.endpoint.endpointId}:${item.status}`
-        ),
-      });
+      importDurationMs = performance.now() - importStartedAt;
     } catch (error) {
       onProgress?.({
         sourceId: connector.sourceId,
@@ -371,8 +321,8 @@ export async function fetchSources(
         index: sourceIndex,
         total,
         phase: "failed",
-        connectorDurationMs: performance.now() - connectorStartedAt,
-        importDurationMs: 0,
+        connectorDurationMs,
+        importDurationMs: performance.now() - importStartedAt,
         totalDurationMs: performance.now() - sourceStartedAt,
       });
       outcomes.push({
@@ -382,9 +332,135 @@ export async function fetchSources(
         endpointStatuses: [],
         errorText: error instanceof Error ? error.message : String(error),
       });
+      continue;
     }
+    onProgress?.({
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      index: sourceIndex,
+      total,
+      phase: "success",
+      connectorDurationMs,
+      importDurationMs,
+      totalDurationMs: performance.now() - sourceStartedAt,
+    });
+    outcomes.push({
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      status: "success",
+      endpointStatuses: record.result.endpointResults.map((item) =>
+        `${item.endpoint.endpointId}:${item.status}`
+      ),
+    });
   }
   return outcomes;
+}
+
+type ConnectorFetchRecord =
+  | {
+    status: "success";
+    connector: SourceConnector;
+    sourceIndex: number;
+    sourceStartedAt: number;
+    connectorDurationMs: number;
+    result: ConnectorResult;
+  }
+  | {
+    status: "failed";
+    connector: SourceConnector;
+    sourceIndex: number;
+    sourceStartedAt: number;
+    connectorDurationMs: number;
+    errorText: string;
+  };
+
+async function fetchConnectorResult(
+  sourceId: string,
+  sourceIndex: number,
+  total: number,
+  options: SourceCommandOptions,
+  deps: Pick<SourceCommandDeps, "getConnector" | "createConnectorContext">,
+  onProgress?: (event: SourceFetchProgressEvent) => void,
+): Promise<ConnectorFetchRecord> {
+  const connector = deps.getConnector(sourceId);
+  onProgress?.({
+    sourceId: connector.sourceId,
+    title: connector.source.title,
+    index: sourceIndex,
+    total,
+    phase: "start",
+  });
+  const sourceStartedAt = performance.now();
+  const connectorStartedAt = performance.now();
+  try {
+    const result = await connector.run(
+      deps.createConnectorContext({
+        limit: options.limit,
+        onProgress: onProgress
+          ? (event) =>
+            onProgress({
+              sourceId: connector.sourceId,
+              title: connector.source.title,
+              index: sourceIndex,
+              total,
+              phase: "connector-progress",
+              message: event.message,
+              connectorDurationMs: performance.now() - connectorStartedAt,
+              totalDurationMs: performance.now() - sourceStartedAt,
+            })
+          : undefined,
+      }),
+    );
+    return {
+      status: "success",
+      connector,
+      sourceIndex,
+      sourceStartedAt,
+      connectorDurationMs: performance.now() - connectorStartedAt,
+      result,
+    };
+  } catch (error) {
+    const connectorDurationMs = performance.now() - connectorStartedAt;
+    onProgress?.({
+      sourceId: connector.sourceId,
+      title: connector.source.title,
+      index: sourceIndex,
+      total,
+      phase: "failed",
+      connectorDurationMs,
+      importDurationMs: 0,
+      totalDurationMs: performance.now() - sourceStartedAt,
+    });
+    return {
+      status: "failed",
+      connector,
+      sourceIndex,
+      sourceStartedAt,
+      connectorDurationMs,
+      errorText: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function mapConcurrent<T, U>(
+  values: T[],
+  concurrency: number,
+  mapper: (value: T) => Promise<U>,
+): Promise<U[]> {
+  const results = new Array<U>(values.length);
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(Math.max(1, concurrency), values.length) },
+    async () => {
+      while (nextIndex < values.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await mapper(values[index]);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 export function printSourceHelp(
