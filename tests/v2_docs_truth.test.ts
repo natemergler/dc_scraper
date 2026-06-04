@@ -20,6 +20,8 @@ Deno.test("README and CLI help stay aligned on the current operator entrypoints"
 
   assertStringIncludes(topLevelHelp, "deno task dc -- smoke tier0");
   assertStringIncludes(topLevelHelp, "deno task dc -- release verify");
+  assertStringIncludes(topLevelHelp, "deno task dc -- review packets");
+  assertStringIncludes(topLevelHelp, "--decisions");
   assertStringIncludes(releaseHelp, "deno task dc -- release verify");
   assertEquals(
     releaseHelp.indexOf("deno task dc -- release verify"),
@@ -32,6 +34,7 @@ Deno.test("README and CLI help stay aligned on the current operator entrypoints"
   );
   assertStringIncludes(releaseHelp, "--source-profile <structure|tier0|inventory|custom>");
   assertStringIncludes(smokeHelp, "deno task dc -- smoke inventory");
+  assertEquals(readme.includes("notes/"), false);
 });
 
 Deno.test("release file lists stay aligned across README, release help, and release contract docs", async () => {

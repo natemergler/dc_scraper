@@ -264,7 +264,10 @@ Usage:
   } [entities|relationships|legal|sources] [--db <path>] [--resolutions-dir <path>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>]
   ${
     dcCommand("review list")
-  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json]
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--decisions] [--json]
+  ${
+    dcCommand("review packets")
+  } [--mode <mode>] [--status <open|deferred|resolved|all>] [--type <type>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--limit <n>] [--json] [--include-review-item-ids]
   ${
     dcCommand("review batch accept-safe")
   } [--mode <mode>] [--source <source-id>] [--subject-prefix <prefix>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]

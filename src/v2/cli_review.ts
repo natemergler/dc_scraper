@@ -167,7 +167,7 @@ Usage:
   } --mode <mode> --subject-prefix <prefix> [--source <source-id>] [--relationship-type <type>] [--raw-value <value>] [--raw-value-contains <text>] [--ref-type <type>] [--db <path>] [--resolutions-dir <path>]
 
 Interactive actions:
-  Enter runs the default action for the current item.
+  Enter runs the default action for the current decision.
   a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
 
 Advanced maintenance:

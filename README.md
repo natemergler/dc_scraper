@@ -145,8 +145,8 @@ manual approval of routine source-backed facts.
 - [docs/SOURCE_COVERAGE.md](docs/SOURCE_COVERAGE.md) is the operator view of current source lanes.
 - [docs/DATA_HYGIENE.md](docs/DATA_HYGIENE.md) is the generated-data and privacy boundary note.
 
-Historical planning notes still exist under `notes/`, but they are implementation history, not the
-current truth surface.
+Historical planning notes and campaign logs belong outside the tracked tree or under ignored scratch
+paths such as `.agent/`; they are not the current truth surface.
 
 ## Privacy Boundary
 

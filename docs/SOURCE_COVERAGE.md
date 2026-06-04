@@ -15,9 +15,10 @@ Tiers:
 - Tier 2: useful completeness expansion.
 - Tier 3: future or out of scope for now.
 
-Current `main` now verifies and builds as `ready: true` with `readiness: usable-with-warnings`. The
-table below distinguishes lanes that still limit a stronger completeness claim from lanes that are
-follow-up work, not hard build/verify blockers.
+On a current full-source workbench, `release verify` is expected to be provenance-clean and usable
+with warnings when only bounded human decisions remain. The table below distinguishes lanes that
+still limit a stronger completeness claim from lanes that are follow-up work, not hard build/verify
+blockers.
 
 | Source family                        | Tier | Access path                                                                                 | Capture depth                                  | Contributes                                                                                                                                              | Current truth                                                                                                                                                                                                                                                                   | Current limits                                                                                                                                                                                                                                           | Still limits stronger release claim? | Next action                                                                                                    |
 | ------------------------------------ | ---- | ------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
