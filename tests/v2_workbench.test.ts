@@ -4465,6 +4465,59 @@ Deno.test("safe seeded Council oversight endpoints auto-promote and auto-accept 
   assertEquals(remainingOversight.length, 0);
 });
 
+Deno.test("safe seeded Council member container endpoint auto-promotes and unblocks seat structure", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.ward_1_council_seat', 'Ward 1 Council Seat', 'council_role', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.members",
+      relationshipCandidateId: "relationship.council.members.ward_1_council_seat_council_part_of",
+      sourceItemKey: "council-members-page",
+      fromEntityRef: "dc.ward_1_council_seat",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "part_of",
+      rawValue: "Council of the District of Columbia",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const council = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.council_of_the_district_of_columbia'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const relationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.ward_1_council_seat:part_of:dc.council_of_the_district_of_columbia'`,
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.members.relationship_council_members_ward_1_council_seat_council_part_of",
+  });
+  const blockers = workbench.db.prepare(
+    "select count(*) as count from reconciliation_items where subject_id = 'relationship.council.members.ward_1_council_seat_council_part_of'",
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(council?.entityId, "dc.council_of_the_district_of_columbia");
+  assertEquals(council?.reviewStatus, "accepted");
+  assertEquals(
+    relationship?.relationshipId,
+    "dc.ward_1_council_seat:part_of:dc.council_of_the_district_of_columbia",
+  );
+  assertEquals(reviewItems.length, 0);
+  assertEquals(blockers.count, 0);
+});
+
 Deno.test("safe seeded DCGIS governing-agency endpoints auto-promote and auto-accept the unblocked relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
