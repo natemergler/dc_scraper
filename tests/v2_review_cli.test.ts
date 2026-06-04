@@ -121,6 +121,10 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   const stderr = new TextDecoder().decode(output.stderr);
   assertEquals(output.code, 0);
   assertEquals(stderr, "");
+  assertStringIncludes(
+    stdout,
+    "Mystery legal authority - test.signature.legal_refs legal reference [default defer; packet 1 open]",
+  );
   assertStringIncludes(stdout, "Review: Mystery legal authority");
   assertStringIncludes(stdout, "legal ref | unknown | open");
   assertStringIncludes(
