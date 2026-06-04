@@ -3897,6 +3897,7 @@ Deno.test("public body comparison surfaces council body and board suffix leads w
       candidates: [{
         name: "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
         kind: "board",
+        officialUrl: "https://www.mwaa.com/about/board-directors",
       }],
     },
   ] as const;
@@ -3960,7 +3961,7 @@ Deno.test("public body comparison surfaces council body and board suffix leads w
         "{}",
       );
       workbench.db.prepare(
-        "insert into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+        "insert into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, official_url, review_status) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
       ).run(
         `candidate.${source.sourceId}.${index + 1}`,
         sourceItemId,
@@ -3969,6 +3970,7 @@ Deno.test("public body comparison surfaces council body and board suffix leads w
         candidate.name,
         candidate.kind,
         candidate.kind,
+        "officialUrl" in candidate ? candidate.officialUrl : null,
         "pending",
       );
     }
@@ -3993,6 +3995,31 @@ Deno.test("public body comparison surfaces council body and board suffix leads w
     [
       "Metropolitan Washington Airports Authority",
       "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    ],
+  );
+  assertEquals(
+    report.conservativeVariantMatches[0]?.names.map((row) => ({
+      candidateId: row.candidateId,
+      proposedEntityId: row.proposedEntityId,
+      kind: row.kind,
+      officialUrl: row.officialUrl,
+      reviewStatus: row.reviewStatus,
+    })),
+    [
+      {
+        candidateId: "candidate.council.committees.1",
+        proposedEntityId: "dc.metropolitan_washington_airports_authority",
+        kind: "public_body",
+        officialUrl: null,
+        reviewStatus: "pending",
+      },
+      {
+        candidateId: "candidate.dcgis.boards_commissions_councils.1",
+        proposedEntityId: "dc.metropolitan_washington_airports_authority_board_of_directors_mwaa",
+        kind: "board",
+        officialUrl: "https://www.mwaa.com/about/board-directors",
+        reviewStatus: "pending",
+      },
     ],
   );
 });
