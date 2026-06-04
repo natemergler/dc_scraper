@@ -23,6 +23,7 @@ export interface ReviewItemFilters {
   refType?: string;
   sourceId?: string;
   limit?: number;
+  decisionsOnly?: boolean;
 }
 
 export interface StaleReviewSummary {
