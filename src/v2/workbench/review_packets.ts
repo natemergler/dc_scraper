@@ -3,7 +3,7 @@ import type { ReviewItemFilters } from "./review.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
-import { projectOpenHumanDecisionWork } from "./unresolved_work.ts";
+import { projectOpenHumanDecisionWork, type UnresolvedDecisionNode } from "./unresolved_work.ts";
 
 export interface ReviewPacketRecord {
   packetId: string;
@@ -26,6 +26,11 @@ export type ReviewPacketJsonRecord = Omit<ReviewPacketRecord, "reviewItemIds"> &
   reviewItemIds?: string[];
 };
 
+export type ReviewPacketPriorityDecision = Pick<
+  UnresolvedDecisionNode,
+  "reviewItemId" | "downstreamBlockedCount"
+>;
+
 export function listReviewPackets(
   store: Pick<WorkbenchStore, "db"> & {
     listReviewItems(filters?: ReviewItemFilters): ReviewItemRecord[];
@@ -46,11 +51,15 @@ export function listOpenDecisionReviewPackets(
     ...itemFilters,
     limit: undefined,
   });
-  return reviewPacketsFromItems(
+  const packets = reviewPacketsFromItems(
     store,
     projection.items.map((item) => item.reviewItem),
-    { limit: packetLimit },
   );
+  const decisionsByReviewItemId = reviewPacketPriorityDecisionMap(
+    projection.items.map((item) => item.decision),
+  );
+  const rankedPackets = rankReviewPacketsByPriority(packets, decisionsByReviewItemId);
+  return packetLimit === undefined ? rankedPackets : rankedPackets.slice(0, packetLimit);
 }
 
 export function reviewPacketsFromItems(
@@ -107,6 +116,36 @@ export function reviewPacketsFromItems(
     left.reason.localeCompare(right.reason)
   );
   return options.limit === undefined ? sortedPackets : sortedPackets.slice(0, options.limit);
+}
+
+export function reviewPacketPriorityDecisionMap(
+  decisions: ReviewPacketPriorityDecision[],
+): Map<string, ReviewPacketPriorityDecision> {
+  return new Map(decisions.map((decision) => [decision.reviewItemId, decision]));
+}
+
+export function rankReviewPacketsByPriority(
+  packets: ReviewPacketRecord[],
+  decisionsByReviewItemId: Map<string, ReviewPacketPriorityDecision>,
+): ReviewPacketRecord[] {
+  return [...packets].sort((left, right) =>
+    reviewPacketPriorityScore(right, decisionsByReviewItemId) -
+      reviewPacketPriorityScore(left, decisionsByReviewItemId) ||
+    right.openCount - left.openCount ||
+    right.count - left.count ||
+    left.sourceId.localeCompare(right.sourceId) ||
+    left.packetId.localeCompare(right.packetId)
+  );
+}
+
+export function reviewPacketPriorityScore(
+  packet: ReviewPacketRecord,
+  decisionsByReviewItemId: Map<string, ReviewPacketPriorityDecision>,
+): number {
+  return packet.reviewItemIds.reduce((max, reviewItemId) => {
+    const decision = decisionsByReviewItemId.get(reviewItemId);
+    return Math.max(max, decision?.downstreamBlockedCount ?? 0);
+  }, 0);
 }
 
 export function reviewPacketJsonRecord(

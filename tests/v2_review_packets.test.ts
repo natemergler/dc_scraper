@@ -607,6 +607,112 @@ Deno.test("review packet limits apply after grouping related work", async () => 
   assertEquals(rawBody.packets[1].count, 1);
 });
 
+Deno.test("default review packets and interactive inbox put smaller high-impact work first", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(workbench, "dc.source_board", "Source Board", "board");
+  for (const name of ["One", "Two"]) {
+    await workbench.importConnectorResult(
+      syntheticCustomEntitySourceResult({
+        sourceId: "aaa.review_packets.low_impact",
+        candidateId: `candidate.aaa.review_packets.low_impact.${name.toLowerCase()}`,
+        sourceItemKey: `low-impact-${name.toLowerCase()}-row`,
+        proposedEntityId: `dc.low_impact_${name.toLowerCase()}`,
+        name: `Low Impact ${name}`,
+        kind: "board",
+        observedName: `Low Impact ${name}`,
+        needsReview: true,
+      }),
+      dataDir,
+    );
+  }
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "zzz.review_packets.high_impact",
+      candidateId: "candidate.zzz.review_packets.high_impact.target",
+      sourceItemKey: "high-impact-target-row",
+      proposedEntityId: "dc.high_impact_target",
+      name: "High Impact Target",
+      kind: "agency",
+      observedName: "High Impact Target",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "zzz.review_packets.high_impact",
+      relationshipCandidateId: "relationship.zzz.review_packets.high_impact.blocked",
+      sourceItemKey: "high-impact-blocked-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.high_impact_target",
+      relationshipType: "overseen_by",
+      rawValue: "High Impact Target",
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const packetOutput = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "entities",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--json",
+  ]);
+  assertEquals(packetOutput.code, 0);
+  const packetBody = JSON.parse(new TextDecoder().decode(packetOutput.stdout)) as {
+    packets: Array<{ sourceId: string; count: number }>;
+  };
+  assertEquals(packetBody.packets.map((packet) => [packet.sourceId, packet.count]), [
+    ["zzz.review_packets.high_impact", 1],
+    ["aaa.review_packets.low_impact", 2],
+  ]);
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "entities",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const reviewOutput = await reviewProcess.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+
+  assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(
+    reviewText,
+    "1. [recommended] High Impact Target - zzz.review_packets.high_impact entity candidate [default accept; packet 1 open; unblocks 1]",
+  );
+});
+
 Deno.test("review packets preserve resolved status filters", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

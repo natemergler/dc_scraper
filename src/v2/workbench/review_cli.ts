@@ -7,7 +7,11 @@ import { appendResolutionEvents } from "./resolution.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
 import { canBatchAcceptReviewItem, isScopedDefaultDeferBatch } from "./review_batch.ts";
 import {
+  rankReviewPacketsByPriority,
   renderReviewPacketHeader,
+  type ReviewPacketPriorityDecision,
+  reviewPacketPriorityDecisionMap,
+  reviewPacketPriorityScore,
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
@@ -124,7 +128,7 @@ export async function runInteractiveReview(
 interface InteractiveReviewSelection {
   packet?: ReviewPacketRecord;
   item: ReviewItemRecord;
-  decision?: UnresolvedDecisionNode;
+  decision?: ReviewPacketPriorityDecision;
 }
 
 interface InteractiveReviewSnapshot {
@@ -134,7 +138,7 @@ interface InteractiveReviewSnapshot {
   packets: ReviewPacketRecord[];
   rankedPackets: ReviewPacketRecord[];
   decisions: UnresolvedDecisionNode[];
-  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>;
+  decisionsByReviewItemId: Map<string, ReviewPacketPriorityDecision>;
   blockedDiagnosticCount: number;
   diagnostics: UnresolvedDiagnosticNode[];
 }
@@ -149,10 +153,8 @@ function buildInteractiveReviewSnapshot(
     const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
     const packets = reviewPacketsFromItems(workbench, items);
     const decisions = projection.items.map((item) => item.decision);
-    const decisionsByReviewItemId = new Map(
-      decisions.map((decision) => [decision.reviewItemId, decision]),
-    );
-    const rankedPackets = rankPacketsByPriority(packets, decisionsByReviewItemId);
+    const decisionsByReviewItemId = reviewPacketPriorityDecisionMap(decisions);
+    const rankedPackets = rankReviewPacketsByPriority(packets, decisionsByReviewItemId);
     return {
       items,
       browseOnlyItemCount: projection.summary.filteredBrowseOnlyOpenReviewItemCount,
@@ -175,10 +177,8 @@ function buildInteractiveReviewSnapshot(
   const decisions = graph.decisions.filter((decision) =>
     itemsByReviewItemId.has(decision.reviewItemId)
   );
-  const decisionsByReviewItemId = new Map(
-    decisions.map((decision) => [decision.reviewItemId, decision]),
-  );
-  const rankedPackets = rankPacketsByPriority(packets, decisionsByReviewItemId);
+  const decisionsByReviewItemId = reviewPacketPriorityDecisionMap(decisions);
+  const rankedPackets = rankReviewPacketsByPriority(packets, decisionsByReviewItemId);
   return {
     items,
     browseOnlyItemCount,
@@ -201,7 +201,7 @@ function nextInteractiveReviewSelection(
   stickyPacketId?: string,
 ): InteractiveReviewSelection | undefined {
   const packet = snapshot.packets.find((candidate) => candidate.packetId === stickyPacketId) ??
-    selectPriorityPacket(snapshot.packets, snapshot.decisionsByReviewItemId);
+    snapshot.rankedPackets.at(0);
   if (!packet) {
     const decision = snapshot.decisions.at(0);
     if (decision) {
@@ -212,7 +212,7 @@ function nextInteractiveReviewSelection(
   }
   const decision = packet.reviewItemIds
     .map((reviewItemId) => snapshot.decisionsByReviewItemId.get(reviewItemId))
-    .filter((candidate): candidate is UnresolvedDecisionNode => Boolean(candidate))
+    .filter((candidate): candidate is ReviewPacketPriorityDecision => Boolean(candidate))
     .sort((left, right) =>
       right.downstreamBlockedCount - left.downstreamBlockedCount ||
       left.reviewItemId.localeCompare(right.reviewItemId)
@@ -226,7 +226,7 @@ function nextInteractiveReviewSelection(
   return item ? { packet, item, decision } : undefined;
 }
 
-function renderDecisionImpact(decision: UnresolvedDecisionNode): string {
+function renderDecisionImpact(decision: ReviewPacketPriorityDecision): string {
   const noun = decision.downstreamBlockedCount === 1 ? "relationship" : "relationships";
   return `Decision impact: unblocks ${decision.downstreamBlockedCount} blocked ${noun}.`;
 }
@@ -249,37 +249,6 @@ function renderBlockedDiagnosticsOnlyMessage(
   }
   lines.push(`Inspect blocked dependencies with ${dcCommand("audit")}.`);
   return lines.join("\n");
-}
-
-function selectPriorityPacket(
-  packets: ReviewPacketRecord[],
-  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
-): ReviewPacketRecord | undefined {
-  return rankPacketsByPriority(packets, decisionsByReviewItemId).at(0);
-}
-
-function rankPacketsByPriority(
-  packets: ReviewPacketRecord[],
-  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
-): ReviewPacketRecord[] {
-  return [...packets].sort((left, right) =>
-    packetPriorityScore(right, decisionsByReviewItemId) -
-      packetPriorityScore(left, decisionsByReviewItemId) ||
-    right.openCount - left.openCount ||
-    right.count - left.count ||
-    left.sourceId.localeCompare(right.sourceId) ||
-    left.packetId.localeCompare(right.packetId)
-  );
-}
-
-function packetPriorityScore(
-  packet: ReviewPacketRecord,
-  decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>,
-): number {
-  return packet.reviewItemIds.reduce((max, reviewItemId) => {
-    const decision = decisionsByReviewItemId.get(reviewItemId);
-    return Math.max(max, decision?.downstreamBlockedCount ?? 0);
-  }, 0);
 }
 
 function renderReviewInbox(
@@ -337,7 +306,7 @@ function renderInboxChoiceLine(
   snapshot: Pick<InteractiveReviewSnapshot, "decisionsByReviewItemId">,
 ): string {
   const packet = choice.packet;
-  const impact = packetPriorityScore(packet, snapshot.decisionsByReviewItemId);
+  const impact = reviewPacketPriorityScore(packet, snapshot.decisionsByReviewItemId);
   const scope = packetInboxScope(packet);
   const prefix = index === 0 ? `${index + 1}. [recommended]` : `${index + 1}.`;
   const impactText = impact > 0 ? `; unblocks ${impact}` : "";
@@ -386,7 +355,7 @@ function packetLeadPreview(
 ): string | undefined {
   const leadItem = leadingPacketItem(snapshot, packet);
   if (!leadItem) return undefined;
-  const impact = packetPriorityScore(packet, snapshot.decisionsByReviewItemId);
+  const impact = reviewPacketPriorityScore(packet, snapshot.decisionsByReviewItemId);
   const title = reviewItemTitle(store, leadItem);
   return impact > 0 ? `${title} [unblocks ${impact}]` : title;
 }
@@ -400,7 +369,7 @@ function leadingPacketItem(
 ): ReviewItemRecord | undefined {
   const decision = packet.reviewItemIds
     .map((reviewItemId) => snapshot.decisionsByReviewItemId.get(reviewItemId))
-    .filter((candidate): candidate is UnresolvedDecisionNode => Boolean(candidate))
+    .filter((candidate): candidate is ReviewPacketPriorityDecision => Boolean(candidate))
     .sort((left, right) =>
       right.downstreamBlockedCount - left.downstreamBlockedCount ||
       left.reviewItemId.localeCompare(right.reviewItemId)
