@@ -5,15 +5,16 @@ import {
   nowIso,
   type ReviewItemInput,
 } from "../domain.ts";
-import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
-import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
-import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryAll, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
+import {
+  type MaterializationStep,
+  materializePrerequisiteFacts,
+  materializeRelationshipFacts,
+} from "./materialization.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
-import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import {
   buildEntityDecisionHint,
   buildLegalRefDecisionHint,
@@ -186,26 +187,14 @@ export async function importConnectorResult(
           message: "Replayed legal ref decisions",
         });
         if (needsDerivedStateRefresh) {
-          autoAcceptSafeLegalRefs(store);
-          reportImportProgress(options, {
-            phase: "legal-auto-accept",
-            sourceId: endpointResult.endpoint.sourceId,
-            endpointId: endpointResult.endpoint.endpointId,
-            message: "Auto-accepted safe legal refs",
-          });
-          autoPromoteSafeEntityCandidates(store);
-          reportImportProgress(options, {
-            phase: "entity-auto-promote",
-            sourceId: endpointResult.endpoint.sourceId,
-            endpointId: endpointResult.endpoint.endpointId,
-            message: "Auto-promoted safe entities",
-          });
-          reconcileRelationshipCandidates(store);
-          reportImportProgress(options, {
-            phase: "relationship-reconciliation",
-            sourceId: endpointResult.endpoint.sourceId,
-            endpointId: endpointResult.endpoint.endpointId,
-            message: "Reconciled relationship candidates",
+          materializePrerequisiteFacts(store, {
+            onStep: (step) =>
+              reportImportMaterializationProgress(
+                options,
+                step,
+                endpointResult.endpoint.sourceId,
+                endpointResult.endpoint.endpointId,
+              ),
           });
         }
         await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
@@ -218,12 +207,14 @@ export async function importConnectorResult(
           });
         }
         if (needsDerivedStateRefresh) {
-          autoAcceptSafeRelationshipCandidates(store);
-          reportImportProgress(options, {
-            phase: "relationship-auto-accept",
-            sourceId: endpointResult.endpoint.sourceId,
-            endpointId: endpointResult.endpoint.endpointId,
-            message: "Auto-accepted safe relationships",
+          materializeRelationshipFacts(store, {
+            onStep: (step) =>
+              reportImportMaterializationProgress(
+                options,
+                step,
+                endpointResult.endpoint.sourceId,
+                endpointResult.endpoint.endpointId,
+              ),
           });
         }
       }
@@ -240,6 +231,33 @@ export async function importConnectorResult(
       );
       throw error;
     }
+  }
+}
+
+function reportImportMaterializationProgress(
+  options: ImportConnectorOptions,
+  step: MaterializationStep,
+  sourceId: string,
+  endpointId: string,
+): void {
+  reportImportProgress(options, {
+    phase: step,
+    sourceId,
+    endpointId,
+    message: importMaterializationMessage(step),
+  });
+}
+
+function importMaterializationMessage(step: MaterializationStep): string {
+  switch (step) {
+    case "legal-auto-accept":
+      return "Auto-accepted safe legal refs";
+    case "entity-auto-promote":
+      return "Auto-promoted safe entities";
+    case "relationship-reconciliation":
+      return "Reconciled relationship candidates";
+    case "relationship-auto-accept":
+      return "Auto-accepted safe relationships";
   }
 }
 

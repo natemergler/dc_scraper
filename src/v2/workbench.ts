@@ -17,9 +17,6 @@ import {
   upsertEndpoint as writeEndpointRecord,
   upsertSource as writeSourceRecord,
 } from "./workbench/catalog.ts";
-import { autoAcceptSafeLegalRefs } from "./workbench/auto_accept_legal_refs.ts";
-import { autoAcceptSafeRelationshipCandidates } from "./workbench/auto_accept_relationships.ts";
-import { autoPromoteSafeEntityCandidates } from "./workbench/auto_promote.ts";
 import {
   appendResolutionEvent as appendResolutionRecord,
   applyResolutionEvent as applyResolutionRecord,
@@ -31,7 +28,7 @@ import {
   importConnectorResult as importConnectorIntoWorkbench,
 } from "./workbench/import.ts";
 import { refreshLegalRefAttachments } from "./workbench/legal_ref_attachments.ts";
-import { reconcileRelationshipCandidates } from "./workbench/reconciliation.ts";
+import { materializeReviewReadyFacts } from "./workbench/materialization.ts";
 import { buildUnresolvedWorkGraph } from "./workbench/unresolved_work.ts";
 import {
   listReviewItems as readReviewQueue,
@@ -91,10 +88,7 @@ export class Workbench implements WorkbenchStore {
   init(options: WorkbenchInitOptions = {}): WorkbenchMeta {
     const meta = initWorkbench(this);
     if (options.refreshDerivedState === false) return meta;
-    autoAcceptSafeLegalRefs(this);
-    autoPromoteSafeEntityCandidates(this);
-    reconcileRelationshipCandidates(this);
-    autoAcceptSafeRelationshipCandidates(this);
+    materializeReviewReadyFacts(this);
     refreshLegalRefAttachments(this);
     return meta;
   }
