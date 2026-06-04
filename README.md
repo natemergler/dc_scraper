@@ -36,7 +36,8 @@ deno task dc -- release inspect
 
 The default workbench database is `data/workbench.sqlite`. The `--limit 25` fetch is a small slice
 for orientation. Use `deno task dc -- source fetch --all` when you need the full configured-source
-workbench.
+workbench. A full fetch can take a while because it walks several public source lanes; expect
+per-source progress and a final succeeded/failed summary before moving on.
 
 ## Happy Path
 
@@ -52,6 +53,9 @@ deno task dc -- release verify
 deno task dc -- release build --source-profile custom
 deno task dc -- release inspect
 ```
+
+For long all-source runs, let the fetch reach its final summary before treating the workbench as
+current. Use a single-source fetch or a smoke profile when you only need a quick operator check.
 
 `dc review` is the human path for true ambiguity, conflicts, edits, rejects, and deferrals. Safe
 materialized facts should be audited, browsed, verified, and released without turning them into

@@ -19,4 +19,5 @@ CSV/JSON exports for entities, relationships, sources, datasets, and legal refer
 ## Consequences
 
 - New public files should be added only when the existing compact surface is already working well.
-- Review-status notes belong in the release README when needed, not in a side-car caveats file.
+- Review-status detail belongs in `status`, `audit`, and `release verify`; the generated release
+  README stays short package orientation.
