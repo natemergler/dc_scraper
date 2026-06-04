@@ -180,22 +180,19 @@ function buildWorkbenchStatusPlan(input: WorkbenchStatusPlanInput): WorkbenchSta
 }
 
 function unresolvedStateNote(counts: WorkbenchUnresolvedCounts): string {
-  const openReviewDetail = typeof counts.humanDecisionOpenReviewItemCount === "number" ||
-      typeof counts.browseOnlyOpenReviewItemCount === "number"
-    ? ` (human decisions=${
-      counts.humanDecisionOpenReviewItemCount ?? counts.openReviewItemCount
-    }, browse-only=${counts.browseOnlyOpenReviewItemCount ?? 0})`
-    : "";
+  const openDecisionCount = counts.humanDecisionOpenReviewItemCount ?? counts.openReviewItemCount;
+  const browseOnlyCount = counts.browseOnlyOpenReviewItemCount ?? 0;
   if (
-    counts.openReviewItemCount === 0 &&
+    openDecisionCount === 0 &&
+    browseOnlyCount === 0 &&
     counts.deferredReviewItemCount === 0 &&
     counts.staleReviewItemCount === 0 &&
     counts.blockedReconciliationCount === 0 &&
     counts.placeholderEntityCount === 0
   ) {
-    return "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.";
+    return "No open decisions, browse rows, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.";
   }
-  return `Unresolved workbench state: open review=${counts.openReviewItemCount}${openReviewDetail}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
+  return `Unresolved workbench state: open decisions=${openDecisionCount}, browse rows=${browseOnlyCount}, deferred review=${counts.deferredReviewItemCount}, stale review=${counts.staleReviewItemCount}, blocked reconciliation=${counts.blockedReconciliationCount}, placeholder entities=${counts.placeholderEntityCount}.`;
 }
 
 function nextWorkbenchCommand(input: WorkbenchStatusPlanInput): string {
@@ -241,19 +238,17 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
       : undefined,
   ].filter((value): value is string => Boolean(value)).join("; ");
   const blockedFamilySummary = renderBlockedFamilySummary(status.reconciliation.blockedFamilies);
-  const reviewDecisionSuffix = status.review.open > 0
-    ? ` (${status.review.humanDecisionOpen} decision${
-      status.review.humanDecisionOpen === 1 ? "" : "s"
-    }, ${status.review.browseOnlyOpen} browse-only)`
+  const browseOnlySuffix = status.review.browseOnlyOpen > 0
+    ? `, ${status.review.browseOnlyOpen} browse row${status.review.browseOnlyOpen === 1 ? "" : "s"}`
     : "";
   return [
     "",
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
-    `Review: ${status.review.open} open${reviewDecisionSuffix}, ${status.review.deferred} deferred`,
-    ...(reviewDebtByType ? [`Review debt by type: ${reviewDebtByType}`] : []),
-    ...(reviewDebtBySource ? [`Review debt by source: ${reviewDebtBySource}`] : []),
+    `Decisions: ${status.review.humanDecisionOpen} open${browseOnlySuffix}, ${status.review.deferred} deferred`,
+    ...(reviewDebtByType ? [`Review ledger by type: ${reviewDebtByType}`] : []),
+    ...(reviewDebtBySource ? [`Review ledger by source: ${reviewDebtBySource}`] : []),
     `Stale review: ${status.staleReview.count}${
       status.staleReview.firstStale?.priorDecisionState
         ? ` from prior ${status.staleReview.firstStale.priorDecisionState} decision`

@@ -101,7 +101,7 @@ Deno.test("status, review list, and entity search stay usable during an external
     }).output();
     assertEquals(statusOutput.code, 0);
     const statusText = new TextDecoder().decode(statusOutput.stdout);
-    assertStringIncludes(statusText, "Review: 1 open (0 decisions, 1 browse-only), 0 deferred");
+    assertStringIncludes(statusText, "Decisions: 0 open, 1 browse row, 0 deferred");
 
     const reviewListOutput = await new Deno.Command(Deno.execPath(), {
       cwd: Deno.cwd(),
@@ -189,7 +189,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   const statusText = new TextDecoder().decode(statusOutput.stdout);
   assertStringIncludes(statusText, "Schema version: 16");
   assertStringIncludes(statusText, "Sources: 0/");
-  assertStringIncludes(statusText, "Review: 0 open, 0 deferred");
+  assertStringIncludes(statusText, "Decisions: 0 open, 0 deferred");
   assertStringIncludes(statusText, "Reconciliation: 0 blocked");
   assertStringIncludes(statusText, "Next: deno task dc -- source list");
 

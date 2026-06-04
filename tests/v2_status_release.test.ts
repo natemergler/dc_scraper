@@ -59,7 +59,7 @@ Deno.test("status readiness note is explicit when the workbench is ready", async
   assertEquals(status.nextCommand, "deno task dc -- release build");
   assertEquals(
     status.unresolvedStateNote,
-    "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.",
+    "No open decisions, browse rows, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.",
   );
 });
 
@@ -289,10 +289,10 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
   }).output();
   assertEquals(statusOutput.code, 0);
   const statusText = new TextDecoder().decode(statusOutput.stdout);
-  assertStringIncludes(statusText, "Review debt by type:");
+  assertStringIncludes(statusText, "Review ledger by type:");
   assertStringIncludes(statusText, "entity_candidate(open=1,deferred=0)");
   assertStringIncludes(statusText, "legal_ref(open=0,deferred=1)");
-  assertStringIncludes(statusText, "Review debt by source:");
+  assertStringIncludes(statusText, "Review ledger by source:");
   assertStringIncludes(statusText, "test.signature.entities(open=1,deferred=0)");
   assertStringIncludes(statusText, "test.signature.legal_refs(open=0,deferred=1)");
 
@@ -350,9 +350,8 @@ Deno.test("status surfaces unresolved review debt by source and type", async () 
     ),
   );
   assertStringIncludes(jsonStatus.unresolvedStateNote, "Unresolved workbench state:");
-  assertStringIncludes(jsonStatus.unresolvedStateNote, "open review=1");
-  assertStringIncludes(jsonStatus.unresolvedStateNote, "human decisions=0");
-  assertStringIncludes(jsonStatus.unresolvedStateNote, "browse-only=1");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "open decisions=0");
+  assertStringIncludes(jsonStatus.unresolvedStateNote, "browse rows=1");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "deferred review=1");
 });
 

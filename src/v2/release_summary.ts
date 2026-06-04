@@ -117,7 +117,9 @@ export function releaseReadinessInputFromSummary(
   return {
     sourceCount: summary.source_count ?? 0,
     failedSourceCount: summary.failed_source_count ?? 0,
-    openReviewItemCount: summary.open_review_item_count ?? 0,
+    openReviewItemCount: summary.open_human_decision_review_item_count ??
+      summary.open_review_item_count ??
+      0,
     deferredReviewItemCount: summary.deferred_review_item_count ?? 0,
     staleReviewItemCount: summary.stale_review_item_count ?? 0,
     blockedReconciliationCount: summary.blocked_reconciliation_count ?? 0,
@@ -133,7 +135,7 @@ export function releaseReadinessInputFromWorkbenchStatus(
   return {
     sourceCount: status.sources.fetched,
     failedSourceCount: status.sources.failed,
-    openReviewItemCount: status.review.open,
+    openReviewItemCount: status.review.humanDecisionOpen,
     deferredReviewItemCount: status.review.deferred,
     staleReviewItemCount: status.staleReview.count,
     blockedReconciliationCount: status.reconciliation.blocked,

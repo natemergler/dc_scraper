@@ -120,7 +120,7 @@ Deno.test("release verify accepts source-backed entity rows", async () => {
   assertEquals(body.entityProvenanceProblems, []);
 });
 
-Deno.test("release verify treats browse-only review as usable with warnings", async () => {
+Deno.test("release verify treats browse-only additions as usable", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -143,7 +143,7 @@ Deno.test("release verify treats browse-only review as usable with warnings", as
   };
   assertEquals(result.code, 0);
   assertEquals(body.ready, true);
-  assertEquals(body.readiness, "usable-with-warnings");
+  assertEquals(body.readiness, "usable");
   assertEquals(body.reasons, []);
   assertEquals(body.sourceArtifactProblems, []);
   assertEquals(body.relationshipProvenanceCheckedCount, 0);

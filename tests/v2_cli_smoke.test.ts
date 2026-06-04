@@ -96,7 +96,7 @@ function fixtureSmokeDeps(): RunSmokeProfileDeps {
     readWorkbenchStatus: async () => ({
       nextCommand: "deno task dc -- review",
       unresolvedStateNote:
-        "Unresolved workbench state: open review=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+        "Unresolved workbench state: open decisions=0, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
     }),
   };
 }
