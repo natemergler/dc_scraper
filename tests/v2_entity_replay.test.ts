@@ -340,6 +340,80 @@ Deno.test("safe accepted entity candidates fill blank canonical fields from late
   assertEquals(openReview.length, 0);
 });
 
+Deno.test("authoritative source refinement can replace higher-confidence weaker canonical fields", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const weakCandidateId = "candidate.dcgis.agencies.example_body";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.agencies",
+      candidateId: weakCandidateId,
+      sourceItemKey: "dcgis-example-body-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      officialUrl: "https://dcgis.example/body",
+      observedName: "Example Body",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+
+  const refinedCandidateId = "candidate.bega.structure.example_body";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "bega.structure",
+      candidateId: refinedCandidateId,
+      sourceItemKey: "bega-example-body-page",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "agency",
+      branch: "Independent",
+      cluster: "Official Cluster",
+      officialUrl: "https://example.com/official",
+      observedName: "Example Body",
+      confidence: 0.91,
+    }),
+    dataDir,
+  );
+
+  const refinedCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(refinedCandidateId) as { reviewStatus: string } | undefined;
+  const canonical = workbench.db.prepare(
+    `select kind,
+            branch,
+            cluster,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.example_body'`,
+  ).get() as {
+    kind: string;
+    branch: string | null;
+    cluster: string | null;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: refinedCandidateId,
+  });
+  workbench.close();
+
+  assertEquals(refinedCandidate?.reviewStatus, "accepted");
+  assertEquals(canonical.kind, "agency");
+  assertEquals(canonical.branch, "Independent");
+  assertEquals(canonical.cluster, "Official Cluster");
+  assertEquals(canonical.officialUrl, "https://example.com/official");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [weakCandidateId, refinedCandidateId]);
+  assertEquals(openReview.length, 0);
+});
+
 Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
