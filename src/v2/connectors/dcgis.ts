@@ -185,11 +185,11 @@ function buildDcgisEntityCandidates(
 ): EntityCandidateInput[] {
   const agencyCandidates = items.map((item) => {
     const row = item.body as Record<string, unknown>;
-    const name = String(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME ?? item.title);
+    const name = maybeString(row.AGENCY_NAME ?? row.NAME ?? row.SHORT_NAME) ?? item.title;
     return {
       candidateId: buildCandidateId(source.sourceId, item.itemKey),
       sourceItemKey: item.itemKey,
-      proposedEntityId: buildEntityId(name),
+      proposedEntityId: buildKnownEntityRef(name),
       name,
       kind: detectEntityKind(String(row.TYPE ?? "agency"), name),
       rawKind: String(row.TYPE ?? "agency"),
@@ -234,7 +234,8 @@ function buildDcgisRelationshipCandidates(
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   for (const item of items) {
     const row = item.body as Record<string, unknown>;
-    const name = String(row.AGENCY_NAME ?? row.NAME ?? item.title);
+    const name = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
+    const entityRef = buildKnownEntityRef(name);
     const branch = maybeString(row.BRANCH);
     const type = maybeString(row.TYPE);
     if (branch && shouldEmitDcgisBranchRelationship(branch, type)) {
@@ -244,7 +245,7 @@ function buildDcgisRelationshipCandidates(
           `${item.itemKey}-branch`,
         ),
         sourceItemKey: item.itemKey,
-        fromEntityRef: buildEntityId(name),
+        fromEntityRef: entityRef,
         toEntityRef: buildEntityId(`${branch} Branch`),
         relationshipType: "part_of",
         rawValue: branch,
@@ -261,7 +262,7 @@ function buildDcgisRelationshipCandidates(
         `${item.itemKey}-governing-agency`,
       ),
       sourceItemKey: item.itemKey,
-      fromEntityRef: buildEntityId(name),
+      fromEntityRef: entityRef,
       toEntityRef: buildKnownEntityRef(governingAgency),
       relationshipType: "governed_by",
       rawValue: governingAgency,
@@ -288,7 +289,7 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     const parsed = parseLegalReference(legislation, maybeString(row.WEB_URL));
-    const entityName = String(row.AGENCY_NAME ?? row.NAME ?? item.title);
+    const entityName = maybeString(row.AGENCY_NAME ?? row.NAME) ?? item.title;
     legalRefs.push({
       legalRefId: buildLegalRefId(source.sourceId, `${item.itemKey}-legislation`),
       sourceItemKey: item.itemKey,
@@ -298,7 +299,7 @@ function buildDcgisLegalRefs(source: SourceDefinition, items: SourceItemInput[])
       url: extractFirstUrl(legislation) ?? maybeString(row.WEB_URL),
       needsReview: parsed.needsReview,
       evidence: [fieldEvidence("LEGISLATION", legislation, 1)],
-      attachEntityRef: buildEntityId(entityName),
+      attachEntityRef: buildKnownEntityRef(entityName),
     });
   }
   return legalRefs;

@@ -63,6 +63,90 @@ Deno.test("accepted entity decisions are reused across refetch when candidate id
   );
 });
 
+Deno.test("accepting a stronger entity candidate refreshes canonical fields", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const weakCandidateId = "candidate.test.signature.entities.example_weak";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: weakCandidateId,
+      sourceItemKey: "example-row",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "board",
+      branch: "Other",
+      cluster: "Legacy Cluster",
+      officialUrl: "https://example.com/legacy",
+      observedName: "Example Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: weakCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const strongCandidateId = "candidate.test.signature.entities.example_strong";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.signature.entities",
+      candidateId: strongCandidateId,
+      sourceItemKey: "example-row-strong",
+      proposedEntityId: "dc.example_body",
+      name: "Example Body",
+      kind: "agency",
+      branch: "Independent",
+      cluster: "Official Cluster",
+      officialUrl: "https://example.com/official",
+      observedName: "Example Body",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+  await workbench.appendResolutionEvent(
+    {
+      eventType: "accept_entity_candidate",
+      subjectId: strongCandidateId,
+      payload: {},
+    },
+    resolutionsDir,
+  );
+
+  const canonical = workbench.db.prepare(
+    `select kind,
+            branch,
+            cluster,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.example_body'`,
+  ).get() as {
+    kind: string;
+    branch: string;
+    cluster: string;
+    officialUrl: string;
+    mergedCandidateIds: string;
+  };
+  workbench.close();
+
+  assertEquals(canonical.kind, "agency");
+  assertEquals(canonical.branch, "Independent");
+  assertEquals(canonical.cluster, "Official Cluster");
+  assertEquals(canonical.officialUrl, "https://example.com/official");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [weakCandidateId, strongCandidateId]);
+});
+
 Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

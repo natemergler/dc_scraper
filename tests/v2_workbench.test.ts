@@ -3430,6 +3430,8 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Office of the Attorney General for the District of Columbia"),
     "dc.office_of_the_attorney_general",
   );
+  assertEquals(buildKnownEntityRef("DC Court of Appeals"), "dc.court_of_appeals");
+  assertEquals(buildKnownEntityRef("DC Superior Court"), "dc.superior_court");
   assertEquals(
     buildKnownEntityRef("Office of the People’s Counsel"),
     "dc.office_of_the_people_s_counsel_for_the_district_of_columbia",
@@ -3512,6 +3514,10 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Public Charter School Board (PCSB)"),
+    "dc.public_charter_school_board_pcsb",
+  );
+  assertEquals(
+    buildKnownEntityRef("DC Public Charter School Board"),
     "dc.public_charter_school_board_pcsb",
   );
   assertEquals(

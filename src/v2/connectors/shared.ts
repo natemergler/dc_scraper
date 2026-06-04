@@ -289,6 +289,8 @@ const knownEntityRefs = new Map<string, string>([
   ["commission on women", "dc.commission_for_women"],
   ["council", "dc.council_of_the_district_of_columbia"],
   ["council of the district of columbia", "dc.council_of_the_district_of_columbia"],
+  ["dc court of appeals", "dc.court_of_appeals"],
+  ["dc superior court", "dc.superior_court"],
   [
     "department of consumer and regulatory affairs",
     "dc.department_of_licensing_and_consumer_protection",
@@ -306,6 +308,7 @@ const knownEntityRefs = new Map<string, string>([
   ["department of employment services (does)", "dc.department_of_employment_services"],
   ["department of health", "dc.dc_health"],
   ["department of health (doh)", "dc.dc_health"],
+  ["dc public charter school board", "dc.public_charter_school_board_pcsb"],
   ["city administrator", "dc.office_of_the_city_administrator"],
   [
     "dc department of licensing and consumer protection",

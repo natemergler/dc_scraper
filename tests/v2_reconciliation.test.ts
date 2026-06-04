@@ -1398,6 +1398,78 @@ Deno.test("relationship review defaults are rebuilt from workbench state without
   assertEquals(otherItem?.defaultAction, "defer");
 });
 
+Deno.test("dcgis agency aliases propose shared canonical entity ids", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        AGENCY_ID: 1014,
+        AGENCY_NAME: "DC Court of Appeals",
+        TYPE: "Agency",
+        BRANCH: "Judicial",
+        MAYORAL_CLUSTER: "Governmental Direction and Support",
+        WEB_URL: "https://www.dccourts.gov/court-of-appeals",
+        LEGISLATION: "D.C. Code § 11-102",
+      },
+    }, {
+      attributes: {
+        AGENCY_ID: 1142,
+        AGENCY_NAME: "DC Public Charter School Board ",
+        TYPE: "Board",
+        BRANCH: "Executive",
+        MAYORAL_CLUSTER: "Education",
+        WEB_URL: "https://www.dcpcsb.org/",
+        LEGISLATION: "",
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return JSON.stringify(dcgisMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return JSON.stringify(rowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=json":
+          return dcgisMetadataFixture as T;
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6/query?where=1%3D1&outFields=*&orderByFields=OBJECTID&returnGeometry=false&f=json":
+          return rowsFixture as T;
+        default:
+          throw new Error(`Unexpected url ${url}`) as T;
+      }
+    },
+  });
+
+  const result = await getConnector("dcgis.agencies").run(createConnectorContext({ fetcher }));
+  const candidate = result.endpointResults[0]?.parsed?.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1014"
+  );
+  const branchRelationship = result.endpointResults[0]?.parsed?.relationshipCandidates?.find((
+    item,
+  ) => item.relationshipCandidateId === "relationship.dcgis.agencies.1014_branch");
+  const legalRef = result.endpointResults[0]?.parsed?.legalRefs?.[0];
+  const pcsbCandidate = result.endpointResults[0]?.parsed?.entityCandidates?.find((item) =>
+    item.candidateId === "candidate.dcgis.agencies.1142"
+  );
+
+  assert(candidate);
+  assertEquals(candidate.name, "DC Court of Appeals");
+  assertEquals(candidate.proposedEntityId, "dc.court_of_appeals");
+  assert(branchRelationship);
+  assertEquals(branchRelationship.fromEntityRef, "dc.court_of_appeals");
+  assert(legalRef);
+  assertEquals(legalRef.attachEntityRef, "dc.court_of_appeals");
+  assert(pcsbCandidate);
+  assertEquals(pcsbCandidate.name, "DC Public Charter School Board");
+  assertEquals(pcsbCandidate.proposedEntityId, "dc.public_charter_school_board_pcsb");
+});
+
 Deno.test("dcgis other-branch review skips known non-structural types", async () => {
   const fetcher = async (url: string) => ({
     status: 200,

@@ -1,4 +1,5 @@
 import { normalizeName, nowIso } from "../domain.ts";
+import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -216,6 +217,7 @@ function acceptEntityCandidateDirect(
     "update entity_candidates set review_status = 'accepted' where candidate_id = ?",
     [candidate.candidateId],
   );
+  refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);
   run(
     store.db,
     "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'entity_candidate'",
