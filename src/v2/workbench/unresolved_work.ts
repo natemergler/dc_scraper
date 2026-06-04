@@ -81,6 +81,15 @@ export interface UnresolvedReconciliationSummary {
       blockerLabel: string;
     }>;
   };
+  topUnblocker?: {
+    reviewItemId: string;
+    itemType: ReviewItemType;
+    subjectId: string;
+    sourceId: string;
+    reason: string;
+    defaultAction: string;
+    downstreamBlockedCount: number;
+  };
 }
 
 type DecisionImpactInput = Pick<ReviewItemRecord, "reviewItemId" | "itemType" | "subjectId">;
@@ -183,6 +192,7 @@ export function summarizeUnresolvedReconciliation(
   graph: UnresolvedWorkGraph,
 ): UnresolvedReconciliationSummary {
   const firstDiagnostic = graph.diagnostics[0];
+  const topUnblocker = graph.decisions.find((decision) => decision.downstreamBlockedCount > 0);
   return {
     blockedCount: graph.diagnostics.length,
     blockedBySource: countByKey(graph.diagnostics, "sourceId"),
@@ -209,6 +219,17 @@ export function summarizeUnresolvedReconciliation(
           blockerState: blocker.blockerState,
           blockerLabel: blocker.blockerLabel,
         })),
+      }
+      : undefined,
+    topUnblocker: topUnblocker
+      ? {
+        reviewItemId: topUnblocker.reviewItemId,
+        itemType: topUnblocker.itemType,
+        subjectId: topUnblocker.subjectId,
+        sourceId: topUnblocker.sourceId,
+        reason: topUnblocker.reason,
+        defaultAction: topUnblocker.defaultAction,
+        downstreamBlockedCount: topUnblocker.downstreamBlockedCount,
       }
       : undefined,
   };

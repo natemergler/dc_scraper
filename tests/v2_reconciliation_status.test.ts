@@ -272,6 +272,116 @@ Deno.test("status surfaces blocked work by source with readable blocker labels",
   );
 });
 
+Deno.test("status surfaces the top actionable unblocker for blocked relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.reconciliation.unblocker.entities",
+      candidateId: "candidate.test.reconciliation.unblocker.pending_target",
+      sourceItemKey: "unblocker-entity-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
+    dataDir,
+  );
+  for (
+    const relationshipCandidateId of [
+      "relationship.test.reconciliation.unblocker.first",
+      "relationship.test.reconciliation.unblocker.second",
+    ]
+  ) {
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "test.reconciliation.unblocker.relationships",
+        relationshipCandidateId,
+        sourceItemKey: relationshipCandidateId,
+        fromEntityRef: "dc.source_board",
+        toEntityRef: "dc.pending_target",
+        relationshipType: "governed_by",
+        rawValue: "Pending Target",
+      }),
+      dataDir,
+    );
+  }
+  workbench.close();
+
+  const jsonOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      "--json",
+    ],
+  }).output();
+  assertEquals(jsonOutput.code, 0);
+  const status = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+    reconciliation: {
+      topUnblocker?: {
+        reviewItemId: string;
+        itemType: string;
+        subjectId: string;
+        sourceId: string;
+        reason: string;
+        defaultAction: string;
+        downstreamBlockedCount: number;
+        reviewCommand: string;
+      };
+    };
+  };
+  assertEquals(status.reconciliation.topUnblocker, {
+    reviewItemId: "review.candidate_test_reconciliation_unblocker_pending_target.entity_review",
+    itemType: "entity_candidate",
+    subjectId: "candidate.test.reconciliation.unblocker.pending_target",
+    sourceId: "test.reconciliation.unblocker.entities",
+    reason: "Review fixture entity candidate",
+    defaultAction: "accept",
+    downstreamBlockedCount: 2,
+    reviewCommand:
+      "deno task dc -- review entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target",
+  });
+
+  const textOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+  assertEquals(textOutput.code, 0);
+  const statusText = new TextDecoder().decode(textOutput.stdout);
+  assertStringIncludes(
+    statusText,
+    "Top unblocker: Review fixture entity candidate (2 blocked relationships)",
+  );
+  assertStringIncludes(
+    statusText,
+    "Review unblocker: deno task dc -- review entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target",
+  );
+});
+
 Deno.test("rejecting a prerequisite keeps dependent relationships blocked with rejected blocker audit", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

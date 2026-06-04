@@ -1620,7 +1620,38 @@ Deno.test("quickbase connector keeps contact columns out of public fact candidat
   assert(!publicFacts.includes("private contact metadata"));
 });
 
-Deno.test("quickbase governing-agency parsing normalizes trusted designee seats and skips unsupported role seats", async () => {
+Deno.test("quickbase governing-agency parsing normalizes trusted designee seats and skips unsupported role/category seats", async () => {
+  const parserResidueSeats = [
+    "Chief Information Security Officer (CISO) Designee",
+    "Senior Advisor to the Mayor designee",
+    "Hospital in the District Designee",
+    "Higher Education Representative (University of the District of Columbia) designee",
+    "Vocational, Community, or Business Organization Representative designee",
+  ];
+  const parentAgencySubunitSeats = [
+    {
+      seat:
+        "Department on Disability Services (DDS) Administrator of the Vocational Rehabilitation Agency Designee",
+      parent: "dc.department_on_disability_services",
+    },
+    {
+      seat:
+        "Department on Disability Services (DDS) Rehabilitation Services Administration Representative Designee",
+      parent: "dc.department_on_disability_services",
+    },
+    {
+      seat: "Department on Disability Services (DDS) Vocational Rehabilitation Counselor Designee",
+      parent: "dc.department_on_disability_services",
+    },
+    {
+      seat: "District Department of Transportation (DDOT) Operations Designee",
+      parent: "dc.district_department_of_transportation",
+    },
+    {
+      seat: "District Department of Transportation (DDOT) Policy & Planning Designee",
+      parent: "dc.district_department_of_transportation",
+    },
+  ];
   const csv = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
 "Example Role Board","Director of the Department of Employment Services (DOES) Designee","Filled","Jane Doe","Active"
@@ -1631,6 +1662,20 @@ Deno.test("quickbase governing-agency parsing normalizes trusted designee seats 
 "Example Chief Board","Chief of the Fire and Emergency Medical Services Department (FEMS) Designee","Filled","Morgan Doe","Active"
 "Example Mayor Board","The Mayor's designee","Filled","Casey Doe","Active"
 "Example Professional Board","Licensed Independent Clinical Social Worker (LICSW)","Filled","Pat Doe","Active"
+  ${
+    parserResidueSeats.map((seat, index) =>
+      `"Example Residue Board ${index + 1}","${seat}","Filled","Residue Person ${
+        index + 1
+      }","Active"`
+    ).join("\n")
+  }
+${
+    parentAgencySubunitSeats.map(({ seat }, index) =>
+      `"Example Parent Agency Board ${index + 1}","${seat}","Filled","Resolved Person ${
+        index + 1
+      }","Active"`
+    ).join("\n")
+  }
 `.trim();
   const result = await getConnector("mota.quickbase").run(
     createConnectorContext({
@@ -1713,6 +1758,55 @@ Deno.test("quickbase governing-agency parsing normalizes trusted designee seats 
     ),
     false,
   );
+  for (const seat of parserResidueSeats) {
+    assertEquals(
+      relationships.some((candidate) =>
+        (candidate.relationshipType === "governed_by" ||
+          candidate.relationshipType === "designated_by") &&
+        candidate.rawValue === seat
+      ),
+      false,
+      `${seat} should not emit governed_by/designated_by`,
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "has_seat" && candidate.rawValue === seat
+      ),
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "holds" && candidate.rawValue === seat
+      ),
+    );
+  }
+  for (const { seat, parent } of parentAgencySubunitSeats) {
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "governed_by" &&
+        candidate.rawValue === seat &&
+        candidate.toEntityRef === parent
+      ),
+      `${seat} should emit governed_by ${parent}`,
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "designated_by" &&
+        candidate.rawValue === seat &&
+        candidate.toEntityRef === parent
+      ),
+      `${seat} should emit designated_by ${parent}`,
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "has_seat" && candidate.rawValue === seat
+      ),
+    );
+    assert(
+      relationships.some((candidate) =>
+        candidate.relationshipType === "holds" && candidate.rawValue === seat
+      ),
+    );
+  }
 });
 
 Deno.test("Open DC detail evidence points to the detail artifact rather than the index artifact", async () => {
@@ -3489,6 +3583,58 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.office_of_the_people_s_counsel_for_the_district_of_columbia",
   );
   assertEquals(
+    buildKnownEntityRef(
+      "Mayor's Office of Lesbian, Gay, Bisexual, Transgender and Questioning Affairs (LGBTQ) Affairs",
+    ),
+    "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef(
+      "Mayor's Office of Lesbian, Gay, Bisexual, Transgender and Questioning Affairs Affairs",
+    ),
+    "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of Neighbor Safety and Engagement (ONSE)"),
+    "dc.office_of_neighborhood_safety_and_engagement",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of Neighbor Safety and Engagement"),
+    "dc.office_of_neighborhood_safety_and_engagement",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of the Ombudsmen for Children (OFC)"),
+    "dc.office_of_the_ombudsperson_for_children",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of the Ombudsmen for Children"),
+    "dc.office_of_the_ombudsperson_for_children",
+  );
+  assertEquals(
+    buildKnownEntityRef("DC Department of Human Resources (DCHR)"),
+    "dc.department_of_human_resources",
+  );
+  assertEquals(
+    buildKnownEntityRef("DC Department of Human Resources"),
+    "dc.department_of_human_resources",
+  );
+  assertEquals(
+    buildKnownEntityRef("Department of Youth Rehabilitative Services"),
+    "dc.department_of_youth_rehabilitation_services",
+  );
+  assertEquals(
+    buildKnownEntityRef("Chief Medical Examiner (CME)"),
+    "dc.office_of_the_chief_medical_examiner",
+  );
+  assertEquals(
+    buildKnownEntityRef("Chief Medical Examiner"),
+    "dc.office_of_the_chief_medical_examiner",
+  );
+  assertEquals(
+    buildKnownEntityRef("Chief Technology Officer"),
+    "dc.office_of_the_chief_technology_officer",
+  );
+  assertEquals(
     buildKnownEntityRef("Bicycle Advisory Council"),
     "dc.bicycle_advisory_council",
   );
@@ -3584,6 +3730,24 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("State Superintendent of Education"),
     "dc.office_of_the_state_superintendent_of_education",
   );
+});
+
+Deno.test("known relationship endpoint aliases keep role and subunit labels as candidates", () => {
+  for (
+    const name of [
+      "UDC Community College",
+      "Chief Information Security Officer (CISO) Designee",
+      "Department on Disability Services (DDS) Vocational Rehabilitation Counselor Designee",
+      "Hospital in the District Designee",
+      "Vocational, Community, or Business Organization Representative designee",
+      "Director of the Office of Budget and Performance Management (OBPM) Designee",
+      "Office of the Chief of Staff (COS) Designee",
+      "DC ReEngagement Center Designee",
+      "Senior Advisor to the Mayor designee",
+    ]
+  ) {
+    assertEquals(buildKnownEntityRef(name), buildEntityId(name));
+  }
 });
 
 Deno.test("public-body seat relationship inverses stay user-facing", () => {

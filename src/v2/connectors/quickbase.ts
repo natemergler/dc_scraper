@@ -892,16 +892,8 @@ function parseDesignatingAuthorityFromSeat(seat: string): string | undefined {
     return normalizeAuthorityName(organization);
   }
   const withoutDesignee = rawValue.replace(/\bdesignee\b/gi, "").replaceAll(/\s+/g, " ").trim();
-  const matched = withoutDesignee.match(/^(.*?)\(([^()]+)\)\s*$/);
-  if (!matched) {
-    return normalizeAuthorityName(withoutDesignee);
-  }
-  const beforeParens = maybeString(matched[1]);
-  const insideParens = maybeString(matched[2]);
-  const source = beforeParens && isSeatRoleLabel(beforeParens)
-    ? insideParens
-    : beforeParens ?? insideParens;
-  return normalizeAuthorityName(source ?? withoutDesignee);
+  const mayor = normalizeAuthorityName(withoutDesignee);
+  return mayor === "Mayor" ? mayor : undefined;
 }
 
 function parseAppointingAuthority(
@@ -960,30 +952,32 @@ function normalizeAuthorityName(value: string): string | undefined {
   return normalized || undefined;
 }
 
-function isSeatRoleLabel(value: string): boolean {
-  return /^(chairperson|chair|vice chair|member|commissioner|secretary|treasurer|representative)$/i
-    .test(value.trim());
-}
-
 function parseGoverningAgencyFromSeat(seat: string): string | undefined {
   const direct = maybeString(seat);
   if (!direct) return undefined;
   const trustedPrefix = extractTrustedSeatOrganizationPrefix(direct);
-  const candidates = new Set(
-    [
-      extractParentheticalDesigneeOrganization(direct),
+  const candidates = new Set<string>();
+  const addCandidate = (value: string | undefined) => {
+    const candidate = maybeString(value);
+    if (candidate) candidates.add(candidate);
+  };
+  addCandidate(extractParentheticalDesigneeOrganization(direct));
+  if (trustedPrefix && hasPlainTextAfterSeatAcronym(trustedPrefix)) {
+    addCandidate(extractParentheticalAgencyPrefix(trustedPrefix));
+  } else if (trustedPrefix) {
+    addCandidate(
       stripSeatAcronymParens(
-        stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix ?? "")),
+        stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix)),
       ),
-      stripSeatAcronymParens(stripSeatRolePrefix(trustedPrefix ?? "")),
-      stripSeatAcronymParens(stripSeatSubunitDetails(trustedPrefix ?? "")),
-      stripSeatAcronymParens(trustedPrefix ?? ""),
-      stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix ?? "")),
-      stripSeatRolePrefix(trustedPrefix ?? ""),
-      stripSeatSubunitDetails(trustedPrefix ?? ""),
-      trustedPrefix,
-    ].map((value) => maybeString(value)).filter((value): value is string => Boolean(value)),
-  );
+    );
+    addCandidate(stripSeatAcronymParens(stripSeatRolePrefix(trustedPrefix)));
+    addCandidate(stripSeatAcronymParens(stripSeatSubunitDetails(trustedPrefix)));
+    addCandidate(stripSeatAcronymParens(trustedPrefix));
+    addCandidate(stripSeatSubunitDetails(stripSeatRolePrefix(trustedPrefix)));
+    addCandidate(stripSeatRolePrefix(trustedPrefix));
+    addCandidate(stripSeatSubunitDetails(trustedPrefix));
+    addCandidate(trustedPrefix);
+  }
   for (const candidate of candidates) {
     if (isLikelyQuickbaseOrganization(candidate)) return candidate;
   }
@@ -1025,10 +1019,27 @@ function stripSeatAcronymParens(value: string): string {
   return maybeString(value.replace(/\([^)]*\)/g, " ")) ?? value;
 }
 
+function extractParentheticalAgencyPrefix(value: string): string | undefined {
+  const match = value.match(/^(.+\([^)]*\))/);
+  return maybeString(match?.[1]);
+}
+
+function hasPlainTextAfterSeatAcronym(value: string): boolean {
+  return /\)\s+(?![-,])\S/.test(value);
+}
+
 function isLikelyQuickbaseOrganization(value: string): boolean {
-  if (buildKnownEntityRef(value) !== buildEntityId(value)) return true;
-  return /\b(department|office|agency|administration|board|commission|council|committee|authority|university|library|district|mayor's office)\b/i
+  if (resolvesToExplicitKnownEntityRef(value)) return true;
+  if (/\b(officer|advisor|counselor|representative)\b/i.test(value)) return false;
+  return /\b(department|office|agency|administration|board|commission|council|committee|authority|university|library|district department|mayor's office)\b/i
     .test(value);
+}
+
+function resolvesToExplicitKnownEntityRef(value: string): boolean {
+  const knownRef = buildKnownEntityRef(value);
+  if (knownRef === buildEntityId(value)) return false;
+  const acronymStripped = stripSeatAcronymParens(value);
+  return knownRef !== buildEntityId(acronymStripped);
 }
 
 function deriveQuickbaseCluster(board: string): string | undefined {
