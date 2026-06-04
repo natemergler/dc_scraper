@@ -306,6 +306,8 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
         deferred_count: number;
       }>;
       top_unresolved_review_items?: unknown;
+      review_items_by_status?: unknown;
+      review_items_by_type?: unknown;
     };
   };
   const manifestText = await Deno.readTextFile(join(outDir, "manifest.json"));
@@ -355,6 +357,8 @@ Deno.test("release summary surfaces unresolved review debt by source and type", 
   );
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
   assertEquals(manifest.release_summary.top_unresolved_review_items, undefined);
+  assertEquals(manifest.release_summary.review_items_by_status, undefined);
+  assertEquals(manifest.release_summary.review_items_by_type, undefined);
   assert(!manifestText.includes("Example Body"));
   assert(!manifestText.includes("D.C. Official Code § 1-204.22"));
   assert(!readme.includes("## Top unresolved review items"));
