@@ -62,7 +62,7 @@ export async function runInteractiveReview(
         console.log(renderBlockedDiagnosticsOnlyMessage(snapshot));
       } else if (snapshot.browseOnlyItemCount > 0) {
         console.log(
-          `No human decisions remain. Browse ${snapshot.browseOnlyItemCount} unresolved review item(s) with ${
+          `No human decisions remain. Browse ${snapshot.browseOnlyItemCount} source-backed row(s) with ${
             renderReviewListCommand(filters)
           } or ${renderReviewPacketsCommand(filters)}.`,
         );

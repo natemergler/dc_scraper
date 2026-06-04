@@ -101,7 +101,8 @@ Deno.test("status, review list, and entity search stay usable during an external
     }).output();
     assertEquals(statusOutput.code, 0);
     const statusText = new TextDecoder().decode(statusOutput.stdout);
-    assertStringIncludes(statusText, "Decisions: 0 open, 1 browse row, 0 deferred");
+    assertStringIncludes(statusText, "Decisions: 0 open, 0 deferred");
+    assertStringIncludes(statusText, "Browse: 1 source-backed row");
 
     const reviewListOutput = await new Deno.Command(Deno.execPath(), {
       cwd: Deno.cwd(),
@@ -124,7 +125,7 @@ Deno.test("status, review list, and entity search stay usable during an external
     }).output();
     assertEquals(reviewListOutput.code, 0);
     const reviewListText = new TextDecoder().decode(reviewListOutput.stdout);
-    assertStringIncludes(reviewListText, "Review items: 1");
+    assertStringIncludes(reviewListText, "Browse rows: 1");
 
     const entitySearchOutput = await new Deno.Command(Deno.execPath(), {
       cwd: Deno.cwd(),
@@ -510,7 +511,7 @@ Deno.test("focused CLI help exits zero and does not run commands", async () => {
   assertEquals(reviewHelp.code, 0);
   assertStringIncludes(reviewText, "Workflow:");
   assertStringIncludes(reviewText, "Run `deno task dc -- status` or `deno task dc -- audit`");
-  assertStringIncludes(reviewText, "Browse raw unresolved rows");
+  assertStringIncludes(reviewText, "Browse source-backed rows");
   assertStringIncludes(reviewText, "review list --decisions");
   assertStringIncludes(reviewText, "Inspect grouped decision work");
   assertStringIncludes(
@@ -4476,7 +4477,7 @@ Deno.test("review list filters by mode, status, type, and subject prefix", async
   }).output();
   assertEquals(output.code, 0);
   const text = new TextDecoder().decode(output.stdout);
-  assertStringIncludes(text, "Review items:");
+  assertStringIncludes(text, "Browse rows:");
   assertStringIncludes(text, "[open browse] Review List Entity");
   assertStringIncludes(text, "entity candidate | board | default accept");
   assertStringIncludes(text, "source: test.review_list.entities / Custom entity row");

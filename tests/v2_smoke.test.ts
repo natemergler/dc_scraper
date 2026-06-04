@@ -126,7 +126,7 @@ Deno.test("smoke runs always use temp workspace paths and fetch only the request
     readWorkbenchStatus: async () => ({
       nextCommand: "deno task dc -- review",
       unresolvedStateNote:
-        "Unresolved workbench state: open decisions=0, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
+        "Workbench state: open decisions=0, browse rows=0, deferred review=0, stale review=0, blocked reconciliation=0, placeholder entities=0.",
     }),
   });
 
