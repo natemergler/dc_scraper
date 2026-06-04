@@ -2,6 +2,10 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import {
+  buildRelationshipDecisionHint,
+  reuseOrMarkStaleRelationshipDecisions,
+} from "../src/v2/workbench/replay.ts";
 import { canBatchAcceptReviewItem } from "../src/v2/workbench/review_batch.ts";
 import {
   syntheticCustomRelationshipSourceResult,
@@ -297,6 +301,21 @@ Deno.test("changed relationship evidence after a prior accept becomes stale revi
   assertEquals(staleItem.details.stalePriorDecision, true);
   assertEquals(staleItemCanBatchAccept, false);
   assertStringIncludes(staleItem.reason, "changed since a prior accepted decision");
+});
+
+Deno.test("relationship replay batches prior-decision lookups across refetched candidates", async () => {
+  const one = await countRelationshipReplayPrepares(1);
+  const many = await countRelationshipReplayPrepares(8);
+
+  assertEquals(one.acceptRejectDecisionQueries, 1);
+  assertEquals(one.deferReviewDecisionQueries, 1);
+  assertEquals(one.candidateStatusQueries, 1);
+  assertEquals(one.reviewItemQueries, 1);
+
+  assertEquals(many.acceptRejectDecisionQueries, 1);
+  assertEquals(many.deferReviewDecisionQueries, 1);
+  assertEquals(many.candidateStatusQueries, 1);
+  assertEquals(many.reviewItemQueries, 1);
 });
 
 Deno.test("batch accept-safe skips generic relationship candidates marked needs-review", async () => {
@@ -741,3 +760,125 @@ Deno.test("changed relationship evidence after a prior defer becomes stale open 
   assertStringIncludes(staleItem.reason, "changed since a prior deferred decision");
   assertEquals(deferredItems.length, 0);
 });
+
+async function countRelationshipReplayPrepares(candidateCount: number): Promise<{
+  acceptRejectDecisionQueries: number;
+  deferReviewDecisionQueries: number;
+  candidateStatusQueries: number;
+  reviewItemQueries: number;
+}> {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name] of [["dc.source_board", "Source Board"], [
+      "dc.target_agency",
+      "Target Agency",
+    ]] as const
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+
+  const hints = [];
+  for (let index = 0; index < candidateCount; index += 1) {
+    const sourceItemKey = `bulk-relationship-row-${index}`;
+    const firstCandidateId = `relationship.test.signature.relationships.bulk_${index}_v1`;
+    await workbench.importConnectorResult(
+      syntheticCustomRelationshipSourceResult({
+        sourceId: "test.signature.relationships",
+        relationshipCandidateId: firstCandidateId,
+        sourceItemKey,
+        fromEntityRef: "dc.source_board",
+        toEntityRef: "dc.target_agency",
+        relationshipType: "governed_by",
+        rawValue: `Target Agency ${index}`,
+        needsReview: false,
+      }),
+      dataDir,
+    );
+    await workbench.appendResolutionEvent(
+      {
+        eventType: "accept_relationship_candidate",
+        subjectId: firstCandidateId,
+        payload: {},
+      },
+      resolutionsDir,
+    );
+
+    const secondCandidateId = `relationship.test.signature.relationships.bulk_${index}_v2`;
+    const secondResult = syntheticCustomRelationshipSourceResult({
+      sourceId: "test.signature.relationships",
+      relationshipCandidateId: secondCandidateId,
+      sourceItemKey,
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.target_agency",
+      relationshipType: "governed_by",
+      rawValue: `Target Agency ${index}`,
+      needsReview: false,
+    });
+    await workbench.importConnectorResult(secondResult, dataDir);
+    const endpointResult = secondResult.endpointResults[0];
+    assert(endpointResult);
+    const parsed = endpointResult.parsed;
+    assert(parsed);
+    const relationshipCandidate = parsed.relationshipCandidates?.[0];
+    assert(relationshipCandidate);
+    hints.push(
+      await buildRelationshipDecisionHint(
+        secondResult.source.sourceId,
+        relationshipCandidate,
+      ),
+    );
+  }
+
+  let acceptRejectDecisionQueries = 0;
+  let deferReviewDecisionQueries = 0;
+  let candidateStatusQueries = 0;
+  let reviewItemQueries = 0;
+  const store = {
+    db: {
+      exec(sql: string) {
+        return workbench.db.exec(sql);
+      },
+      prepare(sql: string) {
+        if (sql.includes("accept_relationship_candidate', 'reject_relationship_candidate")) {
+          acceptRejectDecisionQueries += 1;
+        }
+        if (sql.includes("defer_review_item', 'reopen_review_item")) {
+          deferReviewDecisionQueries += 1;
+        }
+        if (
+          sql.includes("from relationship_candidates") &&
+          sql.includes("relationship_candidate_id in")
+        ) {
+          candidateStatusQueries += 1;
+        }
+        if (
+          sql.includes("from review_items") &&
+          sql.includes("item_type = 'relationship_candidate'") &&
+          sql.includes("subject_id in")
+        ) {
+          reviewItemQueries += 1;
+        }
+        return workbench.db.prepare(sql);
+      },
+    },
+  };
+
+  await reuseOrMarkStaleRelationshipDecisions(
+    store as unknown as Parameters<typeof reuseOrMarkStaleRelationshipDecisions>[0],
+    hints,
+  );
+  workbench.close();
+  return {
+    acceptRejectDecisionQueries,
+    deferReviewDecisionQueries,
+    candidateStatusQueries,
+    reviewItemQueries,
+  };
+}

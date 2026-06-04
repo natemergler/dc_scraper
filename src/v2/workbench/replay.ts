@@ -8,7 +8,7 @@ import {
   slugify,
 } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
-import { queryOne, run } from "./db.ts";
+import { queryAll, queryOne, run } from "./db.ts";
 import { endpointStatus } from "./endpoint_status.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
@@ -32,6 +32,36 @@ export interface RelationshipDecisionHint {
   relationshipCandidateId: string;
   factSignature: string;
   evidenceHash: string;
+}
+
+interface RelationshipReplayDecisionRow {
+  factSignature: string;
+  eventType: string;
+  eventId: string;
+  evidenceHash?: string | null;
+  resolvedRelationshipType?: string | null;
+  resolvedFromEntityId?: string | null;
+  resolvedToEntityId?: string | null;
+}
+
+interface RelationshipReplayReviewDecisionRow {
+  factSignature: string;
+  eventType: string;
+  reviewItemId: string;
+  evidenceHash?: string | null;
+}
+
+interface RelationshipReplayCandidateRow {
+  relationshipCandidateId: string;
+  reviewStatus: string;
+}
+
+interface RelationshipReplayReviewItemRow {
+  relationshipCandidateId: string;
+  reviewItemId: string;
+  reason: string;
+  detailsJson: string;
+  status: string;
 }
 
 export async function buildEntityDecisionHint(
@@ -326,43 +356,38 @@ export async function reuseOrMarkStaleRelationshipDecisions(
   store: WorkbenchStore,
   hints: RelationshipDecisionHint[],
 ): Promise<void> {
+  const priorDecisionsByFactSignature = latestRelationshipReplayDecisionsByFactSignature(
+    store,
+    hints.map((hint) => hint.factSignature),
+  );
+  const priorReviewDecisionsByFactSignature =
+    latestRelationshipReplayReviewDecisionsByFactSignature(
+      store,
+      hints.map((hint) => hint.factSignature),
+    );
+  const candidatesById = relationshipReplayCandidatesById(
+    store,
+    hints.map((hint) => hint.relationshipCandidateId),
+  );
+  const reviewItemsByCandidateId = relationshipReplayReviewItemsByCandidateId(
+    store,
+    hints.map((hint) => hint.relationshipCandidateId),
+  );
   let changed = false;
   for (const hint of hints) {
-    const priorDecision = queryOne<{
-      eventType: string;
-      eventId: string;
-      evidenceHash?: string | null;
-      resolvedRelationshipType?: string | null;
-      resolvedFromEntityId?: string | null;
-      resolvedToEntityId?: string | null;
-    }>(
-      store.db,
-      `select event_type as eventType,
-              event_id as eventId,
-              json_extract(payload_json, '$.evidence_hash') as evidenceHash,
-              json_extract(payload_json, '$.resolved_relationship_type') as resolvedRelationshipType,
-              json_extract(payload_json, '$.resolved_from_entity_id') as resolvedFromEntityId,
-              json_extract(payload_json, '$.resolved_to_entity_id') as resolvedToEntityId
-       from resolution_events
-       where event_type in ('accept_relationship_candidate', 'reject_relationship_candidate')
-         and json_extract(payload_json, '$.fact_signature') = ?
-       order by created_at desc, event_id desc
-      limit 1`,
-      [hint.factSignature],
-    );
+    const priorDecision = priorDecisionsByFactSignature.get(hint.factSignature);
     if (!priorDecision?.evidenceHash) {
-      reuseOrMarkStaleDeferredRelationshipReview(store, hint);
+      reuseOrMarkStaleDeferredRelationshipReview(
+        store,
+        hint,
+        priorReviewDecisionsByFactSignature.get(hint.factSignature),
+        reviewItemsByCandidateId.get(hint.relationshipCandidateId),
+      );
       continue;
     }
 
     if (priorDecision.evidenceHash === hint.evidenceHash) {
-      const candidate = queryOne<{ reviewStatus: string }>(
-        store.db,
-        `select review_status as reviewStatus
-         from relationship_candidates
-         where relationship_candidate_id = ?`,
-        [hint.relationshipCandidateId],
-      );
+      const candidate = candidatesById.get(hint.relationshipCandidateId);
       if (!candidate) continue;
       if (priorDecision.eventType === "accept_relationship_candidate") {
         if (candidate.reviewStatus !== "accepted") {
@@ -402,13 +427,7 @@ export async function reuseOrMarkStaleRelationshipDecisions(
       continue;
     }
 
-    const reviewItem = queryOne<{ reason: string; detailsJson: string }>(
-      store.db,
-      `select reason, details_json as detailsJson
-       from review_items
-       where subject_id = ? and item_type = 'relationship_candidate'`,
-      [hint.relationshipCandidateId],
-    );
+    const reviewItem = reviewItemsByCandidateId.get(hint.relationshipCandidateId);
     if (!reviewItem) continue;
     const details = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
     const priorDecisionState = priorDecision.eventType === "accept_relationship_candidate"
@@ -778,42 +797,12 @@ function relationshipReplayDraft(
 function reuseOrMarkStaleDeferredRelationshipReview(
   store: WorkbenchStore,
   hint: RelationshipDecisionHint,
+  priorReviewDecision?: RelationshipReplayReviewDecisionRow,
+  reviewItem?: RelationshipReplayReviewItemRow,
 ): void {
-  const priorReviewDecision = queryOne<{
-    eventType: string;
-    reviewItemId: string;
-    evidenceHash?: string | null;
-  }>(
-    store.db,
-    `select event_type as eventType,
-            subject_id as reviewItemId,
-            json_extract(payload_json, '$.evidence_hash') as evidenceHash
-     from resolution_events
-     where event_type in ('defer_review_item', 'reopen_review_item')
-       and json_extract(payload_json, '$.fact_signature') = ?
-     order by created_at desc, event_id desc
-     limit 1`,
-    [hint.factSignature],
-  );
   if (!priorReviewDecision?.evidenceHash || priorReviewDecision.eventType !== "defer_review_item") {
     return;
   }
-
-  const reviewItem = queryOne<{
-    reviewItemId: string;
-    reason: string;
-    detailsJson: string;
-    status: string;
-  }>(
-    store.db,
-    `select review_item_id as reviewItemId,
-            reason,
-            details_json as detailsJson,
-            status
-     from review_items
-     where subject_id = ? and item_type = 'relationship_candidate'`,
-    [hint.relationshipCandidateId],
-  );
   if (!reviewItem || reviewItem.status === "resolved") return;
   if (priorReviewDecision.reviewItemId !== reviewItem.reviewItemId) {
     run(
@@ -855,6 +844,143 @@ function reuseOrMarkStaleDeferredRelationshipReview(
       hint.relationshipCandidateId,
     ],
   );
+}
+
+function latestRelationshipReplayDecisionsByFactSignature(
+  store: WorkbenchStore,
+  factSignatures: string[],
+): Map<string, RelationshipReplayDecisionRow> {
+  return new Map(
+    queryRowsByValues<RelationshipReplayDecisionRow>(
+      store,
+      factSignatures,
+      (placeholders) => `
+        with ranked as (
+          select json_extract(payload_json, '$.fact_signature') as factSignature,
+                 event_type as eventType,
+                 event_id as eventId,
+                 json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+                 json_extract(payload_json, '$.resolved_relationship_type') as resolvedRelationshipType,
+                 json_extract(payload_json, '$.resolved_from_entity_id') as resolvedFromEntityId,
+                 json_extract(payload_json, '$.resolved_to_entity_id') as resolvedToEntityId,
+                 row_number() over (
+                   partition by json_extract(payload_json, '$.fact_signature')
+                   order by created_at desc, event_id desc
+                 ) as rowNumber
+          from resolution_events
+          where event_type in ('accept_relationship_candidate', 'reject_relationship_candidate')
+            and json_extract(payload_json, '$.fact_signature') in (${placeholders})
+        )
+        select factSignature,
+               eventType,
+               eventId,
+               evidenceHash,
+               resolvedRelationshipType,
+               resolvedFromEntityId,
+               resolvedToEntityId
+        from ranked
+        where rowNumber = 1
+      `,
+    ).map((row) => [row.factSignature, row]),
+  );
+}
+
+function latestRelationshipReplayReviewDecisionsByFactSignature(
+  store: WorkbenchStore,
+  factSignatures: string[],
+): Map<string, RelationshipReplayReviewDecisionRow> {
+  return new Map(
+    queryRowsByValues<RelationshipReplayReviewDecisionRow>(
+      store,
+      factSignatures,
+      (placeholders) => `
+        with ranked as (
+          select json_extract(payload_json, '$.fact_signature') as factSignature,
+                 event_type as eventType,
+                 subject_id as reviewItemId,
+                 json_extract(payload_json, '$.evidence_hash') as evidenceHash,
+                 row_number() over (
+                   partition by json_extract(payload_json, '$.fact_signature')
+                   order by created_at desc, event_id desc
+                 ) as rowNumber
+          from resolution_events
+          where event_type in ('defer_review_item', 'reopen_review_item')
+            and json_extract(payload_json, '$.fact_signature') in (${placeholders})
+        )
+        select factSignature, eventType, reviewItemId, evidenceHash
+        from ranked
+        where rowNumber = 1
+      `,
+    ).map((row) => [row.factSignature, row]),
+  );
+}
+
+function relationshipReplayCandidatesById(
+  store: WorkbenchStore,
+  relationshipCandidateIds: string[],
+): Map<string, RelationshipReplayCandidateRow> {
+  return new Map(
+    queryRowsByValues<RelationshipReplayCandidateRow>(
+      store,
+      relationshipCandidateIds,
+      (placeholders) => `
+        select relationship_candidate_id as relationshipCandidateId,
+               review_status as reviewStatus
+        from relationship_candidates
+        where relationship_candidate_id in (${placeholders})
+      `,
+    ).map((row) => [row.relationshipCandidateId, row]),
+  );
+}
+
+function relationshipReplayReviewItemsByCandidateId(
+  store: WorkbenchStore,
+  relationshipCandidateIds: string[],
+): Map<string, RelationshipReplayReviewItemRow> {
+  return new Map(
+    queryRowsByValues<RelationshipReplayReviewItemRow>(
+      store,
+      relationshipCandidateIds,
+      (placeholders) => `
+        select subject_id as relationshipCandidateId,
+               review_item_id as reviewItemId,
+               reason,
+               details_json as detailsJson,
+               status
+        from review_items
+        where item_type = 'relationship_candidate'
+          and subject_id in (${placeholders})
+      `,
+    ).map((row) => [row.relationshipCandidateId, row]),
+  );
+}
+
+function queryRowsByValues<T>(
+  store: WorkbenchStore,
+  values: string[],
+  sqlForPlaceholders: (placeholders: string) => string,
+): T[] {
+  const uniqueValues = [...new Set(values)];
+  if (uniqueValues.length === 0) return [];
+  const rows: T[] = [];
+  for (const chunk of chunks(uniqueValues, 500)) {
+    rows.push(
+      ...queryAll<T>(
+        store.db,
+        sqlForPlaceholders(chunk.map(() => "?").join(", ")),
+        chunk,
+      ),
+    );
+  }
+  return rows;
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
 }
 
 function mergeAcceptedEntityCandidate(
