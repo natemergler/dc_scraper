@@ -9,6 +9,7 @@ import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { queryOne, run, withTransaction } from "./db.ts";
+import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { contentHash, makeId, requireItem, writeArtifact } from "./helpers.ts";
 import { upsertEndpoint, upsertSource } from "./catalog.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
@@ -448,17 +449,23 @@ function reviewItemWithWorkbenchContext(
   const conflict = queryOne<{
     candidateKind: string;
     candidateName: string;
+    candidateSourceId: string;
     existingEntityId: string;
     existingName: string;
     existingKind: string;
+    existingMergedCandidateIds: string;
   }>(
     store.db,
     `select entity_candidates.kind as candidateKind,
             entity_candidates.name as candidateName,
+            source_items.source_id as candidateSourceId,
             canonical_entities.entity_id as existingEntityId,
             canonical_entities.name as existingName,
-            canonical_entities.kind as existingKind
+            canonical_entities.kind as existingKind,
+            canonical_entities.merged_candidate_ids as existingMergedCandidateIds
      from entity_candidates
+     join source_items
+       on source_items.source_item_id = entity_candidates.source_item_id
      join canonical_entities
        on canonical_entities.entity_id = entity_candidates.proposed_entity_id
      where entity_candidates.candidate_id = ?
@@ -467,6 +474,18 @@ function reviewItemWithWorkbenchContext(
     [reviewItem.subjectId],
   );
   if (!conflict) return reviewItem;
+  const mergeDecision = classifySameEntityKindMerge(
+    store,
+    {
+      kind: conflict.existingKind,
+      mergedCandidateIds: conflict.existingMergedCandidateIds,
+    },
+    {
+      kind: conflict.candidateKind,
+      sourceId: conflict.candidateSourceId,
+    },
+  );
+  if (mergeDecision.decision !== "conflict") return reviewItem;
   return {
     ...reviewItem,
     reason: "Resolve entity candidate that conflicts with an accepted entity",

@@ -213,6 +213,71 @@ Deno.test("accepted alias-backed entity candidates attach provenance without rep
   assertEquals(openReview.length, 0);
 });
 
+Deno.test("same-id public-body refinement fills canonical fields without opening entity review", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const weakCandidateId = "candidate.dcgis.agencies.example_public_body";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.agencies",
+      candidateId: weakCandidateId,
+      sourceItemKey: "dcgis-example-public-body-row",
+      proposedEntityId: "dc.example_public_body",
+      name: "Example Public Body",
+      kind: "public_body",
+      observedName: "Example Public Body",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const refinedCandidateId = "candidate.open_dc.public_bodies.example_public_body";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "open_dc.public_bodies",
+      candidateId: refinedCandidateId,
+      sourceItemKey: "open-dc-example-public-body-row",
+      proposedEntityId: "dc.example_public_body",
+      name: "Example Public Body",
+      kind: "board",
+      officialUrl: "https://open.dc.gov/public-bodies/example-public-body",
+      observedName: "Example Public Body",
+      confidence: 0.99,
+    }),
+    dataDir,
+  );
+
+  const refinedCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(refinedCandidateId) as { reviewStatus: string } | undefined;
+  const canonical = workbench.db.prepare(
+    `select kind,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.example_public_body'`,
+  ).get() as {
+    kind: string;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: refinedCandidateId,
+  });
+  workbench.close();
+
+  assertEquals(refinedCandidate?.reviewStatus, "accepted");
+  assertEquals(canonical.kind, "board");
+  assertEquals(canonical.officialUrl, "https://open.dc.gov/public-bodies/example-public-body");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [weakCandidateId, refinedCandidateId]);
+  assertEquals(openReview.length, 0);
+});
+
 Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
