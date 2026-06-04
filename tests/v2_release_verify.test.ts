@@ -1,6 +1,8 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import type { ConnectorResult, RelationshipType } from "../src/v2/domain.ts";
+import { readGitCommit } from "../src/v2/git.ts";
 import { buildV2Release } from "../src/v2/release.ts";
 import { verifyWorkbenchRelease } from "../src/v2/release_verify.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -46,6 +48,24 @@ Deno.test("release manifest includes stable provenance fields", async () => {
   assert(typeof manifest.release_id === "string" && manifest.release_id.length > 0);
   assert(typeof manifest.tool_version === "string" && manifest.tool_version.length > 0);
   assert(typeof manifest.git_commit === "string" && manifest.git_commit.length > 0);
+});
+
+Deno.test("release git provenance reads refs from Git worktree common dir", async () => {
+  const dir = await Deno.makeTempDir();
+  const repoRoot = join(dir, "checkout");
+  const commonGitDir = join(dir, "repo.git");
+  const worktreeGitDir = join(commonGitDir, "worktrees", "checkout");
+  const refPath = join(commonGitDir, "refs", "heads", "campaign", "release-test");
+  const commit = "0123456789abcdef0123456789abcdef01234567";
+  await ensureDir(repoRoot);
+  await ensureDir(worktreeGitDir);
+  await ensureDir(join(commonGitDir, "refs", "heads", "campaign"));
+  await Deno.writeTextFile(join(repoRoot, ".git"), `gitdir: ${worktreeGitDir}\n`);
+  await Deno.writeTextFile(join(worktreeGitDir, "HEAD"), "ref: refs/heads/campaign/release-test\n");
+  await Deno.writeTextFile(join(worktreeGitDir, "commondir"), "../..\n");
+  await Deno.writeTextFile(refPath, `${commit}\n`);
+
+  assertEquals(await readGitCommit(repoRoot), commit);
 });
 
 Deno.test("release verify exits zero for a ready workbench", async () => {
