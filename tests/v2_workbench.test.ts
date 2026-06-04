@@ -1333,7 +1333,7 @@ Deno.test("Open DC second detail-page shape yields administered relationship, le
   );
 });
 
-Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyond the default limit", async () => {
+Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyond an explicit limit", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -1372,6 +1372,73 @@ Deno.test("Open DC fetch includes priority Council oversight endpoint pages beyo
       candidate.toEntityRef === "dc.office_of_human_rights"
     ),
   );
+});
+
+Deno.test("Open DC unbounded fetch follows every public-body detail link", async () => {
+  const detailLinks = Array.from({ length: 10 }, (_, index) => ({
+    slug: `public-body-${index + 1}`,
+    name: `Public Body ${index + 1}`,
+  }));
+  const indexFixture = `<html><body>${
+    detailLinks.map((link) => `<a href="/public-bodies/${link.slug}">${link.name}</a>`).join("\n")
+  }</body></html>`;
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      if (url === "https://www.open-dc.gov/public-bodies") return indexFixture;
+      const slug = url.split("/").pop();
+      const link = detailLinks.find((candidate) => candidate.slug === slug);
+      if (!link) throw new Error(`Unexpected url ${url}`);
+      return `<html><body><h1 class="page-title">${link.name}</h1></body></html>`;
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({
+    fetcher,
+  }));
+  const detail = result.endpointResults[1].parsed;
+  assertEquals(detail?.entityCandidates?.length, 10);
+  assert(
+    detail?.entityCandidates?.some((candidate) =>
+      candidate.candidateId === "candidate.open_dc.public_bodies.public_body_10" &&
+      candidate.officialUrl === "https://www.open-dc.gov/public-bodies/public-body-10"
+    ),
+  );
+});
+
+Deno.test("Open DC keeps taxonomy-only agency labels as evidence instead of relationship endpoints", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body><a href="/public-bodies/board-elections">Board of Elections</a></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/board-elections":
+          return `<html><body>
+            <h1 class="page-title">Board of Elections</h1>
+            <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+              <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+              <div class="field-items"><div class="field-item even">Independent Agency</div></div>
+            </div>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("open_dc.public_bodies").run(createConnectorContext({
+    fetcher,
+  }));
+  const detail = result.endpointResults[1].parsed;
+  assertEquals(detail?.relationshipCandidates?.length ?? 0, 0);
+  assertEquals(detail?.items?.[0]?.body.governingAgency, "Independent Agency");
 });
 
 Deno.test("Open DC governing agency labels can resolve qualified deputy mayor aliases", async () => {
@@ -3923,13 +3990,40 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("District of Columbia Water and Sewer Authority"),
     "dc.dc_water",
   );
+  assertEquals(buildKnownEntityRef("Water and Sewer Authority (WASA)"), "dc.dc_water");
   assertEquals(
     buildKnownEntityRef("Fire and Emergency Medical Services Department"),
     "dc.fire_and_emergency_medical_services",
   );
   assertEquals(
+    buildKnownEntityRef("Department of Energy and the Environment (DOEE)"),
+    "dc.department_of_energy_and_environment",
+  );
+  assertEquals(buildKnownEntityRef("DOEE"), "dc.department_of_energy_and_environment");
+  assertEquals(
+    buildKnownEntityRef("DC Taxicab Commission (DCTC)"),
+    "dc.district_of_columbia_taxicab_commission_dctc",
+  );
+  assertEquals(
+    buildKnownEntityRef("Department of Forensic Sciences/DFS"),
+    "dc.department_of_forensic_sciences",
+  );
+  assertEquals(
     buildKnownEntityRef("Office of the Attorney General for the District of Columbia"),
     "dc.office_of_the_attorney_general",
+  );
+  assertEquals(buildKnownEntityRef("EOM"), "dc.executive_office_of_the_mayor");
+  assertEquals(
+    buildKnownEntityRef("Executive Office of the Senior Advisor"),
+    "dc.office_of_the_senior_advisor",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of the Secretary of the District of Columbia"),
+    "dc.office_of_the_secretary",
+  );
+  assertEquals(
+    buildKnownEntityRef("Office of Victim Services and Justice Grants/OVSJG"),
+    "dc.office_of_victim_services_and_justice_grants",
   );
   assertEquals(buildKnownEntityRef("DC Court of Appeals"), "dc.court_of_appeals");
   assertEquals(buildKnownEntityRef("DC Superior Court"), "dc.superior_court");
@@ -4054,6 +4148,37 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
   );
   assertEquals(
+    buildKnownEntityRef("Mayor's Office of Asian and Pacific Islander Affairs (MOAPIA)"),
+    "dc.mayor_s_office_on_asian_and_pacific_island_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office of African Affairs"),
+    "dc.mayor_s_office_on_african_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef(
+      "Mayor's Office of Lesbian, Gay, Bisexual and Questioning Affairs (LGBTQA)",
+    ),
+    "dc.mayor_s_office_of_lesbian_gay_bisexual_transgender_and_questioning_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office of Women's Policy Initiatives (MOWPI)"),
+    "dc.mayor_s_office_on_women_s_policy_and_initiatives",
+  );
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office on Returning Citizen's Affairs (MORCA)"),
+    "dc.mayor_s_office_on_returning_citizen_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("Mayor's Office on Religious Affairs (MORA)"),
+    "dc.mayor_s_office_of_religious_affairs",
+  );
+  assertEquals(
+    buildKnownEntityRef("MODDHH"),
+    "dc.office_for_the_deaf_deafblind_and_hard_of_hearing",
+  );
+  assertEquals(buildKnownEntityRef("MOPI"), "dc.mayor_s_office_of_policy_and_innovation");
+  assertEquals(
     buildKnownEntityRef("MPD"),
     "dc.metropolitan_police_department",
   );
@@ -4085,6 +4210,12 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
     buildKnownEntityRef("Secretary of State of the District of Columbia"),
     "dc.office_of_the_secretary",
   );
+  assertEquals(
+    buildKnownEntityRef("Office on Caribbean Community Affairs"),
+    "dc.office_on_caribbean_affairs",
+  );
+  assertEquals(buildKnownEntityRef("CCRC"), "dc.criminal_code_reform_commission");
+  assertEquals(buildKnownEntityRef("SBOE"), "dc.dc_state_board_of_education");
   assertEquals(
     buildKnownEntityRef("State Superintendent of Education"),
     "dc.office_of_the_state_superintendent_of_education",
