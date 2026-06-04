@@ -1520,6 +1520,45 @@ Deno.test("quickbase connector derives public appointee observations from live-s
   assert(!publicFacts.includes("antoinette.mitchell@dc.gov"));
 });
 
+Deno.test("quickbase connector suppresses executive-anchored committee-like Council oversight guesses", async () => {
+  const executiveAnchoredCsv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Advisory Committee to the Office of Administrative Hearings (OAH)","Member","Filled","Mayoral Appointee","Active"
+"Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)","Member","Filled","Mayoral Appointee","Active"
+"Public Space Committee (PSC)","Member","Filled","Mayoral Appointee","Active"
+`;
+  const result = await getConnector("mota.quickbase").run(
+    createConnectorContext({
+      fetcher: async (url: string) => {
+        const body = (() => {
+          switch (url) {
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+              return quickbaseFixture;
+            case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+              return executiveAnchoredCsv;
+            default:
+              throw new Error(`Unexpected url ${url}`);
+          }
+        })();
+        return {
+          status: 200,
+          text: async () => body,
+          json: async <T>() => JSON.parse(body) as T,
+        };
+      },
+    }),
+  );
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  const oversightCandidates = (parsed.relationshipCandidates ?? []).filter((candidate) =>
+    candidate.relationshipType === "overseen_by"
+  );
+
+  assertEquals(oversightCandidates.length, 1);
+  assertEquals(oversightCandidates[0]?.rawValue, "Public Space Committee (PSC)");
+});
+
 Deno.test("quickbase connector keeps contact columns out of public fact candidates", async () => {
   const csvWithContactColumns = quickbaseAppointmentsCsvFixture.replace(
     '"board status"',

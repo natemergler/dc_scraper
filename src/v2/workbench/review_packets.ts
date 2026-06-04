@@ -1,4 +1,5 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
+import { classifyQuickbaseCouncilOversight } from "../connectors/shared.ts";
 import type { ReviewItemFilters } from "./review.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -173,22 +174,9 @@ function deferredRelationshipPacketGroupLabel(
   const packetSourceId = sourceId ?? "unknown";
   if (packetSourceId !== "mota.quickbase") return undefined;
   if (item.details.relationshipType !== "overseen_by") return undefined;
-  if (typeof item.details.rawValue !== "string") return undefined;
-  const normalized = item.details.rawValue.toLowerCase();
-  if (
-    normalized.includes("fatality review") ||
-    normalized.includes("mortality review") ||
-    normalized.includes("review committee")
-  ) {
-    return "Review/fatality committee-like names";
-  }
-  if (
-    normalized.includes("mayor's advisory committee") ||
-    normalized.includes("advisory committee to the office")
-  ) {
-    return "Executive-anchored committee-like names";
-  }
-  return "Other committee-like names";
+  return classifyQuickbaseCouncilOversight(
+    typeof item.details.rawValue === "string" ? item.details.rawValue : undefined,
+  ).deferredGroupLabel;
 }
 
 function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(

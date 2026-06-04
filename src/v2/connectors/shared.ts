@@ -183,6 +183,45 @@ export function councilOversightReviewPolicy(
   return { defaultAction: "accept" };
 }
 
+export function classifyQuickbaseCouncilOversight(
+  rawValue?: string | null,
+): {
+  isCommitteeLike: boolean;
+  shouldEmit: boolean;
+  deferredGroupLabel?: string;
+} {
+  const normalized = normalizeName(rawValue ?? "");
+  if (!/\bcommittee\b/i.test(normalized)) {
+    return { isCommitteeLike: false, shouldEmit: false };
+  }
+  if (
+    /^advisory committee to the office\b/i.test(normalized) ||
+    /^mayor'?s advisory committee\b/i.test(normalized)
+  ) {
+    return {
+      isCommitteeLike: true,
+      shouldEmit: false,
+      deferredGroupLabel: "Executive-anchored committee-like names",
+    };
+  }
+  if (
+    /\bfatality review\b/i.test(normalized) ||
+    /\bmortality review\b/i.test(normalized) ||
+    /\breview committee\b/i.test(normalized)
+  ) {
+    return {
+      isCommitteeLike: true,
+      shouldEmit: true,
+      deferredGroupLabel: "Review/fatality committee-like names",
+    };
+  }
+  return {
+    isCommitteeLike: true,
+    shouldEmit: true,
+    deferredGroupLabel: "Other committee-like names",
+  };
+}
+
 export function extractFirstUrl(input: string): string | undefined {
   return input.match(/https?:\/\/\S+/)?.[0];
 }
