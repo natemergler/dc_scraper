@@ -647,8 +647,8 @@ Deno.test("Quickbase accepted-endpoint appointee observation relationships auto-
   assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
     "dc.council_of_the_district_of_columbia:has_seat:dc.council_of_the_district_of_columbia_chairperson",
     "dc.council_of_the_district_of_columbia_chairperson:has_status:status.filled",
-    "observation.council_of_the_district_of_columbia_row_1_john_smith:has_status:status.filled",
-    "observation.council_of_the_district_of_columbia_row_1_john_smith:holds:dc.council_of_the_district_of_columbia_chairperson",
+    "observation.council_of_the_district_of_columbia_chairperson_john_smith_filled:has_status:status.filled",
+    "observation.council_of_the_district_of_columbia_chairperson_john_smith_filled:holds:dc.council_of_the_district_of_columbia_chairperson",
   ]);
   assertEquals(remainingReviewItems.length, 0);
 });
