@@ -15,6 +15,25 @@ function captureConsoleLogs<T>(fn: () => Promise<T>): Promise<{ result: T; lines
   });
 }
 
+function captureConsole<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; stdout: string[]; stderr: string[] }> {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  console.log = (...args: unknown[]) => {
+    stdout.push(args.map((value) => String(value)).join(" "));
+  };
+  console.error = (...args: unknown[]) => {
+    stderr.push(args.map((value) => String(value)).join(" "));
+  };
+  return fn().then((result) => ({ result, stdout, stderr })).finally(() => {
+    console.log = originalLog;
+    console.error = originalError;
+  });
+}
+
 function fixtureConnector(source: SourceDefinition): SourceConnector {
   return {
     sourceId: source.sourceId,
@@ -83,14 +102,18 @@ function fixtureSmokeDeps(): RunSmokeProfileDeps {
 }
 
 Deno.test("smoke renders source progress while fetching profile sources", async () => {
-  const { result, lines } = await runSmoke(["smoke", "structure"], {}, fixtureSmokeDeps());
+  const { result, stdout, stderr } = await runSmokeWithStreams(
+    ["smoke", "structure"],
+    {},
+    fixtureSmokeDeps(),
+  );
 
   assertEquals(result, true);
-  const output = lines.join("\n");
-  assertStringIncludes(output, "[1/1] Starting alpha.structure - Alpha Structure");
-  assertStringIncludes(output, "[1/1] alpha.structure: Fetching fixture page 1/2");
-  assertStringIncludes(output, "[1/1] Finished alpha.structure");
-  assertStringIncludes(output, "Smoke fetch summary: 1/1 succeeded.");
+  const progress = stderr.join("\n");
+  assertStringIncludes(progress, "[1/1] Starting alpha.structure - Alpha Structure");
+  assertStringIncludes(progress, "[1/1] alpha.structure: Fetching fixture page 1/2");
+  assertStringIncludes(progress, "[1/1] Finished alpha.structure");
+  assertStringIncludes(stdout.join("\n"), "Smoke fetch summary: 1/1 succeeded.");
 });
 
 Deno.test("smoke json output stays free of source progress logs", async () => {
@@ -113,4 +136,12 @@ async function runSmoke(
   deps: RunSmokeProfileDeps,
 ): Promise<{ result: boolean; lines: string[] }> {
   return await captureConsoleLogs(async () => await handleSmokeCommand(args, options, deps));
+}
+
+async function runSmokeWithStreams(
+  args: string[],
+  options: SmokeCommandOptions,
+  deps: RunSmokeProfileDeps,
+): Promise<{ result: boolean; stdout: string[]; stderr: string[] }> {
+  return await captureConsole(async () => await handleSmokeCommand(args, options, deps));
 }

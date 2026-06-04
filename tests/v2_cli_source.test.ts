@@ -1,5 +1,9 @@
 import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
-import { handleSourceCommand, type SourceCommandDeps } from "../src/v2/cli_source.ts";
+import {
+  handleSourceCommand,
+  type ImportProgressEvent,
+  type SourceCommandDeps,
+} from "../src/v2/cli_source.ts";
 import type { ConnectorContext, SourceConnector } from "../src/v2/connectors/shared.ts";
 import type { ConnectorResult } from "../src/v2/domain.ts";
 import type { PublicBodyComparisonReport } from "../src/v2/workbench/catalog.ts";
@@ -33,6 +37,25 @@ function captureConsoleLogs<T>(fn: () => Promise<T>): Promise<{ result: T; lines
   };
   return fn().then((result) => ({ result, lines })).finally(() => {
     console.log = original;
+  });
+}
+
+function captureConsole<T>(
+  fn: () => Promise<T>,
+): Promise<{ result: T; stdout: string[]; stderr: string[] }> {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  console.log = (...args: unknown[]) => {
+    stdout.push(args.map((value) => String(value)).join(" "));
+  };
+  console.error = (...args: unknown[]) => {
+    stderr.push(args.map((value) => String(value)).join(" "));
+  };
+  return fn().then((result) => ({ result, stdout, stderr })).finally(() => {
+    console.log = originalLog;
+    console.error = originalError;
   });
 }
 
@@ -121,20 +144,21 @@ Deno.test("source fetch --all runs configured connectors in order and imports ea
     }),
   };
 
-  const { result, lines } = await captureConsoleLogs(async () =>
+  const { result, stdout, stderr } = await captureConsole(async () =>
     await handleSourceCommand(["source", "fetch", "--all"], { limit: 3 }, deps)
   );
 
   assertEquals(result, true);
   assertEquals(observedLimits, [3, 3]);
   assertEquals(imported, ["alpha.source", "beta.source"]);
-  const output = lines.join("\n");
-  assertMatch(output, /\[1\/2\] Starting alpha\.source - Alpha Source/);
-  assertMatch(output, /\[1\/2\] Importing alpha\.source after connector .*/);
-  assertMatch(output, /\[1\/2\] Finished alpha\.source in .* \(connector .*, import .*\)/);
-  assertMatch(output, /\[2\/2\] Starting beta\.source - Beta Source/);
-  assertMatch(output, /\[2\/2\] Importing beta\.source after connector .*/);
-  assertMatch(output, /\[2\/2\] Finished beta\.source in .* \(connector .*, import .*\)/);
+  const progress = stderr.join("\n");
+  assertMatch(progress, /\[1\/2\] Starting alpha\.source - Alpha Source/);
+  assertMatch(progress, /\[1\/2\] Importing alpha\.source after connector .*/);
+  assertMatch(progress, /\[1\/2\] Finished alpha\.source in .* \(connector .*, import .*\)/);
+  assertMatch(progress, /\[2\/2\] Starting beta\.source - Beta Source/);
+  assertMatch(progress, /\[2\/2\] Importing beta\.source after connector .*/);
+  assertMatch(progress, /\[2\/2\] Finished beta\.source in .* \(connector .*, import .*\)/);
+  const output = stdout.join("\n");
   assertStringIncludes(output, "Fetched alpha.source");
   assertStringIncludes(output, "Fetched beta.source");
   assertStringIncludes(output, "Source fetch summary: 2/2 succeeded.");
@@ -205,7 +229,7 @@ Deno.test("source fetch --all continues through failures and throws a summary er
     },
   };
 
-  const { lines } = await captureConsoleLogs(async () =>
+  const { stdout, stderr } = await captureConsole(async () =>
     await assertRejects(
       async () => await handleSourceCommand(["source", "fetch", "--all"], {}, deps),
       Error,
@@ -214,13 +238,14 @@ Deno.test("source fetch --all continues through failures and throws a summary er
   );
 
   assertEquals(imported, ["alpha.source"]);
-  const output = lines.join("\n");
-  assertMatch(output, /\[2\/2\] Starting broken\.source - Broken Source/);
-  assertMatch(output, /\[2\/2\] Fetch failed broken\.source after .* \(connector .*\)/);
+  const progress = stderr.join("\n");
+  assertMatch(progress, /\[2\/2\] Starting broken\.source - Broken Source/);
+  assertMatch(progress, /\[2\/2\] Fetch failed broken\.source after .* \(connector .*\)/);
+  const output = stdout.join("\n");
   assertStringIncludes(output, "Fetch failed broken.source");
   assertStringIncludes(output, "fixture boom");
   assertStringIncludes(output, "Source fetch summary: 1/2 succeeded.");
-  assertEquals(lines.some((line) => line.startsWith("Next:")), false);
+  assertEquals(stdout.some((line) => line.startsWith("Next:")), false);
 });
 
 Deno.test("source fetch --all keeps json output free of progress logs", async () => {
@@ -346,15 +371,151 @@ Deno.test("source fetch prints connector substep progress", async () => {
     readSourceRows: async () => [],
   };
 
-  const { result, lines } = await captureConsoleLogs(async () =>
+  const { result, stderr } = await captureConsole(async () =>
     await handleSourceCommand(["source", "fetch", "--all"], {}, deps)
   );
 
   assertEquals(result, true);
   assertStringIncludes(
-    lines.join("\n"),
+    stderr.join("\n"),
     "[1/1] paged.source: Fetching rows 1-2 of 3 (page 1/2)",
   );
+});
+
+Deno.test("source fetch prints import substeps to stderr after connector returns", async () => {
+  const connectors = [
+    fixtureConnector("mota.quickbase", "MOTA QuickBase", async () => ({
+      source: {
+        sourceId: "mota.quickbase",
+        title: "MOTA QuickBase",
+        kind: "quickbase",
+        accessMethod: "fixture",
+        baseUrl: "https://example.com/quickbase",
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: "mota.quickbase.main",
+          sourceId: "mota.quickbase",
+          title: "QuickBase endpoint",
+          kind: "fixture",
+          url: "https://example.com/quickbase",
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [],
+      }],
+    })),
+  ];
+  const importProgress: ImportProgressEvent[] = [
+    { phase: "parsed-row-insert", message: "Inserted parsed rows" },
+    { phase: "legal-auto-accept", message: "Auto-accepted safe legal refs" },
+    { phase: "entity-auto-promote", message: "Auto-promoted safe entities" },
+    { phase: "relationship-reconciliation", message: "Reconciled relationship candidates" },
+    { phase: "relationship-replay", message: "Replayed relationship decisions" },
+    { phase: "relationship-auto-accept", message: "Auto-accepted safe relationships" },
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async (_result, options) => {
+      for (const event of importProgress) options?.onProgress?.(event);
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "fetch", "mota.quickbase"], {}, deps)
+  );
+
+  assertEquals(result, true);
+  assertStringIncludes(stdout.join("\n"), "Fetched mota.quickbase");
+  const progress = stderr.join("\n");
+  assertStringIncludes(progress, "[1/1] Starting mota.quickbase - MOTA QuickBase");
+  assertStringIncludes(progress, "[1/1] Importing mota.quickbase after connector");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Inserted parsed rows");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Auto-accepted safe legal refs");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Auto-promoted safe entities");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Reconciled relationship candidates");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Replayed relationship decisions");
+  assertStringIncludes(progress, "[1/1] mota.quickbase import: Auto-accepted safe relationships");
+});
+
+Deno.test("source fetch --json does not attach an import progress reporter", async () => {
+  let sawImportProgressReporter = false;
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => ({
+      source: {
+        sourceId: "alpha.source",
+        title: "Alpha Source",
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: "https://example.com/alpha",
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: "alpha.source.main",
+          sourceId: "alpha.source",
+          title: "Alpha endpoint",
+          kind: "fixture",
+          url: "https://example.com/alpha",
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [],
+      }],
+    })),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async (_result, options) => {
+      sawImportProgressReporter = options?.onProgress !== undefined;
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "fetch", "alpha.source"], { json: true }, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(sawImportProgressReporter, false);
+  assertEquals(stderr, []);
+  assertEquals(JSON.parse(stdout[0]).count, 1);
 });
 
 Deno.test("source compare public-bodies labels conservative variant matches separately from exact overlaps", async () => {

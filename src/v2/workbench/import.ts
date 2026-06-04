@@ -36,10 +36,30 @@ interface ParsedSourceItemRecord {
   artifactIndex: number;
 }
 
+export type ImportProgressPhase =
+  | "parsed-row-insert"
+  | "legal-auto-accept"
+  | "entity-auto-promote"
+  | "relationship-reconciliation"
+  | "relationship-replay"
+  | "relationship-auto-accept";
+
+export interface ImportProgressEvent {
+  phase: ImportProgressPhase;
+  sourceId?: string;
+  endpointId?: string;
+  message: string;
+}
+
+export interface ImportConnectorOptions {
+  onProgress?: (event: ImportProgressEvent) => void;
+}
+
 export async function importConnectorResult(
   store: WorkbenchStore,
   result: ConnectorResult,
   dataDir: string,
+  options: ImportConnectorOptions = {},
 ): Promise<void> {
   upsertSource(
     store,
@@ -133,16 +153,54 @@ export async function importConnectorResult(
             parsed,
           );
         });
+        reportImportProgress(options, {
+          phase: "parsed-row-insert",
+          sourceId: endpointResult.endpoint.sourceId,
+          endpointId: endpointResult.endpoint.endpointId,
+          message: "Inserted parsed rows",
+        });
         await reuseOrMarkStaleEntityDecisions(store, entityDecisionHints);
         await reuseOrMarkStaleLegalRefDecisions(store, legalRefDecisionHints);
         if (needsDerivedStateRefresh) {
           autoAcceptSafeLegalRefs(store);
+          reportImportProgress(options, {
+            phase: "legal-auto-accept",
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message: "Auto-accepted safe legal refs",
+          });
           autoPromoteSafeEntityCandidates(store);
+          reportImportProgress(options, {
+            phase: "entity-auto-promote",
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message: "Auto-promoted safe entities",
+          });
           reconcileRelationshipCandidates(store);
+          reportImportProgress(options, {
+            phase: "relationship-reconciliation",
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message: "Reconciled relationship candidates",
+          });
         }
         await reuseOrMarkStaleRelationshipDecisions(store, relationshipDecisionHints);
         if (needsDerivedStateRefresh) {
+          reportImportProgress(options, {
+            phase: "relationship-replay",
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message: "Replayed relationship decisions",
+          });
+        }
+        if (needsDerivedStateRefresh) {
           autoAcceptSafeRelationshipCandidates(store);
+          reportImportProgress(options, {
+            phase: "relationship-auto-accept",
+            sourceId: endpointResult.endpoint.sourceId,
+            endpointId: endpointResult.endpoint.endpointId,
+            message: "Auto-accepted safe relationships",
+          });
         }
       }
       run(
@@ -159,6 +217,13 @@ export async function importConnectorResult(
       throw error;
     }
   }
+}
+
+function reportImportProgress(
+  options: ImportConnectorOptions,
+  event: ImportProgressEvent,
+): void {
+  options.onProgress?.(event);
 }
 
 function parsedAffectsDerivedState(
