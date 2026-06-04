@@ -70,11 +70,14 @@ Useful secondary seams:
 ```bash
 deno task dc -- review packets --mode relationships --db "$WORKBENCH_DB"
 deno task dc -- review list --mode relationships --limit 10 --db "$WORKBENCH_DB"
-deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils --db "$WORKBENCH_DB"
 ```
 
 `review packets`, `review list`, and `entity show` are browse surfaces for unresolved, stale, or
 blocked work. Use `dc review` when a packet needs an actual decision.
+
+Advanced/scriptable maintenance commands such as `review batch accept-safe` and
+`review batch defer-default` remain available after inspecting a narrow packet/list slice, but they
+are not the normal human review path.
 
 `dc review` opens with a ranked decision inbox for the current slice. Press Enter for the
 recommended packet or choose another ranked packet, then inspect evidence, accept, edit, reject,

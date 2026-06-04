@@ -113,11 +113,6 @@ Workflow:
   3. Browse review items with \`${dcCommand("review list --mode relationships --limit 5")}\`
   4. Inspect grouped related work with \`${dcCommand("review packets --mode relationships")}\`
   5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
-  6. Apply a scoped batch deliberately, like \`${
-    dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.dcgis.boards_commissions_councils",
-    )
-  }\`
 
 Usage:
   ${
@@ -139,6 +134,10 @@ Usage:
 Interactive actions:
   Enter runs the default action for the current item.
   a accepts, r rejects, d defers, q quits, m merges entity candidates, e edits a relationship type.
+
+Advanced maintenance:
+  Scoped batch commands are scriptable fallback tools after inspecting a narrow packet/list slice.
+  Use \`${dcCommand("review batch --help")}\` for those commands.
 `);
 }
 
