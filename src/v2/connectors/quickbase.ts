@@ -18,7 +18,6 @@ import {
   artifact,
   buildCandidateReviewItem,
   buildKnownEntityRef,
-  classifyQuickbaseCouncilOversight,
   type ConnectorContext,
   type ConnectorResult,
   fieldEvidence,
@@ -651,42 +650,6 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           appointmentStatus,
         },
       });
-    }
-
-    if (classifyQuickbaseCouncilOversight(board).shouldEmit) {
-      const councilEntityRef = buildKnownEntityRef("Council");
-      const relationshipKey = `${boardEntityId}>${councilEntityRef}:overseen_by`;
-      if (!relationshipKeys.has(relationshipKey)) {
-        relationshipKeys.add(relationshipKey);
-        const relationshipCandidateId = buildRelationshipCandidateId(
-          quickbaseSource.sourceId,
-          `${board}-overseen-by-dc-council`,
-        );
-        const candidate: RelationshipCandidateInput = {
-          relationshipCandidateId,
-          sourceItemKey: itemKey,
-          fromEntityRef: boardEntityId,
-          toEntityRef: councilEntityRef,
-          relationshipType: "overseen_by",
-          rawValue: board,
-          needsReview: true,
-          evidence: [fieldEvidence(quickbaseColumns.board, board)],
-        };
-        relationshipCandidates.push(candidate);
-        reviewItems.push({
-          reviewItemId: buildReviewItemId(relationshipCandidateId, "council-oversight"),
-          itemType: "relationship_candidate",
-          subjectId: relationshipCandidateId,
-          reason: "Review potential council oversight relationship for committee",
-          defaultAction: "defer",
-          details: {
-            fromEntityRef: boardEntityId,
-            toEntityRef: councilEntityRef,
-            relationshipType: candidate.relationshipType,
-            rawValue: board,
-          },
-        });
-      }
     }
   }
 

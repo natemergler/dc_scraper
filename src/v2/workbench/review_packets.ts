@@ -1,5 +1,4 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
-import { classifyQuickbaseCouncilOversight } from "../connectors/shared.ts";
 import type { ReviewItemFilters } from "./review.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -17,7 +16,6 @@ export interface ReviewPacketRecord {
   refType?: string;
   toEntityRef?: string;
   whyDeferred?: string;
-  deferredGroupLabel?: string;
   subjectPrefix?: string;
   reviewItemIds: string[];
 }
@@ -85,7 +83,6 @@ export function reviewPacketsFromItems(
       whyDeferred: typeof item.details.whyDeferred === "string"
         ? item.details.whyDeferred
         : undefined,
-      deferredGroupLabel: deferredRelationshipPacketGroupLabel(item, sourceId),
       reviewItemIds: [item.reviewItemId],
     });
     packetItems.set(key, [item]);
@@ -126,7 +123,6 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     packet.refType ? `ref_type: ${packet.refType}` : undefined,
     packet.toEntityRef ? `to_entity_ref: ${packet.toEntityRef}` : undefined,
     packet.whyDeferred ? `why_deferred: ${packet.whyDeferred}` : undefined,
-    packet.deferredGroupLabel ? `deferred_group: ${packet.deferredGroupLabel}` : undefined,
     packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
     `packet_id: ${packet.packetId}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -151,32 +147,16 @@ function reviewPacketKey(item: ReviewItemRecord, sourceId: string): string {
     item.defaultAction,
     typeof item.details.relationshipType === "string" ? item.details.relationshipType : "",
     typeof item.details.refType === "string" ? item.details.refType : "",
-    ...deferredRelationshipPacketContext(item, sourceId),
+    ...deferredRelationshipPacketContext(item),
   ].join("|");
 }
 
-function deferredRelationshipPacketContext(item: ReviewItemRecord, sourceId?: string): string[] {
+function deferredRelationshipPacketContext(item: ReviewItemRecord): string[] {
   if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") return [];
   return [
     typeof item.details.toEntityRef === "string" ? item.details.toEntityRef : "",
     typeof item.details.whyDeferred === "string" ? item.details.whyDeferred : "",
-    deferredRelationshipPacketGroupLabel(item, sourceId) ?? "",
   ];
-}
-
-function deferredRelationshipPacketGroupLabel(
-  item: ReviewItemRecord,
-  sourceId?: string,
-): string | undefined {
-  if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") {
-    return undefined;
-  }
-  const packetSourceId = sourceId ?? "unknown";
-  if (packetSourceId !== "mota.quickbase") return undefined;
-  if (item.details.relationshipType !== "overseen_by") return undefined;
-  return classifyQuickbaseCouncilOversight(
-    typeof item.details.rawValue === "string" ? item.details.rawValue : undefined,
-  ).deferredGroupLabel;
 }
 
 function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(

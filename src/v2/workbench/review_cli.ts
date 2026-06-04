@@ -385,11 +385,6 @@ function deferredRelationshipPacketTitle(
   if (packet.itemType !== "relationship_candidate" || packet.defaultAction !== "defer") {
     return undefined;
   }
-  if (packet.sourceId === "mota.quickbase" && packet.relationshipType === "overseen_by") {
-    return packet.deferredGroupLabel
-      ? `${packet.deferredGroupLabel} Council oversight`
-      : "Quickbase committee-like Council oversight";
-  }
   if (!packet.toEntityRef) return undefined;
   const targetName = endpointStatusMap(store, [packet.toEntityRef]).get(packet.toEntityRef)?.name ??
     humanizeToken(packet.toEntityRef.replace(/^dc\./, "").replace(/^legal\./, ""));

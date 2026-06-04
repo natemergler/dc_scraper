@@ -17,7 +17,7 @@ import {
   syntheticCustomRelationshipSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 
-Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint relationships blocked after import", async () => {
+Deno.test("quickbase auto-promotes board entities without committee-name oversight blockers", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -46,36 +46,27 @@ Deno.test("quickbase auto-promotes board entities but keeps unresolved-endpoint 
     dataDir,
   );
 
-  const relationshipCandidates = workbench.db.prepare(
-    "select count(*) as count from relationship_candidates where review_status = 'pending'",
+  const quickbaseOversightCandidates = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     join source_items using(source_item_id)
+     where source_items.source_id = 'mota.quickbase'
+       and relationship_candidates.relationship_type = 'overseen_by'`,
   ).get() as { count: number };
-  const relationshipReviewItems = workbench.listReviewItems({ mode: "relationships" });
   const entityReviewItems = workbench.listReviewItems({
     mode: "entities",
     subjectPrefix: "candidate.mota.quickbase",
   });
-  const blockedItems = workbench.db.prepare(
-    `select subject_id as subjectId,
-            state,
-            reason,
-            details_json as detailsJson
-     from reconciliation_items
-     where subject_type = 'relationship_candidate'
-     order by subject_id`,
-  ).all() as Array<{ subjectId: string; state: string; reason: string; detailsJson: string }>;
+  const quickbaseOversightReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.mota.quickbase",
+    relationshipType: "overseen_by",
+  });
   workbench.close();
 
-  assertEquals(relationshipCandidates.count > 0, true);
-  assertEquals(relationshipReviewItems.length > 0, true);
+  assertEquals(quickbaseOversightCandidates.count, 0);
   assertEquals(entityReviewItems.length > 0, true);
-  assert(blockedItems.length > 0);
-  assertEquals(
-    blockedItems.some((item) =>
-      item.state === "blocked" &&
-      item.reason === "unresolved_endpoints"
-    ),
-    true,
-  );
+  assertEquals(quickbaseOversightReviewItems.length, 0);
 });
 
 Deno.test("accepting a prerequisite entity reprocesses blocked relationships into review-ready work", async () => {

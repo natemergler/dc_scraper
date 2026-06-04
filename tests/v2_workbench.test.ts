@@ -1495,11 +1495,11 @@ Deno.test(
         candidate.toEntityRef === "status.filled"
       ),
     );
-    assert(
+    assertEquals(
       parsed.relationshipCandidates?.some((candidate) =>
-        candidate.relationshipType === "overseen_by" &&
-        candidate.toEntityRef === "dc.council_of_the_district_of_columbia"
+        candidate.relationshipType === "overseen_by"
       ),
+      false,
     );
     assert(
       parsed.relationshipCandidates?.some((candidate) =>
@@ -1594,7 +1594,7 @@ Deno.test("quickbase connector derives public appointee observations from live-s
   assert(!publicFacts.includes("antoinette.mitchell@dc.gov"));
 });
 
-Deno.test("quickbase connector suppresses executive-anchored committee-like Council oversight guesses", async () => {
+Deno.test("quickbase connector does not infer Council oversight from committee-like board names", async () => {
   const executiveAnchoredCsv = `
 "board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
 "Advisory Committee to the Office of Administrative Hearings (OAH)","Member","Filled","Mayoral Appointee","Active"
@@ -1629,8 +1629,7 @@ Deno.test("quickbase connector suppresses executive-anchored committee-like Coun
     candidate.relationshipType === "overseen_by"
   );
 
-  assertEquals(oversightCandidates.length, 1);
-  assertEquals(oversightCandidates[0]?.rawValue, "Public Space Committee (PSC)");
+  assertEquals(oversightCandidates.length, 0);
 });
 
 Deno.test("quickbase connector keeps contact columns out of public fact candidates", async () => {
