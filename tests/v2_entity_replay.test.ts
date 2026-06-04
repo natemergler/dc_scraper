@@ -2,7 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
-import { canBatchAcceptReviewItem } from "../src/v2/workbench/review.ts";
+import { canBatchAcceptReviewItem } from "../src/v2/workbench/review_batch.ts";
 import {
   syntheticCustomEntitySourceResult,
   syntheticEntitySourceResult,

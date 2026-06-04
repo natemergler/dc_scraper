@@ -6,16 +6,13 @@ import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
+import { canBatchAcceptReviewItem, isScopedDefaultDeferBatch } from "./review_batch.ts";
 import {
   renderReviewPacketHeader,
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
-import {
-  canBatchAcceptReviewItem,
-  isHumanDecisionReviewItem,
-  type ReviewItemFilters,
-} from "./review.ts";
+import { isHumanDecisionReviewItem, type ReviewItemFilters } from "./review.ts";
 import {
   reviewEvidence,
   type ReviewEvidenceRow,
@@ -526,15 +523,6 @@ export async function runBatchDeferDefault(
   if (skipped > 0) {
     console.log(`Skipped ${skipped} item(s) whose default action was not defer.`);
   }
-}
-
-function isScopedDefaultDeferBatch(filters: ReviewItemFilters): boolean {
-  return Boolean(
-    filters.mode &&
-      filters.subjectPrefix &&
-      (filters.type || filters.relationshipType || filters.rawValue || filters.rawValueContains ||
-        filters.refType),
-  );
 }
 
 function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
