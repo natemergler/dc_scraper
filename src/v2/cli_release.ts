@@ -101,8 +101,8 @@ Usage:
   ${dcCommand("release verify")} [--db <path>] [--json]
   ${
     dcCommand("release build")
-  } [--db <path>] [--out <dir>] [--source-profile <structure|tier0|inventory|custom>]
-  ${dcCommand("release inspect")} [--out <dir>] [--json]
+  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  ${dcCommand("release inspect")} [--out|--output <dir>] [--json]
 
 Release files:
   README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*, entity_legal_refs.*, relationship_legal_refs.*

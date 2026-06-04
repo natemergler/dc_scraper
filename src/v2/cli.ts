@@ -18,7 +18,8 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const explicitResolutionsDir = readFlag(args, "--resolutions-dir");
   const dbPath = explicitDbPath ?? join(Deno.cwd(), "data", "workbench.sqlite");
   const dataDir = readFlag(args, "--data-dir") ?? join(Deno.cwd(), "data", "v2_artifacts");
-  const outDir = readFlag(args, "--out") ?? join(Deno.cwd(), "releases", "latest");
+  const outDir = readFlag(args, "--out") ?? readFlag(args, "--output") ??
+    join(Deno.cwd(), "releases", "latest");
   const resolutionsDir = explicitResolutionsDir ?? join(Deno.cwd(), "resolutions");
   const limit = readNumberFlag(args, "--limit");
   const sourceProfile = readFlag(args, "--source-profile") as
@@ -273,9 +274,9 @@ Usage:
   ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
   ${
     dcCommand("release build")
-  } [--db <path>] [--out <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>]
   ${dcCommand("release verify")} [--db <path>] [--json]
-  ${dcCommand("release inspect")} [--out <dir>] [--json]
+  ${dcCommand("release inspect")} [--out|--output <dir>] [--json]
 
 Defaults:
   workbench db: data/workbench.sqlite

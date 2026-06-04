@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { ensureDir } from "@std/fs";
+import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { buildV2Release, type ReleaseBuildProgressEvent } from "../src/v2/release.ts";
@@ -162,6 +162,62 @@ Deno.test("release build CLI keeps final success on stdout and progress on stder
   assertStringIncludes(stderr, "Release build: Preparing release directory");
   assertStringIncludes(stderr, "Release build: Writing dcgov.sqlite");
   assertStringIncludes(stderr, "Release build: Writing README and manifest files=17");
+});
+
+Deno.test("release build CLI accepts --output as an alias for --out", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const outDir = join(dir, "release-output-alias");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "build",
+      "--db",
+      dbPath,
+      "--output",
+      outDir,
+    ],
+  }).output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, `Built v2 release ${outDir}`);
+  assertEquals(await exists(join(outDir, "manifest.json")), true);
+});
+
+Deno.test("release inspect CLI accepts --output as an alias for --out", async () => {
+  const outDir = await makeMinimalReleaseDir();
+
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--output",
+      outDir,
+      "--json",
+    ],
+  }).output();
+  const inspection = JSON.parse(new TextDecoder().decode(output.stdout)) as { outDir: string };
+
+  assertEquals(output.code, 0);
+  assertEquals(inspection.outDir, outDir);
 });
 
 Deno.test("release builder creates focused v2 package with stable files and no raw source rows in entity csv", async () => {
