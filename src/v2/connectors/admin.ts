@@ -115,6 +115,18 @@ const enterpriseDatasetInventorySource: SourceDefinition = {
 const governmentOperationsServiceUrl =
   "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer";
 
+const enterpriseDatasetInventoryRowFields = [
+  "OBJECTID",
+  "DATASET_ID",
+  "PUBLICATION_STATUS",
+  "AGENCY_NAME",
+  "DATASET_NAME",
+  "DATASET_CATEGORY",
+  "DATASET_STATUS",
+  "DATASET_URL",
+  "SYSTEM_UPDATED_ON",
+];
+
 interface GovernmentOperationsCatalogGroup {
   itemKey: string;
   title: string;
@@ -248,32 +260,25 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
           ordinal: index,
         }));
 
-    const countUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
-      where: "1=1",
-      returnCountOnly: "true",
-      f: "json",
-    });
-    context.onProgress?.({ message: "Counting Enterprise Dataset Inventory rows" });
-    const countResponse = await context.fetcher(countUrl);
-    const countText = await countResponse.text();
-    const countPayload = JSON.parse(countText) as Record<string, unknown>;
-    const totalCount = Math.max(0, Number(countPayload.count ?? 0));
-    const requestedCount = typeof context.limit === "number"
-      ? Math.min(totalCount, context.limit)
-      : totalCount;
     const maxRecordCount = Math.max(1, Number(metadataPayload.maxRecordCount ?? 1000));
+    const requestedLimit = typeof context.limit === "number"
+      ? Math.max(0, Math.floor(context.limit))
+      : undefined;
 
     const rowArtifacts: ReturnType<typeof artifact>[] = [];
     const items: SourceItemInput[] = [];
     const datasets: DatasetInput[] = [];
-    const pageCount = requestedCount === 0 ? 0 : Math.ceil(requestedCount / maxRecordCount);
+    let offset = 0;
+    let pageNumber = 1;
 
-    for (let offset = 0; offset < requestedCount; offset += maxRecordCount) {
-      const pageSize = Math.min(maxRecordCount, requestedCount - offset);
-      const pageNumber = Math.floor(offset / maxRecordCount) + 1;
+    while (requestedLimit === undefined || offset < requestedLimit) {
+      const remainingLimit = requestedLimit === undefined
+        ? maxRecordCount
+        : requestedLimit - offset;
+      const pageSize = Math.min(maxRecordCount, remainingLimit);
       const pageUrl = buildArcGisQueryUrl(enterpriseDatasetInventorySource.baseUrl, {
         where: "1=1",
-        outFields: "*",
+        outFields: enterpriseDatasetInventoryRowFields.join(","),
         orderByFields: "OBJECTID",
         returnGeometry: "false",
         resultOffset: String(offset),
@@ -281,16 +286,17 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
         f: "json",
       });
       context.onProgress?.({
-        message: `Fetching Enterprise Dataset Inventory rows ${offset + 1}-${
-          offset + pageSize
-        } of ${requestedCount} (page ${pageNumber}/${pageCount})`,
+        message: `Fetching Enterprise Dataset Inventory rows starting at ${
+          offset + 1
+        } (page ${pageNumber}, up to ${pageSize})`,
       });
       const pageResponse = await context.fetcher(pageUrl);
       const pageText = await pageResponse.text();
       const pagePayload = JSON.parse(pageText) as Record<string, unknown>;
+      const features = (pagePayload.features ?? []) as Array<Record<string, unknown>>;
       const artifactIndex = rowArtifacts.length;
       rowArtifacts.push(artifact("rows", "json", pageUrl, pageText));
-      for (const feature of (pagePayload.features ?? []) as Array<Record<string, unknown>>) {
+      for (const feature of features) {
         const attributes = (feature.attributes ?? {}) as Record<string, unknown>;
         const objectId = Number(attributes.OBJECTID ?? 0);
         const rawDatasetId = String(attributes.DATASET_ID ?? `objectid-${objectId}`);
@@ -346,6 +352,12 @@ export const adminEnterpriseDatasetInventoryConnector: SourceConnector = {
           ],
         });
       }
+      if (features.length === 0) break;
+      offset += features.length;
+      pageNumber += 1;
+      const hitRequestedLimit = requestedLimit !== undefined && offset >= requestedLimit;
+      const serviceSaysMore = pagePayload.exceededTransferLimit === true;
+      if (hitRequestedLimit || (!serviceSaysMore && features.length < pageSize)) break;
     }
 
     return {
