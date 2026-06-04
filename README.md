@@ -23,15 +23,19 @@ commit raw captures, generated candidates, or workbench databases.
 ## Five-Minute Path
 
 ```bash
+WORKBENCH_DB=data/workbench.sqlite
+WORKBENCH_ARTIFACTS=data/v2_artifacts
+FRESH_RELEASE_DIR=releases/fresh-smoke
+
 deno task ok
-deno task dc -- init
-deno task dc -- source list
-deno task dc -- source fetch dcgis.agencies --limit 25
-deno task dc -- status
-deno task dc -- audit
-deno task dc -- release verify
-deno task dc -- release build --source-profile custom
-deno task dc -- release inspect
+deno task dc -- init --db "$WORKBENCH_DB"
+deno task dc -- source list --db "$WORKBENCH_DB"
+deno task dc -- source fetch dcgis.agencies --limit 25 --db "$WORKBENCH_DB" --data-dir "$WORKBENCH_ARTIFACTS"
+deno task dc -- status --db "$WORKBENCH_DB"
+deno task dc -- audit --db "$WORKBENCH_DB"
+deno task dc -- release verify --db "$WORKBENCH_DB"
+deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out "$FRESH_RELEASE_DIR"
+deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 ```
 
 The default workbench database is `data/workbench.sqlite`. The `--limit 25` fetch is a small slice
@@ -39,19 +43,26 @@ for orientation. Use `deno task dc -- source fetch --all` when you need the full
 workbench. A full fetch can take a while because it walks several public source lanes; expect
 per-source progress and a final succeeded/failed summary before moving on.
 
+V2 local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and
+refetch a fresh one; legacy local DBs are not migrated forward.
+
 ## Happy Path
 
 Use one real fetch, one audit/browse pass, and one real release:
 
 ```bash
-deno task dc -- source fetch --all
-deno task dc -- source inspect dcgis.agencies
-deno task dc -- status
-deno task dc -- audit
-deno task dc -- entity search accountancy
-deno task dc -- release verify
-deno task dc -- release build --source-profile custom
-deno task dc -- release inspect
+WORKBENCH_DB=data/workbench.sqlite
+WORKBENCH_ARTIFACTS=data/v2_artifacts
+FRESH_RELEASE_DIR=releases/fresh-smoke
+
+deno task dc -- source fetch --all --db "$WORKBENCH_DB" --data-dir "$WORKBENCH_ARTIFACTS"
+deno task dc -- source inspect dcgis.agencies --db "$WORKBENCH_DB"
+deno task dc -- status --db "$WORKBENCH_DB"
+deno task dc -- audit --db "$WORKBENCH_DB"
+deno task dc -- entity search accountancy --db "$WORKBENCH_DB"
+deno task dc -- release verify --db "$WORKBENCH_DB"
+deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out "$FRESH_RELEASE_DIR"
+deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 ```
 
 For long all-source runs, let the fetch reach its final summary before treating the workbench as
