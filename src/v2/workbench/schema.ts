@@ -348,7 +348,10 @@ function assertCurrentWorkbenchContract(
   store: WorkbenchStore,
   schemaRow: WorkbenchSchemaContractRow | undefined,
 ): void {
-  if (!schemaRow || schemaRow.name !== CURRENT_WORKBENCH_SCHEMA_NAME) {
+  if (
+    !schemaRow || schemaRow.name !== CURRENT_WORKBENCH_SCHEMA_NAME ||
+    schemaRow.version !== CURRENT_WORKBENCH_SCHEMA_VERSION
+  ) {
     throw new Error(currentSchemaRequiredMessage());
   }
   const tableNames = userTableNames(store);
