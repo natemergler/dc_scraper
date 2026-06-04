@@ -424,7 +424,7 @@ Deno.test("top-level CLI aliases make the workbench easy to enter", async () => 
   assertEquals(unfetchedInspectJson.itemCount, 0);
 });
 
-Deno.test("source list repairs legacy migration-version collisions in existing workbenches", async () => {
+Deno.test("source list fails fast for unsupported older workbench schemas", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
@@ -456,34 +456,11 @@ drop table reconciliation_blockers;
       dbPath,
     ],
   }).output();
-  assertEquals(sourceListOutput.code, 0);
-  const sourceListText = new TextDecoder().decode(sourceListOutput.stdout);
-  assertStringIncludes(sourceListText, "dcgis.agencies unfetched");
-  assertStringIncludes(sourceListText, "mota.quickbase unfetched");
-
-  const repairedWorkbench = new Workbench(dbPath);
-  const meta = repairedWorkbench.init();
-  const tables = new Set(
-    repairedWorkbench.db.prepare("select name from sqlite_master where type = 'table'").all().map(
-      (row) => (row as { name: string }).name,
-    ),
-  );
-  repairedWorkbench.close();
-
-  assertEquals(meta.schemaVersion, 12);
-  assert(tables.has("reconciliation_items"));
-  assert(tables.has("reconciliation_blockers"));
-  assert(
-    meta.migrations.some((migration) =>
-      migration.version === 7 &&
-      migration.name === "v2_relationship_reconciliation_foundation"
-    ),
-  );
-  assert(
-    meta.migrations.some((migration) =>
-      migration.version === 8 &&
-      migration.name === "v2_remove_relationship_review_templates"
-    ),
+  assertEquals(sourceListOutput.code, 1);
+  assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
+  assertStringIncludes(
+    new TextDecoder().decode(sourceListOutput.stderr),
+    "Unsupported local workbench schema version 12. Rebuild this ignored local DB or point --db at a current workbench.",
   );
 });
 
