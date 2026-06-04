@@ -1,6 +1,8 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { connectors } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
+import { buildWorkbenchStatus } from "../src/v2/status.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   syntheticCustomEntitySourceResult,
@@ -8,6 +10,78 @@ import {
   syntheticEntitySourceResult,
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
+
+function seedConfiguredSourceRuns(
+  workbench: Workbench,
+  statuses: Record<string, "success" | "failed"> = {},
+): void {
+  for (const [index, connector] of connectors.entries()) {
+    const source = connector.source;
+    workbench.upsertSource(
+      source.sourceId,
+      source.title,
+      source.kind,
+      source.accessMethod,
+      source.baseUrl,
+      source.notes,
+    );
+    const endpointId = `${source.sourceId}.status_test`;
+    workbench.upsertEndpoint({
+      endpointId,
+      sourceId: source.sourceId,
+      title: "Status test endpoint",
+      kind: "fixture",
+      url: source.baseUrl,
+      method: "GET",
+      captureMode: "rows",
+    });
+    workbench.db.prepare(
+      "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values(?, ?, ?, datetime('now'), datetime('now'), ?)",
+    ).run(
+      `run.status_test.${index}`,
+      source.sourceId,
+      endpointId,
+      statuses[source.sourceId] ?? "success",
+    );
+  }
+}
+
+Deno.test("status readiness note is explicit when the workbench is ready", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedConfiguredSourceRuns(workbench);
+
+  const status = buildWorkbenchStatus(workbench);
+  workbench.close();
+
+  assertEquals(status.nextCommand, "deno task dc -- release build");
+  assertEquals(
+    status.unresolvedStateNote,
+    "No open review items, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.",
+  );
+});
+
+Deno.test("status sends source failures to source inspection before review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedConfiguredSourceRuns(workbench, { "council.committees": "failed" });
+  workbench.db.prepare(
+    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values('review.test.failed_source_priority', 'entity_candidate', 'candidate.test.failed_source_priority', 'Fixture human review item', 'reject', 'open', '{}', datetime('now'), datetime('now'))",
+  ).run();
+
+  const status = buildWorkbenchStatus(workbench);
+  workbench.close();
+
+  assertEquals(status.sources.failed, 1);
+  assertEquals(status.sources.firstFailedSourceId, "council.committees");
+  assertEquals(status.review.open, 1);
+  assertEquals(status.review.humanDecisionOpen, 1);
+  assertEquals(status.nextCommand, "deno task dc -- source inspect council.committees");
+});
 
 Deno.test("status surfaces placeholder risk with readable reason", async () => {
   const dir = await Deno.makeTempDir();
