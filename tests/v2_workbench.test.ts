@@ -1680,6 +1680,8 @@ Deno.test("Quickbase board labels resolve through accepted-style entity refs", a
     boardCandidate?.proposedEntityId,
     "dc.board_of_ethics_and_government_accountability",
   );
+  assertEquals(boardCandidate?.kind, "public_body");
+  assertEquals(boardCandidate?.rawKind, "appointment_body");
   assertEquals(
     seatRelationship?.fromEntityRef,
     "dc.board_of_ethics_and_government_accountability",
