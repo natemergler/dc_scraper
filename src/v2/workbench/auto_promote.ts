@@ -162,8 +162,9 @@ function groupIsSafeToAutoPromote(
   );
   if (!canonical) return true;
   if (canonical.isPlaceholder === 1) return false;
-  return normalizeName(canonical.name).toLowerCase() === first.normalizedName &&
-    canonical.kind === first.kind;
+  if (canonical.kind !== first.kind) return false;
+  if (normalizeName(canonical.name).toLowerCase() === first.normalizedName) return true;
+  return entityId === first.proposedEntityId;
 }
 
 function isSeededRelationshipEndpointCandidate(candidateId: string): boolean {

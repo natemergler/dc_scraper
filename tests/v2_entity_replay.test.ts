@@ -147,6 +147,72 @@ Deno.test("accepting a stronger entity candidate refreshes canonical fields", as
   assertEquals(JSON.parse(canonical.mergedCandidateIds), [weakCandidateId, strongCandidateId]);
 });
 
+Deno.test("accepted alias-backed entity candidates attach provenance without replacing stronger fields", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const dcgisCandidateId = "candidate.dcgis.agencies.1142";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "dcgis.agencies",
+      candidateId: dcgisCandidateId,
+      sourceItemKey: "dcgis-pcsb-row",
+      proposedEntityId: "dc.public_charter_school_board_pcsb",
+      name: "DC Public Charter School Board",
+      kind: "board",
+      officialUrl: "https://www.dcpcsb.org/",
+      observedName: "DC Public Charter School Board",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const quickbaseCandidateId = "candidate.mota.quickbase.public_charter_school_board_pcsb";
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "mota.quickbase",
+      candidateId: quickbaseCandidateId,
+      sourceItemKey: "quickbase-pcsb-row",
+      proposedEntityId: "dc.public_charter_school_board_pcsb",
+      name: "Public Charter School Board (PCSB)",
+      kind: "board",
+      officialUrl: "https://octo.quickbase.com/db/bjngwr9pe",
+      observedName: "Public Charter School Board (PCSB)",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const quickbaseCandidate = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = ?",
+  ).get(quickbaseCandidateId) as { reviewStatus: string } | undefined;
+  const canonical = workbench.db.prepare(
+    `select name,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.public_charter_school_board_pcsb'`,
+  ).get() as {
+    name: string;
+    officialUrl: string;
+    mergedCandidateIds: string;
+  };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix: quickbaseCandidateId,
+  });
+  workbench.close();
+
+  assertEquals(quickbaseCandidate?.reviewStatus, "accepted");
+  assertEquals(canonical.name, "DC Public Charter School Board");
+  assertEquals(canonical.officialUrl, "https://www.dcpcsb.org/");
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [dcgisCandidateId, quickbaseCandidateId]);
+  assertEquals(openReview.length, 0);
+});
+
 Deno.test("changed entity evidence after a prior accept becomes stale review work instead of silent reuse", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
