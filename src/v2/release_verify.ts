@@ -1,5 +1,6 @@
 import { buildWorkbenchStatus } from "./status.ts";
 import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
+import { releaseReadinessInputFromWorkbenchStatus } from "./release_summary.ts";
 import { isPublicHttpUrl } from "./url_safety.ts";
 import type { Workbench } from "./workbench.ts";
 
@@ -175,22 +176,17 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
   }
   return {
     ready: reasons.length === 0,
-    readiness: classifyReleaseReadiness({
-      sourceCount: status.sources.fetched,
-      failedSourceCount: status.sources.failed,
-      openReviewItemCount: status.review.open,
-      deferredReviewItemCount: status.review.deferred,
-      staleReviewItemCount: status.staleReview.count,
-      blockedReconciliationCount: status.reconciliation.blocked,
-      placeholderEntityCount: status.placeholders.count,
-      blockingProblemCount: sourceArtifactProblems.length +
-        entityProvenanceProblems.length +
-        relationshipProvenanceProblems.length +
-        datasetProvenanceProblems.length +
-        legalRefProvenanceProblems.length +
-        entityLegalRefProvenanceProblems.length +
-        relationshipLegalRefProvenanceProblems.length,
-    }),
+    readiness: classifyReleaseReadiness(
+      releaseReadinessInputFromWorkbenchStatus(status, {
+        blockingProblemCount: sourceArtifactProblems.length +
+          entityProvenanceProblems.length +
+          relationshipProvenanceProblems.length +
+          datasetProvenanceProblems.length +
+          legalRefProvenanceProblems.length +
+          entityLegalRefProvenanceProblems.length +
+          relationshipLegalRefProvenanceProblems.length,
+      }),
+    ),
     reasons,
     sourceArtifactProblems,
     entityProvenanceCheckedCount: entityProvenance.checkedCount,

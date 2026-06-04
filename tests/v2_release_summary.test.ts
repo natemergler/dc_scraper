@@ -3,6 +3,11 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { buildV2Release } from "../src/v2/release.ts";
+import {
+  releaseReadinessInputFromSummary,
+  type ReleaseSummary,
+} from "../src/v2/release_summary.ts";
+import { classifyReleaseReadiness } from "../src/v2/release_readiness.ts";
 import { buildWorkbenchStatus } from "../src/v2/status.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
@@ -15,6 +20,41 @@ import {
   syntheticLegalRefSourceResult,
 } from "./helpers/v2_reconciliation_helpers.ts";
 import { assertReleaseReadmeOmitsWorkbenchStatusLanguage } from "./helpers/v2_release_readme_assertions.ts";
+
+Deno.test("release readiness projection uses canonical release summary fields", () => {
+  const summary: Partial<ReleaseSummary> = {
+    source_count: 1,
+    failed_source_count: 0,
+    open_review_item_count: 2,
+    deferred_review_item_count: 0,
+    stale_review_item_count: 0,
+    blocked_reconciliation_count: 0,
+    placeholder_entity_count: 0,
+  };
+
+  assertEquals(releaseReadinessInputFromSummary(summary), {
+    sourceCount: 1,
+    failedSourceCount: 0,
+    openReviewItemCount: 2,
+    deferredReviewItemCount: 0,
+    staleReviewItemCount: 0,
+    blockedReconciliationCount: 0,
+    placeholderEntityCount: 0,
+    blockingProblemCount: 0,
+  });
+  assertEquals(
+    classifyReleaseReadiness(releaseReadinessInputFromSummary(summary)),
+    "usable-with-warnings",
+  );
+  assertEquals(
+    classifyReleaseReadiness(
+      releaseReadinessInputFromSummary({ ...summary, open_review_item_count: 0 }, {
+        blockingProblemCount: 1,
+      }),
+    ),
+    "not-ready",
+  );
+});
 
 Deno.test("release summary surfaces unresolved review debt and placeholder risk neutrally", async () => {
   const dir = await Deno.makeTempDir();
