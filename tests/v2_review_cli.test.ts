@@ -264,6 +264,7 @@ Deno.test("scripted review CLI accepts an explicit entity decision and entity sh
   );
   assertStringIncludes(reviewText, "evidence:");
   assertStringIncludes(reviewText, "test.review_cli.entities: name <- Board of Accountancy");
+  assertStringIncludes(reviewText, "url: https://example.com/test.review_cli.entities");
   assertStringIncludes(reviewText, "artifact:");
   assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {

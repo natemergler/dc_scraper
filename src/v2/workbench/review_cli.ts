@@ -775,10 +775,12 @@ function renderEvidenceBlock(evidence: ReviewEvidenceRow[]): string[] {
   if (evidence.length === 0) return ["evidence: none"];
   return [
     "evidence:",
-    ...evidence.slice(0, 8).flatMap((row) => [
-      `- ${row.sourceId}: ${row.fieldPath} <- ${row.observedValue}`,
-      `  artifact: ${row.artifactPath}`,
-    ]),
+    ...evidence.slice(0, 8).flatMap((row) => {
+      const lines = [`- ${row.sourceId}: ${row.fieldPath} <- ${row.observedValue}`];
+      if (row.fetchedUrl) lines.push(`  url: ${row.fetchedUrl}`);
+      lines.push(`  artifact: ${row.artifactPath}`);
+      return lines;
+    }),
   ];
 }
 
