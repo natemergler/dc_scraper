@@ -3,6 +3,7 @@ import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
 import { buildReviewItemId } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
+import { autoPromoteSafeEntityCandidates } from "../src/v2/workbench/auto_promote.ts";
 import { reconcileRelationshipCandidates } from "../src/v2/workbench/reconciliation.ts";
 import {
   councilCommitteeHealthDetailFixture,
@@ -176,9 +177,68 @@ Deno.test("relationship reconciliation resolves endpoint status in bulk", async 
   const queryCounts = countReconciliationPrepares(workbench);
   workbench.close();
 
-  assert(queryCounts.prepareCount < 40);
+  assert(queryCounts.prepareCount < 15);
   assertEquals(queryCounts.endpointCandidateStatusQueries, 1);
   assertEquals(queryCounts.endpointCanonicalQueries, 1);
+  assertEquals(queryCounts.savepointCount, 1);
+  assertEquals(queryCounts.releaseCount, 1);
+});
+
+Deno.test("auto-promotion batches accepted candidate writes in one savepoint", () => {
+  const dir = Deno.makeTempDirSync();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into sources(source_id, title, kind, access_method, base_url, updated_at) values('mota.quickbase', 'Quickbase', 'quickbase_csv_export', 'official_quickbase_csv_export', 'https://example.test', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_endpoints(endpoint_id, source_id, title, kind, url, method, capture_mode, updated_at) values('mota.quickbase.test', 'mota.quickbase', 'Quickbase Test', 'text', 'https://example.test', 'GET', 'text', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values('run.auto.promote', 'mota.quickbase', 'mota.quickbase.test', datetime('now'), datetime('now'), 'success')",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values('artifact.auto.promote', 'run.auto.promote', 'mota.quickbase.test', 'text', 'mota.quickbase/test.csv', 'https://example.test', 'sha256:test', 10, datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values('item.auto.promote', 'mota.quickbase', 'mota.quickbase.test', 'run.auto.promote', 'artifact.auto.promote', 'row-1', 'quickbase_row', 'Example Board', '{}')",
+  ).run();
+  workbench.db.prepare(
+    "insert into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, confidence, review_status) values('candidate.auto.promote', 'item.auto.promote', 'dc.example_board', 'Example Board', 'example board', 'board', 0.95, 'pending')",
+  ).run();
+  workbench.db.prepare(
+    "insert into entity_candidate_evidence(evidence_id, candidate_id, source_id, source_item_id, field_path, observed_value, artifact_path) values('evidence.auto.promote', 'candidate.auto.promote', 'mota.quickbase', 'item.auto.promote', '$.board', 'Example Board', 'mota.quickbase/test.csv')",
+  ).run();
+  workbench.db.prepare(
+    "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values('review.auto.promote', 'entity_candidate', 'candidate.auto.promote', 'Accept entity', 'accept', 'open', '{\"safeToAutoAccept\":true}', datetime('now'), datetime('now'))",
+  ).run();
+
+  const execSql: string[] = [];
+  const store = {
+    db: {
+      prepare(sql: string) {
+        return workbench.db.prepare(sql);
+      },
+      exec(sql: string) {
+        execSql.push(sql);
+        return workbench.db.exec(sql);
+      },
+    },
+  };
+
+  const acceptedCount = autoPromoteSafeEntityCandidates(
+    store as unknown as Parameters<typeof autoPromoteSafeEntityCandidates>[0],
+  );
+  const promoted = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = 'candidate.auto.promote'",
+  ).get() as { reviewStatus: string };
+  workbench.close();
+
+  assertEquals(acceptedCount, 1);
+  assertEquals(promoted.reviewStatus, "accepted");
+  assertEquals(execSql.filter((sql) => sql.startsWith("savepoint ")).length, 1);
+  assertEquals(execSql.filter((sql) => sql.startsWith("release savepoint ")).length, 1);
 });
 
 Deno.test("relationship imports seed reviewable endpoint candidates for missing direct endpoint text", async () => {
@@ -429,12 +489,21 @@ function countReconciliationPrepares(workbench: Workbench): {
   prepareCount: number;
   endpointCandidateStatusQueries: number;
   endpointCanonicalQueries: number;
+  savepointCount: number;
+  releaseCount: number;
 } {
   let prepareCount = 0;
   let endpointCandidateStatusQueries = 0;
   let endpointCanonicalQueries = 0;
+  let savepointCount = 0;
+  let releaseCount = 0;
   const store = {
     db: {
+      exec(sql: string) {
+        if (sql.startsWith("savepoint ")) savepointCount += 1;
+        if (sql.startsWith("release savepoint ")) releaseCount += 1;
+        return workbench.db.exec(sql);
+      },
       prepare(sql: string) {
         prepareCount += 1;
         if (sql.includes("entity_candidates.proposed_entity_id in")) {
@@ -450,7 +519,13 @@ function countReconciliationPrepares(workbench: Workbench): {
   reconcileRelationshipCandidates(
     store as unknown as Parameters<typeof reconcileRelationshipCandidates>[0],
   );
-  return { prepareCount, endpointCandidateStatusQueries, endpointCanonicalQueries };
+  return {
+    prepareCount,
+    endpointCandidateStatusQueries,
+    endpointCanonicalQueries,
+    savepointCount,
+    releaseCount,
+  };
 }
 
 Deno.test("relationship imports do not seed generic missing endpoints", async () => {
