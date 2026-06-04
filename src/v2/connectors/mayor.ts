@@ -165,14 +165,26 @@ export function parseMayorOfficeholder(html: string): MayorOfficeholder | undefi
 
 function parseMayorBioUrl(html: string, officeholderName: string): string | undefined {
   const lastName = officeholderName.split(/\s+/).at(-1) ?? "";
-  const linkPattern = new RegExp(
-    `<a\\s+href="([^"]+)"[^>]*(?:title="[^"]*Bio[^"]*"[^>]*)?>[\\s\\S]*?(?:Read\\s+Mayor\\s+${
-      escapeRegExp(lastName)
-    }[^<]*Bio|Mayor[^<]*Biography)[\\s\\S]*?<\\/a>`,
-    "i",
-  );
-  const href = captureSingle(html, linkPattern);
-  return href ? toAbsoluteUrl(mayorOfficeSource.baseUrl, href) : undefined;
+  const lastNamePattern = new RegExp(escapeRegExp(lastName), "i");
+  const candidates: Array<{ href: string; score: number }> = [];
+  for (const match of html.matchAll(/<a\s+([^>]*)>([\s\S]*?)<\/a>/gi)) {
+    const attributes = match[1] ?? "";
+    const href = captureSingle(attributes, /\bhref="([^"]+)"/i);
+    if (!href || href.startsWith("#")) continue;
+    const title = captureSingle(attributes, /\btitle="([^"]*)"/i) ?? "";
+    const text = normalizeName(stripHtml(match[2] ?? ""));
+    const label = normalizeName(`${title} ${text}`);
+    const hrefLooksLikeMayorBiography = /\/biography\//i.test(href) && lastNamePattern.test(href);
+    const labelLooksLikeBio = /\bbio(?:graphy)?\b/i.test(label) &&
+      (lastNamePattern.test(label) || /read full bio|mayor(?:&#039;|'|’)?s biography/i.test(label));
+    if (!hrefLooksLikeMayorBiography && !labelLooksLikeBio) continue;
+    candidates.push({
+      href,
+      score: hrefLooksLikeMayorBiography ? 2 : 1,
+    });
+  }
+  const best = candidates.sort((left, right) => right.score - left.score)[0];
+  return best ? toAbsoluteUrl(mayorOfficeSource.baseUrl, best.href) : undefined;
 }
 
 function buildMayorEntityCandidates(
