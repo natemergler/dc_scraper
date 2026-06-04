@@ -403,18 +403,22 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
     }
     if (detail.enablingAuthority) {
       const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
-      const legalRefId = buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`);
-      legalRefs.push({
-        legalRefId,
-        sourceItemKey: itemKey,
-        refType: parsed.refType,
-        citationText: parsed.citationText,
-        normalizedCitation: parsed.normalizedCitation,
-        url: detail.enablingAuthorityUrl,
-        needsReview: parsed.needsReview,
-        evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
-        attachEntityRef: proposedEntityId,
-      });
+      if (
+        shouldCreateOpenDcLegalRef(detail.enablingAuthority, detail.enablingAuthorityUrl, parsed)
+      ) {
+        const legalRefId = buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`);
+        legalRefs.push({
+          legalRefId,
+          sourceItemKey: itemKey,
+          refType: parsed.refType,
+          citationText: parsed.citationText,
+          normalizedCitation: parsed.normalizedCitation,
+          url: detail.enablingAuthorityUrl,
+          needsReview: parsed.needsReview,
+          evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
+          attachEntityRef: proposedEntityId,
+        });
+      }
     }
   }
   return { items, entityCandidates, relationshipCandidates, legalRefs, reviewItems };
@@ -486,6 +490,42 @@ function compactAliasKey(value: string): string {
 
 function shouldReviewOpenDcAgencyLabel(label: string): boolean {
   return openDcReviewableNonRelationshipAgencyLabels.has(normalizeName(label).toLowerCase());
+}
+
+function shouldCreateOpenDcLegalRef(
+  authorityText: string,
+  authorityUrl: string | undefined,
+  parsed: ReturnType<typeof parseLegalReference>,
+): boolean {
+  if (parsed.refType !== "unknown") return true;
+  return looksLikeOpenDcReviewableAuthority(authorityText, authorityUrl);
+}
+
+function looksLikeOpenDcReviewableAuthority(
+  authorityText: string,
+  authorityUrl?: string,
+): boolean {
+  const text = normalizeName(stripHtml(authorityText));
+  if (!text || looksLikeOpenDcNonLegalAuthority(text)) return false;
+  if (
+    authorityUrl &&
+    /(law\.cornell\.edu\/uscode|code\.dccouncil|dccode\.org|dcregs\.dc\.gov|Mayors?_Order_[0-9]{4}-[0-9]{2,3})/i
+      .test(authorityUrl)
+  ) {
+    return true;
+  }
+  return /\b(?:U\.?S\.?\s+Code|D\.?\s*C\.?\s*(?:Official\s+)?Code|D\.?\s*C\.?\s*M\.?\s*R|D\.?\s*C\.?\s+Law|D\.?\s*C\.?\s+Act|Public\s+Law|Mayor['’]?s?\s+Order|MO\s+[0-9]{4}-[0-9]{2,3}|CDCR\s+[0-9A-Za-z.\-]+|[0-9]{4}-[0-9]{2,3}\s*;\s*amended\s+by|§)\b/i
+    .test(text);
+}
+
+function looksLikeOpenDcNonLegalAuthority(text: string): boolean {
+  return /^(?:n\/a|na|none)$/i.test(text) ||
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text) ||
+    /^(?:https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}(?:\/\S*)?$/i.test(text) ||
+    /\bmeeting\b/i.test(text) ||
+    /\bguidelines?\b/i.test(text) ||
+    /\bbylaws?\b/i.test(text) ||
+    /^[A-Z]{2,6}$/.test(text);
 }
 
 function buildOpenDcAgencyLabelReviewItem(input: {

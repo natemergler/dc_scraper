@@ -47,10 +47,10 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schema.version, 16);
-  assertEquals(second.schema.version, 16);
+  assertEquals(first.schema.version, 17);
+  assertEquals(second.schema.version, 17);
   assertEquals(second.schema, {
-    version: 16,
+    version: 17,
     name: "v2_current_workbench_schema",
     initializedAt: second.schema.initializedAt,
   });
@@ -199,7 +199,7 @@ Deno.test("source list fails fast for non-current local workbench DBs", async ()
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -249,7 +249,7 @@ Deno.test("source list rejects a current schema record when required tables are 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });
 
@@ -270,6 +270,6 @@ Deno.test("source list rejects current schema records with unexpected local tabl
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
-    "Local workbench DB is not a current dc_scraper workbench (found schema version 16). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
+    "Local workbench DB is not a current dc_scraper workbench (found schema version 17). Point --db at a current workbench.sqlite, or delete this ignored local DB and let dc init create a fresh one.",
   );
 });

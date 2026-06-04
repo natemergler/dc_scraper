@@ -53,6 +53,7 @@ Deno.test("recognized legal citation families auto-accept on current schema", as
       ["legal.test.signature.legal_refs.dc_law", "D.C. Law 22-155"],
       ["legal.test.signature.legal_refs.dc_act", "REACH Act (D.C. Act 23-521)"],
       ["legal.test.signature.legal_refs.public_law", "Public Law 89-774"],
+      ["legal.test.signature.legal_refs.us_code", "33 U.S. Code § 1267"],
       ["legal.test.signature.legal_refs.dc_bill", "B21-0697"],
       [
         "legal.test.signature.legal_refs.reorganization_plan",
@@ -86,5 +87,6 @@ Deno.test("recognized legal citation families auto-accept on current schema", as
       reviewStatus: "accepted",
       normalizedCitation: "Reorganization Plan No. 4 of 1996",
     },
+    { refType: "us_code", reviewStatus: "accepted", normalizedCitation: "33 U.S.C. § 1267" },
   ]);
 });

@@ -341,6 +341,27 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
+  const mayorShorthandMatch = text.match(/\bMO\s+([0-9]{4}-[0-9]{2,3})\b/i);
+  if (mayorShorthandMatch) {
+    return {
+      refType: "mayors_order",
+      citationText: text,
+      normalizedCitation: `Mayor's Order ${mayorShorthandMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  if (
+    url?.match(/Mayors?_Order_[0-9]{4}-[0-9]{2,3}/i) &&
+    /^[0-9]{4}-[0-9]{2,3}(?:\s*;\s*amended\s+by\s+[0-9]{4}-[0-9]{2,3}(?:\s+and\s+[0-9]{4}-[0-9]{2,3})*)?$/i
+      .test(text)
+  ) {
+    return {
+      refType: "mayors_order",
+      citationText: text,
+      normalizedCitation: `Mayor's Order ${text}`,
+      needsReview: false,
+    };
+  }
   const dcLawMatch = text.match(/D\.?\s*C\.?\s+Law\s+([0-9]{1,2}-[0-9]{1,4})/i);
   if (dcLawMatch) {
     return {
@@ -356,6 +377,17 @@ export function parseLegalReference(
       refType: "dc_act",
       citationText: text,
       normalizedCitation: `D.C. Act ${dcActMatch[1]}`,
+      needsReview: false,
+    };
+  }
+  const usCodeMatch = text.match(
+    /(\d+)\s*U\.?\s*S\.?\s*(?:Code|C\.?)\s*(?:§|section)?\s*([0-9A-Za-z.\-]+(?:\([^)]+\))*)/i,
+  );
+  if (usCodeMatch) {
+    return {
+      refType: "us_code",
+      citationText: text,
+      normalizedCitation: `${usCodeMatch[1]} U.S.C. § ${usCodeMatch[2]}`,
       needsReview: false,
     };
   }
