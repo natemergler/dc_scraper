@@ -1,6 +1,11 @@
-import { buildEntityId, type ReviewItemType, type ReviewStatus } from "../domain.ts";
+import {
+  buildEntityId,
+  type ReviewItemRecord,
+  type ReviewItemType,
+  type ReviewStatus,
+} from "../domain.ts";
 import { queryAll } from "./db.ts";
-import { isHumanDecisionReviewItem } from "./review.ts";
+import { isHumanDecisionReviewItem, listReviewItems, type ReviewItemFilters } from "./review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface UnresolvedDecisionNode {
@@ -49,6 +54,29 @@ export interface UnresolvedWorkGraph {
   decisions: UnresolvedDecisionNode[];
   diagnostics: UnresolvedDiagnosticNode[];
   edges: UnresolvedWorkEdge[];
+}
+
+export interface OpenHumanDecisionWorkItem {
+  decision: UnresolvedDecisionNode;
+  reviewItem: ReviewItemRecord;
+}
+
+export interface OpenHumanDecisionWorkSummary {
+  openReviewItemCount: number;
+  humanDecisionOpenReviewItemCount: number;
+  browseOnlyOpenReviewItemCount: number;
+  blockedDiagnosticCount: number;
+  filteredOpenReviewItemCount: number;
+  filteredHumanDecisionOpenReviewItemCount: number;
+  filteredBrowseOnlyOpenReviewItemCount: number;
+  filteredBlockedDiagnosticCount: number;
+  returnedHumanDecisionCount: number;
+}
+
+export interface OpenHumanDecisionWorkProjection {
+  items: OpenHumanDecisionWorkItem[];
+  diagnostics: UnresolvedDiagnosticNode[];
+  summary: OpenHumanDecisionWorkSummary;
 }
 
 export interface UnresolvedReconciliationSummary {
@@ -180,6 +208,74 @@ export function buildUnresolvedWorkGraph(
   );
 
   return { decisions, diagnostics, edges };
+}
+
+export function projectOpenHumanDecisionWork(
+  store: WorkbenchStore,
+  filters: ReviewItemFilters = {},
+): OpenHumanDecisionWorkProjection {
+  const { limit, status: _status, ...openFilterRest } = filters;
+  const openItems = listReviewItems(store, { status: "open" });
+  const filteredOpenItems = listReviewItems(store, {
+    ...openFilterRest,
+    status: "open",
+  });
+  const filteredOpenItemsById = new Map(
+    filteredOpenItems.map((item) => [item.reviewItemId, item]),
+  );
+
+  const graph = buildUnresolvedWorkGraph(store);
+  const diagnostics = graph.diagnostics.filter((diagnostic) =>
+    diagnosticMatchesReviewFilters(diagnostic, openFilterRest)
+  );
+  const decisionReviewItemIds = new Set(graph.decisions.map((decision) => decision.reviewItemId));
+  const filteredHumanDecisionOpenReviewItemCount =
+    filteredOpenItems.filter((item) => decisionReviewItemIds.has(item.reviewItemId)).length;
+  const projectedItems = graph.decisions
+    .filter((decision) => filteredOpenItemsById.has(decision.reviewItemId))
+    .map((decision) => ({
+      decision,
+      reviewItem: filteredOpenItemsById.get(decision.reviewItemId) as ReviewItemRecord,
+    }));
+  const items = limit === undefined ? projectedItems : projectedItems.slice(0, limit);
+
+  return {
+    items,
+    diagnostics,
+    summary: {
+      openReviewItemCount: openItems.length,
+      humanDecisionOpenReviewItemCount: graph.decisions.length,
+      browseOnlyOpenReviewItemCount: openItems.length - graph.decisions.length,
+      blockedDiagnosticCount: graph.diagnostics.length,
+      filteredOpenReviewItemCount: filteredOpenItems.length,
+      filteredHumanDecisionOpenReviewItemCount,
+      filteredBrowseOnlyOpenReviewItemCount: filteredOpenItems.length -
+        filteredHumanDecisionOpenReviewItemCount,
+      filteredBlockedDiagnosticCount: diagnostics.length,
+      returnedHumanDecisionCount: items.length,
+    },
+  };
+}
+
+function diagnosticMatchesReviewFilters(
+  diagnostic: UnresolvedDiagnosticNode,
+  filters: Omit<ReviewItemFilters, "limit" | "status">,
+): boolean {
+  if (filters.mode && filters.mode !== "relationships") return false;
+  if (filters.type && filters.type !== "relationship_candidate") return false;
+  if (filters.sourceId && diagnostic.sourceId !== filters.sourceId) return false;
+  if (filters.subjectPrefix && !diagnostic.subjectId.startsWith(filters.subjectPrefix)) {
+    return false;
+  }
+  if (filters.relationshipType && diagnostic.relationshipType !== filters.relationshipType) {
+    return false;
+  }
+  if (filters.rawValue && diagnostic.rawValue !== filters.rawValue) return false;
+  if (filters.rawValueContains && !diagnostic.rawValue?.includes(filters.rawValueContains)) {
+    return false;
+  }
+  if (filters.refType) return false;
+  return true;
 }
 
 export function summarizeUnresolvedReconciliation(

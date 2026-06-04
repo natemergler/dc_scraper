@@ -1,3 +1,4 @@
+import { dcCommand } from "../command_prefix.ts";
 import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
@@ -12,7 +13,7 @@ import {
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
-import { isHumanDecisionReviewItem, type ReviewItemFilters } from "./review.ts";
+import { type ReviewItemFilters } from "./review.ts";
 import {
   reviewEvidence,
   type ReviewEvidenceRow,
@@ -20,7 +21,12 @@ import {
   reviewSubject,
 } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
-import { buildUnresolvedWorkGraph, type UnresolvedDecisionNode } from "./unresolved_work.ts";
+import {
+  buildUnresolvedWorkGraph,
+  projectOpenHumanDecisionWork,
+  type UnresolvedDecisionNode,
+  type UnresolvedDiagnosticNode,
+} from "./unresolved_work.ts";
 
 interface ReviewSubjectContext {
   title: string;
@@ -56,7 +62,9 @@ export async function runInteractiveReview(
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
     if (snapshot.items.length === 0) {
-      if (snapshot.browseOnlyItemCount > 0) {
+      if (snapshot.blockedDiagnosticCount > 0) {
+        console.log(renderBlockedDiagnosticsOnlyMessage(snapshot));
+      } else if (snapshot.browseOnlyItemCount > 0) {
         console.log(
           `No human decisions remain. Browse ${snapshot.browseOnlyItemCount} unresolved review item(s) with ${
             renderReviewListCommand(filters)
@@ -131,16 +139,39 @@ interface InteractiveReviewSnapshot {
   rankedPackets: ReviewPacketRecord[];
   decisions: UnresolvedDecisionNode[];
   decisionsByReviewItemId: Map<string, UnresolvedDecisionNode>;
+  blockedDiagnosticCount: number;
+  diagnostics: UnresolvedDiagnosticNode[];
 }
 
 function buildInteractiveReviewSnapshot(
-  workbench: Pick<InteractiveReviewWorkbench, "db" | "listReviewItems">,
+  workbench: Pick<InteractiveReviewWorkbench, "db" | "dbPath" | "listReviewItems">,
   filters: ReviewItemFilters,
 ): InteractiveReviewSnapshot {
+  if (shouldFilterInteractiveItems(filters)) {
+    const projection = projectOpenHumanDecisionWork(workbench, filters);
+    const items = projection.items.map((item) => item.reviewItem);
+    const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
+    const packets = reviewPacketsFromItems(workbench, items);
+    const decisions = projection.items.map((item) => item.decision);
+    const decisionsByReviewItemId = new Map(
+      decisions.map((decision) => [decision.reviewItemId, decision]),
+    );
+    const rankedPackets = rankPacketsByPriority(packets, decisionsByReviewItemId);
+    return {
+      items,
+      browseOnlyItemCount: projection.summary.filteredBrowseOnlyOpenReviewItemCount,
+      itemsByReviewItemId,
+      packets,
+      rankedPackets,
+      decisions,
+      decisionsByReviewItemId,
+      blockedDiagnosticCount: projection.summary.filteredBlockedDiagnosticCount,
+      diagnostics: projection.diagnostics,
+    };
+  }
+
   const allItems = workbench.listReviewItems({ ...filters, limit: undefined });
-  const items = shouldFilterInteractiveItems(filters)
-    ? allItems.filter(isHumanDecisionReviewItem)
-    : allItems;
+  const items = allItems;
   const browseOnlyItemCount = allItems.length - items.length;
   const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
   const packets = reviewPacketsFromItems(workbench, items);
@@ -160,6 +191,8 @@ function buildInteractiveReviewSnapshot(
     rankedPackets,
     decisions,
     decisionsByReviewItemId,
+    blockedDiagnosticCount: 0,
+    diagnostics: [],
   };
 }
 
@@ -200,6 +233,26 @@ function nextInteractiveReviewSelection(
 function renderDecisionImpact(decision: UnresolvedDecisionNode): string {
   const noun = decision.downstreamBlockedCount === 1 ? "relationship" : "relationships";
   return `Decision impact: unblocks ${decision.downstreamBlockedCount} blocked ${noun}.`;
+}
+
+function renderBlockedDiagnosticsOnlyMessage(
+  snapshot: Pick<InteractiveReviewSnapshot, "blockedDiagnosticCount" | "diagnostics">,
+): string {
+  const noun = snapshot.blockedDiagnosticCount === 1 ? "item" : "items";
+  const verb = snapshot.blockedDiagnosticCount === 1 ? "remains" : "remain";
+  const lines = [
+    `No direct review decisions remain. ${snapshot.blockedDiagnosticCount} blocked reconciliation ${noun} ${verb}.`,
+  ];
+  const first = snapshot.diagnostics[0];
+  if (first) {
+    lines.push(
+      `First blocked: ${first.rawValue ?? first.subjectId} [${
+        first.relationshipType ?? first.subjectType
+      } from ${first.sourceId}]`,
+    );
+  }
+  lines.push(`Inspect blocked dependencies with ${dcCommand("audit")}.`);
+  return lines.join("\n");
 }
 
 function selectPriorityPacket(
