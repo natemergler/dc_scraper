@@ -1,7 +1,10 @@
 import { nowIso } from "../domain.ts";
 import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
-import { buildRelationshipReviewDraft } from "./relationship_review.ts";
+import {
+  buildRelationshipReviewDraft,
+  type RelationshipReviewDraft,
+} from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface RelationshipCandidateRow {
@@ -42,6 +45,7 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
     store,
     candidates.flatMap((candidate) => [candidate.fromEntityRef, candidate.toEntityRef]),
   );
+  const sameFactReviewKeys = sameFactKeysWithHumanReview(candidates);
   const statements = prepareReconciliationStatements(store);
 
   withTransaction(store.db, () => {
@@ -62,9 +66,26 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
         continue;
       }
       clearRelationshipReconciliationState(statements, candidate.relationshipCandidateId);
-      upsertRelationshipReviewItem(statements, candidate);
+      upsertRelationshipReviewItem(statements, candidate, sameFactReviewKeys);
     }
   });
+}
+
+function sameFactKeysWithHumanReview(candidates: RelationshipCandidateRow[]): Set<string> {
+  const keys = new Set<string>();
+  for (const candidate of candidates) {
+    const review = buildRelationshipReviewDraft(candidate);
+    if (review.defaultAction === "defer") keys.add(relationshipFactKey(candidate));
+  }
+  return keys;
+}
+
+function relationshipFactKey(candidate: RelationshipCandidateRow): string {
+  return [
+    candidate.fromEntityRef,
+    candidate.relationshipType,
+    candidate.toEntityRef,
+  ].join("\u0000");
 }
 
 function clearNonPendingRelationshipReconciliationState(store: WorkbenchStore): void {
@@ -189,8 +210,13 @@ function clearRelationshipReconciliationState(
 function upsertRelationshipReviewItem(
   statements: ReconciliationStatements,
   candidate: RelationshipCandidateRow,
+  sameFactReviewKeys: Set<string>,
 ): void {
-  const review = buildRelationshipReviewDraft(candidate);
+  const review = applySameFactReviewContext(
+    buildRelationshipReviewDraft(candidate),
+    candidate,
+    sameFactReviewKeys,
+  );
   const now = nowIso();
   statements.upsertReviewItem.run(
     review.reviewItemId,
@@ -203,4 +229,22 @@ function upsertRelationshipReviewItem(
     now,
     now,
   );
+}
+
+function applySameFactReviewContext(
+  review: RelationshipReviewDraft,
+  candidate: RelationshipCandidateRow,
+  sameFactReviewKeys: Set<string>,
+): RelationshipReviewDraft {
+  if (review.defaultAction === "defer") return review;
+  if (!sameFactReviewKeys.has(relationshipFactKey(candidate))) return review;
+  return {
+    ...review,
+    defaultAction: "defer",
+    details: {
+      ...review.details,
+      whyDeferred:
+        "Another source has the same directed relationship fact marked for human review, so this fact should be resolved as source tension before accepting it.",
+    },
+  };
 }

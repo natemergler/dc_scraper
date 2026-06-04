@@ -154,11 +154,16 @@ Deno.test("same-fact relationship review blocks later source auto-accept", async
 
   assertEquals(relationship, undefined);
   assertEquals(
-    reviewItems.map((item) => item.subjectId).sort(),
+    reviewItems.map((item) => [item.subjectId, item.defaultAction]).sort(),
     [
-      "relationship.test.auto_accept.dcgis.same_fact_review",
-      "relationship.test.auto_accept.open_dc.same_fact",
+      ["relationship.test.auto_accept.dcgis.same_fact_review", "defer"],
+      ["relationship.test.auto_accept.open_dc.same_fact", "defer"],
     ],
+  );
+  assertEquals(
+    reviewItems.find((item) => item.subjectId === "relationship.test.auto_accept.open_dc.same_fact")
+      ?.details.whyDeferred,
+    "Another source has the same directed relationship fact marked for human review, so this fact should be resolved as source tension before accepting it.",
   );
 });
 

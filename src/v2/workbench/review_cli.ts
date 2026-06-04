@@ -338,14 +338,21 @@ function renderInboxChoiceLine(
 ): string {
   const packet = choice.packet;
   const impact = packetPriorityScore(packet, snapshot.decisionsByReviewItemId);
-  const scope = packet.relationshipType
-    ? `${packet.sourceId} ${packet.relationshipType}`
-    : packet.refType
-    ? `${packet.sourceId} ${packet.refType}`
-    : `${packet.sourceId} ${humanizeToken(packet.itemType)}`;
+  const scope = packetInboxScope(packet);
   const prefix = index === 0 ? `${index + 1}. [recommended]` : `${index + 1}.`;
   const impactText = impact > 0 ? `; unblocks ${impact}` : "";
   return `${prefix} ${choice.title} - ${scope} [default ${choice.defaultAction}; packet ${packet.openCount} open${impactText}]`;
+}
+
+function packetInboxScope(packet: ReviewPacketRecord): string {
+  if (packet.relationshipType) return `${packet.sourceId} ${packet.relationshipType}`;
+  if (packet.itemType === "legal_ref") {
+    return packet.refType && packet.refType !== "unknown"
+      ? `${packet.sourceId} ${humanizeToken(packet.refType)} legal ref`
+      : `${packet.sourceId} legal reference`;
+  }
+  if (packet.itemType === "source_status") return `${packet.sourceId} source note`;
+  return `${packet.sourceId} ${humanizeToken(packet.itemType)}`;
 }
 
 interface ReviewInboxChoice {
