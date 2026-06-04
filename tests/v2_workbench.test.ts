@@ -595,15 +595,14 @@ Deno.test("source list rejects a current schema record when required tables are 
   );
 });
 
-Deno.test("source list rejects current schema record with leftover migration tables", async () => {
+Deno.test("source list rejects current schema records with unexpected local tables", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
   workbench.init();
   workbench.db.exec(`
-    create table schema_migrations (
-      version integer primary key,
-      name text not null
+    create table scratch_notes (
+      note text primary key
     );
   `);
   workbench.close();

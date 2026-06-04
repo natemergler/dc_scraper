@@ -44,7 +44,7 @@ workbench. A full fetch can take a while because it walks several public source 
 per-source progress and a final succeeded/failed summary before moving on.
 
 V2 local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and
-refetch a fresh one; legacy local DBs are not migrated forward.
+refetch a fresh one. Ignored local DBs outside the current schema contract are scratch state.
 
 ## Happy Path
 
