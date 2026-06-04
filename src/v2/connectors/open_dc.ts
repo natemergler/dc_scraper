@@ -1,6 +1,5 @@
 import {
   buildCandidateId,
-  buildEntityId,
   buildLegalRefId,
   buildRelationshipCandidateId,
   buildReviewItemId,
@@ -430,11 +429,11 @@ function resolveOpenDcCandidateIdentity(
   const normalized = normalizeName(name);
   const parenthetical = extractOpenDcParentheticalParts(normalized);
   if (!parenthetical) {
-    return { name: normalized, proposedEntityId: buildEntityId(normalized) };
+    return { name: normalized, proposedEntityId: buildKnownEntityRef(normalized) };
   }
   const { baseName, aliasName } = parenthetical;
   if (baseName && aliasName && isAcronymLike(aliasName)) {
-    return { name: baseName, proposedEntityId: buildEntityId(baseName) };
+    return { name: baseName, proposedEntityId: buildKnownEntityRef(baseName) };
   }
   if (aliasName) {
     const knownAliasEntityRef = resolveKnownEntityRef(aliasName);

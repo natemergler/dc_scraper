@@ -1546,6 +1546,37 @@ Deno.test("Open DC acronym parentheticals reuse the base public-body identity", 
   );
 });
 
+Deno.test("Open DC acronym parentheticals still honor known entity aliases", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/public-charter-school-board-pcsb">Public Charter School Board (PCSB)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/public-charter-school-board-pcsb":
+          return `<html><body><h1 class="page-title">Public Charter School Board (PCSB)</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assertEquals(detail.entityCandidates?.[0]?.name, "Public Charter School Board");
+  assertEquals(
+    detail.entityCandidates?.[0]?.proposedEntityId,
+    "dc.public_charter_school_board_pcsb",
+  );
+});
+
 Deno.test("Open DC known alias parentheticals reuse the accepted full-label identity", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
