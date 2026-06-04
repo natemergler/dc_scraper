@@ -9,6 +9,7 @@ import {
   councilCommitteeHealthDetailFixture,
   councilCommitteesFixture,
   councilCommitteeWholeDetailFixture,
+  dcgisBoardsCommissionsCouncilsMetadataFixture,
   dcgisMetadataFixture,
   quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
@@ -1745,6 +1746,98 @@ Deno.test("dcgis agency aliases propose shared canonical entity ids", async () =
   assert(pcsbCandidate);
   assertEquals(pcsbCandidate.name, "DC Public Charter School Board");
   assertEquals(pcsbCandidate.proposedEntityId, "dc.public_charter_school_board_pcsb");
+});
+
+Deno.test("dcgis legal refs do not use public-body homepage urls as citation urls", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 93,
+        NAME: "Green Finance Authority Board",
+        SHORT_NAME: "Green Finance Authority Board",
+        ACRONYM: null,
+        GOVERNING_AGENCY: "Department of Energy & Environment",
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://dcgreenbank.org/",
+        AUTHORIZING_ORDER_LAW: "D.C. Law 22-155",
+        OBJECTID: 93,
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  const legalRef = result.endpointResults[0]?.parsed?.legalRefs?.[0];
+
+  assert(legalRef);
+  assertEquals(legalRef.citationText, "D.C. Law 22-155");
+  assertEquals(legalRef.normalizedCitation, "D.C. Law 22-155");
+  assertEquals(legalRef.url, "https://code.dccouncil.gov/us/dc/council/laws/22-155");
+});
+
+Deno.test("dcgis unknown legal refs leave homepage urls absent for review", async () => {
+  const rowsFixture = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 125,
+        NAME: "United Planning Organization Board of Directors",
+        SHORT_NAME: "United Planning Organization Board of Directors",
+        ACRONYM: null,
+        GOVERNING_AGENCY: null,
+        ADDRESS: null,
+        TYPE: "Board",
+        WEB_URL: "https://www.upo.org/",
+        AUTHORIZING_ORDER_LAW: "Organizational ByLaws",
+        OBJECTID: 125,
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsFixture);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  const legalRef = result.endpointResults[0]?.parsed?.legalRefs?.[0];
+
+  assert(legalRef);
+  assertEquals(legalRef.refType, "unknown");
+  assertEquals(legalRef.needsReview, true);
+  assertEquals(legalRef.url, undefined);
 });
 
 Deno.test("dcgis agency branch labels do not emit structural relationships", async () => {

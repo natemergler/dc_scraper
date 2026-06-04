@@ -482,7 +482,7 @@ function dcgisItemsNeedLawTitleIndex(items: SourceItemInput[]): boolean {
     const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
     if (!legislation) continue;
     for (const citationText of splitDcgisLegalAuthority(legislation)) {
-      const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
+      const parsed = parseLegalReference(citationText);
       if (parsed.refType === "unknown" && looksLikeDcLawTitle(parsed.citationText)) return true;
     }
   }
@@ -505,7 +505,7 @@ function buildDcgisLegalRefs(
     const citationParts = splitDcgisLegalAuthority(legislation);
     const identity = dcgisEntityIdentity(row, item.title, source.sourceId === "dcgis.agencies");
     citationParts.forEach((citationText, index) => {
-      const parsed = parseLegalReference(citationText, maybeString(row.WEB_URL));
+      const parsed = parseLegalReference(citationText);
       const lawTitleMatch = parsed.refType === "unknown"
         ? lawTitleIndex?.index.matchTitle(parsed.citationText)
         : undefined;
@@ -518,8 +518,8 @@ function buildDcgisLegalRefs(
         refType: lawTitleMatch ? "dc_law" : parsed.refType,
         citationText: parsed.citationText,
         normalizedCitation: lawTitleMatch?.citation ?? parsed.normalizedCitation,
-        url: lawTitleMatch?.url ?? extractFirstUrl(citationText) ?? extractFirstUrl(legislation) ??
-          maybeString(row.WEB_URL),
+        url: lawTitleMatch?.url ?? dcLawUrl(parsed.normalizedCitation) ??
+          extractFirstUrl(citationText) ?? extractFirstUrl(legislation),
         needsReview: lawTitleMatch ? false : parsed.needsReview,
         evidence: [
           fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item)),
@@ -538,6 +538,13 @@ function buildDcgisLegalRefs(
     });
   }
   return legalRefs;
+}
+
+function dcLawUrl(normalizedCitation?: string): string | undefined {
+  const match = normalizedCitation?.match(/^D\.C\. Law ([0-9]{1,2})-([0-9]{1,4})$/);
+  return match
+    ? `https://code.dccouncil.gov/us/dc/council/laws/${match[1]}-${match[2]}`
+    : undefined;
 }
 
 function splitDcgisLegalAuthority(value: string): string[] {
