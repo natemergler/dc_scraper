@@ -415,7 +415,7 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
-  const bareCodeMatch = text.match(/^([0-9]+[-–—][0-9A-Za-z.\-–—]+(?:\([^)]+\))*)\b/i);
+  const bareCodeMatch = text.match(/^([0-9]{1,3}[-–—][0-9A-Za-z.\-–—]+(?:\([^)]+\))*)\b/i);
   if (bareCodeMatch) {
     return {
       refType: "dc_code",

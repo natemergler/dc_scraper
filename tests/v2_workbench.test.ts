@@ -1959,6 +1959,72 @@ Deno.test("DCGIS resolved law-title legal refs import as accepted entity attachm
   assertEquals(openReviewCount.count, 0);
 });
 
+Deno.test("DCGIS bare year-number legal refs stay pending instead of importing as D.C. Code", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const rowsWithBareYearNumber = {
+    features: [{
+      attributes: {
+        ENTITY_ID: 8,
+        NAME: "Statewide Independent Living Council (SILC)",
+        SHORT_NAME: "SILC",
+        TYPE: "Council",
+        WEB_URL: "https://dds.dc.gov/page/statewide-independent-living-council",
+        GOVERNING_AGENCY: null,
+        AUTHORIZING_ORDER_LAW: "1993-148",
+        CLUSTER_DC: null,
+      },
+    }],
+  };
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json":
+          return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
+        case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
+          return JSON.stringify(rowsWithBareYearNumber);
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  const result = await getConnector("dcgis.boards_commissions_councils").run(
+    createConnectorContext({ fetcher }),
+  );
+  await workbench.importConnectorResult(result, dataDir);
+  const legalRef = result.endpointResults[0].parsed?.legalRefs?.[0];
+  const row = workbench.db.prepare(
+    "select ref_type as refType, normalized_citation as normalizedCitation, review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+  ).get("legal.dcgis.boards_commissions_councils.8_legislation") as {
+    refType: string;
+    normalizedCitation: string | null;
+    reviewStatus: string;
+  };
+  const openReviewCount = workbench.db.prepare(
+    "select count(*) as count from review_items where subject_id = ? and status = 'open'",
+  ).get("legal.dcgis.boards_commissions_councils.8_legislation") as { count: number };
+  workbench.close();
+
+  assertEquals(legalRef?.refType, "unknown");
+  assertEquals(legalRef?.normalizedCitation, undefined);
+  assertEquals(legalRef?.needsReview, true);
+  assertEquals(row, {
+    refType: "unknown",
+    normalizedCitation: null,
+    reviewStatus: "pending",
+  });
+  assertEquals(openReviewCount.count, 1);
+});
+
 Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels", async () => {
   const rowsWithMalformedAct = {
     features: [{
@@ -3724,6 +3790,12 @@ Deno.test("legal reference parsing normalizes common DC citation families", () =
   );
   assertEquals(parseLegalReference("§ 25–202").normalizedCitation, "D.C. Code 25-202");
   assertEquals(parseLegalReference("4-1303.01a").normalizedCitation, "D.C. Code 4-1303.01a");
+  assertEquals(parseLegalReference("1993-148"), {
+    refType: "unknown",
+    citationText: "1993-148",
+    normalizedCitation: undefined,
+    needsReview: true,
+  });
   assertEquals(
     parseLegalReference("D.C. Official Code § 47-2853.06(b)(1)").normalizedCitation,
     "D.C. Code 47-2853.06(b)(1)",
