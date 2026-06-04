@@ -2,6 +2,7 @@ import { connectors } from "./connectors.ts";
 import { dcCommand } from "./command_prefix.ts";
 import { buildOperatorPlan } from "./operator_plan.ts";
 import { Workbench } from "./workbench.ts";
+import { renderReviewCommand } from "./workbench/review_command_args.ts";
 import { reviewPacketDebtSummary } from "./workbench/review_packets.ts";
 import { summarizeUnresolvedReconciliation } from "./workbench/unresolved_work.ts";
 
@@ -306,14 +307,18 @@ function renderBlockedDependency(
 function reviewCommandForUnblocker(
   topUnblocker: NonNullable<ReturnType<typeof summarizeUnresolvedReconciliation>["topUnblocker"]>,
 ): string {
-  return dcCommand(
-    `review ${
-      reviewModeForItemType(topUnblocker.itemType)
-    } --subject-prefix ${topUnblocker.subjectId}`,
-  );
+  return renderReviewCommand({
+    mode: reviewModeForItemType(topUnblocker.itemType),
+    subjectPrefix: topUnblocker.subjectId,
+  });
 }
 
-function reviewModeForItemType(itemType: string): string {
+function reviewModeForItemType(itemType: string):
+  | "entities"
+  | "relationships"
+  | "legal"
+  | "sources"
+  | undefined {
   switch (itemType) {
     case "entity_candidate":
     case "placeholder_entity":
@@ -325,6 +330,6 @@ function reviewModeForItemType(itemType: string): string {
     case "source_status":
       return "sources";
     default:
-      return "list";
+      return undefined;
   }
 }

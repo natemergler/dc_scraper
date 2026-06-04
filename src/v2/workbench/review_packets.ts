@@ -1,6 +1,6 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import type { ReviewItemFilters } from "./review.ts";
-import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
+import { renderReviewCommand } from "./review_command_args.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -130,23 +130,15 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
 }
 
 function reviewPacketCommand(packet: ReviewPacketRecord): string {
-  const parts = ["deno", "task", "dc", "--", "review"];
-  const mode = reviewModeSubcommand(modeForPacket(packet));
-  if (mode) parts.push(mode);
-  parts.push(
-    ...reviewFilterArgs(
-      {
-        mode,
-        sourceId: packet.sourceId === "unknown" ? undefined : packet.sourceId,
-        type: mode ? undefined : packet.itemType,
-        subjectPrefix: packet.subjectPrefix,
-        relationshipType: packet.relationshipType,
-        refType: packet.refType,
-      },
-      { includeMode: false, includeType: true },
-    ),
-  );
-  return parts.join(" ");
+  const mode = modeForPacket(packet);
+  return renderReviewCommand({
+    mode,
+    sourceId: packet.sourceId === "unknown" ? undefined : packet.sourceId,
+    type: mode ? undefined : packet.itemType,
+    subjectPrefix: packet.subjectPrefix,
+    relationshipType: packet.relationshipType,
+    refType: packet.refType,
+  });
 }
 
 function modeForPacket(packet: ReviewPacketRecord): ReviewItemFilters["mode"] {

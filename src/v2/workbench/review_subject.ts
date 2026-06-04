@@ -211,6 +211,26 @@ export function reviewSubjectSourceIds(
   return sourceIds;
 }
 
+export function reviewItemLabel(item: Pick<ReviewItemRecord, "subjectId" | "details">): string {
+  const details = item.details;
+  const candidates = [
+    stringDetail(details, "name"),
+    stringDetail(details, "rawValue"),
+    stringDetail(details, "citationText"),
+    stringDetail(details, "normalizedCitation"),
+    stringDetail(details, "relationshipType") && stringDetail(details, "toName")
+      ? `${stringDetail(details, "relationshipType")}: ${stringDetail(details, "toName")}`
+      : undefined,
+    stringDetail(details, "relationshipType") && stringDetail(details, "toEntityRef")
+      ? `${stringDetail(details, "relationshipType")}: ${stringDetail(details, "toEntityRef")}`
+      : undefined,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
+  }
+  return item.subjectId;
+}
+
 export function reviewEvidence(
   store: Pick<WorkbenchStore, "db">,
   item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
@@ -263,6 +283,11 @@ function directReviewSubjectSourceId(
   if (item.itemType === "source_status") return item.subjectId;
   if (item.itemType === "placeholder_entity") return "workbench";
   return undefined;
+}
+
+function stringDetail(details: Record<string, unknown>, key: string): string | undefined {
+  const value = details[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 function chunks<T>(items: readonly T[], size: number): T[][] {

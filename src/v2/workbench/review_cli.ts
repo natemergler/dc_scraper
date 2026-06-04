@@ -5,7 +5,7 @@ import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
-import { reviewFilterArgs, reviewModeSubcommand } from "./review_command_args.ts";
+import { renderReviewCommand } from "./review_command_args.ts";
 import {
   renderReviewPacketHeader,
   type ReviewPacketRecord,
@@ -418,30 +418,15 @@ function deferredRelationshipPacketTitle(
 }
 
 function renderResumeCommand(filters: ReviewItemFilters): string {
-  const parts = ["deno", "task", "dc", "--", "review"];
-  const mode = reviewModeSubcommand(filters.mode);
-  if (mode) parts.push(mode);
-  parts.push(...reviewFilterArgs(filters, { includeMode: false, includeType: true }));
-  return parts.join(" ");
+  return renderReviewCommand(filters);
 }
 
 function renderReviewListCommand(filters: ReviewItemFilters): string {
-  return renderReviewBrowseCommand("list", filters);
+  return renderReviewCommand(filters, { browseSubcommand: "list" });
 }
 
 function renderReviewPacketsCommand(filters: ReviewItemFilters): string {
-  return renderReviewBrowseCommand("packets", filters);
-}
-
-function renderReviewBrowseCommand(
-  subcommand: "list" | "packets",
-  filters: ReviewItemFilters,
-): string {
-  const parts = ["deno", "task", "dc", "--", "review", subcommand];
-  const mode = reviewModeSubcommand(filters.mode);
-  if (mode) parts.push(mode);
-  parts.push(...reviewFilterArgs(filters, { includeMode: false, includeType: true }));
-  return parts.join(" ");
+  return renderReviewCommand(filters, { browseSubcommand: "packets" });
 }
 
 export function renderReviewItem(

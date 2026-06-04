@@ -585,7 +585,7 @@ Deno.test("interactive review sends plain source-backed additions to browse surf
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "No human decisions remain. Browse 2 unresolved review item(s) with deno task dc -- review list entities or deno task dc -- review packets entities.",
+    "No human decisions remain. Browse 2 unresolved review item(s) with deno task dc -- review list --mode entities or deno task dc -- review packets --mode entities.",
   );
 
   const reopened = new Workbench(dbPath);

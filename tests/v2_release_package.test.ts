@@ -330,7 +330,6 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertEquals(releaseDbContactHits.count, 0);
   await assertRejects(() => Deno.stat(staleFile), Deno.errors.NotFound);
   assertStringIncludes(readme, "DCGov v2 Release");
-  assertStringIncludes(readme, "Relationship coverage note:");
   assertStringIncludes(
     readme,
     "`README.md`: package overview, model semantics, and release counts",
@@ -371,7 +370,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.",
+    "DC city/county distinctions are not inferred beyond source-backed civic structure labels.",
   );
   assertStringIncludes(readme, "entities: total=2");
   assertStringIncludes(readme, "relationships: total=1");
@@ -552,9 +551,15 @@ function assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme: string) {
       "review items by",
       "review debt by",
       "Unresolved workbench state:",
+      "open review",
+      "top unresolved",
+      "coverage note",
       "unresolved rows",
       "stale review:",
       "blocked by source:",
+      "candidate.",
+      "relationship.",
+      "legal.",
       "Blocked and stale counts report unresolved work",
       "stay review-first",
     ]
@@ -608,7 +613,7 @@ Deno.test("release builder rejects email-shaped contact info in release rows", a
   workbench.close();
 });
 
-Deno.test("release builder rejects contact-shaped unresolved review summary before writing README", async () => {
+Deno.test("release builder omits contact-shaped unresolved review labels from release summary", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const outDir = join(dir, "release");
@@ -638,13 +643,11 @@ Deno.test("release builder rejects contact-shaped unresolved review summary befo
     )`,
   ).run();
 
-  await assertRejects(
-    () => buildV2Release(workbench, outDir),
-    Error,
-    "Release output contains email-shaped contact info in release_summary",
-  );
-  await assertRejects(() => Deno.stat(join(outDir, "README.md")), Deno.errors.NotFound);
-  await assertRejects(() => Deno.stat(join(outDir, "manifest.json")), Deno.errors.NotFound);
+  await buildV2Release(workbench, outDir);
+  const manifest = await Deno.readTextFile(join(outDir, "manifest.json"));
+  const readme = await Deno.readTextFile(join(outDir, "README.md"));
+  assert(!manifest.includes("not-for-release@example.com"));
+  assert(!readme.includes("not-for-release@example.com"));
   workbench.close();
 });
 

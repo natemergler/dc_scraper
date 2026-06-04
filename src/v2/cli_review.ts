@@ -1,6 +1,7 @@
 import { dcCommand } from "./command_prefix.ts";
 import type { ReviewItemFilters } from "./workbench/review.ts";
 import { listReviewPackets, renderReviewPacketSummary } from "./workbench/review_packets.ts";
+import { reviewItemLabel, reviewSubjectSourceIds } from "./workbench/review_subject.ts";
 import {
   renderReviewItemSummary,
   runBatchAcceptSafe,
@@ -43,8 +44,13 @@ export async function handleReviewCommand(
     }
     const { items, summaries } = await deps.withWorkbench((workbench) => {
       const items = workbench.listReviewItems(readReviewFilters(args));
+      const sourceIds = reviewSubjectSourceIds(workbench, items);
       return {
-        items,
+        items: items.map((item) => ({
+          ...item,
+          sourceId: sourceIds.get(item.reviewItemId) ?? "unknown",
+          label: reviewItemLabel(item),
+        })),
         summaries: items.map((item) => renderReviewItemSummary(workbench, item)),
       };
     });

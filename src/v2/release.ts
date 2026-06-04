@@ -8,7 +8,6 @@ import { buildWorkbenchStatus } from "./status.ts";
 import { MANIFEST_VERSION, TOOL_VERSION } from "./version.ts";
 import { containsLocalPath } from "./url_safety.ts";
 import { withTransaction } from "./workbench/db.ts";
-import { listReviewItems } from "./workbench/review.ts";
 
 type EntityRow = ReturnType<Workbench["canonicalEntities"]>[number];
 type RelationshipRow = ReturnType<Workbench["canonicalRelationships"]>[number];
@@ -18,8 +17,6 @@ type LegalRefRow = ReturnType<Workbench["legalRefs"]>[number];
 type EntityLegalRefRow = ReturnType<Workbench["entityLegalRefs"]>[number];
 type RelationshipLegalRefRow = ReturnType<Workbench["relationshipLegalRefs"]>[number];
 type SourceArtifactRow = ReturnType<Workbench["sourceArtifacts"]>[number];
-
-const UNRESOLVED_REVIEW_SUMMARY_LIMIT = 8;
 
 export interface BuildReleaseOptions {
   sourceProfile?: SmokeProfile | "custom";
@@ -574,7 +571,7 @@ Relationship families: structure (\`part_of\`, \`has_seat\`, \`has_status\`), au
 
 Relationship direction guide: \`part_of\` points from a component to its containing entity; \`has_seat\`/\`has_status\` point from a body, seat, or observation to the seat/status marker; authority/source types point from the civic subject to the governing, oversight, appointment, designation, legal-authority, or publication source; civic-role types point from an observation or role entity to the seat, district, body, or committee role.
 
-DC city/county distinctions are not inferred beyond source-backed civic structure labels, and this release does not claim complete legal, personnel, or dataset coverage.
+DC city/county distinctions are not inferred beyond source-backed civic structure labels.
 
 ## Release summary
 
@@ -586,8 +583,6 @@ DC city/county distinctions are not inferred beyond source-backed civic structur
 - legal refs by type: ${legalByType}
 - entity legal refs: total=${summary.entity_legal_refs_count}
 - relationship legal refs: total=${summary.relationship_legal_refs_count}
-
-Relationship coverage note: relationships may represent only part of discovered relationship candidates.
 `;
 }
 
@@ -608,19 +603,6 @@ function buildReleaseSummary(
     "select item_type as item_type, count(*) as count from review_items group by item_type order by item_type",
   ).all() as Array<{ item_type: string; count: number }>;
   const status = buildWorkbenchStatus(workbench);
-  const knownSourceIds = sources.map((source) => source.source_id);
-  const topUnresolvedReviewItems = listReviewItems(workbench, {
-    limit: UNRESOLVED_REVIEW_SUMMARY_LIMIT,
-  }).map((item) => ({
-    review_item_id: item.reviewItemId,
-    item_type: item.itemType,
-    subject_id: item.subjectId,
-    source_id: sourceIdFromSubject(item.subjectId, knownSourceIds),
-    label: reviewItemLabel(item),
-    reason: item.reason,
-    default_action: item.defaultAction,
-    status: item.status,
-  }));
   return {
     entities_by_review_status: countByReviewStatus(entities, (row) => row.review_status),
     relationships_by_review_status: countByReviewStatus(relationships, (row) => row.review_status),
@@ -636,7 +618,6 @@ function buildReleaseSummary(
       open_count: row.openCount,
       deferred_count: row.deferredCount,
     })),
-    top_unresolved_review_items: topUnresolvedReviewItems,
     open_review_item_count: status.review.open,
     deferred_review_item_count: status.review.deferred,
     stale_review_item_count: status.staleReview.count,
@@ -659,38 +640,6 @@ function buildReleaseSummary(
     entity_legal_refs_count: entityLegalRefs.length,
     relationship_legal_refs_count: relationshipLegalRefs.length,
   };
-}
-
-function reviewItemLabel(item: ReturnType<typeof listReviewItems>[number]): string {
-  const details = item.details;
-  const candidates = [
-    stringDetail(details, "name"),
-    stringDetail(details, "rawValue"),
-    stringDetail(details, "citationText"),
-    stringDetail(details, "normalizedCitation"),
-    stringDetail(details, "relationshipType") && stringDetail(details, "toName")
-      ? `${stringDetail(details, "relationshipType")}: ${stringDetail(details, "toName")}`
-      : undefined,
-    stringDetail(details, "relationshipType") && stringDetail(details, "toEntityRef")
-      ? `${stringDetail(details, "relationshipType")}: ${stringDetail(details, "toEntityRef")}`
-      : undefined,
-  ];
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
-  }
-  return item.subjectId;
-}
-
-function stringDetail(details: Record<string, unknown>, key: string): string | undefined {
-  const value = details[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-function sourceIdFromSubject(subjectId: string, sourceIds: string[]): string | undefined {
-  const subjectTail = subjectId.replace(/^(candidate|relationship|legal)\./, "");
-  return sourceIds
-    .filter((sourceId) => subjectTail === sourceId || subjectTail.startsWith(`${sourceId}.`))
-    .sort((a, b) => b.length - a.length)[0];
 }
 
 function releaseReviewStatusNote(unresolvedNote: string): string {
