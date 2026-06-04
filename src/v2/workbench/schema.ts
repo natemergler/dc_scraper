@@ -8,7 +8,7 @@ export interface SchemaMarkerRow {
   appliedAt: string;
 }
 
-const CURRENT_SCHEMA_VERSION = 15;
+const CURRENT_SCHEMA_VERSION = 16;
 const CURRENT_SCHEMA_NAME = "v2_current_workbench_schema";
 
 const CURRENT_SCHEMA_SQL = `create table sources(
@@ -88,7 +88,7 @@ create table entity_candidates(
 create table legal_refs(
   legal_ref_id text primary key,
   source_item_id text not null references source_items(source_item_id),
-  ref_type text not null check(ref_type in('dc_code', 'dcmr', 'dc_register', 'mayors_order', 'dc_law', 'dc_act', 'public_law', 'reorganization_plan', 'unknown')),
+  ref_type text not null check(ref_type in('dc_code', 'dcmr', 'dc_register', 'mayors_order', 'dc_law', 'dc_act', 'dc_bill', 'public_law', 'reorganization_plan', 'unknown')),
   citation_text text not null,
   normalized_citation text,
   url text,
