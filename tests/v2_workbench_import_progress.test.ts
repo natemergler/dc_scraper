@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { ConnectorResult } from "../src/v2/domain.ts";
 import type { ImportProgressEvent } from "../src/v2/workbench/import.ts";
@@ -26,6 +26,8 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
     "parsed-entity-candidates",
     "parsed-relationship-candidates",
     "parsed-legal-refs",
+    "parsed-datasets",
+    "parsed-review-items",
     "parsed-row-insert",
     "entity-replay",
     "legal-ref-replay",
@@ -35,12 +37,37 @@ Deno.test("workbench import reports humane parsed and derived-state substeps", a
     "relationship-replay",
     "relationship-auto-accept",
   ]);
-  assertEquals(events.slice(0, 4).map((event) => event.message), [
+  assertEquals(events.slice(0, 6).map((event) => event.message), [
     "Indexed source items items=1 fields=0",
     "Inserted entity candidates candidates=1 evidence=1",
     "Inserted relationship candidates candidates=1 evidence=1",
     "Inserted legal refs refs=1 evidence=1",
+    "Inserted datasets datasets=1 evidence=1",
+    "Inserted review items items=1",
   ]);
+});
+
+Deno.test("workbench import only reports parsed substeps after commit", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+
+  const events: ImportProgressEvent[] = [];
+  await assertRejects(
+    () =>
+      workbench.importConnectorResult(
+        importFailureFixtureResult(),
+        join(dir, "artifacts"),
+        {
+          onProgress: (event) => events.push(event),
+        },
+      ),
+    Error,
+    "Missing source item for key missing-row",
+  );
+  workbench.close();
+
+  assertEquals(events, []);
 });
 
 Deno.test("workbench import preserves evidence across bulk insert chunks", async () => {
@@ -179,6 +206,20 @@ function progressFixtureResult(): ConnectorResult {
             observedValue: "D.C. Code 1-1001.01",
           }],
         }],
+        datasets: [{
+          datasetId: "dataset.test.import.progress",
+          sourceItemKey: "row-1",
+          name: "Progress Dataset",
+          category: "directory",
+          ownerName: "Progress Office",
+          accessMethod: "download",
+          artifactDepth: "rows",
+          officialUrl: "https://example.com/datasets/progress",
+          evidence: [{
+            fieldPath: "dataset",
+            observedValue: "Progress Dataset",
+          }],
+        }],
         entityCandidates: [{
           candidateId: "candidate.test.import.progress",
           sourceItemKey: "row-1",
@@ -201,6 +242,77 @@ function progressFixtureResult(): ConnectorResult {
           evidence: [{
             fieldPath: "target",
             observedValue: "Progress Target",
+          }],
+        }],
+        reviewItems: [{
+          reviewItemId: "review.test.import.progress.dataset",
+          itemType: "dataset",
+          subjectId: "dataset.test.import.progress",
+          reason: "Confirm dataset metadata",
+          defaultAction: "accept",
+          details: {
+            source: "fixture",
+          },
+        }],
+      },
+    }],
+  };
+}
+
+function importFailureFixtureResult(): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.import.progress.failure",
+      title: "Import Progress Failure Fixture",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/import-progress-failure",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.import.progress.failure.main",
+        sourceId: "test.import.progress.failure",
+        title: "Import progress failure rows",
+        kind: "fixture",
+        url: "https://example.com/import-progress-failure",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/import-progress-failure",
+        contentText: JSON.stringify({ fixture: true }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "row-1",
+          itemType: "fixture_row",
+          title: "Failure row",
+          body: { name: "Failure Target" },
+        }],
+        entityCandidates: [{
+          candidateId: "candidate.test.import.progress.failure",
+          sourceItemKey: "row-1",
+          proposedEntityId: "dc.progress_failure_candidate",
+          name: "Failure Candidate",
+          kind: "board",
+          evidence: [{
+            fieldPath: "name",
+            observedValue: "Failure Candidate",
+          }],
+        }],
+        datasets: [{
+          datasetId: "dataset.test.import.progress.failure",
+          sourceItemKey: "missing-row",
+          name: "Broken Dataset",
+          category: "directory",
+          accessMethod: "download",
+          artifactDepth: "rows",
+          evidence: [{
+            fieldPath: "dataset",
+            observedValue: "Broken Dataset",
           }],
         }],
       },
