@@ -314,7 +314,6 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
         kind,
         rawKind: kind,
         cluster,
-        officialUrl: quickbaseSource.baseUrl,
         confidence: 0.95,
         duplicateHint: board,
         evidence: [
@@ -356,7 +355,6 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
         kind: "seat",
         rawKind: "seat",
         cluster: "Seat",
-        officialUrl: quickbaseSource.baseUrl,
         confidence: 0.9,
         duplicateHint: `${board}::${seatRecord.label}`,
         evidence: [

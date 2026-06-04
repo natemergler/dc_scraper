@@ -1527,10 +1527,17 @@ Deno.test(
         candidate.name === "Downtown Revitalization Committee"
       ),
     );
+    const boardCandidate = parsed.entityCandidates?.find((candidate) =>
+      candidate.name === "Downtown Revitalization Committee"
+    );
     assert(
       parsed.entityCandidates?.some((candidate) =>
         candidate.name === "District of Columbia Rental Housing Commission"
       ),
+    );
+    const seatCandidate = parsed.entityCandidates?.find((candidate) =>
+      candidate.kind === "seat" && candidate.name ===
+        "District of Columbia Rental Housing Commission Chairperson"
     );
     assert(
       parsed.relationshipCandidates?.some((candidate) => candidate.relationshipType === "has_seat"),
@@ -1541,6 +1548,8 @@ Deno.test(
           "District of Columbia Rental Housing Commission Chairperson"
       ),
     );
+    assertEquals(boardCandidate?.officialUrl, undefined);
+    assertEquals(seatCandidate?.officialUrl, undefined);
     assert(
       parsed.entityCandidates?.some((candidate) =>
         candidate.kind === "appointment_status" && candidate.name === "Filled"
@@ -1622,7 +1631,11 @@ Deno.test(
       parsed.reviewItems?.every((item) => item.itemType !== "source_status"),
     );
     assert(
-      parsed.datasets?.some((dataset) => dataset.category === "appointments"),
+      parsed.datasets?.some((dataset) =>
+        dataset.category === "appointments" &&
+        dataset.officialUrl ===
+          "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs"
+      ),
     );
   },
 );
