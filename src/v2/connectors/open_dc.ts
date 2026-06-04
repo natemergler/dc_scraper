@@ -117,19 +117,31 @@ function selectOpenDcLinks(
   if (limit === undefined) {
     return canonicalLinks;
   }
+  const prioritizedLinks = prioritizeOpenDcLinks(canonicalLinks);
   const selected = new Map<string, { href: string; text: string; slug: string }>();
   const limitedLinks = Number.isFinite(limit)
-    ? canonicalLinks.slice(0, Math.max(0, limit))
-    : canonicalLinks;
+    ? prioritizedLinks.slice(0, Math.max(0, limit))
+    : prioritizedLinks;
   for (const link of limitedLinks) {
     selected.set(link.href, link);
   }
-  for (const link of canonicalLinks) {
+  for (const link of prioritizedLinks) {
     if (priorityPublicBodySlugs.has(link.slug)) {
       selected.set(link.href, link);
     }
   }
   return [...selected.values()];
+}
+
+function prioritizeOpenDcLinks(
+  links: Array<{ href: string; text: string; slug: string }>,
+): Array<{ href: string; text: string; slug: string }> {
+  const boosted = links.filter(shouldBoostOpenDcLink);
+  const boostedHrefs = new Set(boosted.map((link) => link.href));
+  return [
+    ...boosted,
+    ...links.filter((link) => !boostedHrefs.has(link.href)),
+  ];
 }
 
 function canonicalizeOpenDcLinks(
@@ -169,6 +181,13 @@ function scoreOpenDcSlug(slug: string): number {
   if (/-\d+$/.test(slug)) score += 10;
   if (/--/.test(slug)) score += 5;
   return score;
+}
+
+function shouldBoostOpenDcLink(link: { text: string }): boolean {
+  const parenthetical = extractOpenDcParentheticalParts(link.text);
+  return !!parenthetical &&
+    !isAcronymLike(parenthetical.aliasName) &&
+    !!resolveKnownEntityRef(parenthetical.aliasName);
 }
 
 function parseOpenDcIndex(html: string): Array<{ href: string; text: string; slug: string }> {
@@ -406,12 +425,11 @@ function resolveOpenDcCandidateIdentity(
   name: string,
 ): { name: string; proposedEntityId: string } {
   const normalized = normalizeName(name);
-  const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
-  if (!parentheticalMatch) {
+  const parenthetical = extractOpenDcParentheticalParts(normalized);
+  if (!parenthetical) {
     return { name: normalized, proposedEntityId: buildEntityId(normalized) };
   }
-  const baseName = normalizeName(parentheticalMatch[1] ?? "");
-  const aliasName = normalizeName(parentheticalMatch[2] ?? "");
+  const { baseName, aliasName } = parenthetical;
   if (baseName && aliasName && isAcronymLike(aliasName)) {
     return { name: baseName, proposedEntityId: buildEntityId(baseName) };
   }
@@ -422,6 +440,18 @@ function resolveOpenDcCandidateIdentity(
     }
   }
   return { name: normalized, proposedEntityId: buildEntityId(normalized) };
+}
+
+function extractOpenDcParentheticalParts(
+  name: string,
+): { baseName: string; aliasName: string } | undefined {
+  const normalized = normalizeName(name);
+  const parentheticalMatch = normalized.match(/^(.+?)\s+\(([^)]+)\)\s*$/);
+  if (!parentheticalMatch) return undefined;
+  const baseName = normalizeName(parentheticalMatch[1] ?? "");
+  const aliasName = normalizeName(parentheticalMatch[2] ?? "");
+  if (!baseName || !aliasName) return undefined;
+  return { baseName, aliasName };
 }
 
 function isAcronymLike(value: string): boolean {

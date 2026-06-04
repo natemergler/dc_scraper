@@ -1513,6 +1513,76 @@ Deno.test("Open DC known alias parentheticals reuse the known public-body identi
   assertEquals(detail.entityCandidates?.[0]?.proposedEntityId, "dc.destination_dc");
 });
 
+Deno.test("Open DC default bounded fetch prioritizes resolvable alias pages over generic early rows", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
+            <a href="/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc">Washington D.C. Convention and Tourism Corporation (Destination DC)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc":
+          return `<html><body><h1 class="page-title">Washington D.C. Convention and Tourism Corporation (Destination DC)</h1></body></html>`;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher, limit: 1 }),
+  );
+  assertEquals(
+    result.endpointResults[1].artifacts.map((item) => item.fetchedUrl),
+    [
+      "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc",
+    ],
+  );
+  const detail = result.endpointResults[1].parsed;
+  assert(detail);
+  assertEquals(detail.entityCandidates?.[0]?.name, "Destination DC");
+  assertEquals(detail.entityCandidates?.[0]?.proposedEntityId, "dc.destination_dc");
+});
+
+Deno.test("Open DC default bounded fetch does not boost acronym-only pages ahead of generic early rows", async () => {
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/board-accountancy">Board of Accountancy</a>
+            <a href="/public-bodies/district-columbia-taxicab-commission-dctc">District of Columbia Taxicab Commission (DCTC)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/board-accountancy":
+          return openDcBoardFixture;
+        case "https://www.open-dc.gov/public-bodies/district-columbia-taxicab-commission-dctc":
+          return `<html><body><h1 class="page-title">District of Columbia Taxicab Commission (DCTC)</h1></body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher, limit: 1 }),
+  );
+  assertEquals(
+    result.endpointResults[1].artifacts.map((item) => item.fetchedUrl),
+    [
+      "https://www.open-dc.gov/public-bodies/board-accountancy",
+    ],
+  );
+});
+
 Deno.test("Open DC known alias refinements fill official URLs on existing public-body entities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
