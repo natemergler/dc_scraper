@@ -109,7 +109,7 @@ Workflow:
   5. Run \`${dcCommand("status")}\` for readiness and the next broad surface
   6. Apply a scoped batch deliberately, like \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dccourts.structure",
     )
   }\`
 
@@ -145,7 +145,7 @@ Workflow:
   }\`
   2. Accept safe work with \`${
     dcCommand(
-      "review batch accept-safe --mode entities --subject-prefix candidate.council.committees",
+      "review batch accept-safe --mode entities --subject-prefix candidate.dccourts.structure",
     )
   }\`
   3. Defer default-defer relationships with \`${

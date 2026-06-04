@@ -376,16 +376,18 @@ export function renderReviewItem(
 ): string {
   const subject = reviewSubject(store, item);
   const context = reviewSubjectContext(store, item, subject);
+  const omittedDetailKeys = specialOmittedDetailKeys(item, context.omittedDetailKeys);
   return [
     `Review: ${context.title}`,
     [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
     context.sourceLine,
     `reason: ${item.reason}`,
+    renderWhyDeferred(item),
     `default: ${renderDefaultAction(item)}`,
     `actions: ${availableActionLabels(item).join(", ")}`,
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     ...renderRelationshipBlock(item, subject, context.relationshipEndpoints),
-    ...renderDetailsBlock(item.details, context.omittedDetailKeys),
+    ...renderDetailsBlock(item.details, omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].filter((line): line is string => Boolean(line)).join("\n");
 }
@@ -395,7 +397,10 @@ export function renderReviewItemSummary(
   item: ReviewItemRecord,
 ): string {
   const context = reviewSubjectContext(store, item, reviewSubject(store, item));
-  const details = compactDetails(item.details, context.omittedDetailKeys);
+  const details = compactDetails(
+    item.details,
+    specialOmittedDetailKeys(item, context.omittedDetailKeys),
+  );
   return [
     `[${item.status}] ${context.title}`,
     [humanizeToken(item.itemType), context.infoLabel, `default ${item.defaultAction}`].filter(
@@ -403,6 +408,7 @@ export function renderReviewItemSummary(
     ).join(" | "),
     context.sourceLine,
     `reason: ${item.reason}`,
+    renderWhyDeferred(item),
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     details ? `details: ${details}` : undefined,
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -562,6 +568,18 @@ function defaultActionKey(defaultAction: string): string {
 
 function renderDefaultAction(item: ReviewItemRecord): string {
   return `${item.defaultAction} (Enter or ${defaultActionKey(item.defaultAction)})`;
+}
+
+function renderWhyDeferred(item: ReviewItemRecord): string | undefined {
+  return typeof item.details.whyDeferred === "string"
+    ? `why deferred: ${item.details.whyDeferred}`
+    : undefined;
+}
+
+function specialOmittedDetailKeys(item: ReviewItemRecord, omittedKeys: string[]): string[] {
+  return typeof item.details.whyDeferred === "string"
+    ? [...omittedKeys, "whyDeferred"]
+    : omittedKeys;
 }
 
 function actionPrompt(item: ReviewItemRecord): string {

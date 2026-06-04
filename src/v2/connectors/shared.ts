@@ -158,12 +158,29 @@ const defaultDeferCouncilOversightTargets = new Set([
 export function defaultActionForCouncilOversightTarget(
   rawValue?: string | null,
 ): "accept" | "defer" {
-  if (!rawValue) return "accept";
+  return councilOversightReviewPolicy(rawValue).defaultAction;
+}
+
+export function councilOversightReviewPolicy(
+  rawValue?: string | null,
+): { defaultAction: "accept" | "defer"; whyDeferred?: string } {
+  if (!rawValue) return { defaultAction: "accept" };
   const normalized = normalizeName(rawValue);
-  return defaultDeferCouncilOversightTargets.has(normalized) ||
-      isScopedCouncilOversightTarget(normalized)
-    ? "defer"
-    : "accept";
+  if (isScopedCouncilOversightTarget(normalized)) {
+    return {
+      defaultAction: "defer",
+      whyDeferred:
+        "Scoped oversight text uses including/excluding/jointly wording, so the exact oversight edge still needs a human decision.",
+    };
+  }
+  if (defaultDeferCouncilOversightTargets.has(normalized)) {
+    return {
+      defaultAction: "defer",
+      whyDeferred:
+        "This named target stays on the conservative Council oversight defer list until a human confirms the committee relationship.",
+    };
+  }
+  return { defaultAction: "accept" };
 }
 
 export function extractFirstUrl(input: string): string | undefined {

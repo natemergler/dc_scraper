@@ -42,7 +42,7 @@ Useful secondary seams:
 ```bash
 deno task dc -- review packets --mode relationships
 deno task dc -- review list --mode relationships --limit 10
-deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.council.committees
+deno task dc -- review batch accept-safe --mode entities --subject-prefix candidate.dccourts.structure
 deno task dc -- audit
 ```
 

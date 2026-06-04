@@ -157,7 +157,9 @@ function seedableFromRelationshipEndpointName(
 function seededRelationshipEndpointReviewItem(
   candidate: EntityCandidateInput,
 ): ReviewItemInput {
-  const safeToAutoAccept = isSafeToBatchAcceptSeededEndpointCandidate(candidate);
+  const safeToAutoAccept = isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(
+    candidate.candidateId,
+  );
   return {
     reviewItemId: buildReviewItemId(candidate.candidateId, "seeded-endpoint"),
     itemType: "entity_candidate",
@@ -174,11 +176,11 @@ function seededRelationshipEndpointReviewItem(
   };
 }
 
-function isSafeToBatchAcceptSeededEndpointCandidate(
-  candidate: EntityCandidateInput,
+export function isSafeToAutoAcceptSeededRelationshipEndpointCandidateId(
+  candidateId: string,
 ): boolean {
-  return isSafeCouncilSeededEndpointCandidate(candidate.candidateId) ||
-    isSafeDcgisGoverningEndpointCandidate(candidate.candidateId);
+  return isSafeCouncilSeededEndpointCandidate(candidateId) ||
+    isSafeDcgisGoverningEndpointCandidate(candidateId);
 }
 
 function isSafeCouncilSeededEndpointCandidate(candidateId: string): boolean {

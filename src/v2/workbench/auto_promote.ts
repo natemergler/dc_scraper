@@ -35,6 +35,7 @@ interface AutoPromoteCandidateRow {
   confidence?: number | null;
   sourceId: string;
   reviewItemStatus?: string | null;
+  safeToAutoAccept?: number | null;
   stalePriorDecision?: number | null;
   replayConflict?: number | null;
 }
@@ -60,6 +61,7 @@ export function autoPromoteSafeEntityCandidates(store: WorkbenchStore): number {
             entity_candidates.confidence,
             source_items.source_id as sourceId,
             review_items.status as reviewItemStatus,
+            json_extract(review_items.details_json, '$.safeToAutoAccept') as safeToAutoAccept,
             json_extract(review_items.details_json, '$.stalePriorDecision') as stalePriorDecision,
             json_extract(review_items.details_json, '$.replayConflict') as replayConflict
      from entity_candidates
@@ -102,9 +104,15 @@ function groupIsSafeToAutoPromote(
   const primaryCandidates = group.filter((candidate) =>
     !isSeededRelationshipEndpointCandidate(candidate.candidateId)
   );
-  if (primaryCandidates.length === 0) return false;
+  const promotableCandidates = primaryCandidates.length > 0
+    ? primaryCandidates
+    : group.every((candidate) => candidate.safeToAutoAccept === 1)
+    ? group
+    : [];
+  const seededOnlySafeGroup = primaryCandidates.length === 0 && promotableCandidates.length > 0;
+  if (promotableCandidates.length === 0) return false;
   if (
-    primaryCandidates.some((candidate) =>
+    promotableCandidates.some((candidate) =>
       AUTO_PROMOTE_KIND_BLOCKLIST.has(candidate.kind) &&
       !AUTO_PROMOTE_PUBLIC_OFFICIAL_SOURCE_ALLOWLIST.has(candidate.sourceId)
     )
@@ -112,7 +120,8 @@ function groupIsSafeToAutoPromote(
     return false;
   }
   if (
-    primaryCandidates.some((candidate) =>
+    !seededOnlySafeGroup &&
+    promotableCandidates.some((candidate) =>
       typeof candidate.confidence !== "number" || candidate.confidence < AUTO_PROMOTE_MIN_CONFIDENCE
     )
   ) {
@@ -128,10 +137,10 @@ function groupIsSafeToAutoPromote(
     return false;
   }
 
-  const [first] = primaryCandidates;
+  const [first] = promotableCandidates;
   if (!first) return false;
   if (
-    group.some((candidate) =>
+    promotableCandidates.some((candidate) =>
       candidate.normalizedName !== first.normalizedName || candidate.kind !== first.kind
     )
   ) {

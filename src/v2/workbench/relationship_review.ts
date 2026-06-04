@@ -1,5 +1,8 @@
 import { buildReviewItemId } from "../domain.ts";
-import { defaultActionForCouncilOversightTarget } from "../connectors/shared.ts";
+import {
+  councilOversightReviewPolicy,
+  defaultActionForCouncilOversightTarget,
+} from "../connectors/shared.ts";
 
 export interface RelationshipReviewCandidate {
   relationshipCandidateId: string;
@@ -21,13 +24,15 @@ export interface RelationshipReviewDraft {
 export function buildRelationshipReviewDraft(
   candidate: RelationshipReviewCandidate,
 ): RelationshipReviewDraft {
+  const defaultAction = reviewDefaultAction(candidate);
+  const whyDeferred = reviewWhyDeferred(candidate, defaultAction);
   return {
     reviewItemId: buildReviewItemId(
       candidate.relationshipCandidateId,
       reviewItemSuffix(candidate),
     ),
     reason: reviewReason(candidate),
-    defaultAction: reviewDefaultAction(candidate),
+    defaultAction,
     details: {
       fromEntityRef: candidate.fromEntityRef,
       toEntityRef: candidate.toEntityRef,
@@ -36,6 +41,7 @@ export function buildRelationshipReviewDraft(
         ? {}
         : { rawValue: candidate.rawValue }),
       ...(candidate.needsReview === 1 ? { needsReview: true } : {}),
+      ...(whyDeferred ? { whyDeferred } : {}),
     },
   };
 }
@@ -115,5 +121,27 @@ function reviewDefaultAction(
       return "accept";
     default:
       return candidate.needsReview === 1 ? "accept" : "defer";
+  }
+}
+
+function reviewWhyDeferred(
+  candidate: RelationshipReviewCandidate,
+  defaultAction: "accept" | "defer",
+): string | undefined {
+  if (defaultAction !== "defer") return undefined;
+  switch (candidate.sourceId) {
+    case "council.committees":
+      if (candidate.relationshipType !== "overseen_by") return undefined;
+      return councilOversightReviewPolicy(candidate.rawValue).whyDeferred ??
+        "This oversight edge stays deferred until a human confirms the committee relationship.";
+    case "dcgis.agencies":
+    case "dcgis.boards_commissions_councils":
+      if (candidate.rawValue !== "Other") return undefined;
+      return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
+    case "mota.quickbase":
+      if (candidate.relationshipType !== "overseen_by") return undefined;
+      return "Quickbase only suggests Council oversight because the public-body name looks committee-like; confirm the oversight edge before accepting.";
+    default:
+      return undefined;
   }
 }

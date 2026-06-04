@@ -386,7 +386,7 @@ Deno.test("relationship imports do not seed endpoint candidates when the endpoin
   assertEquals(blockedCount.count, 0);
 });
 
-Deno.test("council oversight imports seed missing direct source bodies as entity candidates", async () => {
+Deno.test("council oversight imports auto-promote safe direct source bodies and accept the relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -420,19 +420,40 @@ Deno.test("council oversight imports seed missing direct source bodies as entity
     proposedEntityId: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.seeded_oversight_direct'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
+  const entityReviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_seeded_oversight_direct",
+  });
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.child_support_guideline_commission");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(blockedCount.count, 0);
+  assertEquals(entityReviewItems.length, 0);
 });
 
 Deno.test("council oversight imports do not seed broad grouped source bodies as entity candidates", async () => {
@@ -476,7 +497,7 @@ Deno.test("council oversight imports do not seed broad grouped source bodies as 
   assertStringIncludes(blocked.detailsJson, '"state":"missing"');
 });
 
-Deno.test("council oversight imports seed scoped grouped source bodies as base entity candidates", async () => {
+Deno.test("council oversight imports auto-promote scoped grouped base entities and reopen deferred relationship review", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -513,20 +534,42 @@ Deno.test("council oversight imports seed scoped grouped source bodies as base e
     name: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.office_of_the_chief_financial_officer'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.seeded_oversight_scoped_grouped'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
+  const entityReviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_seeded_oversight_scoped_grouped",
+  });
+  const relationshipReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.council.committees.seeded_oversight_scoped_grouped",
+  });
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.office_of_the_chief_financial_officer");
   assertEquals(seededCandidate.name, "Office of the Chief Financial Officer");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.office_of_the_chief_financial_officer");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(blockedCount.count, 0);
+  assertEquals(entityReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length, 1);
+  assertEquals(relationshipReviewItems[0]?.defaultAction, "defer");
+  assertEquals(
+    relationshipReviewItems[0]?.details.rawValue,
+    "Office of the Chief Financial Officer (excluding the Office of Lottery and Gaming)",
+  );
 });
 
 Deno.test("council oversight scoped grouped bodies reopen as deferred review when the base entity is accepted", async () => {
@@ -577,6 +620,10 @@ Deno.test("council oversight scoped grouped bodies reopen as deferred review whe
   assertEquals(
     reviewItems[0]?.details.rawValue,
     "Office of Planning (including commemorative works)",
+  );
+  assertEquals(
+    reviewItems[0]?.details.whyDeferred,
+    "Scoped oversight text uses including/excluding/jointly wording, so the exact oversight edge still needs a human decision.",
   );
   assertEquals(blockedCount.count, 0);
 });
@@ -709,7 +756,7 @@ Deno.test("council oversight exact-name aliases resolve accepted canonical endpo
   );
 });
 
-Deno.test("council oversight legacy exact-name aliases can seed pending candidates for direct bodies", async () => {
+Deno.test("council oversight legacy exact-name aliases can auto-promote direct bodies and accept the relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -761,19 +808,34 @@ Deno.test("council oversight legacy exact-name aliases can seed pending candidat
     proposedEntityId: string;
     reviewStatus: string;
   } | undefined;
-  const blocked = workbench.db.prepare(
-    `select details_json as detailsJson
+  const canonicalEntity = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.bicycle_advisory_council'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.bicycle_advisory_council:overseen_by:dc.committee_on_transportation_and_the_environment'`,
+  ).get() as { relationshipId: string } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
      from reconciliation_items
      where subject_id = 'relationship.council.committees.committee_on_transportation_and_the_environment_oversight_1'
        and state = 'blocked'`,
-  ).get() as { detailsJson: string } | undefined;
+  ).get() as { count: number };
   workbench.close();
 
   assert(seededCandidate);
   assertEquals(seededCandidate.proposedEntityId, "dc.bicycle_advisory_council");
-  assertEquals(seededCandidate.reviewStatus, "pending");
-  assert(blocked);
-  assertStringIncludes(blocked.detailsJson, '"state":"pending_candidate"');
+  assertEquals(seededCandidate.reviewStatus, "accepted");
+  assertEquals(canonicalEntity?.entityId, "dc.bicycle_advisory_council");
+  assertEquals(canonicalEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.bicycle_advisory_council:overseen_by:dc.committee_on_transportation_and_the_environment",
+  );
+  assertEquals(blockedCount.count, 0);
 });
 
 Deno.test("trusted committee candidates auto-promote during import and unblock relationship review", async () => {
