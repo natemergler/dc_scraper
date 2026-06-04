@@ -1,5 +1,5 @@
 import { nowIso } from "../domain.ts";
-import { queryAll, run } from "./db.ts";
+import { queryAll, withTransaction } from "./db.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { buildRelationshipReviewDraft } from "./relationship_review.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -13,6 +13,15 @@ interface RelationshipCandidateRow {
   rawValue?: string | null;
   needsReview: number;
   reviewStatus: string;
+}
+
+interface ReconciliationStatements {
+  upsertItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  deleteBlockers: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  insertBlocker: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  deleteReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  deleteItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  upsertReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
 }
 
 export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
@@ -33,34 +42,79 @@ export function reconcileRelationshipCandidates(store: WorkbenchStore): void {
     store,
     candidates.flatMap((candidate) => [candidate.fromEntityRef, candidate.toEntityRef]),
   );
+  const statements = prepareReconciliationStatements(store);
 
-  for (const candidate of candidates) {
-    if (candidate.reviewStatus !== "pending") {
-      clearRelationshipReconciliationState(store, candidate.relationshipCandidateId);
-      continue;
+  withTransaction(store.db, () => {
+    for (const candidate of candidates) {
+      if (candidate.reviewStatus !== "pending") {
+        clearRelationshipReconciliationState(statements, candidate.relationshipCandidateId);
+        continue;
+      }
+      const fromStatus = endpointStatuses.get(candidate.fromEntityRef) ?? {
+        entityId: candidate.fromEntityRef,
+        state: "missing",
+      };
+      const toStatus = endpointStatuses.get(candidate.toEntityRef) ?? {
+        entityId: candidate.toEntityRef,
+        state: "missing",
+      };
+      const blockedEndpoints = [fromStatus, toStatus].filter((endpoint) =>
+        endpoint.state !== "accepted"
+      );
+      if (blockedEndpoints.length > 0) {
+        upsertBlockedRelationship(statements, candidate, fromStatus, toStatus);
+        continue;
+      }
+      clearRelationshipReconciliationState(statements, candidate.relationshipCandidateId);
+      upsertRelationshipReviewItem(statements, candidate);
     }
-    const fromStatus = endpointStatuses.get(candidate.fromEntityRef) ?? {
-      entityId: candidate.fromEntityRef,
-      state: "missing",
-    };
-    const toStatus = endpointStatuses.get(candidate.toEntityRef) ?? {
-      entityId: candidate.toEntityRef,
-      state: "missing",
-    };
-    const blockedEndpoints = [fromStatus, toStatus].filter((endpoint) =>
-      endpoint.state !== "accepted"
-    );
-    if (blockedEndpoints.length > 0) {
-      upsertBlockedRelationship(store, candidate, fromStatus, toStatus);
-      continue;
-    }
-    clearRelationshipReconciliationState(store, candidate.relationshipCandidateId);
-    upsertRelationshipReviewItem(store, candidate);
-  }
+  });
+}
+
+function prepareReconciliationStatements(store: WorkbenchStore): ReconciliationStatements {
+  return {
+    upsertItem: store.db.prepare(
+      `insert into reconciliation_items(subject_type, subject_id, state, reason, details_json, created_at, updated_at)
+       values('relationship_candidate', ?, 'blocked', 'unresolved_endpoints', ?, ?, ?)
+       on conflict(subject_type, subject_id) do update set
+         state = excluded.state,
+         reason = excluded.reason,
+         details_json = excluded.details_json,
+         updated_at = excluded.updated_at`,
+    ),
+    deleteBlockers: store.db.prepare(
+      "delete from reconciliation_blockers where subject_type = 'relationship_candidate' and subject_id = ?",
+    ),
+    insertBlocker: store.db.prepare(
+      `insert into reconciliation_blockers(
+         subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
+       ) values('relationship_candidate', ?, ?, 'endpoint', ?, ?, ?, ?, ?)`,
+    ),
+    deleteReviewItem: store.db.prepare(
+      "delete from review_items where item_type = 'relationship_candidate' and subject_id = ?",
+    ),
+    deleteItem: store.db.prepare(
+      "delete from reconciliation_items where subject_type = 'relationship_candidate' and subject_id = ?",
+    ),
+    upsertReviewItem: store.db.prepare(
+      `insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at)
+       values(?, 'relationship_candidate', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?,
+         coalesce((select created_at from review_items where review_item_id = ?), ?), ?)
+       on conflict(review_item_id) do update set
+         reason = excluded.reason,
+         default_action = excluded.default_action,
+         status = case
+           when review_items.status in ('resolved', 'deferred') then review_items.status
+           else 'open'
+         end,
+         details_json = excluded.details_json,
+         updated_at = excluded.updated_at`,
+    ),
+  };
 }
 
 function upsertBlockedRelationship(
-  store: WorkbenchStore,
+  statements: ReconciliationStatements,
   candidate: RelationshipCandidateRow,
   fromStatus: EndpointStatus,
   toStatus: EndpointStatus,
@@ -73,93 +127,46 @@ function upsertBlockedRelationship(
     fromEndpoint: fromStatus,
     toEndpoint: toStatus,
   };
-  run(
-    store.db,
-    `insert into reconciliation_items(subject_type, subject_id, state, reason, details_json, created_at, updated_at)
-     values('relationship_candidate', ?, 'blocked', 'unresolved_endpoints', ?, ?, ?)
-     on conflict(subject_type, subject_id) do update set
-       state = excluded.state,
-       reason = excluded.reason,
-       details_json = excluded.details_json,
-       updated_at = excluded.updated_at`,
-    [candidate.relationshipCandidateId, JSON.stringify(details), now, now],
-  );
-  run(
-    store.db,
-    "delete from reconciliation_blockers where subject_type = 'relationship_candidate' and subject_id = ?",
-    [candidate.relationshipCandidateId],
-  );
+  statements.upsertItem.run(candidate.relationshipCandidateId, JSON.stringify(details), now, now);
+  statements.deleteBlockers.run(candidate.relationshipCandidateId);
   for (const endpoint of [fromStatus, toStatus]) {
     if (endpoint.state === "accepted") continue;
-    run(
-      store.db,
-      `insert into reconciliation_blockers(
-         subject_type, subject_id, blocker_key, blocker_type, blocker_id, blocker_state, details_json, created_at, updated_at
-       ) values('relationship_candidate', ?, ?, 'endpoint', ?, ?, ?, ?, ?)`,
-      [
-        candidate.relationshipCandidateId,
-        endpoint.entityId,
-        endpoint.entityId,
-        endpoint.state,
-        JSON.stringify({ endpoint }),
-        now,
-        now,
-      ],
+    statements.insertBlocker.run(
+      candidate.relationshipCandidateId,
+      endpoint.entityId,
+      endpoint.entityId,
+      endpoint.state,
+      JSON.stringify({ endpoint }),
+      now,
+      now,
     );
   }
-  run(
-    store.db,
-    "delete from review_items where item_type = 'relationship_candidate' and subject_id = ?",
-    [candidate.relationshipCandidateId],
-  );
+  statements.deleteReviewItem.run(candidate.relationshipCandidateId);
 }
 
 function clearRelationshipReconciliationState(
-  store: WorkbenchStore,
+  statements: ReconciliationStatements,
   relationshipCandidateId: string,
 ): void {
-  run(
-    store.db,
-    "delete from reconciliation_blockers where subject_type = 'relationship_candidate' and subject_id = ?",
-    [relationshipCandidateId],
-  );
-  run(
-    store.db,
-    "delete from reconciliation_items where subject_type = 'relationship_candidate' and subject_id = ?",
-    [relationshipCandidateId],
-  );
+  statements.deleteBlockers.run(relationshipCandidateId);
+  statements.deleteItem.run(relationshipCandidateId);
 }
 
 function upsertRelationshipReviewItem(
-  store: WorkbenchStore,
+  statements: ReconciliationStatements,
   candidate: RelationshipCandidateRow,
 ): void {
   const review = buildRelationshipReviewDraft(candidate);
   const now = nowIso();
-  run(
-    store.db,
-    `insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at)
-     values(?, 'relationship_candidate', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?,
-       coalesce((select created_at from review_items where review_item_id = ?), ?), ?)
-     on conflict(review_item_id) do update set
-       reason = excluded.reason,
-       default_action = excluded.default_action,
-       status = case
-         when review_items.status in ('resolved', 'deferred') then review_items.status
-         else 'open'
-       end,
-       details_json = excluded.details_json,
-       updated_at = excluded.updated_at`,
-    [
-      review.reviewItemId,
-      candidate.relationshipCandidateId,
-      review.reason,
-      review.defaultAction,
-      review.reviewItemId,
-      JSON.stringify(review.details),
-      review.reviewItemId,
-      now,
-      now,
-    ],
+  statements.upsertReviewItem.run(
+    review.reviewItemId,
+    candidate.relationshipCandidateId,
+    review.reason,
+    review.defaultAction,
+    review.reviewItemId,
+    JSON.stringify(review.details),
+    review.reviewItemId,
+    now,
+    now,
   );
 }

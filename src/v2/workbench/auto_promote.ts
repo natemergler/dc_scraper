@@ -1,6 +1,6 @@
 import { normalizeName, nowIso } from "../domain.ts";
 import { refreshCanonicalEntityFieldsFromAcceptedCandidates } from "./canonical_entity_fields.ts";
-import { queryAll, queryOne, run } from "./db.ts";
+import { queryAll, queryOne, run, withTransaction } from "./db.ts";
 import { classifySameEntityKindMerge } from "./entity_kind_policy.ts";
 import { materializeEntityLegalRefsForAcceptedCandidate } from "./entity_legal_ref_attachments.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -89,13 +89,15 @@ export function autoPromoteSafeEntityCandidates(store: WorkbenchStore): number {
   }
 
   let acceptedCount = 0;
-  for (const [entityId, group] of grouped.entries()) {
-    if (!groupIsSafeToAutoPromote(store, entityId, group)) continue;
-    for (const candidate of group) {
-      acceptEntityCandidateDirect(store, candidate);
-      acceptedCount += 1;
+  withTransaction(store.db, () => {
+    for (const [entityId, group] of grouped.entries()) {
+      if (!groupIsSafeToAutoPromote(store, entityId, group)) continue;
+      for (const candidate of group) {
+        acceptEntityCandidateDirect(store, candidate);
+        acceptedCount += 1;
+      }
     }
-  }
+  });
 
   return acceptedCount;
 }
@@ -228,7 +230,9 @@ function acceptEntityCandidateDirect(
     candidate.candidateId,
     candidate.proposedEntityId,
   );
-  refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);
+  if (existing) {
+    refreshCanonicalEntityFieldsFromAcceptedCandidates(store, candidate.proposedEntityId);
+  }
   run(
     store.db,
     "update review_items set status = 'resolved', updated_at = ? where subject_id = ? and item_type = 'entity_candidate'",
