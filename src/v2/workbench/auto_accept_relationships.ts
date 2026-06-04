@@ -64,12 +64,15 @@ export function autoAcceptSafeRelationshipCandidates(
     store,
     candidates.flatMap((candidate) => [candidate.fromEntityRef, candidate.toEntityRef]),
   );
+  const sameFactDeferredReviewKeys = sameFactDeferredReviewKeySet(store);
   const statements = prepareAutoAcceptRelationshipStatements(store);
 
   let acceptedCount = 0;
   withTransaction(store.db, () => {
     for (const candidate of candidates) {
-      if (!isSafeToAutoAccept(store, endpointStatuses, candidate)) continue;
+      if (!isSafeToAutoAccept(store, endpointStatuses, sameFactDeferredReviewKeys, candidate)) {
+        continue;
+      }
       acceptRelationshipCandidateDirect(statements, candidate);
       acceptedCount += 1;
     }
@@ -109,6 +112,7 @@ function prepareAutoAcceptRelationshipStatements(
 function isSafeToAutoAccept(
   store: Pick<WorkbenchStore, "db">,
   endpointStatuses: ReturnType<typeof endpointStatusMap>,
+  sameFactDeferredReviewKeys: Set<string>,
   candidate: AutoAcceptRelationshipRow,
 ): boolean {
   if (candidate.reviewItemStatus !== "open") return false;
@@ -118,8 +122,41 @@ function isSafeToAutoAccept(
   if (candidate.defaultAction !== "accept") return false;
   if (candidate.whyDeferred) return false;
   if (candidate.needsReview !== 0 && !allowsNeedsReviewAutoAccept(candidate)) return false;
+  if (sameFactDeferredReviewKeys.has(relationshipFactKey(candidate))) return false;
   return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
     endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
+}
+
+function sameFactDeferredReviewKeySet(
+  store: Pick<WorkbenchStore, "db">,
+): Set<string> {
+  const rows = queryAll<{
+    fromEntityRef: string;
+    relationshipType: RelationshipType;
+    toEntityRef: string;
+  }>(
+    store.db,
+    `select distinct relationship_candidates.from_entity_ref as fromEntityRef,
+            relationship_candidates.relationship_type as relationshipType,
+            relationship_candidates.to_entity_ref as toEntityRef
+     from relationship_candidates
+     join review_items
+       on review_items.subject_id = relationship_candidates.relationship_candidate_id
+      and review_items.item_type = 'relationship_candidate'
+     where relationship_candidates.review_status = 'pending'
+       and review_items.status in ('open', 'deferred')
+       and (
+         review_items.default_action = 'defer'
+         or json_extract(review_items.details_json, '$.whyDeferred') is not null
+       )`,
+  );
+  return new Set(rows.map((row) => relationshipFactKey(row)));
+}
+
+function relationshipFactKey(
+  row: Pick<AutoAcceptRelationshipRow, "fromEntityRef" | "relationshipType" | "toEntityRef">,
+): string {
+  return `${row.fromEntityRef}\u{1f}${row.relationshipType}\u{1f}${row.toEntityRef}`;
 }
 
 function isSafeCouncilOversightExclusion(

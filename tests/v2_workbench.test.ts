@@ -1485,7 +1485,7 @@ Deno.test("Open DC acronym parentheticals reuse the base public-body identity", 
   );
 });
 
-Deno.test("Open DC known alias parentheticals reuse the known public-body identity", async () => {
+Deno.test("Open DC known alias parentheticals reuse the accepted full-label identity", async () => {
   const fetcher = async (url: string) => ({
     status: 200,
     text: async () => {
@@ -1509,8 +1509,14 @@ Deno.test("Open DC known alias parentheticals reuse the known public-body identi
   );
   const detail = result.endpointResults[1].parsed;
   assert(detail);
-  assertEquals(detail.entityCandidates?.[0]?.name, "Destination DC");
-  assertEquals(detail.entityCandidates?.[0]?.proposedEntityId, "dc.destination_dc");
+  assertEquals(
+    detail.entityCandidates?.[0]?.name,
+    "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+  );
+  assertEquals(
+    detail.entityCandidates?.[0]?.proposedEntityId,
+    "dc.washington_d_c_convention_and_tourism_corporation",
+  );
 });
 
 Deno.test("Open DC default bounded fetch prioritizes resolvable alias pages over generic early rows", async () => {
@@ -1546,8 +1552,14 @@ Deno.test("Open DC default bounded fetch prioritizes resolvable alias pages over
   );
   const detail = result.endpointResults[1].parsed;
   assert(detail);
-  assertEquals(detail.entityCandidates?.[0]?.name, "Destination DC");
-  assertEquals(detail.entityCandidates?.[0]?.proposedEntityId, "dc.destination_dc");
+  assertEquals(
+    detail.entityCandidates?.[0]?.name,
+    "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+  );
+  assertEquals(
+    detail.entityCandidates?.[0]?.proposedEntityId,
+    "dc.washington_d_c_convention_and_tourism_corporation",
+  );
 });
 
 Deno.test("Open DC default bounded fetch does not boost acronym-only pages ahead of generic early rows", async () => {
@@ -1583,7 +1595,7 @@ Deno.test("Open DC default bounded fetch does not boost acronym-only pages ahead
   );
 });
 
-Deno.test("Open DC known alias refinements fill official URLs on existing public-body entities", async () => {
+Deno.test("Open DC known alias refinements fill official URLs on existing full-label entities", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1594,12 +1606,13 @@ Deno.test("Open DC known alias refinements fill official URLs on existing public
     syntheticCustomEntitySourceResult({
       sourceId: "council.committees",
       candidateId:
-        "candidate.council.committees.relationship_council_committees_committee_on_executive_administration_and_labor_oversight_11_from_endpoint",
-      sourceItemKey: "committee-on-executive-administration-and-labor:oversight",
-      proposedEntityId: "dc.destination_dc",
-      name: "Destination DC",
+        "candidate.mota.quickbase.washington_d_c_convention_and_tourism_corporation_destination_dc",
+      sourceItemKey: "quickbase-washington-dc-convention-and-tourism-corporation-destination-dc",
+      proposedEntityId: "dc.washington_d_c_convention_and_tourism_corporation",
+      name: "Washington D.C. Convention and Tourism Corporation (Destination DC)",
       kind: "public_body",
-      observedName: "Destination DC",
+      observedName: "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+      confidence: 0.95,
     }),
     dataDir,
   );
@@ -1632,12 +1645,17 @@ Deno.test("Open DC known alias refinements fill official URLs on existing public
             official_url as officialUrl,
             merged_candidate_ids as mergedCandidateIds
      from canonical_entities
-     where entity_id = 'dc.destination_dc'`,
+     where entity_id = 'dc.washington_d_c_convention_and_tourism_corporation'`,
   ).get() as {
     name: string;
     officialUrl: string | null;
     mergedCandidateIds: string;
   };
+  const splitCanonical = workbench.db.prepare(
+    `select count(*) as count
+     from canonical_entities
+     where entity_id = 'dc.destination_dc'`,
+  ).get() as { count: number };
   const openReview = workbench.listReviewItems({
     mode: "entities",
     subjectPrefix:
@@ -1645,15 +1663,111 @@ Deno.test("Open DC known alias refinements fill official URLs on existing public
   });
   workbench.close();
 
-  assertEquals(canonical.name, "Destination DC");
+  assertEquals(
+    canonical.name,
+    "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+  );
   assertEquals(
     canonical.officialUrl,
     "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc",
   );
   assertEquals(JSON.parse(canonical.mergedCandidateIds), [
-    "candidate.council.committees.relationship_council_committees_committee_on_executive_administration_and_labor_oversight_11_from_endpoint",
+    "candidate.mota.quickbase.washington_d_c_convention_and_tourism_corporation_destination_dc",
     "candidate.open_dc.public_bodies.washington_dc_convention_and_tourism_corporation_destination_dc",
   ]);
+  assertEquals(splitCanonical.count, 0);
+  assertEquals(openReview.length, 0);
+});
+
+Deno.test("Open DC non-acronym parenthetical refinements reuse accepted-style public-body identity", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "mota.quickbase",
+      candidateId: "candidate.mota.quickbase.commission_for_national_and_community_service",
+      sourceItemKey: "quickbase-commission-for-national-and-community-service",
+      proposedEntityId: "dc.commission_for_national_and_community_service",
+      name: "Commission for National and Community Service (Serve DC)",
+      kind: "public_body",
+      observedName: "Commission for National and Community Service (Serve DC)",
+      confidence: 0.95,
+    }),
+    dataDir,
+  );
+
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://www.open-dc.gov/public-bodies":
+          return `<html><body>
+            <a href="/public-bodies/commission-national-and-community-service-serve-dc">Commission for National and Community Service (Serve DC)</a>
+          </body></html>`;
+        case "https://www.open-dc.gov/public-bodies/commission-national-and-community-service-serve-dc":
+          return `<html><body>
+            <h1 class="page-title">Commission for National and Community Service (Serve DC)</h1>
+            <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+              <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+              <div class="field-items"><div class="field-item even">ServeDC</div></div>
+            </div>
+          </body></html>`;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  const result = await getConnector("open_dc.public_bodies").run(
+    createConnectorContext({ fetcher }),
+  );
+  await workbench.importConnectorResult(result, dataDir);
+
+  const canonical = workbench.db.prepare(
+    `select name,
+            official_url as officialUrl,
+            merged_candidate_ids as mergedCandidateIds
+     from canonical_entities
+     where entity_id = 'dc.commission_for_national_and_community_service'`,
+  ).get() as {
+    name: string;
+    officialUrl: string | null;
+    mergedCandidateIds: string;
+  };
+  const splitCanonical = workbench.db.prepare(
+    `select count(*) as count
+     from canonical_entities
+     where entity_id = 'dc.commission_for_national_and_community_service_serve_dc'`,
+  ).get() as { count: number };
+  const selfAliasRelationship = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     where raw_value = 'ServeDC'`,
+  ).get() as { count: number };
+  const openReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.open_dc.public_bodies.commission_national_and_community_service_serve_dc",
+  });
+  workbench.close();
+
+  assertEquals(canonical.name, "Commission for National and Community Service (Serve DC)");
+  assertEquals(
+    canonical.officialUrl,
+    "https://www.open-dc.gov/public-bodies/commission-national-and-community-service-serve-dc",
+  );
+  assertEquals(JSON.parse(canonical.mergedCandidateIds), [
+    "candidate.mota.quickbase.commission_for_national_and_community_service",
+    "candidate.open_dc.public_bodies.commission_national_and_community_service_serve_dc",
+  ]);
+  assertEquals(splitCanonical.count, 0);
+  assertEquals(selfAliasRelationship.count, 0);
   assertEquals(openReview.length, 0);
 });
 
@@ -4474,7 +4588,7 @@ Deno.test("known relationship endpoint aliases resolve to accepted-style entity 
   );
   assertEquals(
     buildKnownEntityRef("Destination DC"),
-    "dc.destination_dc",
+    "dc.washington_d_c_convention_and_tourism_corporation",
   );
   assertEquals(
     buildKnownEntityRef("Department of Consumer and Regulatory Affairs"),

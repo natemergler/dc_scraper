@@ -257,7 +257,7 @@ const knownEntityRefs = new Map<string, string>([
     "developmental disabilities state planning council",
     "dc.developmental_disabilities_state_planning_council_dd_council",
   ],
-  ["destination dc", "dc.destination_dc"],
+  ["destination dc", "dc.washington_d_c_convention_and_tourism_corporation"],
   ["department of employment services (does)", "dc.department_of_employment_services"],
   ["department of health", "dc.dc_health"],
   ["department of health (doh)", "dc.dc_health"],

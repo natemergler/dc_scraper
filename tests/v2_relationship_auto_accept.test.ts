@@ -102,6 +102,66 @@ Deno.test("default-defer dcgis relationships stay in review instead of auto-acce
   );
 });
 
+Deno.test("same-fact relationship review blocks later source auto-accept", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_board', 'Example Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_agency', 'Example Agency', 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      relationshipCandidateId: "relationship.test.auto_accept.dcgis.same_fact_review",
+      sourceItemKey: "same-fact-dcgis-row",
+      fromEntityRef: "dc.example_board",
+      toEntityRef: "dc.example_agency",
+      relationshipType: "governed_by",
+      rawValue: "Example Agency",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "open_dc.public_bodies",
+      relationshipCandidateId: "relationship.test.auto_accept.open_dc.same_fact",
+      sourceItemKey: "same-fact-open-dc-row",
+      fromEntityRef: "dc.example_board",
+      toEntityRef: "dc.example_agency",
+      relationshipType: "governed_by",
+      rawValue: "Example Agency",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const relationship = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.example_board:governed_by:dc.example_agency'",
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    status: "open",
+    subjectPrefix: "relationship.test.auto_accept",
+  });
+  workbench.close();
+
+  assertEquals(relationship, undefined);
+  assertEquals(
+    reviewItems.map((item) => item.subjectId).sort(),
+    [
+      "relationship.test.auto_accept.dcgis.same_fact_review",
+      "relationship.test.auto_accept.open_dc.same_fact",
+    ],
+  );
+});
+
 Deno.test("accepting a prerequisite entity can auto-accept a newly safe Open DC relationship", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
