@@ -113,7 +113,7 @@ function reviewDefaultAction(
     case "dcgis.boards_commissions_councils":
       return candidate.rawValue === "Other" ? "defer" : "accept";
     case "mota.quickbase":
-      return candidate.relationshipType === "overseen_by" ? "defer" : "accept";
+      return "accept";
     case "open_dc.public_bodies":
       if (candidate.relationshipType === "authorized_by") {
         return candidate.needsReview === 1 ? "defer" : "accept";
@@ -138,9 +138,6 @@ function reviewWhyDeferred(
     case "dcgis.boards_commissions_councils":
       if (candidate.rawValue !== "Other") return undefined;
       return 'The source only labels the parent branch as "Other", so this relationship still needs a human decision.';
-    case "mota.quickbase":
-      if (candidate.relationshipType !== "overseen_by") return undefined;
-      return "Quickbase only suggests Council oversight because the public-body name looks committee-like; confirm the oversight edge before accepting.";
     default:
       return undefined;
   }

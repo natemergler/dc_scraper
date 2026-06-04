@@ -636,55 +636,6 @@ Deno.test("accepted-endpoint Council oversight relationships auto-accept when de
   assertEquals(reviewItems.length, 0);
 });
 
-Deno.test("Quickbase committee-like oversight stays deferred with an explanation", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const dataDir = join(dir, "artifacts");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  for (
-    const [entityId, name, kind] of [
-      ["dc.downtown_revitalization_committee", "Downtown Revitalization Committee", "committee"],
-      ["dc.council_of_the_district_of_columbia", "Council of the District of Columbia", "council"],
-    ] as const
-  ) {
-    workbench.db.prepare(
-      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
-    ).run(entityId, name, kind);
-  }
-
-  await workbench.importConnectorResult(
-    syntheticCustomRelationshipSourceResult({
-      sourceId: "mota.quickbase",
-      relationshipCandidateId: "relationship.test.auto_accept.quickbase.committee_like",
-      sourceItemKey: "quickbase-committee-like-row",
-      fromEntityRef: "dc.downtown_revitalization_committee",
-      toEntityRef: "dc.council_of_the_district_of_columbia",
-      relationshipType: "overseen_by",
-      rawValue: "Downtown Revitalization Committee",
-      needsReview: true,
-    }),
-    dataDir,
-  );
-
-  const relationship = workbench.db.prepare(
-    "select relationship_id as relationshipId from canonical_relationships where relationship_id = 'dc.downtown_revitalization_committee:overseen_by:dc.council_of_the_district_of_columbia'",
-  ).get() as { relationshipId: string } | undefined;
-  const reviewItems = workbench.listReviewItems({
-    mode: "relationships",
-    subjectPrefix: "relationship.test.auto_accept.quickbase.committee_like",
-  });
-  workbench.close();
-
-  assertEquals(relationship, undefined);
-  assertEquals(reviewItems.length, 1);
-  assertEquals(reviewItems[0]?.defaultAction, "defer");
-  assertEquals(
-    reviewItems[0]?.details.whyDeferred,
-    "Quickbase only suggests Council oversight because the public-body name looks committee-like; confirm the oversight edge before accepting.",
-  );
-});
-
 Deno.test("accepted-endpoint Council oversight relationships stay in review when default action is defer", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
