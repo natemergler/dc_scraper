@@ -290,7 +290,7 @@ Deno.test("source list fails fast for non-current local workbench DBs", async ()
   );
 });
 
-Deno.test("source list accepts exact current workbench shape regardless of historical schema version", async () => {
+Deno.test("source list fails fast for non-current workbench schema versions", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
@@ -299,8 +299,12 @@ Deno.test("source list accepts exact current workbench shape regardless of histo
   workbench.close();
 
   const sourceListOutput = await runSourceList(dbPath);
-  assertEquals(sourceListOutput.code, 0);
-  assertEquals(new TextDecoder().decode(sourceListOutput.stderr), "");
+  assertEquals(sourceListOutput.code, 1);
+  assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
+  assertStringIncludes(
+    new TextDecoder().decode(sourceListOutput.stderr),
+    CURRENT_WORKBENCH_REQUIRED_MESSAGE,
+  );
 });
 
 Deno.test("source list does not mutate non-current databases", async () => {
