@@ -109,8 +109,8 @@ Deno.test("workbench import bulk inserts parsed source items and candidates", as
   workbench.init();
   const sqlRunCounts = countPreparedRuns(workbench.db, [
     "insert or replace into source_items",
-    "insert or replace into entity_candidates",
-    "insert or replace into relationship_candidates",
+    "insert into entity_candidates",
+    "insert into relationship_candidates",
   ]);
 
   await workbench.importConnectorResult(bulkParsedRowsFixtureResult(1200), join(dir, "artifacts"));
@@ -133,8 +133,8 @@ Deno.test("workbench import bulk inserts parsed source items and candidates", as
   assertEquals(relationshipCandidateCount.count, 1200);
   assertEquals(lastRelationship?.rawValue, "Bulk row 1199");
   assertEquals(sqlRunCounts.get("insert or replace into source_items"), 3);
-  assertEquals(sqlRunCounts.get("insert or replace into entity_candidates"), 3);
-  assertEquals(sqlRunCounts.get("insert or replace into relationship_candidates"), 3);
+  assertEquals(sqlRunCounts.get("insert into entity_candidates"), 3);
+  assertEquals(sqlRunCounts.get("insert into relationship_candidates"), 3);
 });
 
 Deno.test("workbench bulk candidate inserts preserve existing review status", async () => {
@@ -150,23 +150,84 @@ Deno.test("workbench bulk candidate inserts preserve existing review status", as
     "update relationship_candidates set review_status = 'rejected' where relationship_candidate_id = 'relationship.test.bulk_rows.0'",
   ).run();
 
-  await workbench.importConnectorResult(bulkParsedRowsFixtureResult(2), join(dir, "artifacts"));
+  await workbench.importConnectorResult(
+    bulkParsedRowsFixtureResult(2, { rowLabelPrefix: "Refetched row" }),
+    join(dir, "artifacts"),
+  );
   const entityRows = workbench.db.prepare(
-    "select candidate_id as candidateId, review_status as reviewStatus from entity_candidates where candidate_id like 'candidate.test.bulk_rows.%' order by candidate_id",
-  ).all() as Array<{ candidateId: string; reviewStatus: string }>;
+    "select candidate_id as candidateId, name, review_status as reviewStatus from entity_candidates where candidate_id like 'candidate.test.bulk_rows.%' order by candidate_id",
+  ).all() as Array<{ candidateId: string; name: string; reviewStatus: string }>;
   const relationshipRows = workbench.db.prepare(
-    "select relationship_candidate_id as relationshipCandidateId, review_status as reviewStatus from relationship_candidates where relationship_candidate_id like 'relationship.test.bulk_rows.%' order by relationship_candidate_id",
-  ).all() as Array<{ relationshipCandidateId: string; reviewStatus: string }>;
+    "select relationship_candidate_id as relationshipCandidateId, raw_value as rawValue, review_status as reviewStatus from relationship_candidates where relationship_candidate_id like 'relationship.test.bulk_rows.%' order by relationship_candidate_id",
+  ).all() as Array<{ relationshipCandidateId: string; rawValue: string; reviewStatus: string }>;
   workbench.close();
 
   assertEquals(entityRows, [
-    { candidateId: "candidate.test.bulk_rows.0", reviewStatus: "accepted" },
-    { candidateId: "candidate.test.bulk_rows.1", reviewStatus: "pending" },
+    {
+      candidateId: "candidate.test.bulk_rows.0",
+      name: "Refetched row 0",
+      reviewStatus: "accepted",
+    },
+    {
+      candidateId: "candidate.test.bulk_rows.1",
+      name: "Refetched row 1",
+      reviewStatus: "pending",
+    },
   ]);
   assertEquals(relationshipRows, [
-    { relationshipCandidateId: "relationship.test.bulk_rows.0", reviewStatus: "rejected" },
-    { relationshipCandidateId: "relationship.test.bulk_rows.1", reviewStatus: "pending" },
+    {
+      relationshipCandidateId: "relationship.test.bulk_rows.0",
+      rawValue: "Refetched row 0",
+      reviewStatus: "rejected",
+    },
+    {
+      relationshipCandidateId: "relationship.test.bulk_rows.1",
+      rawValue: "Refetched row 1",
+      reviewStatus: "pending",
+    },
   ]);
+});
+
+Deno.test("workbench bulk candidate refetch preloads existing review statuses", async () => {
+  const dir = await Deno.makeTempDir();
+  const workbench = new Workbench(join(dir, "workbench.sqlite"));
+  workbench.init();
+
+  await workbench.importConnectorResult(bulkParsedRowsFixtureResult(1200), join(dir, "artifacts"));
+  workbench.db.prepare(
+    "update entity_candidates set review_status = 'accepted' where candidate_id = 'candidate.test.bulk_rows.0'",
+  ).run();
+  workbench.db.prepare(
+    "update relationship_candidates set review_status = 'rejected' where relationship_candidate_id = 'relationship.test.bulk_rows.0'",
+  ).run();
+
+  const preparedSql = collectPreparedSql(workbench.db);
+  await workbench.importConnectorResult(bulkParsedRowsFixtureResult(1200), join(dir, "artifacts"));
+
+  const entityStatusQueries = preparedSql.filter((sql) =>
+    sql.startsWith("select candidate_id as id")
+  );
+  const relationshipStatusQueries = preparedSql.filter((sql) =>
+    sql.startsWith("select relationship_candidate_id as id")
+  );
+  const scalarStatusSubqueryInserts = preparedSql.filter((sql) =>
+    (sql.startsWith("insert into entity_candidates") ||
+      sql.startsWith("insert into relationship_candidates")) &&
+    sql.includes("select review_status")
+  );
+  const entityStatus = workbench.db.prepare(
+    "select review_status as reviewStatus from entity_candidates where candidate_id = 'candidate.test.bulk_rows.0'",
+  ).get() as { reviewStatus: string };
+  const relationshipStatus = workbench.db.prepare(
+    "select review_status as reviewStatus from relationship_candidates where relationship_candidate_id = 'relationship.test.bulk_rows.0'",
+  ).get() as { reviewStatus: string };
+  workbench.close();
+
+  assertEquals(entityStatusQueries.length, 3);
+  assertEquals(relationshipStatusQueries.length, 3);
+  assertEquals(scalarStatusSubqueryInserts, []);
+  assertEquals(entityStatus.reviewStatus, "accepted");
+  assertEquals(relationshipStatus.reviewStatus, "rejected");
 });
 
 function progressFixtureResult(): ConnectorResult {
@@ -327,7 +388,11 @@ function importFailureFixtureResult(): ConnectorResult {
   };
 }
 
-function bulkParsedRowsFixtureResult(rowCount: number): ConnectorResult {
+function bulkParsedRowsFixtureResult(
+  rowCount: number,
+  options: { rowLabelPrefix?: string } = {},
+): ConnectorResult {
+  const rowLabelPrefix = options.rowLabelPrefix ?? "Bulk row";
   return {
     source: {
       sourceId: "test.import.bulk_rows",
@@ -357,18 +422,18 @@ function bulkParsedRowsFixtureResult(rowCount: number): ConnectorResult {
         items: Array.from({ length: rowCount }, (_, index) => ({
           itemKey: `row-${index}`,
           itemType: "fixture_row",
-          title: `Bulk row ${index}`,
-          body: { name: `Bulk row ${index}` },
+          title: `${rowLabelPrefix} ${index}`,
+          body: { name: `${rowLabelPrefix} ${index}` },
         })),
         entityCandidates: Array.from({ length: rowCount }, (_, index) => ({
           candidateId: `candidate.test.bulk_rows.${index}`,
           sourceItemKey: `row-${index}`,
           proposedEntityId: `dc.bulk_rows_${index}`,
-          name: `Bulk row ${index}`,
+          name: `${rowLabelPrefix} ${index}`,
           kind: "board",
           evidence: [{
             fieldPath: "name",
-            observedValue: `Bulk row ${index}`,
+            observedValue: `${rowLabelPrefix} ${index}`,
           }],
         })),
         relationshipCandidates: Array.from({ length: rowCount }, (_, index) => ({
@@ -377,11 +442,11 @@ function bulkParsedRowsFixtureResult(rowCount: number): ConnectorResult {
           fromEntityRef: `dc.bulk_rows_${index}`,
           toEntityRef: "dc.bulk_rows_parent",
           relationshipType: "governed_by",
-          rawValue: `Bulk row ${index}`,
+          rawValue: `${rowLabelPrefix} ${index}`,
           needsReview: false,
           evidence: [{
             fieldPath: "parent",
-            observedValue: `Bulk row ${index}`,
+            observedValue: `${rowLabelPrefix} ${index}`,
           }],
         })),
       },
@@ -469,4 +534,14 @@ function countPreparedRuns(
     return statement;
   }) as typeof db.prepare;
   return counts;
+}
+
+function collectPreparedSql(db: Workbench["db"]): string[] {
+  const sqls: string[] = [];
+  const originalPrepare = db.prepare.bind(db);
+  db.prepare = ((sql: string) => {
+    sqls.push(sql.trimStart());
+    return originalPrepare(sql);
+  }) as typeof db.prepare;
+  return sqls;
 }
