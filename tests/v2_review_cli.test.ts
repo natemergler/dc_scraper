@@ -570,6 +570,109 @@ Deno.test("interactive review starts with an inbox summary for the current slice
   );
 });
 
+Deno.test("interactive review gives deferred relationship packets packet-level inbox titles", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.behavioral_health_planning_council",
+    "Behavioral Health Planning Council",
+    "council",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.health_literacy_council",
+    "Health Literacy Council",
+    "council",
+  );
+  seedAcceptedEntity(workbench, "dc.department_of_buildings", "Department of Buildings", "agency");
+  seedAcceptedEntity(workbench, "dc.committee_on_health", "Committee on Health", "committee");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_named.one",
+      sourceItemKey: "review-cli-defer-health-named-one",
+      fromEntityRef: "dc.behavioral_health_planning_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Behavioral Health Planning Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_named.two",
+      sourceItemKey: "review-cli-defer-health-named-two",
+      fromEntityRef: "dc.health_literacy_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Health Literacy Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_cli.defer_packets.health_scoped",
+      sourceItemKey: "review-cli-defer-health-scoped",
+      fromEntityRef: "dc.department_of_buildings",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Department of Buildings (including construction codes)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "--mode",
+      "relationships",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("q\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Decision inbox");
+  assertStringIncludes(
+    stdout,
+    "1. [recommended] Committee on Health named oversight - council.committees overseen_by [default defer; packet 2 open]",
+  );
+  assertStringIncludes(
+    stdout,
+    "Committee on Health scoped oversight - council.committees overseen_by [default defer; packet 1 open]",
+  );
+});
+
 Deno.test("interactive review prioritizes decisions that unblock relationships", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

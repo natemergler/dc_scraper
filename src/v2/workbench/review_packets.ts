@@ -14,6 +14,8 @@ export interface ReviewPacketRecord {
   deferredCount: number;
   relationshipType?: string;
   refType?: string;
+  toEntityRef?: string;
+  whyDeferred?: string;
   subjectPrefix?: string;
   reviewItemIds: string[];
 }
@@ -75,6 +77,12 @@ export function reviewPacketsFromItems(
         ? item.details.relationshipType
         : undefined,
       refType: typeof item.details.refType === "string" ? item.details.refType : undefined,
+      toEntityRef: typeof item.details.toEntityRef === "string"
+        ? item.details.toEntityRef
+        : undefined,
+      whyDeferred: typeof item.details.whyDeferred === "string"
+        ? item.details.whyDeferred
+        : undefined,
       reviewItemIds: [item.reviewItemId],
     });
     packetItems.set(key, [item]);
@@ -113,6 +121,8 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
     `status: open=${packet.openCount}, deferred=${packet.deferredCount}`,
     packet.relationshipType ? `relationship_type: ${packet.relationshipType}` : undefined,
     packet.refType ? `ref_type: ${packet.refType}` : undefined,
+    packet.toEntityRef ? `to_entity_ref: ${packet.toEntityRef}` : undefined,
+    packet.whyDeferred ? `why_deferred: ${packet.whyDeferred}` : undefined,
     packet.subjectPrefix ? `subject_prefix: ${packet.subjectPrefix}` : undefined,
     `packet_id: ${packet.packetId}`,
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -120,7 +130,9 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
 
 export function renderReviewPacketHeader(packet: ReviewPacketRecord): string {
   const scope = packet.relationshipType
-    ? `${packet.sourceId} ${packet.relationshipType}`
+    ? packet.toEntityRef
+      ? `${packet.sourceId} ${packet.relationshipType} -> ${packet.toEntityRef}`
+      : `${packet.sourceId} ${packet.relationshipType}`
     : packet.refType
     ? `${packet.sourceId} ${packet.refType}`
     : `${packet.sourceId} ${packet.itemType}`;
@@ -135,7 +147,16 @@ function reviewPacketKey(item: ReviewItemRecord, sourceId: string): string {
     item.defaultAction,
     typeof item.details.relationshipType === "string" ? item.details.relationshipType : "",
     typeof item.details.refType === "string" ? item.details.refType : "",
+    ...deferredRelationshipPacketContext(item),
   ].join("|");
+}
+
+function deferredRelationshipPacketContext(item: ReviewItemRecord): string[] {
+  if (item.itemType !== "relationship_candidate" || item.defaultAction !== "defer") return [];
+  return [
+    typeof item.details.toEntityRef === "string" ? item.details.toEntityRef : "",
+    typeof item.details.whyDeferred === "string" ? item.details.whyDeferred : "",
+  ];
 }
 
 function countPacketDebt<K extends "itemType" | "sourceId", P extends string>(

@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { Workbench } from "../src/v2/workbench.ts";
 import { listReviewPackets } from "../src/v2/workbench/review_packets.ts";
@@ -325,6 +325,137 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertEquals(segmentPrefixBody.packets[0].nextCommand, undefined);
 });
 
+Deno.test("review packets split deferred relationship work by target and defer reason", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  seedAcceptedEntity(
+    workbench,
+    "dc.behavioral_health_planning_council",
+    "Behavioral Health Planning Council",
+    "council",
+  );
+  seedAcceptedEntity(
+    workbench,
+    "dc.health_literacy_council",
+    "Health Literacy Council",
+    "council",
+  );
+  seedAcceptedEntity(workbench, "dc.department_of_buildings", "Department of Buildings", "agency");
+  seedAcceptedEntity(
+    workbench,
+    "dc.law_revision_commission",
+    "Law Revision Commission",
+    "commission",
+  );
+  seedAcceptedEntity(workbench, "dc.committee_on_health", "Committee on Health", "committee");
+  seedAcceptedEntity(workbench, "dc.committee_of_the_whole", "Committee of the Whole", "committee");
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_packets.council.health_named.one",
+      sourceItemKey: "review-packet-council-health-named-one",
+      fromEntityRef: "dc.behavioral_health_planning_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Behavioral Health Planning Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_packets.council.health_named.two",
+      sourceItemKey: "review-packet-council-health-named-two",
+      fromEntityRef: "dc.health_literacy_council",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Health Literacy Council",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_packets.council.health_scoped",
+      sourceItemKey: "review-packet-council-health-scoped",
+      fromEntityRef: "dc.department_of_buildings",
+      toEntityRef: "dc.committee_on_health",
+      relationshipType: "overseen_by",
+      rawValue: "Department of Buildings (including construction codes)",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.test.review_packets.council.whole_named",
+      sourceItemKey: "review-packet-council-whole-named",
+      fromEntityRef: "dc.law_revision_commission",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Law Revision Commission",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await runDc([
+    "review",
+    "packets",
+    "--mode",
+    "relationships",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+    "--json",
+  ]);
+
+  assertEquals(output.code, 0);
+  const body = JSON.parse(new TextDecoder().decode(output.stdout)) as {
+    count: number;
+    packets: Array<{
+      sourceId: string;
+      relationshipType?: string;
+      count: number;
+      toEntityRef?: string;
+      whyDeferred?: string;
+    }>;
+  };
+  assertEquals(body.count, 3);
+  const namedHealthPacket = body.packets.find((packet) =>
+    packet.toEntityRef === "dc.committee_on_health" && packet.count === 2
+  );
+  assertEquals(namedHealthPacket?.sourceId, "council.committees");
+  assertEquals(namedHealthPacket?.relationshipType, "overseen_by");
+  assertStringIncludes(
+    namedHealthPacket?.whyDeferred ?? "",
+    "conservative Council oversight defer list",
+  );
+  assert(
+    body.packets.some((packet) =>
+      packet.count === 1 &&
+      packet.toEntityRef === "dc.committee_of_the_whole" &&
+      (packet.whyDeferred ?? "").includes("conservative Council oversight defer list")
+    ),
+  );
+  assert(
+    body.packets.some((packet) =>
+      packet.count === 1 &&
+      packet.toEntityRef === "dc.committee_on_health" &&
+      (packet.whyDeferred ?? "").includes("Scoped oversight text")
+    ),
+  );
+});
+
 Deno.test("review packet limits apply after grouping related work", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -583,7 +714,7 @@ Deno.test("interactive review shows packet context before the current item", asy
   const stdout = new TextDecoder().decode(output.stdout);
   assertStringIncludes(
     stdout,
-    "Packet: test.review_packets.relationships overseen_by (2 item(s); open=2, deferred=0)",
+    "Packet: test.review_packets.relationships overseen_by -> dc.alt_agency (2 item(s); open=2, deferred=0)",
   );
   assertStringIncludes(stdout, "Review stopped. 2 item(s) remain.");
 });
