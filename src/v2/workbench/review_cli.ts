@@ -6,16 +6,13 @@ import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
 import { appendResolutionEvents } from "./resolution.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
+import { canBatchAcceptReviewItem, isScopedDefaultDeferBatch } from "./review_batch.ts";
 import {
   renderReviewPacketHeader,
   type ReviewPacketRecord,
   reviewPacketsFromItems,
 } from "./review_packets.ts";
-import {
-  canBatchAcceptReviewItem,
-  isHumanDecisionReviewItem,
-  type ReviewItemFilters,
-} from "./review.ts";
+import { isHumanDecisionReviewItem, type ReviewItemFilters } from "./review.ts";
 import {
   reviewEvidence,
   type ReviewEvidenceRow,
@@ -23,10 +20,7 @@ import {
   reviewSubject,
 } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
-import {
-  downstreamBlockedCountByReviewItem,
-  type UnresolvedDecisionNode,
-} from "./unresolved_work.ts";
+import { buildUnresolvedWorkGraph, type UnresolvedDecisionNode } from "./unresolved_work.ts";
 
 interface ReviewSubjectContext {
   title: string;
@@ -150,26 +144,9 @@ function buildInteractiveReviewSnapshot(
   const browseOnlyItemCount = allItems.length - items.length;
   const itemsByReviewItemId = new Map(items.map((item) => [item.reviewItemId, item]));
   const packets = reviewPacketsFromItems(workbench, items);
-  const decisions = items.filter(isHumanDecisionReviewItem).map((item) => ({
-    nodeId: `decision.${item.reviewItemId}`,
-    reviewItemId: item.reviewItemId,
-    itemType: item.itemType,
-    subjectId: item.subjectId,
-    sourceId: "unknown",
-    reason: item.reason,
-    defaultAction: item.defaultAction,
-    status: item.status,
-    details: item.details,
-    downstreamBlockedCount: 0,
-    blockedSubjectIds: [],
-  } satisfies UnresolvedDecisionNode));
-  const downstreamBlockedCount = downstreamBlockedCountByReviewItem(workbench, items);
-  for (const decision of decisions) {
-    decision.downstreamBlockedCount = downstreamBlockedCount.get(decision.reviewItemId) ?? 0;
-  }
-  decisions.sort((left, right) =>
-    right.downstreamBlockedCount - left.downstreamBlockedCount ||
-    left.reviewItemId.localeCompare(right.reviewItemId)
+  const graph = buildUnresolvedWorkGraph(workbench);
+  const decisions = graph.decisions.filter((decision) =>
+    itemsByReviewItemId.has(decision.reviewItemId)
   );
   const decisionsByReviewItemId = new Map(
     decisions.map((decision) => [decision.reviewItemId, decision]),
@@ -526,15 +503,6 @@ export async function runBatchDeferDefault(
   if (skipped > 0) {
     console.log(`Skipped ${skipped} item(s) whose default action was not defer.`);
   }
-}
-
-function isScopedDefaultDeferBatch(filters: ReviewItemFilters): boolean {
-  return Boolean(
-    filters.mode &&
-      filters.subjectPrefix &&
-      (filters.type || filters.relationshipType || filters.rawValue || filters.rawValueContains ||
-        filters.refType),
-  );
 }
 
 function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
