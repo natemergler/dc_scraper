@@ -3839,11 +3839,130 @@ Deno.test("public body comparison report separates likely variants from exact ov
   assertStringIncludes(humanText, "Shared exact names: 1");
   assertStringIncludes(
     humanText,
-    "Conservative variant matches (review leads, not exact overlaps): 1",
+    "Conservative variant matches (linkage leads, not exact overlaps): 1",
   );
   assertStringIncludes(
     humanText,
     "Advisory Board on Veterans Affairs for the District of Columbia (ABVA)",
+  );
+});
+
+Deno.test("public body comparison surfaces council body and board suffix leads without merging them", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const timestamp = new Date().toISOString();
+
+  const sourceDefs = [
+    {
+      sourceId: "council.committees",
+      title: "Council Committees",
+      candidates: [{ name: "Metropolitan Washington Airports Authority", kind: "public_body" }],
+    },
+    {
+      sourceId: "dcgis.boards_commissions_councils",
+      title: "DCGIS Boards",
+      candidates: [{
+        name: "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+        kind: "board",
+      }],
+    },
+  ] as const;
+
+  for (const source of sourceDefs) {
+    const endpointId = `${source.sourceId}.endpoint`;
+    const runId = `${source.sourceId}.run`;
+    const artifactId = `${source.sourceId}.artifact`;
+    workbench.db.prepare(
+      "insert into sources(source_id, title, kind, access_method, base_url, updated_at) values(?, ?, ?, ?, ?, ?)",
+    ).run(
+      source.sourceId,
+      source.title,
+      "web",
+      "http",
+      `https://${source.sourceId}.example`,
+      timestamp,
+    );
+    workbench.db.prepare(
+      "insert into source_endpoints(endpoint_id, source_id, title, kind, url, method, capture_mode, updated_at) values(?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      endpointId,
+      source.sourceId,
+      `${source.title} endpoint`,
+      "html",
+      `https://${source.sourceId}.example/data`,
+      "GET",
+      "full",
+      timestamp,
+    );
+    workbench.db.prepare(
+      "insert into source_runs(run_id, source_id, endpoint_id, started_at, finished_at, status) values(?, ?, ?, ?, ?, ?)",
+    ).run(runId, source.sourceId, endpointId, timestamp, timestamp, "success");
+    workbench.db.prepare(
+      "insert into source_artifacts(artifact_id, run_id, endpoint_id, kind, path, fetched_url, content_hash, size_bytes, created_at) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      artifactId,
+      runId,
+      endpointId,
+      "page",
+      `${dir}/${source.sourceId}.html`,
+      `https://${source.sourceId}.example/data`,
+      `${source.sourceId}-hash`,
+      128,
+      timestamp,
+    );
+
+    for (const [index, candidate] of source.candidates.entries()) {
+      const sourceItemId = `${source.sourceId}.item.${index + 1}`;
+      workbench.db.prepare(
+        "insert into source_items(source_item_id, source_id, endpoint_id, run_id, artifact_id, item_key, item_type, title, body_json) values(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        sourceItemId,
+        source.sourceId,
+        endpointId,
+        runId,
+        artifactId,
+        `item-${index + 1}`,
+        "row",
+        candidate.name,
+        "{}",
+      );
+      workbench.db.prepare(
+        "insert into entity_candidates(candidate_id, source_item_id, proposed_entity_id, name, normalized_name, kind, raw_kind, review_status) values(?, ?, ?, ?, ?, ?, ?, ?)",
+      ).run(
+        `candidate.${source.sourceId}.${index + 1}`,
+        sourceItemId,
+        buildEntityId(candidate.name),
+        candidate.name,
+        candidate.name,
+        candidate.kind,
+        candidate.kind,
+        "pending",
+      );
+    }
+  }
+
+  const report = workbench.comparePublicBodies();
+  workbench.close();
+
+  assertEquals(report.sharedNameCount, 0);
+  assertEquals(report.conservativeVariantMatchCount, 1);
+  assertEquals(
+    report.conservativeVariantMatches[0]?.variantName,
+    "Metropolitan Washington Airports Authority",
+  );
+  assertEquals(report.conservativeVariantMatches[0]?.matchKinds, ["governance_suffix"]);
+  assertEquals(report.conservativeVariantMatches[0]?.sourceIds, [
+    "council.committees",
+    "dcgis.boards_commissions_councils",
+  ]);
+  assertEquals(
+    report.conservativeVariantMatches[0]?.names.map((row) => row.displayName),
+    [
+      "Metropolitan Washington Airports Authority",
+      "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    ],
   );
 });
 

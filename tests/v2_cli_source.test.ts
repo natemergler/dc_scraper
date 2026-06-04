@@ -780,7 +780,7 @@ Deno.test("source compare public-bodies labels conservative variant matches sepa
   assertStringIncludes(output, "Shared exact names: 0");
   assertStringIncludes(
     output,
-    "Conservative variant matches (review leads, not exact overlaps): 1",
+    "Conservative variant matches (linkage leads, not exact overlaps): 1",
   );
   assertStringIncludes(
     output,
