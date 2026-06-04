@@ -1611,6 +1611,68 @@ Deno.test("interactive review auto-accepts accepted-endpoint additive relationsh
   assertEquals(reviewText.includes("Decision inbox"), false);
 });
 
+Deno.test("interactive review auto-accepts safe legal refs before rendering", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const legalRefId = "legal.test.review_cli.safe_before_review";
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(legalRefId, "D.C. Law 22-155", "https://example.com/legal", {
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.db.prepare("update legal_refs set review_status = 'pending' where legal_ref_id = ?")
+    .run(legalRefId);
+  workbench.db.prepare(
+    "update review_items set status = 'open' where subject_id = ? and item_type = 'legal_ref'",
+  ).run(legalRefId);
+  workbench.close();
+
+  const reviewRun = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "legal",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  await reviewRun.stdin.close();
+  const reviewOutput = await reviewRun.output();
+  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  const reviewError = new TextDecoder().decode(reviewOutput.stderr);
+  assertEquals(reviewOutput.code, 0, reviewError);
+  assertStringIncludes(reviewText, "No review items remain.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const legalRef = reopened.db.prepare(
+    "select review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+  ).get(legalRefId) as { reviewStatus: string };
+  const openItems = reopened.listReviewItems({ mode: "legal", status: "open" });
+  reopened.close();
+
+  assertEquals(legalRef.reviewStatus, "accepted");
+  assertEquals(openItems.length, 0);
+});
+
 Deno.test("interactive review does not resurface a deferred item in the same session", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

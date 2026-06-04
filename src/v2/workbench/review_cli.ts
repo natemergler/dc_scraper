@@ -1,11 +1,9 @@
 import { dcCommand } from "../command_prefix.ts";
 import type { ResolutionEventInput, ReviewItemRecord } from "../domain.ts";
 import { type Workbench } from "../workbench.ts";
-import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
-import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
 import { type EndpointStatus, endpointStatusMap } from "./endpoint_status.ts";
+import { materializeReviewReadyFacts } from "./materialization.ts";
 import { appendResolutionEvents } from "./resolution.ts";
-import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import { renderReviewCommand } from "./review_command_args.ts";
 import { canBatchAcceptReviewItem, isScopedDefaultDeferBatch } from "./review_batch.ts";
 import {
@@ -55,9 +53,7 @@ export async function runInteractiveReview(
   const activeFilters: ReviewItemFilters = filters.status === undefined
     ? { ...filters, status: "open" }
     : filters;
-  autoPromoteSafeEntityCandidates(workbench);
-  reconcileRelationshipCandidates(workbench);
-  autoAcceptSafeRelationshipCandidates(workbench);
+  materializeReviewReadyFacts(workbench);
   let stickyPacketId: string | undefined;
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
