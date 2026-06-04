@@ -78,7 +78,8 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   workbench.close();
   assertEquals(first.schemaVersion, 12);
   assertEquals(second.schemaVersion, 12);
-  assertEquals(second.migrations.length, 12);
+  assertEquals(second.schemaMarkers.length, 1);
+  assertEquals(second.schemaMarkers[0].name, "v2_current_workbench_schema");
   assertEquals(busyTimeout, DEFAULT_SQLITE_BUSY_TIMEOUT_MS);
   assertEquals(journalMode, "wal");
   for (
@@ -429,16 +430,7 @@ Deno.test("source list fails fast for unsupported older workbench schemas", asyn
   const dbPath = join(dir, "data", "workbench.sqlite");
   const workbench = new Workbench(dbPath);
   workbench.init();
-  workbench.db.exec(`
-update schema_migrations
-set name = 'v2_public_body_seat_relationships'
-where version = 7;
-update schema_migrations
-set name = 'v2_public_body_seat_status_relationships'
-where version = 8;
-drop table reconciliation_items;
-drop table reconciliation_blockers;
-`);
+  workbench.db.exec("update schema_migrations set name = 'v2_old_migration_ledger'");
   workbench.close();
 
   const sourceListOutput = await new Deno.Command(Deno.execPath(), {
@@ -458,6 +450,37 @@ drop table reconciliation_blockers;
   }).output();
   assertEquals(sourceListOutput.code, 1);
   assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
+  assertStringIncludes(
+    new TextDecoder().decode(sourceListOutput.stderr),
+    "Unsupported local workbench schema version 12. Rebuild this ignored local DB or point --db at a current workbench.",
+  );
+});
+
+Deno.test("source list rejects a current schema marker when required tables are missing", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "data", "workbench.sqlite");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.exec("drop table reconciliation_items");
+  workbench.close();
+
+  const sourceListOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "source",
+      "list",
+      "--db",
+      dbPath,
+    ],
+  }).output();
+
+  assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
     new TextDecoder().decode(sourceListOutput.stderr),
     "Unsupported local workbench schema version 12. Rebuild this ignored local DB or point --db at a current workbench.",

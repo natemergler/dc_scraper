@@ -72,8 +72,8 @@ async function renderAuditSnapshot(
   }
   console.log(`DB: ${meta.dbPath}`);
   console.log(`Schema version: ${meta.schemaVersion}`);
-  for (const migration of meta.migrations) {
-    console.log(`- ${migration.version} ${migration.name} (${migration.appliedAt})`);
+  for (const marker of meta.schemaMarkers) {
+    console.log(`Schema marker: ${marker.version} ${marker.name} (${marker.appliedAt})`);
   }
   console.log(mode === "status" ? renderWorkbenchStatus(status) : renderWorkbenchAudit(status));
 }
