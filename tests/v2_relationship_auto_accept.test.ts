@@ -399,6 +399,75 @@ Deno.test("Quickbase Mayoral Appointee authority seeds Mayor and auto-accepts un
   assertEquals(remainingReviewItems.length, 0);
 });
 
+Deno.test("Quickbase designating-only authority seats do not create board governance review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Example Designating Only Board","Office of the Chief of Staff (COS) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`.trim();
+  const fetcher = async (url: string) => {
+    const body = (() => {
+      switch (url) {
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+          return quickbaseFixture;
+        case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+          return csv;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    })();
+    return {
+      status: 200,
+      text: async () => body,
+      json: async <T>() => JSON.parse(body) as T,
+    };
+  };
+
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const seatId = buildEntityId(
+    "Example Designating Only Board Office of the Chief of Staff Designee",
+  );
+  const chiefOfStaff = workbench.db.prepare(
+    "select entity_id as entityId, name, kind, review_status as reviewStatus from canonical_entities where entity_id = 'dc.office_of_the_chief_of_staff'",
+  ).get() as { entityId: string; name: string; kind: string; reviewStatus: string } | undefined;
+  const acceptedRelationships = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const governedByRows = workbench.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'governed_by'",
+  ).all() as Array<{ relationshipId: string }>;
+  const remainingGovernanceReviewItems = workbench.listReviewItems({
+    mode: "relationships",
+    subjectPrefix: "relationship.mota.quickbase",
+    relationshipType: "governed_by",
+  });
+  workbench.close();
+
+  assertEquals(chiefOfStaff, {
+    entityId: "dc.office_of_the_chief_of_staff",
+    name: "Office of the Chief of Staff",
+    kind: "office",
+    reviewStatus: "accepted",
+  });
+  assertEquals(acceptedRelationships.map((row) => row.relationshipId), [
+    `dc.example_designating_only_board:has_seat:${seatId}`,
+    `${seatId}:appointed_by:dc.mayor`,
+    `${seatId}:designated_by:dc.office_of_the_chief_of_staff`,
+    `${seatId}:has_status:status.filled`,
+  ]);
+  assertEquals(governedByRows.length, 0);
+  assertEquals(remainingGovernanceReviewItems.length, 0);
+});
+
 Deno.test("Quickbase accepted-endpoint appointee observation relationships auto-accept during import", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
