@@ -633,7 +633,7 @@ Deno.test("status routes human decisions to review but browse-only additions to 
   );
 });
 
-Deno.test("status surfaces public-body governance suffix leads without treating them as decisions", async () => {
+Deno.test("status surfaces public-body governance suffix leads before they are review-ready", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");

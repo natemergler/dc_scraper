@@ -3,6 +3,10 @@ import {
   councilOversightReviewPolicy,
   defaultActionForCouncilOversightTarget,
 } from "../connectors/shared.ts";
+import {
+  isPublicBodyLinkageRelationshipCandidateId,
+  publicBodyLinkageWhyDeferred,
+} from "./public_body_linkage.ts";
 
 export interface RelationshipReviewCandidate {
   relationshipCandidateId: string;
@@ -47,6 +51,9 @@ export function buildRelationshipReviewDraft(
 }
 
 function reviewItemSuffix(candidate: RelationshipReviewCandidate): string {
+  if (isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) {
+    return "public-body-linkage";
+  }
   switch (candidate.sourceId) {
     case "council.committees":
       return "committee";
@@ -64,6 +71,9 @@ function reviewItemSuffix(candidate: RelationshipReviewCandidate): string {
 }
 
 function reviewReason(candidate: RelationshipReviewCandidate): string {
+  if (isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) {
+    return "Review public-body governance-suffix linkage lead";
+  }
   switch (candidate.sourceId) {
     case "council.committees":
       if (candidate.relationshipType === "overseen_by") {
@@ -101,6 +111,9 @@ function reviewReason(candidate: RelationshipReviewCandidate): string {
 function reviewDefaultAction(
   candidate: RelationshipReviewCandidate,
 ): "accept" | "defer" {
+  if (isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) {
+    return "defer";
+  }
   switch (candidate.sourceId) {
     case "council.committees":
       if (candidate.relationshipType === "member_of" && candidate.needsReview === 1) {
@@ -131,6 +144,9 @@ function reviewWhyDeferred(
   defaultAction: "accept" | "defer",
 ): string | undefined {
   if (defaultAction !== "defer") return undefined;
+  if (isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) {
+    return publicBodyLinkageWhyDeferred();
+  }
   switch (candidate.sourceId) {
     case "council.committees":
       if (candidate.relationshipType === "member_of" && candidate.needsReview === 1) {
