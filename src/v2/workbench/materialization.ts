@@ -1,6 +1,7 @@
 import { autoAcceptSafeLegalRefs } from "./auto_accept_legal_refs.ts";
 import { autoAcceptSafeRelationshipCandidates } from "./auto_accept_relationships.ts";
 import { autoPromoteSafeEntityCandidates } from "./auto_promote.ts";
+import { refreshPublicBodyLinkageCandidates } from "./public_body_linkage.ts";
 import { reconcileRelationshipCandidates } from "./reconciliation.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -22,6 +23,7 @@ export function materializePrerequisiteFacts(
   options.onStep?.("legal-auto-accept");
   autoPromoteSafeEntityCandidates(store);
   options.onStep?.("entity-auto-promote");
+  refreshPublicBodyLinkageCandidates(store);
   reconcileRelationshipCandidates(store);
   options.onStep?.("relationship-reconciliation");
 }

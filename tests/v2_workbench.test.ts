@@ -4079,6 +4079,133 @@ Deno.test("public body comparison surfaces council body and board suffix leads w
   );
 });
 
+Deno.test("governance suffix public-body leads become deferred relationship review work", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  async function importComparisonCandidate(input: {
+    sourceId: string;
+    title: string;
+    candidateId: string;
+    name: string;
+    kind: string;
+    officialUrl?: string;
+  }) {
+    await workbench.importConnectorResult({
+      source: {
+        sourceId: input.sourceId,
+        title: input.title,
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: `https://example.com/${input.sourceId}`,
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: `${input.sourceId}.main`,
+          sourceId: input.sourceId,
+          title: `${input.title} rows`,
+          kind: "fixture",
+          url: `https://example.com/${input.sourceId}`,
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [{
+          kind: "rows",
+          extension: "json",
+          fetchedUrl: `https://example.com/${input.sourceId}`,
+          contentText: JSON.stringify({ name: input.name }),
+        }],
+        parsed: {
+          items: [{
+            itemKey: `${input.candidateId}.row`,
+            itemType: "fixture_row",
+            title: input.name,
+            body: { name: input.name },
+          }],
+          entityCandidates: [{
+            candidateId: input.candidateId,
+            sourceItemKey: `${input.candidateId}.row`,
+            proposedEntityId: buildEntityId(input.name),
+            name: input.name,
+            kind: input.kind,
+            officialUrl: input.officialUrl,
+            confidence: 1,
+            evidence: [{
+              fieldPath: "name",
+              observedValue: input.name,
+            }],
+          }],
+        },
+      }],
+    }, dataDir);
+  }
+
+  await importComparisonCandidate({
+    sourceId: "council.committees",
+    title: "Council Committees Fixture",
+    candidateId: "candidate.council.committees.mwaa",
+    name: "Metropolitan Washington Airports Authority",
+    kind: "public_body",
+  });
+  await importComparisonCandidate({
+    sourceId: "dcgis.boards_commissions_councils",
+    title: "DCGIS Fixture",
+    candidateId: "candidate.dcgis.boards_commissions_councils.mwaa_board",
+    name: "Metropolitan Washington Airports Authority Board of Directors",
+    kind: "board",
+    officialUrl: "https://www.mwaa.com/about/board-directors",
+  });
+
+  const relationship = workbench.db.prepare(
+    `select relationship_candidate_id as relationshipCandidateId,
+            from_entity_ref as fromEntityRef,
+            to_entity_ref as toEntityRef,
+            relationship_type as relationshipType,
+            needs_review as needsReview,
+            review_status as reviewStatus
+     from relationship_candidates
+     where relationship_candidate_id like 'relationship.public_body_linkage.%'`,
+  ).get() as {
+    relationshipCandidateId: string;
+    fromEntityRef: string;
+    toEntityRef: string;
+    relationshipType: string;
+    needsReview: number;
+    reviewStatus: string;
+  } | undefined;
+  assert(relationship);
+  assertEquals(relationship.fromEntityRef, "dc.metropolitan_washington_airports_authority");
+  assertEquals(
+    relationship.toEntityRef,
+    "dc.metropolitan_washington_airports_authority_board_of_directors",
+  );
+  assertEquals(relationship.relationshipType, "governed_by");
+  assertEquals(relationship.needsReview, 1);
+  assertEquals(relationship.reviewStatus, "pending");
+
+  const reviewItem = workbench.listReviewItems({
+    type: "relationship_candidate",
+    status: "open",
+  }).find((item) => item.subjectId === relationship.relationshipCandidateId);
+  assert(reviewItem);
+  assertEquals(reviewItem.defaultAction, "defer");
+  assertEquals(reviewItem.reason, "Review public-body governance-suffix linkage lead");
+  assertEquals(
+    reviewItem.details.whyDeferred,
+    "The source names a related board or advisory board, but suffix similarity does not prove these are the same entity or that the link should be materialized.",
+  );
+
+  const accepted = workbench.db.prepare(
+    "select count(*) as count from canonical_relationships where relationship_type = 'governed_by' and from_entity_id = ? and to_entity_id = ?",
+  ).get(relationship.fromEntityRef, relationship.toEntityRef) as { count: number };
+  assertEquals(accepted.count, 0);
+  workbench.close();
+});
+
 Deno.test("public body comparison report stays usable when Quickbase is unfetched", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
