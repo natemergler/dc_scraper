@@ -2,6 +2,7 @@ import { dcCommand } from "./command_prefix.ts";
 import type { EntitySearchResult, EntityView, ReviewItemRecord } from "./domain.ts";
 
 export interface EntityCommandOptions {
+  dbPath?: string;
   json?: boolean;
 }
 
@@ -27,12 +28,15 @@ export async function handleEntityCommand(
     }
     const rows = await deps.searchEntities(readFreeTextArgument(args, 2));
     if (options.json) {
-      console.log(JSON.stringify(rows, null, 2));
+      console.log(
+        JSON.stringify(rows.map((row) => entitySearchJsonRecord(row, options.dbPath)), null, 2),
+      );
       return true;
     }
     for (const row of rows) {
       const placeholderTag = row.isPlaceholder ? " placeholder" : "";
       console.log(`${row.entityId} ${row.name} [${row.kind}] ${row.reviewStatus}${placeholderTag}`);
+      console.log(`  Show: ${entityShowCommand(row.entityId, options.dbPath)}`);
     }
     return true;
   }
@@ -45,13 +49,38 @@ export async function handleEntityCommand(
     }
     const view = await deps.entityView(args[2]);
     if (options.json) {
-      console.log(JSON.stringify(view, null, 2));
+      console.log(JSON.stringify(entityViewJsonRecord(view, options.dbPath), null, 2));
       return true;
     }
-    console.log(renderEntityView(view));
+    console.log(renderEntityView(view, options.dbPath));
     return true;
   }
   return false;
+}
+
+function entitySearchJsonRecord(
+  row: EntitySearchResult,
+  dbPath?: string,
+): EntitySearchResult & {
+  showCommand: string;
+} {
+  return { ...row, showCommand: entityShowCommand(row.entityId, dbPath) };
+}
+
+function entityShowCommand(entityId: string, dbPath?: string): string {
+  return scopeDbCommand(dcCommand(`entity show ${entityId}`), dbPath) ??
+    dcCommand(`entity show ${entityId}`);
+}
+
+function entityViewJsonRecord(
+  view: EntityView,
+  dbPath?: string,
+): EntityView & { nextCommand?: string } {
+  return {
+    ...view,
+    reviewItems: view.reviewItems.map((item) => scopeReviewItem(item, dbPath)),
+    nextCommand: firstReviewCommand(view.reviewItems, dbPath),
+  };
 }
 
 export function printEntityHelp(tips: string[] = []): void {
@@ -59,7 +88,9 @@ export function printEntityHelp(tips: string[] = []): void {
 
 Workflow:
   1. Find an entity id with \`${dcCommand("entity search District")}\`
-  2. Inspect the full record with \`${dcCommand("entity show dc.council")}\`
+  2. Use the printed \`Show:\` command, or inspect the full record with \`${
+    dcCommand("entity show dc.council")
+  }\`
 
 Usage:
   ${dcCommand("entity search <query>")} [--db <path>] [--json]
@@ -70,7 +101,7 @@ Usage:
   }
 }
 
-function renderEntityView(view: EntityView): string {
+function renderEntityView(view: EntityView, dbPath?: string): string {
   const lines = [
     `${view.name} (${view.kind})`,
     `id: ${view.entityId}`,
@@ -110,13 +141,25 @@ function renderEntityView(view: EntityView): string {
   if (view.reviewItems.length > 0) {
     lines.push("open_review:");
     for (const item of view.reviewItems) {
-      lines.push(...renderOpenReviewItem(item));
+      lines.push(...renderOpenReviewItem(item, dbPath));
+    }
+    const nextCommand = firstReviewCommand(view.reviewItems, dbPath);
+    if (nextCommand) {
+      lines.push(`Next: ${nextCommand}`);
     }
   }
   return lines.join("\n");
 }
 
-function renderOpenReviewItem(item: ReviewItemRecord): string[] {
+function firstReviewCommand(items: ReviewItemRecord[], dbPath?: string): string | undefined {
+  for (const item of items) {
+    const command = reviewCommandForItem(item, dbPath);
+    if (command) return command;
+  }
+  return undefined;
+}
+
+function renderOpenReviewItem(item: ReviewItemRecord, dbPath?: string): string[] {
   const lines = [
     `- ${item.itemType}: ${item.reason} [default ${item.defaultAction}]`,
   ];
@@ -144,14 +187,37 @@ function renderOpenReviewItem(item: ReviewItemRecord): string[] {
   if (whyDeferred) {
     lines.push(`  why: ${whyDeferred}`);
   }
-  if (item.subject?.sourceId) {
+  const reviewCommand = reviewCommandForItem(item, dbPath);
+  if (reviewCommand) {
     lines.push(
-      `  review: ${
-        dcCommand("review")
-      } --source ${item.subject.sourceId} --subject-prefix ${item.subjectId}`,
+      `  review: ${reviewCommand}`,
     );
   }
   return lines;
+}
+
+function reviewCommandForItem(item: ReviewItemRecord, dbPath?: string): string | undefined {
+  return scopeDbCommand(
+    item.reviewCommand ??
+      (item.subject?.sourceId
+        ? `${
+          dcCommand("review")
+        } --source ${item.subject.sourceId} --subject-prefix ${item.subjectId}`
+        : undefined),
+    dbPath,
+  );
+}
+
+function scopeReviewItem(item: ReviewItemRecord, dbPath?: string): ReviewItemRecord {
+  const reviewCommand = reviewCommandForItem(item, dbPath);
+  return reviewCommand ? { ...item, reviewCommand } : item;
+}
+
+function scopeDbCommand(command: string | undefined, dbPath?: string): string | undefined {
+  if (!command || !dbPath || !command.startsWith(dcCommand("")) || command.includes(" --db ")) {
+    return command;
+  }
+  return `${command} --db ${dbPath}`;
 }
 
 function stringDetail(details: Record<string, unknown>, key: string): string | undefined {

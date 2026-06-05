@@ -15,6 +15,7 @@ import type { ImportConnectorOptions, ImportProgressEvent } from "./workbench/im
 export type { ImportProgressEvent };
 
 export interface SourceCommandOptions {
+  dbPath?: string;
   json?: boolean;
   limit?: number;
 }
@@ -122,8 +123,23 @@ export async function handleSourceCommand(
       deps,
       options.json ? undefined : logSourceFetchProgress,
     );
+    const failures = outcomes.filter((outcome) => outcome.status === "failed");
+    const successCount = outcomes.length - failures.length;
     if (options.json) {
-      console.log(JSON.stringify({ count: outcomes.length, outcomes }, null, 2));
+      const nextCommand = failures.length > 0
+        ? scopeDbCommand(sourceInspectCommand(failures[0].sourceId), options.dbPath)
+        : undefined;
+      console.log(JSON.stringify(
+        {
+          count: outcomes.length,
+          successCount,
+          failureCount: failures.length,
+          ...(nextCommand ? { nextCommand } : {}),
+          outcomes,
+        },
+        null,
+        2,
+      ));
     } else {
       for (const outcome of outcomes) {
         if (outcome.status === "success") {
@@ -135,12 +151,14 @@ export async function handleSourceCommand(
         }
       }
       console.log(
-        `Source fetch summary: ${
-          outcomes.filter((outcome) => outcome.status === "success").length
-        }/${outcomes.length} succeeded.`,
+        `Source fetch summary: ${successCount}/${outcomes.length} succeeded.`,
       );
     }
-    const failures = outcomes.filter((outcome) => outcome.status === "failed");
+    if (!options.json && failures.length > 0) {
+      console.log(
+        `Next: ${scopeDbCommand(sourceInspectCommand(failures[0].sourceId), options.dbPath)}`,
+      );
+    }
     if (failures.length > 0) {
       throw new Error(
         `Failed ${failures.length} source(s): ${
@@ -151,7 +169,7 @@ export async function handleSourceCommand(
     if (!options.json && deps.readWorkbenchStatus) {
       const status = await deps.readWorkbenchStatus();
       console.log(`Readiness: ${status.unresolvedStateNote}`);
-      console.log(`Next: ${status.nextCommand}`);
+      console.log(`Next: ${scopeDbCommand(status.nextCommand, options.dbPath)}`);
     }
     return true;
   }
@@ -169,17 +187,30 @@ export async function handleSourceCommand(
       return true;
     }
     const summary = await readSourceSummaryOrConfigured(sourceId, deps);
+    const fetchCommand = scopeDbCommand(sourceFetchCommand(sourceId), options.dbPath);
+    const browseCommand = sourceHasRows(summary)
+      ? scopeDbCommand(sourceBrowseCommand(sourceId), options.dbPath)
+      : undefined;
     if (options.json) {
-      console.log(JSON.stringify(summary, null, 2));
+      console.log(JSON.stringify({ ...summary, fetchCommand, browseCommand }, null, 2));
       return true;
     }
     console.log(`${summary.sourceId} - ${summary.title}`);
     console.log(`Latest status: ${summary.latestStatus ?? "unfetched"}`);
     console.log(`Latest run: ${summary.latestRunFinishedAt ?? "n/a"}`);
+    if (summary.latestErrorText) {
+      console.log(`Latest error: ${summary.latestErrorText}`);
+    }
     console.log(`Latest artifact: ${summary.latestArtifactPath ?? "n/a"}`);
     console.log(
       `Counts: items=${summary.itemCount} fields=${summary.fieldCount} entity_candidates=${summary.entityCandidateCount} relationship_candidates=${summary.relationshipCandidateCount}`,
     );
+    if (summary.latestStatus !== "success") {
+      console.log(`Fetch: ${fetchCommand}`);
+    }
+    if (browseCommand) {
+      console.log(`Browse: ${browseCommand}`);
+    }
     return true;
   }
   if (args[1] === "compare") {
@@ -209,7 +240,9 @@ export async function handleSourceCommand(
     }
     const comparison = await deps.readPublicBodyComparison();
     if (options.json) {
-      console.log(JSON.stringify(comparison, null, 2));
+      console.log(
+        JSON.stringify(publicBodyComparisonJsonRecord(comparison, options.dbPath), null, 2),
+      );
       return true;
     }
     console.log("Public-body overlap comparison");
@@ -230,11 +263,31 @@ export async function handleSourceCommand(
         "These rows are conservative name-similarity leads. They do not imply a canonical merge.",
       );
     }
+    console.log(
+      `Release-risk variant matches (accepted duplicate-risk leads): ${comparison.releaseRiskVariantMatchCount}`,
+    );
+    if (comparison.releaseRiskVariantMatchCount > 0) {
+      console.log(
+        "These rows still map to multiple accepted canonical identities and are the subset that can affect release warnings.",
+      );
+    }
     for (const match of comparison.conservativeVariantMatches) {
       console.log(`- ${match.variantName} [${match.matchKinds.join(", ")}]`);
       for (const name of match.names) {
         console.log(`  - ${name.displayName} (${name.sourceId})`);
+        if (name.reviewStatus !== "accepted") {
+          console.log(
+            `    Review: ${scopeDbCommand(publicBodyNameReviewCommand(name), options.dbPath)}`,
+          );
+        }
       }
+    }
+    const nextCommand = scopeDbCommand(
+      firstPublicBodyComparisonReviewCommand(comparison),
+      options.dbPath,
+    );
+    if (nextCommand) {
+      console.log(`Next: ${nextCommand}`);
     }
     return true;
   }
@@ -251,6 +304,11 @@ export async function handleSourceCommand(
         title: connector.source.title,
         status: row?.latestStatus ?? "unfetched",
         latestRunFinishedAt: row?.latestRunFinishedAt,
+        latestErrorText: row?.latestErrorText,
+        fetchCommand: scopeDbCommand(sourceFetchCommand(connector.sourceId), options.dbPath),
+        inspectCommand: row?.latestStatus === "failed"
+          ? scopeDbCommand(sourceInspectCommand(connector.sourceId), options.dbPath)
+          : undefined,
         tier: connector.source.tier ?? "unspecified",
         releaseRole: connector.source.releaseRole ?? "unspecified",
         smokeProfiles: connector.source.smokeProfiles ?? [],
@@ -267,10 +325,90 @@ export async function handleSourceCommand(
           row.smokeProfiles.length > 0 ? ` [${row.smokeProfiles.join(",")}]` : ""
         }${row.latestRunFinishedAt ? ` ${row.latestRunFinishedAt}` : ""}`,
       );
+      if (row.latestErrorText) {
+        console.log(`  Failure detail: ${row.latestErrorText}`);
+      }
+      if (row.inspectCommand) {
+        console.log(`  Inspect: ${row.inspectCommand}`);
+      }
+      if (row.status === "unfetched") {
+        console.log(`  Fetch: ${row.fetchCommand}`);
+      }
+    }
+    const firstFailed = sourceRows.find((row) => row.status === "failed");
+    if (firstFailed) {
+      console.log(
+        `Next: ${
+          scopeDbCommand(dcCommand(`source inspect ${firstFailed.sourceId}`), options.dbPath)
+        }`,
+      );
     }
     return true;
   }
   return false;
+}
+
+function sourceInspectCommand(sourceId: string): string {
+  return dcCommand(`source inspect ${sourceId}`);
+}
+
+function sourceFetchCommand(sourceId: string): string {
+  return dcCommand(`source fetch ${sourceId}`);
+}
+
+function sourceBrowseCommand(sourceId: string): string {
+  return dcCommand(`review list --status all --source ${sourceId}`);
+}
+
+function sourceHasRows(summary: SourceSummary): boolean {
+  return summary.itemCount > 0 ||
+    summary.entityCandidateCount > 0 ||
+    summary.relationshipCandidateCount > 0;
+}
+
+function publicBodyComparisonJsonRecord(
+  comparison: PublicBodyComparisonReport,
+  dbPath?: string,
+): PublicBodyComparisonReport & { nextCommand?: string } {
+  const conservativeVariantMatches = comparison.conservativeVariantMatches.map((match) => {
+    const reviewCommands = match.names
+      .filter((name) => name.reviewStatus !== "accepted")
+      .map((name) => scopeDbCommand(publicBodyNameReviewCommand(name), dbPath));
+    return reviewCommands.length > 0 ? { ...match, reviewCommands } : match;
+  });
+  const nextCommand = conservativeVariantMatches.find((match) => "reviewCommands" in match)
+    ?.reviewCommands?.[0];
+  return {
+    ...comparison,
+    nextCommand,
+    conservativeVariantMatches,
+  };
+}
+
+function publicBodyNameReviewCommand(
+  name: PublicBodyComparisonReport["conservativeVariantMatches"][number]["names"][number],
+): string {
+  return dcCommand(
+    `review entities --source ${name.sourceId} --subject-prefix ${name.candidateId}`,
+  );
+}
+
+function firstPublicBodyComparisonReviewCommand(
+  comparison: PublicBodyComparisonReport,
+): string | undefined {
+  for (const match of comparison.conservativeVariantMatches) {
+    const name = match.names.find((name) => name.reviewStatus !== "accepted");
+    if (name) return publicBodyNameReviewCommand(name);
+  }
+  return undefined;
+}
+
+function scopeDbCommand(command: string | undefined, dbPath?: string): string | undefined {
+  if (!command) return undefined;
+  if (!dbPath) return command;
+  if (command.includes(" --db ")) return command;
+  if (!command.startsWith("deno task dc -- ")) return command;
+  return `${command} --db ${dbPath}`;
 }
 
 export async function fetchSources(

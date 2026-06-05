@@ -252,6 +252,207 @@ Deno.test("source fetch help exits before connector execution", async () => {
   assertStringIncludes(stdout.join("\n"), "source fetch <source-id>");
 });
 
+Deno.test("source inspect shows latest failure detail when the source run failed", async () => {
+  const dbPath = "/tmp/source-inspect-fixture/workbench.sqlite";
+  const deps: SourceCommandDeps = {
+    connectors: [],
+    getConnector: () => {
+      throw new Error("unused");
+    },
+    createConnectorContext: () => ({
+      fetcher: async () => {
+        throw new Error("unused");
+      },
+    }),
+    importConnectorResult: async () => {
+      throw new Error("unused");
+    },
+    readSourceSummary: async () => ({
+      sourceId: "alpha.source",
+      title: "Alpha Source",
+      latestStatus: "failed",
+      latestRunFinishedAt: "2026-06-05T04:00:00Z",
+      latestErrorText: "Fixture endpoint returned HTTP 500",
+      itemCount: 0,
+      fieldCount: 0,
+      entityCandidateCount: 0,
+      relationshipCandidateCount: 0,
+    }),
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "inspect", "alpha.source"], { dbPath }, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(stderr, []);
+  const output = stdout.join("\n");
+  assertStringIncludes(output, "Latest status: failed");
+  assertStringIncludes(output, "Latest error: Fixture endpoint returned HTTP 500");
+  assertStringIncludes(output, `Fetch: deno task dc -- source fetch alpha.source --db ${dbPath}`);
+
+  const jsonCapture = await captureConsole(async () =>
+    await handleSourceCommand(["source", "inspect", "alpha.source"], { json: true, dbPath }, deps)
+  );
+  const json = JSON.parse(jsonCapture.stdout[0]) as {
+    latestStatus: string;
+    fetchCommand: string;
+  };
+  assertEquals(jsonCapture.result, true);
+  assertEquals(json.latestStatus, "failed");
+  assertEquals(json.fetchCommand, `deno task dc -- source fetch alpha.source --db ${dbPath}`);
+});
+
+Deno.test("source inspect points fetched source rows to scoped review browsing", async () => {
+  const dbPath = "/tmp/source-inspect-browse-fixture/workbench.sqlite";
+  const deps: SourceCommandDeps = {
+    connectors: [],
+    getConnector: () => {
+      throw new Error("unused");
+    },
+    createConnectorContext: () => ({
+      fetcher: async () => {
+        throw new Error("unused");
+      },
+    }),
+    importConnectorResult: async () => {
+      throw new Error("unused");
+    },
+    readSourceSummary: async () => ({
+      sourceId: "alpha.source",
+      title: "Alpha Source",
+      latestStatus: "success",
+      latestRunFinishedAt: "2026-06-05T04:00:00Z",
+      latestArtifactPath: "artifacts/alpha/rows.json",
+      itemCount: 3,
+      fieldCount: 8,
+      entityCandidateCount: 2,
+      relationshipCandidateCount: 1,
+    }),
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "inspect", "alpha.source"], { dbPath }, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(stderr, []);
+  const output = stdout.join("\n");
+  assertStringIncludes(
+    output,
+    `Browse: deno task dc -- review list --status all --source alpha.source --db ${dbPath}`,
+  );
+
+  const jsonCapture = await captureConsole(async () =>
+    await handleSourceCommand(["source", "inspect", "alpha.source"], { json: true, dbPath }, deps)
+  );
+  const json = JSON.parse(jsonCapture.stdout[0]) as {
+    browseCommand?: string;
+  };
+  assertEquals(jsonCapture.result, true);
+  assertEquals(
+    json.browseCommand,
+    `deno task dc -- review list --status all --source alpha.source --db ${dbPath}`,
+  );
+});
+
+Deno.test("source list points failed sources to inspection", async () => {
+  const dbPath = "/tmp/source-list-fixture/workbench.sqlite";
+  const connectors = [
+    fixtureConnector(
+      "alpha.source",
+      "Alpha Source",
+      async () => fixtureResult("alpha.source", "Alpha Source"),
+    ),
+    fixtureConnector(
+      "beta.source",
+      "Beta Source",
+      async () => fixtureResult("beta.source", "Beta Source"),
+    ),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: () => ({
+      fetcher: async () => {
+        throw new Error("unused");
+      },
+    }),
+    importConnectorResult: async () => {
+      throw new Error("unused");
+    },
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [{
+      sourceId: "alpha.source",
+      title: "Alpha Source",
+      latestStatus: "failed",
+      latestRunFinishedAt: "2026-06-05T05:00:00Z",
+      latestErrorText: "Fixture source list failure",
+    }],
+  };
+
+  const { result, stdout, stderr } = await captureConsole(async () =>
+    await handleSourceCommand(["source", "list"], { dbPath }, deps)
+  );
+
+  assertEquals(result, true);
+  assertEquals(stderr, []);
+  const output = stdout.join("\n");
+  assertStringIncludes(output, "alpha.source failed");
+  assertStringIncludes(output, "Failure detail: Fixture source list failure");
+  assertStringIncludes(
+    output,
+    `Inspect: deno task dc -- source inspect alpha.source --db ${dbPath}`,
+  );
+  assertStringIncludes(output, "beta.source unfetched");
+  assertStringIncludes(output, `Fetch: deno task dc -- source fetch beta.source --db ${dbPath}`);
+  assertStringIncludes(output, `Next: deno task dc -- source inspect alpha.source --db ${dbPath}`);
+
+  const jsonCapture = await captureConsole(async () =>
+    await handleSourceCommand(["source", "list"], { json: true, dbPath }, deps)
+  );
+  const jsonRows = JSON.parse(jsonCapture.stdout[0]) as Array<{
+    sourceId: string;
+    latestErrorText?: string;
+    inspectCommand?: string;
+    fetchCommand?: string;
+  }>;
+  assertEquals(jsonCapture.result, true);
+  assertEquals(
+    jsonRows.find((row) => row.sourceId === "alpha.source")?.latestErrorText,
+    "Fixture source list failure",
+  );
+  assertEquals(
+    jsonRows.find((row) => row.sourceId === "alpha.source")?.fetchCommand,
+    `deno task dc -- source fetch alpha.source --db ${dbPath}`,
+  );
+  assertEquals(
+    jsonRows.find((row) => row.sourceId === "beta.source")?.fetchCommand,
+    `deno task dc -- source fetch beta.source --db ${dbPath}`,
+  );
+  assertEquals(
+    jsonRows.find((row) => row.sourceId === "alpha.source")?.inspectCommand,
+    `deno task dc -- source inspect alpha.source --db ${dbPath}`,
+  );
+});
+
 Deno.test("source fetch --all prefetches connectors while importing in requested order", async () => {
   const events: string[] = [];
   const imported: string[] = [];
@@ -363,6 +564,7 @@ Deno.test("source fetch --all reports connector completion before ordered import
 });
 
 Deno.test("source fetch --all continues through failures and throws a summary error", async () => {
+  const dbPath = "/tmp/source-fetch-failure-fixture/workbench.sqlite";
   const imported: string[] = [];
   const connectors = [
     fixtureConnector("alpha.source", "Alpha Source", async () => ({
@@ -419,9 +621,9 @@ Deno.test("source fetch --all continues through failures and throws a summary er
     },
   };
 
-  const { stdout, stderr } = await captureConsole(async () =>
+  const { stdout: scopedStdout, stderr } = await captureConsole(async () =>
     await assertRejects(
-      async () => await handleSourceCommand(["source", "fetch", "--all"], {}, deps),
+      async () => await handleSourceCommand(["source", "fetch", "--all"], { dbPath }, deps),
       Error,
       "Failed 1 source(s): broken.source",
     )
@@ -431,11 +633,106 @@ Deno.test("source fetch --all continues through failures and throws a summary er
   const progress = stderr.join("\n");
   assertMatch(progress, /\[2\/2\] Starting broken\.source - Broken Source/);
   assertMatch(progress, /\[2\/2\] Fetch failed broken\.source after .* \(connector .*\)/);
-  const output = stdout.join("\n");
+  const output = scopedStdout.join("\n");
   assertStringIncludes(output, "Fetch failed broken.source");
   assertStringIncludes(output, "fixture boom");
   assertStringIncludes(output, "Source fetch summary: 1/2 succeeded.");
-  assertEquals(stdout.some((line) => line.startsWith("Next:")), false);
+  assertStringIncludes(
+    output,
+    `Next: deno task dc -- source inspect broken.source --db ${dbPath}`,
+  );
+});
+
+Deno.test("source fetch --json points failures to source inspection", async () => {
+  const dbPath = "/tmp/source-fetch-json-fixture/workbench.sqlite";
+  const connectors = [
+    fixtureConnector("alpha.source", "Alpha Source", async () => ({
+      source: {
+        sourceId: "alpha.source",
+        title: "Alpha Source",
+        kind: "fixture",
+        accessMethod: "fixture",
+        baseUrl: "https://example.com/alpha",
+      },
+      endpointResults: [{
+        endpoint: {
+          endpointId: "alpha.source.main",
+          sourceId: "alpha.source",
+          title: "Alpha endpoint",
+          kind: "fixture",
+          url: "https://example.com/alpha",
+          method: "GET",
+          captureMode: "rows",
+        },
+        status: "success",
+        artifacts: [],
+      }],
+    })),
+    fixtureConnector("broken.source", "Broken Source", async () => {
+      throw new Error("fixture boom");
+    }),
+  ];
+  const deps: SourceCommandDeps = {
+    connectors,
+    getConnector: (sourceId) => {
+      const connector = connectors.find((candidate) => candidate.sourceId === sourceId);
+      if (!connector) throw new Error(`Unknown v2 source: ${sourceId}`);
+      return connector;
+    },
+    createConnectorContext: ({ limit }) => ({
+      fetcher: async () => {
+        throw new Error(`unused ${limit}`);
+      },
+      limit,
+    }),
+    importConnectorResult: async () => {},
+    readSourceSummary: async () => {
+      throw new Error("unused");
+    },
+    readPublicBodyComparison: async () => {
+      throw new Error("unused");
+    },
+    readSourceRows: async () => [],
+    readWorkbenchStatus: async () => {
+      throw new Error("json failure output should not read workbench readiness");
+    },
+  };
+
+  const { stdout: scopedStdout, stderr } = await captureConsole(async () =>
+    await assertRejects(
+      async () =>
+        await handleSourceCommand(["source", "fetch", "--all"], { json: true, dbPath }, deps),
+      Error,
+      "Failed 1 source(s): broken.source",
+    )
+  );
+
+  assertEquals(stderr, []);
+  assertEquals(scopedStdout.length, 1);
+  const body = JSON.parse(scopedStdout[0]) as {
+    count: number;
+    successCount: number;
+    failureCount: number;
+    nextCommand?: string;
+    outcomes: Array<{
+      sourceId: string;
+      title: string;
+      status: string;
+      endpointStatuses: string[];
+      errorText?: string;
+    }>;
+  };
+  assertEquals(body.count, 2);
+  assertEquals(body.successCount, 1);
+  assertEquals(body.failureCount, 1);
+  assertEquals(body.nextCommand, `deno task dc -- source inspect broken.source --db ${dbPath}`);
+  assertEquals(body.outcomes.find((outcome) => outcome.sourceId === "broken.source"), {
+    sourceId: "broken.source",
+    title: "Broken Source",
+    status: "failed",
+    endpointStatuses: [],
+    errorText: "fixture boom",
+  });
 });
 
 Deno.test("source fetch --all keeps json output free of progress logs", async () => {
@@ -500,6 +797,8 @@ Deno.test("source fetch --all keeps json output free of progress logs", async ()
   assertEquals(lines.length, 1);
   assertEquals(JSON.parse(lines[0]), {
     count: 1,
+    successCount: 1,
+    failureCount: 0,
     outcomes: [{
       sourceId: "alpha.source",
       title: "Alpha Source",
@@ -713,6 +1012,7 @@ Deno.test("source fetch --json does not attach an import progress reporter", asy
 });
 
 Deno.test("source compare public-bodies labels conservative variant matches separately from exact overlaps", async () => {
+  const dbPath = "/tmp/source-compare-fixture/workbench.sqlite";
   const comparison: PublicBodyComparisonReport = {
     sourceSummaries: [{
       sourceId: "dcgis.boards_commissions_councils",
@@ -761,6 +1061,36 @@ Deno.test("source compare public-bodies labels conservative variant matches sepa
       }],
     }],
     conservativeVariantMatchCount: 1,
+    releaseRiskVariantMatches: [{
+      variantName: "Board of Example",
+      matchKinds: ["acronym_parenthetical", "parenthetical_alias"],
+      sourceIds: ["dcgis.boards_commissions_councils", "open_dc.public_bodies"],
+      sourceTitles: ["DCGIS Fixture", "Open DC Fixture"],
+      names: [{
+        candidateId: "candidate.dcgis.example",
+        proposedEntityId: "dc.board_of_example",
+        normalizedName: "Board of Example",
+        displayName: "Board of Example",
+        sourceId: "dcgis.boards_commissions_councils",
+        sourceTitle: "DCGIS Fixture",
+        kind: "board",
+        rawKind: "Board",
+        officialUrl: "https://example.dc.gov/board",
+        reviewStatus: "accepted",
+      }, {
+        candidateId: "candidate.open_dc.example",
+        proposedEntityId: "dc.board_of_example_advisory_board",
+        normalizedName: "Board of Example (Advisory Board)",
+        displayName: "Board of Example (Advisory Board)",
+        sourceId: "open_dc.public_bodies",
+        sourceTitle: "Open DC Fixture",
+        kind: "board",
+        rawKind: "Board",
+        officialUrl: "https://open.dc.gov/public-bodies/board-example",
+        reviewStatus: "pending",
+      }],
+    }],
+    releaseRiskVariantMatchCount: 1,
   };
   const deps: SourceCommandDeps = {
     connectors: [],
@@ -783,7 +1113,7 @@ Deno.test("source compare public-bodies labels conservative variant matches sepa
   };
 
   const { result, lines } = await captureConsoleLogs(async () =>
-    await handleSourceCommand(["source", "compare", "public-bodies"], {}, deps)
+    await handleSourceCommand(["source", "compare", "public-bodies"], { dbPath }, deps)
   );
 
   assertEquals(result, true);
@@ -793,6 +1123,14 @@ Deno.test("source compare public-bodies labels conservative variant matches sepa
   assertStringIncludes(
     output,
     "Conservative variant matches (linkage leads, not exact overlaps): 1",
+  );
+  assertStringIncludes(
+    output,
+    "Release-risk variant matches (accepted duplicate-risk leads): 1",
+  );
+  assertStringIncludes(
+    output,
+    "These rows still map to multiple accepted canonical identities and are the subset that can affect release warnings.",
   );
   assertStringIncludes(
     output,
@@ -807,11 +1145,36 @@ Deno.test("source compare public-bodies labels conservative variant matches sepa
     output,
     "  - Board of Example (Advisory Board) (open_dc.public_bodies)",
   );
+  assertStringIncludes(
+    output,
+    `    Review: deno task dc -- review entities --source open_dc.public_bodies --subject-prefix candidate.open_dc.example --db ${dbPath}`,
+  );
+  assertStringIncludes(
+    output,
+    `Next: deno task dc -- review entities --source open_dc.public_bodies --subject-prefix candidate.open_dc.example --db ${dbPath}`,
+  );
 
   const jsonCapture = await captureConsoleLogs(async () =>
-    await handleSourceCommand(["source", "compare", "public-bodies"], { json: true }, deps)
+    await handleSourceCommand(
+      ["source", "compare", "public-bodies"],
+      { json: true, dbPath },
+      deps,
+    )
   );
   assertEquals(jsonCapture.result, true);
   assertEquals(jsonCapture.lines.length, 1);
-  assertEquals(JSON.parse(jsonCapture.lines[0]), comparison);
+  const json = JSON.parse(jsonCapture.lines[0]) as PublicBodyComparisonReport & {
+    nextCommand?: string;
+    conservativeVariantMatches: Array<{
+      reviewCommands?: string[];
+    }>;
+  };
+  assertEquals(json.releaseRiskVariantMatchCount, 1);
+  assertEquals(
+    json.nextCommand,
+    `deno task dc -- review entities --source open_dc.public_bodies --subject-prefix candidate.open_dc.example --db ${dbPath}`,
+  );
+  assertEquals(json.conservativeVariantMatches[0]?.reviewCommands, [
+    `deno task dc -- review entities --source open_dc.public_bodies --subject-prefix candidate.open_dc.example --db ${dbPath}`,
+  ]);
 });

@@ -28,43 +28,47 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
     | "inventory"
     | "custom"
     | undefined;
-  const sourceHandled = await handleSourceCommand(args, { json: args.includes("--json"), limit }, {
-    connectors,
-    getConnector,
-    createConnectorContext,
-    importConnectorResult: async (result, options) =>
-      await withWorkbench(
-        dbPath,
-        async (workbench) => {
-          await workbench.importConnectorResult(result, dataDir, options);
-        },
-        { refreshDerivedState: false },
-      ),
-    readSourceSummary: async (sourceId) =>
-      await withWorkbench(
-        dbPath,
-        (workbench) => workbench.sourceSummary(sourceId),
-        { refreshDerivedState: false },
-      ),
-    readPublicBodyComparison: async () =>
-      await withWorkbench(
-        dbPath,
-        (workbench) => workbench.comparePublicBodies(),
-        { refreshDerivedState: false },
-      ),
-    readSourceRows: async () =>
-      await withWorkbench(
-        dbPath,
-        (workbench) => workbench.listSources(),
-        { refreshDerivedState: false },
-      ),
-    readWorkbenchStatus: async () =>
-      await withWorkbench(
-        dbPath,
-        (workbench) => buildWorkbenchStatus(workbench),
-        { readonly: true, fallbackToWritable: true },
-      ),
-  });
+  const sourceHandled = await handleSourceCommand(
+    args,
+    { json: args.includes("--json"), limit, dbPath },
+    {
+      connectors,
+      getConnector,
+      createConnectorContext,
+      importConnectorResult: async (result, options) =>
+        await withWorkbench(
+          dbPath,
+          async (workbench) => {
+            await workbench.importConnectorResult(result, dataDir, options);
+          },
+          { refreshDerivedState: false },
+        ),
+      readSourceSummary: async (sourceId) =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.sourceSummary(sourceId),
+          { refreshDerivedState: false },
+        ),
+      readPublicBodyComparison: async () =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.comparePublicBodies(),
+          { refreshDerivedState: false },
+        ),
+      readSourceRows: async () =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => workbench.listSources(),
+          { refreshDerivedState: false },
+        ),
+      readWorkbenchStatus: async () =>
+        await withWorkbench(
+          dbPath,
+          (workbench) => buildWorkbenchStatus(workbench),
+          { readonly: true, fallbackToWritable: true },
+        ),
+    },
+  );
   if (sourceHandled) return true;
   const auditHandled = await handleAuditCommand(args, { json: args.includes("--json") }, {
     readWorkbenchStatus: async () =>
@@ -81,6 +85,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   const reviewHandled = await handleReviewCommand(
     args,
     {
+      dbPath,
       json: args.includes("--json"),
       resolutionsDir,
     },
@@ -129,7 +134,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (smokeHandled) return true;
   const releaseHandled = await handleReleaseCommand(
     args,
-    { json: args.includes("--json"), outDir, sourceProfile },
+    { json: args.includes("--json"), outDir, dbPath, sourceProfile },
     {
       withWorkbench: async (action) =>
         await withWorkbench(dbPath, action, {
@@ -142,7 +147,7 @@ export async function handleV2Command(args: string[]): Promise<boolean> {
   if (releaseHandled) return true;
   const entityHandled = await handleEntityCommand(
     args,
-    { json: args.includes("--json") },
+    { dbPath, json: args.includes("--json") },
     {
       searchEntities: async (query) =>
         await withWorkbench(
@@ -247,15 +252,17 @@ Workflow:
   }
   Browse:  ${dcCommand("entity search accountancy")} | ${dcCommand("review list --status all")}
   Decide:  ${dcCommand("review")} | ${dcCommand("review packets --mode relationships")}
-  Release: ${dcCommand("release build")} | ${dcCommand("release inspect")}
+  Release: ${dcCommand("release verify")} | ${dcCommand("release build")} | ${
+    dcCommand("release inspect")
+  }
 
 Usage:
   ${dcCommand("init")} [--db <path>]
   ${dcCommand("audit")} [--db <path>] [--json]
   ${dcCommand("status")} [--db <path>] [--json]
   ${dcCommand("source list")} [--db <path>] [--json]
-  ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>]
-  ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>]
+  ${dcCommand("source fetch <source-id>")} [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
+  ${dcCommand("source fetch --all")} [--db <path>] [--data-dir <path>] [--limit <n>] [--json]
   ${dcCommand("source inspect <source-id>")} [--db <path>] [--json]
   ${dcCommand("source compare public-bodies")} [--db <path>] [--json]
   ${dcCommand("smoke <structure|tier0|inventory>")} [--limit <n>] [--json]
@@ -278,7 +285,7 @@ Usage:
   ${dcCommand("entity show <entity-id>")} [--db <path>] [--json]
   ${
     dcCommand("release build")
-  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>] [--json]
   ${dcCommand("release verify")} [--db <path>] [--json]
   ${dcCommand("release inspect")} [--out|--output <dir>] [--json]
 
