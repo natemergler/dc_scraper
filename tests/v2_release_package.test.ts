@@ -2,7 +2,11 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { buildV2Release, type ReleaseBuildProgressEvent } from "../src/v2/release.ts";
+import {
+  buildV2Release,
+  RELEASE_FILE_NAMES,
+  type ReleaseBuildProgressEvent,
+} from "../src/v2/release.ts";
 import { renderReleaseBuildProgress } from "../src/v2/cli_release.ts";
 import { buildReleaseInspection, renderReleaseInspection } from "../src/v2/release_inspect.ts";
 import { Workbench } from "../src/v2/workbench.ts";
@@ -114,6 +118,285 @@ Deno.test("release inspection renders legal attachment counts from the manifest"
   assertStringIncludes(text, "Legal attachments: entity=3, relationship=0");
 });
 
+Deno.test("release inspection renders readiness reasons from the manifest", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 1,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertStringIncludes(text, "Release readiness: not-ready");
+  assertStringIncludes(
+    text,
+    "Readiness reasons: stale review items: 1",
+  );
+  assertStringIncludes(text, "Warnings: open decisions: 2; deferred review items: 1");
+});
+
+Deno.test("release inspection json separates warning reasons from blocking reasons", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 1,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "not-ready");
+  assertEquals(inspection.readinessReasons, ["stale review items: 1"]);
+  assertEquals(inspection.warningReasons, [
+    "open decisions: 2",
+    "deferred review items: 1",
+  ]);
+  assertEquals(
+    inspection.warningReviewCommand,
+    "deno task dc -- review list --status all --decisions",
+  );
+});
+
+Deno.test("release inspection surfaces public-body variant compare handoff", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      public_body_variant_lead_count: 1,
+      public_body_release_risk_variant_lead_count: 1,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      public_body_variant_lead_count: 1,
+      public_body_release_risk_variant_lead_count: 1,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "usable-with-warnings");
+  assertEquals(inspection.warningReasons, ["public body duplicate-risk leads: 1"]);
+  assertEquals(
+    inspection.publicBodyCompareCommand,
+    "deno task dc -- source compare public-bodies",
+  );
+  assertEquals(inspection.nextCommand, "deno task dc -- source compare public-bodies");
+  assertStringIncludes(
+    text,
+    "Compare public bodies: deno task dc -- source compare public-bodies",
+  );
+  assertStringIncludes(text, "Next: deno task dc -- source compare public-bodies");
+});
+
+Deno.test("release inspection warns on accepted multi-governor entities", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      accepted_multi_governor_entity_count: 3,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      accepted_multi_governor_entity_count: 3,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "usable-with-warnings");
+  assertEquals(inspection.warningReasons, ["multi-governor entities: 3"]);
+  assertStringIncludes(text, "Warnings: multi-governor entities: 3");
+});
+
+Deno.test("release inspection warns on accepted public bodies missing official URLs", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      accepted_multi_governor_entity_count: 0,
+      accepted_public_body_missing_official_url_count: 25,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      accepted_multi_governor_entity_count: 0,
+      accepted_public_body_missing_official_url_count: 25,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "usable-with-warnings");
+  assertEquals(inspection.warningReasons, ["public bodies missing official URLs: 25"]);
+  assertStringIncludes(text, "Warnings: public bodies missing official URLs: 25");
+});
+
+Deno.test("release inspection points browse-only rows back to review list", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      open_review_item_count: 1,
+      browse_only_open_review_item_count: 1,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 0,
+      open_review_item_count: 1,
+      browse_only_open_review_item_count: 1,
+      deferred_review_item_count: 0,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 0,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "usable");
+  assertEquals(inspection.warningReasons, []);
+  assertEquals(inspection.browseCommand, "deno task dc -- review list --status all");
+  assertEquals(inspection.nextCommand, "deno task dc -- review list --status all");
+  assertStringIncludes(text, "Browse rows: deno task dc -- review list --status all");
+  assertStringIncludes(text, "Next: deno task dc -- review list --status all");
+});
+
+Deno.test("release inspection points blocker states back to audit before warnings", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 1,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 1,
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "not-ready");
+  assertEquals(
+    inspection.warningReviewCommand,
+    "deno task dc -- review list --status all --decisions",
+  );
+  assertEquals(inspection.nextCommand, "deno task dc -- audit");
+  assertStringIncludes(text, "Next: deno task dc -- audit");
+});
+
+Deno.test("release inspection points blocked sources straight to source inspection", async () => {
+  const outDir = await makeMinimalReleaseDir();
+  const text = await renderReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 1,
+      blocked_reconciliation_by_source: [{ source_id: "open_dc.public_bodies", count: 1 }],
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+  const inspection = await buildReleaseInspection(outDir, {
+    files: [],
+    release_summary: {
+      source_count: 1,
+      open_human_decision_review_item_count: 2,
+      deferred_review_item_count: 1,
+      stale_review_item_count: 0,
+      blocked_reconciliation_count: 1,
+      blocked_reconciliation_by_source: [{ source_id: "open_dc.public_bodies", count: 1 }],
+      placeholder_entity_count: 0,
+      failed_source_count: 0,
+    },
+  });
+
+  assertEquals(inspection.readiness, "not-ready");
+  assertEquals(inspection.inspectCommand, "deno task dc -- source inspect open_dc.public_bodies");
+  assertEquals(inspection.nextCommand, "deno task dc -- source inspect open_dc.public_bodies");
+  assertStringIncludes(
+    text,
+    "Inspect source: deno task dc -- source inspect open_dc.public_bodies",
+  );
+  assertStringIncludes(text, "Next: deno task dc -- source inspect open_dc.public_bodies");
+});
+
 Deno.test("release builder reports progress phases for long package builds", async () => {
   const dir = await Deno.makeTempDir();
   const workbench = new Workbench(join(dir, "workbench.sqlite"));
@@ -136,8 +419,14 @@ Deno.test("release builder reports progress phases for long package builds", asy
     "write-manifest",
   ]);
   assertEquals(events.find((event) => event.phase === "summarize")?.counts?.entities, 0);
-  assertEquals(events.find((event) => event.phase === "write-files")?.fileCount, 14);
-  assertEquals(events.find((event) => event.phase === "write-manifest")?.fileCount, 17);
+  assertEquals(
+    events.find((event) => event.phase === "write-files")?.fileCount,
+    RELEASE_FILE_NAMES.length - 3,
+  );
+  assertEquals(
+    events.find((event) => event.phase === "write-manifest")?.fileCount,
+    RELEASE_FILE_NAMES.length,
+  );
 
   assertStringIncludes(
     renderReleaseBuildProgress(events.find((event) => event.phase === "read-workbench")!),
@@ -161,32 +450,61 @@ Deno.test("release build CLI keeps final success on stdout and progress on stder
   workbench.init();
   workbench.close();
 
-  const output = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "build",
-      "--db",
-      dbPath,
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const stdout = new TextDecoder().decode(output.stdout);
-  const stderr = new TextDecoder().decode(output.stderr);
+  const output = await runDcCli([
+    "release",
+    "build",
+    "--db",
+    dbPath,
+    "--out",
+    outDir,
+  ]);
+  const stdout = output.stdout;
+  const stderr = output.stderr;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, `Built release ${outDir}`);
+  assertStringIncludes(stdout, `Inspect: deno task dc -- release inspect --out ${outDir}`);
+  assertStringIncludes(stdout, `Next: deno task dc -- release inspect --out ${outDir}`);
   assert(!stdout.includes("Writing dcgov.sqlite"));
   assertStringIncludes(stderr, "Release build: Preparing release directory");
   assertStringIncludes(stderr, "Release build: Writing dcgov.sqlite");
-  assertStringIncludes(stderr, "Release build: Writing README and manifest files=17");
+  assertStringIncludes(
+    stderr,
+    `Release build: Writing README and manifest files=${RELEASE_FILE_NAMES.length}`,
+  );
+});
+
+Deno.test("release build CLI json includes inspect handoff while progress stays on stderr", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const outDir = join(dir, "release-json");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.close();
+
+  const output = await runDcCli([
+    "release",
+    "build",
+    "--db",
+    dbPath,
+    "--out",
+    outDir,
+    "--json",
+  ]);
+  const result = JSON.parse(output.stdout) as {
+    outDir: string;
+    fileNames: string[];
+    inspectCommand: string;
+    nextCommand: string;
+  };
+
+  assertEquals(output.code, 0);
+  assertEquals(result.outDir, outDir);
+  assertEquals(result.inspectCommand, `deno task dc -- release inspect --out ${outDir}`);
+  assertEquals(result.nextCommand, `deno task dc -- release inspect --out ${outDir}`);
+  assertEquals(result.fileNames.includes("manifest.json"), true);
+  assert(!output.stdout.includes("Built release"));
+  assertStringIncludes(output.stderr, "Release build: Preparing release directory");
 });
 
 Deno.test("release build CLI accepts --output as an alias for --out", async () => {
@@ -197,49 +515,34 @@ Deno.test("release build CLI accepts --output as an alias for --out", async () =
   workbench.init();
   workbench.close();
 
-  const output = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "build",
-      "--db",
-      dbPath,
-      "--output",
-      outDir,
-    ],
-  }).output();
-  const stdout = new TextDecoder().decode(output.stdout);
+  const output = await runDcCli([
+    "release",
+    "build",
+    "--db",
+    dbPath,
+    "--output",
+    outDir,
+  ]);
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, `Built release ${outDir}`);
+  assertStringIncludes(stdout, `Inspect: deno task dc -- release inspect --out ${outDir}`);
+  assertStringIncludes(stdout, `Next: deno task dc -- release inspect --out ${outDir}`);
   assertEquals(await exists(join(outDir, "manifest.json")), true);
 });
 
 Deno.test("release inspect CLI accepts --output as an alias for --out", async () => {
   const outDir = await makeMinimalReleaseDir();
 
-  const output = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--output",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspection = JSON.parse(new TextDecoder().decode(output.stdout)) as { outDir: string };
+  const output = await runDcCli([
+    "release",
+    "inspect",
+    "--output",
+    outDir,
+    "--json",
+  ]);
+  const inspection = JSON.parse(output.stdout) as { outDir: string };
 
   assertEquals(output.code, 0);
   assertEquals(inspection.outDir, outDir);
@@ -379,14 +682,32 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   await ensureDir(outDir);
   await Deno.writeTextFile(staleFile, "stale");
   const result = await buildV2Release(workbench, outDir);
-  const entityCsv = await Deno.readTextFile(join(outDir, "entities.csv"));
-  const relationshipsCsv = await Deno.readTextFile(join(outDir, "relationships.csv"));
-  const entityLegalRefsCsv = await Deno.readTextFile(join(outDir, "entity_legal_refs.csv"));
-  const relationshipLegalRefsCsv = await Deno.readTextFile(
-    join(outDir, "relationship_legal_refs.csv"),
+  const entityCsv = await Deno.readTextFile(join(outDir, "entities", "all_entities.csv"));
+  const electedCsv = await Deno.readTextFile(join(outDir, "entities", "elected_and_seats.csv"));
+  const boardsCsv = await Deno.readTextFile(
+    join(outDir, "entities", "boards_commissions_public_bodies.csv"),
   );
-  const sourcesCsv = await Deno.readTextFile(join(outDir, "sources.csv"));
-  const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
+  const relationshipsCsv = await Deno.readTextFile(
+    join(outDir, "relationships", "all_relationships.csv"),
+  );
+  const structureRelationshipsCsv = await Deno.readTextFile(
+    join(outDir, "relationships", "structure_relationships.csv"),
+  );
+  const entityLegalAuthoritiesCsv = await Deno.readTextFile(
+    join(outDir, "references", "entity_legal_authorities.csv"),
+  );
+  const relationshipLegalAuthoritiesCsv = await Deno.readTextFile(
+    join(outDir, "references", "relationship_legal_authorities.csv"),
+  );
+  const entitySourcesCsv = await Deno.readTextFile(
+    join(outDir, "references", "entity_sources.csv"),
+  );
+  const relationshipSourcesCsv = await Deno.readTextFile(
+    join(outDir, "references", "relationship_sources.csv"),
+  );
+  const sourcesCsv = await Deno.readTextFile(join(outDir, "01_sources_and_portals.csv"));
+  const datasetsCsv = await Deno.readTextFile(join(outDir, "02_public_datasets.csv"));
+  const legalRefsCsv = await Deno.readTextFile(join(outDir, "03_legal_authorities.csv"));
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   const manifestText = await Deno.readTextFile(join(outDir, "manifest.json"));
   const manifest = JSON.parse(manifestText);
@@ -402,31 +723,13 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   ).all();
   releaseDb.close();
   workbench.close();
-  assertEquals(
-    result.fileNames.sort(),
-    [
-      "README.md",
-      "dcgov.sqlite",
-      "datasets.csv",
-      "datasets.json",
-      "entities.csv",
-      "entities.json",
-      "entity_legal_refs.csv",
-      "entity_legal_refs.json",
-      "legal_refs.csv",
-      "legal_refs.json",
-      "manifest.json",
-      "relationship_legal_refs.csv",
-      "relationship_legal_refs.json",
-      "relationships.csv",
-      "relationships.json",
-      "sources.csv",
-      "sources.json",
-    ].sort(),
-  );
+  assertEquals(result.fileNames.sort(), [...RELEASE_FILE_NAMES].sort());
+  for (const fileName of result.fileNames) {
+    assertStringIncludes(readme, fileName);
+  }
   assertStringIncludes(
     entityCsv.split("\n")[0],
-    "id,name,kind,branch,cluster,official_url,review_status",
+    "entity_id,name,entity_group,entity_type,entity_subtype,description,scope,parent_entity_id,parent_entity_name,branch_or_cluster,ward,official_url,primary_source_id,primary_source_name,legal_authority_count,relationship_count,source_count,release_note",
   );
   assert(!entityCsv.includes("source_item_id"));
   assert(!entityCsv.includes("dc.139,139,budgetary"));
@@ -435,17 +738,39 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assert(!entityCsv.includes("dc.jobs_wages_and_benefits_working_group"));
   assert(!entityCsv.includes("dc.pending_body"));
   assert(!entityCsv.includes("not-for-release@example.com"));
+  assertStringIncludes(entityCsv, "dc.board_accountancy,Board of Accountancy");
+  assertStringIncludes(entityCsv, "board_commission_public_body");
+  assertStringIncludes(entityCsv, "dc.council,Council of the District of Columbia");
+  assertStringIncludes(boardsCsv, "dc.board_accountancy,Board of Accountancy");
+  assert(!electedCsv.includes("dc.board_accountancy"));
   assertStringIncludes(
-    entityLegalRefsCsv,
-    "entity_id,entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
+    relationshipsCsv.split("\n")[0],
+    "relationship_id,relationship_group,relationship_type,from_entity_id,from_name,from_group,from_type,to_entity_id,to_name,to_group,to_type,source_id,source_name,legal_authority_id,release_note",
   );
-  assertStringIncludes(entityLegalRefsCsv, "dc.board_accountancy");
-  assertEquals(entityLegalRefsCsv.split("\n").length > 1, true);
   assertStringIncludes(
-    relationshipLegalRefsCsv,
-    "relationship_id,from_entity_id,from_entity_name,relationship_type,to_entity_id,to_entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
+    relationshipsCsv,
+    "dc.board_accountancy:part_of:dc.council,structure,part_of,dc.board_accountancy,Board of Accountancy",
   );
-  assertStringIncludes(relationshipLegalRefsCsv, "dc.board_accountancy:part_of:dc.council");
+  assertStringIncludes(structureRelationshipsCsv, "dc.board_accountancy:part_of:dc.council");
+  assertStringIncludes(
+    entityLegalAuthoritiesCsv,
+    "entity_id,entity_name,legal_authority_id,authority_type,citation_text,normalized_citation,public_url,review_status",
+  );
+  assertStringIncludes(entityLegalAuthoritiesCsv, "dc.board_accountancy");
+  assertEquals(entityLegalAuthoritiesCsv.split("\n").length > 1, true);
+  assertStringIncludes(
+    relationshipLegalAuthoritiesCsv,
+    "relationship_id,from_entity_id,from_name,relationship_type,to_entity_id,to_name,legal_authority_id,authority_type,citation_text,normalized_citation,public_url,review_status",
+  );
+  assertStringIncludes(relationshipLegalAuthoritiesCsv, "dc.board_accountancy:part_of:dc.council");
+  assertStringIncludes(
+    entitySourcesCsv.split("\n")[0],
+    "entity_id,entity_name,source_id,source_name,source_item_label,source_field,observed_value,public_url,artifact_hash,note",
+  );
+  assertStringIncludes(
+    relationshipSourcesCsv.split("\n")[0],
+    "relationship_id,relationship_type,from_entity_id,from_name,to_entity_id,to_name,source_id,source_name,source_item_label,source_field,observed_value,public_url,artifact_hash,note",
+  );
   assert(!relationshipsCsv.includes("dc.example_settlement_fund:overseen_by:dc.council"));
   assert(!relationshipsCsv.includes("dc.april_board_of_accountancy"));
   assert(!relationshipsCsv.includes("dc.jobs_wages_and_benefits_working_group:part_of:dc.council"));
@@ -459,22 +784,21 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "DCGov Release");
   assertStringIncludes(
     readme,
-    "`README.md`: package overview, model semantics, and package counts",
+    "`entities/all_entities.csv`: human-readable entity directory",
   );
   assertStringIncludes(
     readme,
-    "`manifest.json`: package metadata, file hashes, and source inventory/artifact summary",
+    "`relationships/all_relationships.csv`: directed relationships with endpoint names",
   );
-  assertStringIncludes(readme, "`entity_legal_refs.*`: entity-linked legal reference attachments");
   assertStringIncludes(
     readme,
-    "`relationship_legal_refs.*`: relationship-linked legal reference attachments",
+    "`references/entity_legal_authorities.csv`: entity-linked legal authority attachments",
   );
   assertStringIncludes(readme, "## Model semantics");
   assertStringIncludes(readme, "## Package counts");
   assertStringIncludes(
     readme,
-    "`entities.*`: canonical civic entities such as public bodies, offices, seats/roles, status markers, and source-backed public official observations.",
+    "CSV files are human-facing grouped views; `dcgov.sqlite` is the full queryable package.",
   );
   assertStringIncludes(
     readme,
@@ -482,7 +806,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assertStringIncludes(
     readme,
-    "`relationships.*`: one directed fact per row, `from_entity_id --relationship_type--> to_entity_id`.",
+    "`relationships/all_relationships.csv`: one directed fact per row, with endpoint names and groups.",
   );
   assertStringIncludes(
     readme,
@@ -506,15 +830,22 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   assertStringIncludes(readme, "relationship legal refs: total=1");
   assertStringIncludes(readme, "legal refs: total=1");
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
-  assertStringIncludes(sourcesCsv, "latest_endpoint_id,latest_artifact_kind,latest_fetched_url");
+  assertStringIncludes(
+    sourcesCsv.split("\n")[0],
+    "source_id,source_name,source_group,publisher,public_url,access_method,capture_depth,release_role,dataset_count,entity_count,relationship_count,legal_authority_count,notes",
+  );
   assertStringIncludes(sourcesCsv, "https://www.open-dc.gov/public-bodies/board-accountancy");
   assert(!sourcesCsv.includes(auxiliaryArtifactUrl));
+  assertStringIncludes(
+    datasetsCsv.split("\n")[0],
+    "dataset_id,name,dataset_group,publisher,source_id,source_name,public_url,access_method,capture_depth,release_note",
+  );
+  assertStringIncludes(
+    legalRefsCsv.split("\n")[0],
+    "legal_authority_id,authority_type,law_family,citation_text,normalized_citation,title_or_label,statutory_or_administrative,public_url,source_id,source_name,attached_entity_id,attached_entity_name,attached_relationship_id,review_status,release_note",
+  );
   assertStringIncludes(manifestText, auxiliaryArtifactUrl);
   assert(!sourcesCsv.includes("/tmp/"));
-  assertStringIncludes(
-    legalRefsCsv,
-    "id,ref_type,citation_text,normalized_citation,url,source_id,source_item_id,source_url,needs_review,review_status",
-  );
   assertEquals(Array.isArray(manifest.release_summary.entities_by_review_status), true);
   assertEquals(Array.isArray(manifest.source_artifacts), true);
   assertEquals(releaseObjects, [
@@ -528,42 +859,15 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "sources",
   ]);
   assertEquals(relationshipForeignKeys.length, 2);
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  const inspectOutput = await runDcCli(["release", "inspect", "--out", outDir]);
+  const inspectText = inspectOutput.stdout;
   assertEquals(inspectOutput.code, 0);
-  assertStringIncludes(inspectText, "Files: 17");
+  assertStringIncludes(inspectText, `Files: ${RELEASE_FILE_NAMES.length}`);
   assertStringIncludes(inspectText, "Package integrity: ok");
   assertStringIncludes(inspectText, "Entities: accepted=2");
   assertStringIncludes(inspectText, "Relationships: accepted=1");
-  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+  const inspectJsonOutput = await runDcCli(["release", "inspect", "--out", outDir, "--json"]);
+  const inspectJson = JSON.parse(inspectJsonOutput.stdout) as {
     outDir: string;
     fileCount: number;
     packageIntegrity: string;
@@ -572,7 +876,7 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   };
   assertEquals(inspectJsonOutput.code, 0);
   assertEquals(inspectJson.outDir, outDir);
-  assertEquals(inspectJson.fileCount, 17);
+  assertEquals(inspectJson.fileCount, RELEASE_FILE_NAMES.length);
   assertEquals(inspectJson.packageIntegrity, "ok");
   assertEquals(inspectJson.packageProblems, []);
   assertEquals(inspectJson.releaseSummary.source_count, 1);
@@ -637,13 +941,12 @@ Deno.test("release builder excludes unknown legal refs from public package rows"
   const outDir = join(dir, "release");
   await buildV2Release(workbench, outDir);
 
-  const legalRefsCsv = await Deno.readTextFile(join(outDir, "legal_refs.csv"));
-  const legalRefsJson = JSON.parse(await Deno.readTextFile(join(outDir, "legal_refs.json")));
-  const entityLegalRefsJson = JSON.parse(
-    await Deno.readTextFile(join(outDir, "entity_legal_refs.json")),
+  const legalRefsCsv = await Deno.readTextFile(join(outDir, "03_legal_authorities.csv"));
+  const entityLegalAuthoritiesCsv = await Deno.readTextFile(
+    join(outDir, "references", "entity_legal_authorities.csv"),
   );
-  const relationshipLegalRefsJson = JSON.parse(
-    await Deno.readTextFile(join(outDir, "relationship_legal_refs.json")),
+  const relationshipLegalAuthoritiesCsv = await Deno.readTextFile(
+    join(outDir, "references", "relationship_legal_authorities.csv"),
   );
   const readme = await Deno.readTextFile(join(outDir, "README.md"));
   const manifest = JSON.parse(await Deno.readTextFile(join(outDir, "manifest.json")));
@@ -655,9 +958,18 @@ Deno.test("release builder excludes unknown legal refs from public package rows"
   workbench.close();
 
   assert(!legalRefsCsv.includes("Organizational ByLaws"));
-  assertEquals(legalRefsJson, []);
-  assertEquals(entityLegalRefsJson, []);
-  assertEquals(relationshipLegalRefsJson, []);
+  assertEquals(
+    legalRefsCsv.trim(),
+    "legal_authority_id,authority_type,law_family,citation_text,normalized_citation,title_or_label,statutory_or_administrative,public_url,source_id,source_name,attached_entity_id,attached_entity_name,attached_relationship_id,review_status,release_note",
+  );
+  assertEquals(
+    entityLegalAuthoritiesCsv.trim(),
+    "entity_id,entity_name,legal_authority_id,authority_type,citation_text,normalized_citation,public_url,review_status",
+  );
+  assertEquals(
+    relationshipLegalAuthoritiesCsv.trim(),
+    "relationship_id,from_entity_id,from_name,relationship_type,to_entity_id,to_name,legal_authority_id,authority_type,citation_text,normalized_citation,public_url,review_status",
+  );
   assertStringIncludes(readme, "legal refs: total=0");
   assertStringIncludes(readme, "entity legal refs: total=0");
   assertStringIncludes(readme, "relationship legal refs: total=0");
@@ -700,31 +1012,20 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
   const sqliteSha = manifest.files.find((file) => file.name === "dcgov.sqlite")?.sha256;
   assertEquals(sqliteSha, await fileByteSha(join(outDir, "dcgov.sqlite")));
   await mutateFileWithoutChangingDecodedText(join(outDir, "dcgov.sqlite"));
-  await Deno.writeTextFile(join(outDir, "entities.csv"), "changed\n");
-  await Deno.remove(join(outDir, "relationships.json"));
+  await Deno.writeTextFile(join(outDir, "entities", "all_entities.csv"), "changed\n");
+  await Deno.remove(join(outDir, "relationships", "structure_relationships.csv"));
+  await ensureDir(join(outDir, "entities", "scratch"));
+  await Deno.writeTextFile(join(outDir, "entities", "scratch", "rows.csv"), "stale\n");
   await Deno.writeTextFile(join(outDir, "extra.csv"), "stale\n");
   await ensureDir(join(outDir, "raw_rows"));
   await Deno.writeTextFile(join(outDir, "raw_rows", "rows.json"), "stale\n");
 
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
+  const inspectOutput = await runDcCli(["release", "inspect", "--out", outDir, "--json"]);
 
   assertEquals(inspectOutput.code, 0);
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectOutput.stdout)) as {
+  const inspectJson = JSON.parse(inspectOutput.stdout) as {
     readiness: string;
+    readinessReasons: string[];
     packageIntegrity: string;
     packageProblems: Array<{ fileName: string; problem: string }>;
   };
@@ -732,7 +1033,7 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
   assertEquals(inspectJson.packageIntegrity, "problem");
   assert(
     inspectJson.packageProblems.some((problem) =>
-      problem.fileName === "entities.csv" && problem.problem === "sha256 mismatch"
+      problem.fileName === "entities/all_entities.csv" && problem.problem === "sha256 mismatch"
     ),
   );
   assert(
@@ -742,7 +1043,8 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
   );
   assert(
     inspectJson.packageProblems.some((problem) =>
-      problem.fileName === "relationships.json" && problem.problem === "missing file"
+      problem.fileName === "relationships/structure_relationships.csv" &&
+      problem.problem === "missing file"
     ),
   );
   assert(
@@ -755,6 +1057,14 @@ Deno.test("release inspect reports missing, changed, and unexpected package file
       problem.fileName === "raw_rows/" && problem.problem === "unexpected directory"
     ),
   );
+  assert(
+    inspectJson.packageProblems.some((problem) =>
+      problem.fileName === "entities/scratch/" && problem.problem === "unexpected directory"
+    ),
+  );
+  assertEquals(inspectJson.readinessReasons, [
+    `package integrity problems: ${inspectJson.packageProblems.length}`,
+  ]);
 });
 
 async function makeMinimalReleaseDir(): Promise<string> {
@@ -886,18 +1196,53 @@ Deno.test("release builder rejects phone-shaped contact info in release rows", a
 });
 
 Deno.test("release builder rejects local path-shaped info in release rows", async () => {
-  const dir = await Deno.makeTempDir();
-  const dbPath = join(dir, "workbench.sqlite");
-  const workbench = new Workbench(dbPath);
-  workbench.init();
-  workbench.db.prepare(
-    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.path_leak', 'Path Leak', 'board', '/file%253A///C%253A/Users/source-user/Documents/Downloads/53207.pdf', 'accepted', '[]', datetime('now'), datetime('now'))",
-  ).run();
+  for (
+    const [entityId, officialUrl] of [
+      [
+        "dc.path_leak_windows",
+        "/file%253A///C%253A/Users/source-user/Documents/Downloads/53207.pdf",
+      ],
+      [
+        "dc.path_leak_posix",
+        "/var/tmp/dc-scraper/source.json",
+      ],
+    ] as const
+  ) {
+    const dir = await Deno.makeTempDir();
+    const dbPath = join(dir, "workbench.sqlite");
+    const workbench = new Workbench(dbPath);
+    workbench.init();
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values(?, 'Path Leak', 'board', ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, officialUrl);
 
-  await assertRejects(
-    () => buildV2Release(workbench, join(dir, "release")),
-    Error,
-    "Release output contains local path-shaped info",
-  );
-  workbench.close();
+    await assertRejects(
+      () => buildV2Release(workbench, join(dir, "release")),
+      Error,
+      "Release output contains local path-shaped info",
+    );
+    workbench.close();
+  }
 });
+
+async function runDcCli(
+  args: string[],
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      ...args,
+    ],
+  }).output();
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
+}

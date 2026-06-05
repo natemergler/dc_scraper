@@ -27,10 +27,17 @@ export async function handleSmokeCommand(
     onProgress: options.json ? undefined : logSourceFetchProgress,
   }, deps);
   const failures = result.outcomes.filter((outcome) => outcome.status === "failed");
+  const releaseCommands = smokeReleaseCommands(result);
   if (options.json) {
-    console.log(JSON.stringify(result, null, 2));
+    console.log(
+      JSON.stringify(
+        { ...result, ...releaseCommands, nextCommand: result.status.nextCommand },
+        null,
+        2,
+      ),
+    );
   } else {
-    renderSmokeResult(result, failures.length);
+    renderSmokeResult(result, failures.length, releaseCommands);
   }
   if (failures.length > 0) Deno.exitCode = 1;
   return true;
@@ -54,11 +61,18 @@ Usage:
 `);
 }
 
-function renderSmokeResult(result: SmokeRunResult, failureCount: number): void {
-  const successCount = result.outcomes.filter((outcome) => outcome.status === "success").length;
+function renderSmokeResult(
+  result: SmokeRunResult,
+  failureCount: number,
+  releaseCommands: ReturnType<typeof smokeReleaseCommands>,
+): void {
   console.log(`Smoke profile: ${result.profile}`);
   console.log(`Workspace: ${result.workspace.rootDir}`);
   console.log(`DB: ${result.workspace.dbPath}`);
+  console.log(`Release out: ${releaseCommands.releaseOutDir}`);
+  console.log(`Release verify: ${releaseCommands.releaseVerifyCommand}`);
+  console.log(`Release build: ${releaseCommands.releaseBuildCommand}`);
+  console.log(`Release inspect: ${releaseCommands.releaseInspectCommand}`);
   console.log(`Sources: ${result.sourceIds.join(", ")}`);
   for (const outcome of result.outcomes) {
     if (outcome.status === "success") {
@@ -69,12 +83,37 @@ function renderSmokeResult(result: SmokeRunResult, failureCount: number): void {
       console.log(outcome.errorText ?? "Unknown source fetch error");
     }
   }
-  console.log(`Smoke fetch summary: ${successCount}/${result.outcomes.length} succeeded.`);
+  console.log(`Smoke fetch summary: ${result.successCount}/${result.outcomes.length} succeeded.`);
   console.log(`Readiness: ${result.status.unresolvedStateNote}`);
   console.log(`Next: ${result.status.nextCommand}`);
   if (failureCount > 0) {
     console.log(`Smoke failures: ${failureCount}`);
+    const firstFailure = result.outcomes.find((outcome) => outcome.status === "failed");
+    if (firstFailure) {
+      console.log(
+        `Inspect failed source: ${
+          dcCommand(`source inspect ${firstFailure.sourceId} --db ${result.workspace.dbPath}`)
+        }`,
+      );
+    }
   }
+}
+
+function smokeReleaseCommands(result: SmokeRunResult): {
+  releaseOutDir: string;
+  releaseVerifyCommand: string;
+  releaseBuildCommand: string;
+  releaseInspectCommand: string;
+} {
+  const defaultReleaseOutDir = `${result.workspace.rootDir}/release`;
+  return {
+    releaseOutDir: defaultReleaseOutDir,
+    releaseVerifyCommand: dcCommand(`release verify --db ${result.workspace.dbPath}`),
+    releaseBuildCommand: dcCommand(
+      `release build --source-profile ${result.profile} --db ${result.workspace.dbPath} --out ${defaultReleaseOutDir}`,
+    ),
+    releaseInspectCommand: dcCommand(`release inspect --out ${defaultReleaseOutDir}`),
+  };
 }
 
 function isSmokeProfile(value: string | undefined): value is SmokeProfile {

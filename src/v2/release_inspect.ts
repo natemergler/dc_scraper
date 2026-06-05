@@ -1,5 +1,11 @@
 import { sha256BytesHex } from "./domain.ts";
-import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
+import { dcCommand } from "./command_prefix.ts";
+import {
+  classifyReleaseReadiness,
+  releaseBlockingReasons,
+  type ReleaseReadiness,
+  releaseWarningReasons,
+} from "./release_readiness.ts";
 import {
   releaseReadinessInputFromSummary,
   type ReleaseSummaryProjection,
@@ -37,6 +43,13 @@ export interface ReleaseInspection {
   packageIntegrity: "ok" | "problem" | "unknown";
   packageProblems: ReleasePackageProblem[];
   readiness: ReleaseReadiness;
+  readinessReasons: string[];
+  warningReasons: string[];
+  warningReviewCommand?: string;
+  publicBodyCompareCommand?: string;
+  browseCommand?: string;
+  inspectCommand?: string;
+  nextCommand?: string;
   releaseSummary: ReleaseSummaryProjection;
 }
 
@@ -59,6 +72,18 @@ export async function renderReleaseInspection(
     `Package integrity: ${inspection.packageIntegrity}`,
     ...renderPackageProblems(inspection.packageProblems),
     `Release readiness: ${inspection.readiness}`,
+    ...(inspection.readinessReasons.length > 0
+      ? [`Readiness reasons: ${inspection.readinessReasons.join("; ")}`]
+      : []),
+    ...(inspection.warningReasons.length > 0
+      ? [`Warnings: ${inspection.warningReasons.join("; ")}`]
+      : []),
+    ...(inspection.warningReviewCommand
+      ? [`Review warnings: ${inspection.warningReviewCommand}`]
+      : []),
+    ...(inspection.publicBodyCompareCommand
+      ? [`Compare public bodies: ${inspection.publicBodyCompareCommand}`]
+      : []),
     `Entities: ${renderReviewStatusCounts(summary.entities_by_review_status ?? [])}`,
     `Relationships: ${renderReviewStatusCounts(summary.relationships_by_review_status ?? [])}`,
     `Decisions: open=${
@@ -68,7 +93,20 @@ export async function renderReleaseInspection(
     }, blocked=${summary.blocked_reconciliation_count ?? 0}, placeholders=${
       summary.placeholder_entity_count ?? 0
     }`,
+    ...((summary.open_human_decision_review_item_count_by_type?.length ?? 0) > 0
+      ? [
+        `Decision types: ${
+          renderNamedCounts(
+            summary.open_human_decision_review_item_count_by_type ?? [],
+            "item_type",
+          )
+        }`,
+      ]
+      : []),
     `Browse: source-backed rows=${summary.browse_only_open_review_item_count ?? 0}`,
+    ...(inspection.browseCommand ? [`Browse rows: ${inspection.browseCommand}`] : []),
+    ...(inspection.inspectCommand ? [`Inspect source: ${inspection.inspectCommand}`] : []),
+    ...(inspection.nextCommand ? [`Next: ${inspection.nextCommand}`] : []),
     `Sources: total=${summary.source_count ?? 0}, failed=${summary.failed_source_count ?? 0}`,
     `Datasets: total=${summary.dataset_count ?? 0}`,
     `Legal refs: ${renderNamedCounts(summary.legal_refs_by_type ?? [], "ref_type")}`,
@@ -85,6 +123,9 @@ export async function buildReleaseInspection(
 ): Promise<ReleaseInspection> {
   const releaseSummary = manifest.release_summary ?? {};
   const packageInspection = await inspectReleasePackage(outDir, manifest);
+  const readinessInput = releaseReadinessInputFromSummary(releaseSummary, {
+    blockingProblemCount: packageIntegrityBlockingProblemCount(packageInspection),
+  });
   return {
     outDir,
     generatedAt: manifest.generated_at ?? "unknown",
@@ -92,13 +133,71 @@ export async function buildReleaseInspection(
     expectedFileCount: packageInspection.expectedFileCount,
     packageIntegrity: packageInspection.packageIntegrity,
     packageProblems: packageInspection.packageProblems,
-    readiness: classifyReleaseReadiness(
-      releaseReadinessInputFromSummary(releaseSummary, {
-        blockingProblemCount: packageInspection.packageIntegrity === "ok" ? 0 : 1,
-      }),
-    ),
+    readiness: classifyReleaseReadiness(readinessInput),
+    readinessReasons: releaseBlockingReasons(readinessInput),
+    warningReasons: releaseWarningReasons(readinessInput),
+    warningReviewCommand: releaseWarningReviewCommand(releaseSummary),
+    publicBodyCompareCommand: releasePublicBodyCompareCommand(releaseSummary),
+    browseCommand: releaseBrowseCommand(releaseSummary),
+    inspectCommand: releaseInspectSourceCommand(releaseSummary),
+    nextCommand: releaseInspectNextCommand(releaseSummary),
     releaseSummary,
   };
+}
+
+function releaseWarningReviewCommand(summary: ReleaseSummaryProjection): string | undefined {
+  return ((summary.open_human_decision_review_item_count ?? summary.open_review_item_count ?? 0) >
+      0) ||
+      ((summary.deferred_review_item_count ?? 0) > 0)
+    ? dcCommand("review list --status all --decisions")
+    : undefined;
+}
+
+function releaseBrowseCommand(summary: ReleaseSummaryProjection): string | undefined {
+  return (summary.browse_only_open_review_item_count ?? 0) > 0
+    ? dcCommand("review list --status all")
+    : undefined;
+}
+
+function releasePublicBodyCompareCommand(summary: ReleaseSummaryProjection): string | undefined {
+  return (summary.public_body_release_risk_variant_lead_count ?? 0) > 0
+    ? dcCommand("source compare public-bodies")
+    : undefined;
+}
+
+function releaseInspectSourceCommand(summary: ReleaseSummaryProjection): string | undefined {
+  const sourceId = summary.blocked_reconciliation_by_source?.[0]?.source_id;
+  return sourceId ? dcCommand(`source inspect ${sourceId}`) : undefined;
+}
+
+function releaseInspectNextCommand(summary: ReleaseSummaryProjection): string | undefined {
+  const inspectCommand = releaseInspectSourceCommand(summary);
+  if (
+    (summary.source_count ?? 0) === 0 ||
+    (summary.failed_source_count ?? 0) > 0 ||
+    (summary.stale_review_item_count ?? 0) > 0 ||
+    (summary.blocked_reconciliation_count ?? 0) > 0 ||
+    (summary.placeholder_entity_count ?? 0) > 0
+  ) {
+    return inspectCommand ?? dcCommand("audit");
+  }
+  if ((summary.open_human_decision_review_item_count ?? summary.open_review_item_count ?? 0) > 0) {
+    return dcCommand("review list --status all --decisions");
+  }
+  if ((summary.browse_only_open_review_item_count ?? 0) > 0) {
+    return dcCommand("review list --status all");
+  }
+  if ((summary.public_body_release_risk_variant_lead_count ?? 0) > 0) {
+    return dcCommand("source compare public-bodies");
+  }
+  return undefined;
+}
+
+function packageIntegrityBlockingProblemCount(
+  inspection: { packageIntegrity: "ok" | "problem" | "unknown"; packageProblems: unknown[] },
+): number {
+  if (inspection.packageIntegrity === "ok") return 0;
+  return Math.max(inspection.packageProblems.length, 1);
 }
 
 async function inspectReleasePackage(
@@ -114,15 +213,17 @@ async function inspectReleasePackage(
   const expectedFileCount = expectedFiles.size + 1;
   if (!manifest.files) {
     const actualEntries = await listReleaseEntries(outDir).catch(() => []);
+    const actualFiles = actualEntries.filter((entry) => entry.isFile);
     return {
-      fileCount: actualEntries.length,
+      fileCount: actualFiles.length,
       expectedFileCount,
       packageIntegrity: "unknown",
       packageProblems: [],
     };
   }
   const actualEntries = await listReleaseEntries(outDir);
-  const actualEntryNames = new Set(actualEntries.map((entry) => entry.name));
+  const actualFiles = actualEntries.filter((entry) => entry.isFile);
+  const actualEntryNames = new Set(actualFiles.map((entry) => entry.name));
   const packageProblems: ReleasePackageProblem[] = [];
   for (const [fileName, expectedSha256] of expectedFiles) {
     if (!actualEntryNames.has(fileName)) {
@@ -146,7 +247,14 @@ async function inspectReleasePackage(
   }
   for (const entry of actualEntries) {
     if (entry.name === "manifest.json") continue;
-    if (!expectedFiles.has(entry.name)) {
+    if (entry.isDirectory && hasExpectedChild(entry.name, expectedFiles)) continue;
+    if (entry.isFile && !expectedFiles.has(entry.name)) {
+      packageProblems.push({
+        fileName: renderReleaseEntryName(entry),
+        problem: unexpectedEntryProblem(entry),
+      });
+    }
+    if (entry.isDirectory && !hasExpectedChild(entry.name, expectedFiles)) {
       packageProblems.push({
         fileName: renderReleaseEntryName(entry),
         problem: unexpectedEntryProblem(entry),
@@ -157,7 +265,7 @@ async function inspectReleasePackage(
     left.fileName.localeCompare(right.fileName) || left.problem.localeCompare(right.problem)
   );
   return {
-    fileCount: actualEntries.length,
+    fileCount: actualFiles.length,
     expectedFileCount,
     packageIntegrity: packageProblems.length === 0 ? "ok" : "problem",
     packageProblems,
@@ -172,10 +280,23 @@ interface ReleaseDirectoryEntry {
 
 async function listReleaseEntries(outDir: string): Promise<ReleaseDirectoryEntry[]> {
   const entries: ReleaseDirectoryEntry[] = [];
-  for await (const entry of Deno.readDir(outDir)) {
-    entries.push({ name: entry.name, isFile: entry.isFile, isDirectory: entry.isDirectory });
-  }
+  await collectReleaseEntries(outDir, "", entries);
   return entries.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+async function collectReleaseEntries(
+  rootDir: string,
+  relativeDir: string,
+  entries: ReleaseDirectoryEntry[],
+): Promise<void> {
+  const dir = relativeDir ? `${rootDir}/${relativeDir}` : rootDir;
+  for await (const entry of Deno.readDir(dir)) {
+    const name = relativeDir ? `${relativeDir}/${entry.name}` : entry.name;
+    entries.push({ name, isFile: entry.isFile, isDirectory: entry.isDirectory });
+    if (entry.isDirectory) {
+      await collectReleaseEntries(rootDir, name, entries);
+    }
+  }
 }
 
 function renderReleaseEntryName(entry: ReleaseDirectoryEntry): string {
@@ -186,6 +307,14 @@ function unexpectedEntryProblem(entry: ReleaseDirectoryEntry): ReleasePackagePro
   if (entry.isFile) return "unexpected file";
   if (entry.isDirectory) return "unexpected directory";
   return "unexpected entry";
+}
+
+function hasExpectedChild(
+  directoryName: string,
+  expectedFiles: ReadonlyMap<string, string | undefined>,
+): boolean {
+  const prefix = `${directoryName}/`;
+  return [...expectedFiles.keys()].some((fileName) => fileName.startsWith(prefix));
 }
 
 async function releaseFileSha256(outDir: string, fileName: string): Promise<string> {

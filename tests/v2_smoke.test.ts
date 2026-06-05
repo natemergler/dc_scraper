@@ -140,6 +140,11 @@ Deno.test("smoke runs always use temp workspace paths and fetch only the request
   assertEquals(result.workspace.rootDir, "/tmp/dc-smoke-fixture");
   assertEquals(result.workspace.dbPath, "/tmp/dc-smoke-fixture/workbench.sqlite");
   assertEquals(result.sourceIds, ["alpha.structure"]);
+  assertEquals(result.successCount, 1);
+  assertEquals(result.failureCount, 0);
   assertEquals(result.outcomes.length, 1);
-  assertEquals(result.status.nextCommand, "deno task dc -- review");
+  assertEquals(
+    result.status.nextCommand,
+    "deno task dc -- review --db /tmp/dc-smoke-fixture/workbench.sqlite",
+  );
 });

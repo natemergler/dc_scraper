@@ -56,7 +56,7 @@ Deno.test("status readiness note is explicit when the workbench is ready", async
   const status = buildWorkbenchStatus(workbench);
   workbench.close();
 
-  assertEquals(status.nextCommand, "deno task dc -- release build");
+  assertEquals(status.nextCommand, "deno task dc -- release verify");
   assertEquals(
     status.unresolvedStateNote,
     "No open decisions, browse rows, deferred review items, stale review items, blocked reconciliation items, or placeholder entities were present.",
@@ -70,6 +70,9 @@ Deno.test("status sends source failures to source inspection before review work"
   workbench.init();
   seedConfiguredSourceRuns(workbench, { "council.committees": "failed" });
   workbench.db.prepare(
+    "update source_runs set error_text = ? where source_id = ?",
+  ).run("Fixture source failed while fetching committee detail pages", "council.committees");
+  workbench.db.prepare(
     "insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values('review.test.failed_source_priority', 'entity_candidate', 'candidate.test.failed_source_priority', 'Fixture human review item', 'reject', 'open', '{}', datetime('now'), datetime('now'))",
   ).run();
 
@@ -78,9 +81,33 @@ Deno.test("status sends source failures to source inspection before review work"
 
   assertEquals(status.sources.failed, 1);
   assertEquals(status.sources.firstFailedSourceId, "council.committees");
+  assertEquals(
+    status.sources.firstFailedSourceErrorText,
+    "Fixture source failed while fetching committee detail pages",
+  );
   assertEquals(status.review.open, 1);
   assertEquals(status.review.humanDecisionOpen, 1);
   assertEquals(status.nextCommand, "deno task dc -- source inspect council.committees");
+  const statusText = renderWorkbenchStatus(status);
+  assertStringIncludes(statusText, "First failed source: council.committees");
+  assertStringIncludes(
+    statusText,
+    "Failure detail: Fixture source failed while fetching committee detail pages",
+  );
+
+  const statusJsonOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
+  const statusJson = JSON.parse(statusJsonOutput.stdout) as {
+    sources: {
+      firstFailedSourceId?: string;
+      firstFailedSourceErrorText?: string;
+    };
+  };
+  assertEquals(statusJsonOutput.code, 0);
+  assertEquals(statusJson.sources.firstFailedSourceId, "council.committees");
+  assertEquals(
+    statusJson.sources.firstFailedSourceErrorText,
+    "Fixture source failed while fetching committee detail pages",
+  );
 });
 
 Deno.test("status surfaces placeholder risk with readable reason", async () => {
@@ -93,43 +120,25 @@ Deno.test("status surfaces placeholder risk with readable reason", async () => {
   ).run();
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const statusOutput = await runDcCli(["status", "--db", dbPath]);
   assertEquals(statusOutput.code, 0);
-  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  const statusText = statusOutput.stdout;
   assertStringIncludes(statusText, "Placeholders: 1");
   assertStringIncludes(statusText, "Placeholder Example");
   assertStringIncludes(statusText, "fixture placeholder");
 
-  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const auditOutput = await runDcCli(["audit", "--db", dbPath]);
+  assertEquals(auditOutput.code, 0);
+  const auditText = auditOutput.stdout;
+  assertStringIncludes(auditText, "Placeholder detail:");
+  assertStringIncludes(auditText, "Entity: Placeholder Example");
+  assertStringIncludes(auditText, "Reason: fixture placeholder");
+  assertStringIncludes(auditText, "Entity id: dc.placeholder_example");
+
+  const jsonStatusOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(jsonStatusOutput.code, 0);
-  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+  const jsonStatus = JSON.parse(jsonStatusOutput.stdout) as {
+    nextCommand: string;
     placeholders: {
       count: number;
       byReason: Array<{ reason: string; count: number }>;
@@ -140,6 +149,7 @@ Deno.test("status surfaces placeholder risk with readable reason", async () => {
       };
     };
   };
+  assertEquals(jsonStatus.nextCommand, `deno task dc -- audit --db ${dbPath}`);
   assertEquals(jsonStatus.placeholders.count, 1);
   assertEquals(jsonStatus.placeholders.firstPlaceholder?.entityId, "dc.placeholder_example");
   assertEquals(jsonStatus.placeholders.firstPlaceholder?.name, "Placeholder Example");
@@ -180,42 +190,30 @@ Deno.test("status surfaces stale review debt from prior decisions", async () => 
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const statusOutput = await runDcCli(["status", "--db", dbPath]);
   assertEquals(statusOutput.code, 0);
-  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  const statusText = statusOutput.stdout;
   assertStringIncludes(statusText, "Stale review: 1");
   assertStringIncludes(statusText, "accepted");
+  assertStringIncludes(statusText, "First stale:");
+  assertStringIncludes(statusText, "candidate.test.signature.entities.example_v2");
+  assertStringIncludes(statusText, "changed since a prior accepted decision");
 
-  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const auditOutput = await runDcCli(["audit", "--db", dbPath]);
+  assertEquals(auditOutput.code, 0);
+  const auditText = auditOutput.stdout;
+  assertStringIncludes(auditText, "Stale review detail:");
+  assertStringIncludes(auditText, "Subject id: candidate.test.signature.entities.example_v2");
+  assertStringIncludes(auditText, "Prior decision: accepted");
+  assertStringIncludes(
+    auditText,
+    "Reason: Review fixture entity candidate (changed since a prior accepted decision)",
+  );
+
+  const jsonStatusOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(jsonStatusOutput.code, 0);
-  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+  const jsonStatus = JSON.parse(jsonStatusOutput.stdout) as {
+    nextCommand: string;
     staleReview: {
       count: number;
       byPriorDecisionState: Array<{ priorDecisionState: string; count: number }>;
@@ -226,6 +224,7 @@ Deno.test("status surfaces stale review debt from prior decisions", async () => 
       };
     };
   };
+  assertEquals(jsonStatus.nextCommand, `deno task dc -- review --db ${dbPath}`);
   assertEquals(jsonStatus.staleReview.count, 1);
   assert(
     jsonStatus.staleReview.byPriorDecisionState.some((row) =>
@@ -273,54 +272,38 @@ Deno.test("status reports browse-only and deferred work without review ledgers",
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const statusOutput = await runDcCli(["status", "--db", dbPath]);
   assertEquals(statusOutput.code, 0);
-  const statusText = new TextDecoder().decode(statusOutput.stdout);
+  const statusText = statusOutput.stdout;
   assert(!statusText.includes("Review ledger by type:"));
   assert(!statusText.includes("Review ledger by source:"));
+  assertStringIncludes(
+    statusText,
+    `Browse rows: deno task dc -- review list --status all --db ${dbPath}`,
+  );
 
-  const jsonStatusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const jsonStatusOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(jsonStatusOutput.code, 0);
-  const jsonStatus = JSON.parse(new TextDecoder().decode(jsonStatusOutput.stdout)) as {
+  const jsonStatus = JSON.parse(jsonStatusOutput.stdout) as {
     unresolvedStateNote: string;
     review: {
       open: number;
       humanDecisionOpen: number;
+      humanDecisionOpenByItemType: Array<{ itemType: string; count: number }>;
       browseOnlyOpen: number;
       deferred: number;
+      browseCommand?: string;
     };
   };
   assertEquals(jsonStatus.review.open, 1);
   assertEquals(jsonStatus.review.humanDecisionOpen, 0);
+  assertEquals(jsonStatus.review.humanDecisionOpenByItemType, []);
   assertEquals(jsonStatus.review.browseOnlyOpen, 1);
   assertEquals(jsonStatus.review.deferred, 1);
+  assertEquals(
+    jsonStatus.review.browseCommand,
+    `deno task dc -- review list --status all --db ${dbPath}`,
+  );
   assertStringIncludes(jsonStatus.unresolvedStateNote, "Workbench state:");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "open decisions=0");
   assertStringIncludes(jsonStatus.unresolvedStateNote, "browse rows=1");
@@ -444,192 +427,119 @@ Deno.test("status routes human decisions to review but browse-only additions to 
   );
   workbench.close();
 
-  const statusOutputOne = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const statusOutputOne = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(statusOutputOne.code, 0);
-  const statusOne = JSON.parse(new TextDecoder().decode(statusOutputOne.stdout)) as {
+  const statusOne = JSON.parse(statusOutputOne.stdout) as {
     nextCommand: string;
   };
   assertEquals(
     statusOne.nextCommand,
-    "deno task dc -- review",
+    `deno task dc -- review --db ${dbPath}`,
   );
 
-  const acceptExplicitEntitiesOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "batch",
-      "accept-safe",
-      "--mode",
-      "entities",
-      "--subject-prefix",
-      "candidate.test.high_confidence.entities.example_explicit_safe",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
+  const acceptExplicitEntitiesOutput = await runDcCli([
+    "review",
+    "batch",
+    "accept-safe",
+    "--mode",
+    "entities",
+    "--subject-prefix",
+    "candidate.test.high_confidence.entities.example_explicit_safe",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
   assertEquals(acceptExplicitEntitiesOutput.code, 0);
 
-  const statusOutputTwo = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const statusOutputTwo = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(statusOutputTwo.code, 0);
-  const statusTwo = JSON.parse(new TextDecoder().decode(statusOutputTwo.stdout)) as {
+  const statusTwo = JSON.parse(statusOutputTwo.stdout) as {
     nextCommand: string;
+    review: {
+      humanDecisionOpenByItemType: Array<{ itemType: string; count: number }>;
+    };
   };
   assertEquals(
     statusTwo.nextCommand,
-    "deno task dc -- review",
+    `deno task dc -- review --db ${dbPath}`,
+  );
+  assertEquals(statusTwo.review.humanDecisionOpenByItemType, [
+    { itemType: "legal_ref", count: 1 },
+    { itemType: "relationship_candidate", count: 1 },
+  ]);
+  const statusTextOutput = await runDcCli(["status", "--db", dbPath]);
+  assertEquals(statusTextOutput.code, 0);
+  assertStringIncludes(statusTextOutput.stdout, "Decisions: 2 open, 0 deferred");
+  assertStringIncludes(
+    statusTextOutput.stdout,
+    "Decision types: legal_ref=1, relationship_candidate=1",
   );
 
-  const deferRelationshipsOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "batch",
-      "defer-default",
-      "--mode",
-      "relationships",
-      "--subject-prefix",
-      "relationship.dcgis.agencies",
-      "--relationship-type",
-      "part_of",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
+  const deferRelationshipsOutput = await runDcCli([
+    "review",
+    "batch",
+    "defer-default",
+    "--mode",
+    "relationships",
+    "--subject-prefix",
+    "relationship.dcgis.agencies",
+    "--relationship-type",
+    "part_of",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
   assertEquals(deferRelationshipsOutput.code, 0);
 
-  const statusOutputThree = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const statusOutputThree = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(statusOutputThree.code, 0);
-  const statusThree = JSON.parse(new TextDecoder().decode(statusOutputThree.stdout)) as {
+  const statusThree = JSON.parse(statusOutputThree.stdout) as {
     nextCommand: string;
   };
   assertEquals(
     statusThree.nextCommand,
-    "deno task dc -- review",
+    `deno task dc -- review --db ${dbPath}`,
   );
 
-  const deferLegalOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "batch",
-      "defer-default",
-      "--mode",
-      "legal",
-      "--subject-prefix",
-      "legal.dcgis.agencies",
-      "--ref-type",
-      "unknown",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-  }).output();
+  const deferLegalOutput = await runDcCli([
+    "review",
+    "batch",
+    "defer-default",
+    "--mode",
+    "legal",
+    "--subject-prefix",
+    "legal.dcgis.agencies",
+    "--ref-type",
+    "unknown",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
   assertEquals(deferLegalOutput.code, 0);
 
-  const statusOutputFour = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const statusOutputFour = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(statusOutputFour.code, 0);
-  const statusFour = JSON.parse(new TextDecoder().decode(statusOutputFour.stdout)) as {
+  const statusFour = JSON.parse(statusOutputFour.stdout) as {
     nextCommand: string;
     review: {
       open: number;
       humanDecisionOpen: number;
+      humanDecisionOpenByItemType: Array<{ itemType: string; count: number }>;
       browseOnlyOpen: number;
       deferred: number;
     };
   };
   assertEquals(statusFour.review.open, 1);
   assertEquals(statusFour.review.humanDecisionOpen, 0);
+  assertEquals(statusFour.review.humanDecisionOpenByItemType, []);
   assertEquals(statusFour.review.browseOnlyOpen, 1);
   assertEquals(statusFour.review.deferred, 2);
   assertEquals(
     statusFour.nextCommand,
-    "deno task dc -- source list",
+    `deno task dc -- source list --db ${dbPath}`,
   );
 });
 
@@ -672,10 +582,31 @@ Deno.test("status surfaces public-body governance suffix leads before they are r
     status.publicBodies.firstGovernanceSuffixLead?.variantName,
     "Metropolitan Washington Airports Authority",
   );
-  assertEquals(status.review.humanDecisionOpen, 0);
+  assertEquals(
+    status.publicBodies.inspectCommand,
+    "deno task dc -- source compare public-bodies",
+  );
+  assertEquals(status.review.humanDecisionOpen, 1);
   const statusText = renderWorkbenchStatus(status);
   assertStringIncludes(statusText, "Public-body linkage leads: 1 governance-suffix lead");
   assertStringIncludes(statusText, "Inspect leads: deno task dc -- source compare public-bodies");
+
+  const cliStatusOutput = await runDcCli(["status", "--db", dbPath]);
+  assertEquals(cliStatusOutput.code, 0);
+  assertStringIncludes(
+    cliStatusOutput.stdout,
+    `Inspect leads: deno task dc -- source compare public-bodies --db ${dbPath}`,
+  );
+
+  const cliStatusJsonOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
+  assertEquals(cliStatusJsonOutput.code, 0);
+  const cliStatus = JSON.parse(cliStatusJsonOutput.stdout) as {
+    publicBodies: { inspectCommand?: string };
+  };
+  assertEquals(
+    cliStatus.publicBodies.inspectCommand,
+    `deno task dc -- source compare public-bodies --db ${dbPath}`,
+  );
 });
 
 Deno.test("status points to audit when blocked reconciliation is the only remaining work", async () => {
@@ -703,26 +634,12 @@ Deno.test("status points to audit when blocked reconciliation is the only remain
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const statusOutput = await runDcCli(["status", "--db", dbPath, "--json"]);
   assertEquals(statusOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const status = JSON.parse(statusOutput.stdout) as {
     nextCommand: string;
   };
-  assertEquals(status.nextCommand, "deno task dc -- audit");
+  assertEquals(status.nextCommand, `deno task dc -- review --db ${dbPath}`);
 });
 
 Deno.test("audit surfaces first blocked raw value and old doctor aliases are unavailable", async () => {
@@ -750,22 +667,9 @@ Deno.test("audit surfaces first blocked raw value and old doctor aliases are una
   );
   workbench.close();
 
-  const auditOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "audit",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const auditOutput = await runDcCli(["audit", "--db", dbPath]);
   assertEquals(auditOutput.code, 0);
-  const auditText = new TextDecoder().decode(auditOutput.stdout);
+  const auditText = auditOutput.stdout;
   assertStringIncludes(
     auditText,
     "First blocked: All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health [overseen_by from council.committees]",
@@ -785,31 +689,18 @@ Deno.test("audit surfaces first blocked raw value and old doctor aliases are una
   );
   assertStringIncludes(
     auditText,
-    "Inspect source: deno task dc -- source inspect council.committees",
+    `Inspect source: deno task dc -- source inspect council.committees --db ${dbPath}`,
   );
 
-  const auditJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "audit",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const auditJsonOutput = await runDcCli(["audit", "--db", dbPath, "--json"]);
   assertEquals(auditJsonOutput.code, 0);
-  const auditJson = JSON.parse(new TextDecoder().decode(auditJsonOutput.stdout)) as {
+  const auditJson = JSON.parse(auditJsonOutput.stdout) as {
     reconciliation: {
       blocked: number;
       firstBlocked?: {
         sourceId: string;
         rawValue?: string | null;
+        inspectCommand: string;
       };
     };
     nextCommand: string;
@@ -817,49 +708,50 @@ Deno.test("audit surfaces first blocked raw value and old doctor aliases are una
   assertEquals(auditJson.reconciliation.blocked, 1);
   assertEquals(auditJson.reconciliation.firstBlocked?.sourceId, "council.committees");
   assertEquals(
+    auditJson.reconciliation.firstBlocked?.inspectCommand,
+    `deno task dc -- source inspect council.committees --db ${dbPath}`,
+  );
+  assertEquals(
     auditJson.reconciliation.firstBlocked?.rawValue,
     "All of the advisory committees and professional boards serving the Department of Health or Department of Behavioral Health",
   );
-  assertEquals(auditJson.nextCommand, "deno task dc -- audit");
+  assertStringIncludes(auditJson.nextCommand, ` --db ${dbPath}`);
 
-  const doctorOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "doctor",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const doctorOutput = await runDcCli(["doctor", "--db", dbPath]);
   assertEquals(doctorOutput.code, 2);
   assertStringIncludes(
-    new TextDecoder().decode(doctorOutput.stderr),
+    doctorOutput.stderr,
     "Unknown command: doctor",
   );
 
-  const auditDoctorOutput = await new Deno.Command(Deno.execPath(), {
+  const auditDoctorOutput = await runDcCli(["audit", "doctor", "--db", dbPath]);
+  assertEquals(auditDoctorOutput.code, 2);
+  assertStringIncludes(
+    auditDoctorOutput.stderr,
+    "Unknown command: audit doctor",
+  );
+});
+
+async function runDcCli(
+  args: string[],
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
       "run",
       "--allow-read",
       "--allow-write",
       "--allow-env",
+      "--allow-run",
+      "--allow-net",
       "--allow-ffi",
       "scripts/dc.ts",
-      "audit",
-      "doctor",
-      "--db",
-      dbPath,
+      ...args,
     ],
   }).output();
-  assertEquals(auditDoctorOutput.code, 2);
-  assertStringIncludes(
-    new TextDecoder().decode(auditDoctorOutput.stderr),
-    "Unknown command: audit doctor",
-  );
-});
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
+}

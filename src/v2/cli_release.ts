@@ -1,6 +1,10 @@
 import { join } from "@std/path";
 import { dcCommand } from "./command_prefix.ts";
-import { buildV2Release, type ReleaseBuildProgressEvent } from "./release.ts";
+import {
+  buildV2Release,
+  RELEASE_FILE_DESCRIPTIONS,
+  type ReleaseBuildProgressEvent,
+} from "./release.ts";
 import { renderReleaseVerification, verifyWorkbenchRelease } from "./release_verify.ts";
 import type { SmokeProfile } from "./domain.ts";
 import {
@@ -13,6 +17,7 @@ import type { Workbench } from "./workbench.ts";
 export interface ReleaseCommandOptions {
   json?: boolean;
   outDir: string;
+  dbPath: string;
   sourceProfile?: SmokeProfile | "custom";
 }
 
@@ -45,7 +50,15 @@ export async function handleReleaseCommand(
           },
         }),
     );
+    const inspectCommand = dcCommand(`release inspect --out ${result.outDir}`);
+    const nextCommand = inspectCommand;
+    if (options.json) {
+      console.log(JSON.stringify({ ...result, inspectCommand, nextCommand }, null, 2));
+      return true;
+    }
     console.log(`Built release ${result.outDir}`);
+    console.log(`Inspect: ${inspectCommand}`);
+    console.log(`Next: ${nextCommand}`);
     return true;
   }
   if (args[1] === "verify") {
@@ -53,7 +66,10 @@ export async function handleReleaseCommand(
       printReleaseHelp();
       return true;
     }
-    const result = await deps.withWorkbench((workbench) => verifyWorkbenchRelease(workbench));
+    const result = scopeReleaseVerifyCommands(
+      await deps.withWorkbench((workbench) => verifyWorkbenchRelease(workbench)),
+      options.dbPath,
+    );
     if (options.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -89,6 +105,9 @@ export function renderReleaseBuildProgress(event: ReleaseBuildProgressEvent): st
 }
 
 export function printReleaseHelp(): void {
+  const releaseFileLines = chunkReleaseFileNames(
+    RELEASE_FILE_DESCRIPTIONS.map((file) => file.name),
+  ).map((line) => `  ${line}`).join("\n");
   console.log(`${dcCommand("release")}
 
 Workflow:
@@ -101,11 +120,11 @@ Usage:
   ${dcCommand("release verify")} [--db <path>] [--json]
   ${
     dcCommand("release build")
-  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>]
+  } [--db <path>] [--out|--output <dir>] [--source-profile <structure|tier0|inventory|custom>] [--json]
   ${dcCommand("release inspect")} [--out|--output <dir>] [--json]
 
 Release files:
-  README.md, manifest.json, dcgov.sqlite, entities.*, relationships.*, sources.*, datasets.*, legal_refs.*, entity_legal_refs.*, relationship_legal_refs.*
+${releaseFileLines}
 `);
 }
 
@@ -115,6 +134,22 @@ function hasHelpFlag(args: string[], start: number): boolean {
 
 function isHelp(value: string | undefined): boolean {
   return value === "help" || value === "--help" || value === "-h";
+}
+
+function chunkReleaseFileNames(fileNames: readonly string[]): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const name of fileNames) {
+    const next = current ? `${current}, ${name}` : name;
+    if (next.length > 115 && current) {
+      lines.push(`${current},`);
+      current = name;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 function renderReleaseBuildCounts(
@@ -129,4 +164,28 @@ function renderReleaseBuildCounts(
     ["legal_refs", counts.legalRefs],
   ].filter((row): row is [string, number] => typeof row[1] === "number");
   return parts.map(([name, count]) => `${name}=${count}`).join(" ");
+}
+
+function scopeReleaseVerifyCommands<
+  T extends {
+    buildCommand?: string;
+    warningReviewCommand?: string;
+    publicBodyCompareCommand?: string;
+    nextCommand: string;
+  },
+>(result: T, dbPath: string): T {
+  return {
+    ...result,
+    buildCommand: scopeDbCommand(result.buildCommand, dbPath),
+    warningReviewCommand: scopeDbCommand(result.warningReviewCommand, dbPath),
+    publicBodyCompareCommand: scopeDbCommand(result.publicBodyCompareCommand, dbPath),
+    nextCommand: scopeDbCommand(result.nextCommand, dbPath) ?? result.nextCommand,
+  };
+}
+
+function scopeDbCommand(command: string | undefined, dbPath: string): string | undefined {
+  if (!command) return undefined;
+  if (command.includes(" --db ")) return command;
+  if (!command.startsWith("deno task dc -- ")) return command;
+  return `${command} --db ${dbPath}`;
 }

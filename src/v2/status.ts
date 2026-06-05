@@ -11,12 +11,15 @@ export interface WorkbenchStatusSnapshot {
     failed: number;
     total: number;
     firstFailedSourceId?: string;
+    firstFailedSourceErrorText?: string;
   };
   review: {
     open: number;
     humanDecisionOpen: number;
     browseOnlyOpen: number;
     deferred: number;
+    humanDecisionOpenByItemType: Array<{ itemType: string; count: number }>;
+    browseCommand?: string;
   };
   staleReview: {
     count: number;
@@ -58,6 +61,7 @@ export interface WorkbenchStatusSnapshot {
     firstBlocked?: {
       subjectId: string;
       sourceId: string;
+      inspectCommand: string;
       reason: string;
       relationshipType: string;
       rawValue?: string | null;
@@ -80,7 +84,9 @@ export interface WorkbenchStatusSnapshot {
   };
   publicBodies: {
     conservativeVariantLeads: number;
+    releaseRiskVariantLeads: number;
     governanceSuffixLeads: number;
+    inspectCommand?: string;
     firstGovernanceSuffixLead?: {
       variantName: string;
       sourceIds: string[];
@@ -104,6 +110,7 @@ interface WorkbenchUnresolvedCounts {
 interface WorkbenchStatusPlanInput extends WorkbenchUnresolvedCounts {
   fetchedSources: number;
   failedSourceId?: string;
+  topUnblockerReviewCommand?: string;
 }
 
 interface WorkbenchStatusPlan {
@@ -115,12 +122,18 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
   const sourceRows = workbench.listSources();
   const fetchedSources = sourceRows.filter((row) => row.latestStatus).length;
   const failedSource = sourceRows.find((row) => row.latestStatus === "failed");
+  const failedSourceSummary = failedSource
+    ? workbench.sourceSummary(failedSource.sourceId)
+    : undefined;
   const failedSources = sourceRows.filter((row) => row.latestStatus === "failed").length;
   const reviewDecisions = reviewDecisionSummary(workbench);
   const staleReview = workbench.staleReviewSummary();
   const placeholders = workbench.placeholderSummary();
   const unresolvedWork = workbench.unresolvedWorkGraph();
   const reconciliation = summarizeUnresolvedReconciliation(unresolvedWork);
+  const topUnblockerReviewCommand = reconciliation.topUnblocker
+    ? reviewCommandForUnblocker(reconciliation.topUnblocker)
+    : undefined;
   const publicBodyComparison = workbench.comparePublicBodies();
   const governanceSuffixLeads = publicBodyComparison.conservativeVariantMatches.filter((match) =>
     match.matchKinds.includes("governance_suffix")
@@ -136,6 +149,7 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
     deferredReviewItemCount: reviewDecisions.deferred,
     staleReviewItemCount: staleReview.count,
     blockedReconciliationCount: reconciliation.blockedCount,
+    topUnblockerReviewCommand,
     placeholderEntityCount: placeholders.count,
   });
   return {
@@ -144,12 +158,17 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       failed: failedSources,
       total: connectors.length,
       firstFailedSourceId: failedSource?.sourceId,
+      firstFailedSourceErrorText: failedSourceSummary?.latestErrorText,
     },
     review: {
       open: reviewDecisions.open,
       humanDecisionOpen: reviewDecisions.humanDecisionOpen,
       browseOnlyOpen: reviewDecisions.browseOnlyOpen,
       deferred: reviewDecisions.deferred,
+      humanDecisionOpenByItemType: reviewDecisions.humanDecisionOpenByItemType,
+      browseCommand: reviewDecisions.browseOnlyOpen > 0
+        ? dcCommand("review list --status all")
+        : undefined,
     },
     staleReview,
     placeholders,
@@ -162,11 +181,18 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
       blockedByRelationshipType: reconciliation.blockedByRelationshipType,
       blockedFamilies: reconciliation.blockedFamilies,
       blockedByReason: reconciliation.blockedByReason,
-      firstBlocked: reconciliation.firstBlocked,
+      firstBlocked: reconciliation.firstBlocked
+        ? {
+          ...reconciliation.firstBlocked,
+          inspectCommand: blockedInspectionCommand(reconciliation.firstBlocked.sourceId),
+        }
+        : undefined,
       topUnblocker: reconciliation.topUnblocker
         ? {
           ...reconciliation.topUnblocker,
-          reviewCommand: reviewCommandForUnblocker(reconciliation.topUnblocker),
+          reviewCommand: topUnblockerReviewCommand ?? reviewCommandForUnblocker(
+            reconciliation.topUnblocker,
+          ),
         }
         : undefined,
     },
@@ -176,7 +202,11 @@ export function buildWorkbenchStatus(workbench: Workbench): WorkbenchStatusSnaps
     },
     publicBodies: {
       conservativeVariantLeads: publicBodyComparison.conservativeVariantMatchCount,
+      releaseRiskVariantLeads: publicBodyComparison.releaseRiskVariantMatchCount,
       governanceSuffixLeads: governanceSuffixLeads.length,
+      inspectCommand: governanceSuffixLeads.length > 0
+        ? publicBodyLeadsInspectCommand()
+        : undefined,
       firstGovernanceSuffixLead: governanceSuffixLeads[0]
         ? {
           variantName: governanceSuffixLeads[0].variantName,
@@ -215,12 +245,15 @@ function unresolvedStateNote(counts: WorkbenchUnresolvedCounts): string {
 
 function nextWorkbenchCommand(input: WorkbenchStatusPlanInput): string {
   if (input.failedSourceId) return dcCommand(`source inspect ${input.failedSourceId}`);
+  if (input.topUnblockerReviewCommand) return input.topUnblockerReviewCommand;
   if ((input.humanDecisionOpenReviewItemCount ?? input.openReviewItemCount) > 0) {
     return dcCommand("review");
   }
+  if (input.staleReviewItemCount > 0) return dcCommand("review");
   if (input.blockedReconciliationCount > 0) return dcCommand("audit");
+  if (input.placeholderEntityCount > 0) return dcCommand("audit");
   if (input.fetchedSources < connectors.length) return dcCommand("source list");
-  return dcCommand("release build");
+  return dcCommand("release verify");
 }
 
 export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
@@ -251,15 +284,32 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
     `Sources: ${status.sources.fetched}/${status.sources.total} fetched${
       status.sources.failed > 0 ? `, ${status.sources.failed} failed` : ""
     }`,
+    ...(status.sources.firstFailedSourceId
+      ? [`First failed source: ${status.sources.firstFailedSourceId}`]
+      : []),
+    ...(status.sources.firstFailedSourceErrorText
+      ? [`Failure detail: ${status.sources.firstFailedSourceErrorText}`]
+      : []),
     `Decisions: ${status.review.humanDecisionOpen} open, ${status.review.deferred} deferred`,
+    ...(status.review.humanDecisionOpenByItemType.length > 0
+      ? [`Decision types: ${renderItemTypeCounts(status.review.humanDecisionOpenByItemType)}`]
+      : []),
     `Browse: ${status.review.browseOnlyOpen} source-backed row${
       status.review.browseOnlyOpen === 1 ? "" : "s"
     }`,
+    ...(status.review.browseOnlyOpen > 0
+      ? [`Browse rows: ${status.review.browseCommand ?? dcCommand("review list --status all")}`]
+      : []),
     `Stale review: ${status.staleReview.count}${
       status.staleReview.firstStale?.priorDecisionState
         ? ` from prior ${status.staleReview.firstStale.priorDecisionState} decision`
         : ""
     }`,
+    ...(status.staleReview.firstStale
+      ? [
+        `First stale: ${status.staleReview.firstStale.subjectId} (${status.staleReview.firstStale.reason})`,
+      ]
+      : []),
     `Placeholders: ${status.placeholders.count}${
       status.placeholders.firstPlaceholder
         ? ` first ${status.placeholders.firstPlaceholder.name}${
@@ -282,6 +332,10 @@ export function renderWorkbenchStatus(status: WorkbenchStatusSnapshot): string {
   ].join("\n");
 }
 
+function renderItemTypeCounts(rows: Array<{ itemType: string; count: number }>): string {
+  return rows.map((row) => `${row.itemType}=${row.count}`).join(", ");
+}
+
 function renderPublicBodyLinkageSummary(status: WorkbenchStatusSnapshot["publicBodies"]): string[] {
   if (status.governanceSuffixLeads === 0) return [];
   return [
@@ -292,12 +346,40 @@ function renderPublicBodyLinkageSummary(status: WorkbenchStatusSnapshot["publicB
         ? `, first ${status.firstGovernanceSuffixLead.variantName}`
         : ""
     }`,
-    `Inspect leads: ${dcCommand("source compare public-bodies")}`,
+    `Inspect leads: ${status.inspectCommand ?? publicBodyLeadsInspectCommand()}`,
   ];
+}
+
+function publicBodyLeadsInspectCommand(): string {
+  return dcCommand("source compare public-bodies");
 }
 
 export function renderWorkbenchAudit(status: WorkbenchStatusSnapshot): string {
   const lines = [renderWorkbenchStatus(status)];
+  if (status.placeholders.firstPlaceholder) {
+    lines.push(
+      "",
+      "Placeholder detail:",
+      `Entity: ${status.placeholders.firstPlaceholder.name}`,
+      ...(status.placeholders.firstPlaceholder.placeholderReason
+        ? [`Reason: ${status.placeholders.firstPlaceholder.placeholderReason}`]
+        : []),
+      `Kind: ${status.placeholders.firstPlaceholder.kind}`,
+      `Entity id: ${status.placeholders.firstPlaceholder.entityId}`,
+    );
+  }
+  if (status.staleReview.firstStale) {
+    lines.push(
+      "",
+      "Stale review detail:",
+      `Subject id: ${status.staleReview.firstStale.subjectId}`,
+      `Item type: ${status.staleReview.firstStale.itemType}`,
+      ...(status.staleReview.firstStale.priorDecisionState
+        ? [`Prior decision: ${status.staleReview.firstStale.priorDecisionState}`]
+        : []),
+      `Reason: ${status.staleReview.firstStale.reason}`,
+    );
+  }
   if (status.reconciliation.firstBlocked) {
     lines.push(
       "",
@@ -318,7 +400,7 @@ export function renderWorkbenchAudit(status: WorkbenchStatusSnapshot): string {
         ]
         : []),
       `Subject id: ${status.reconciliation.firstBlocked.subjectId}`,
-      `Inspect source: ${blockedInspectionCommand(status.reconciliation.firstBlocked.sourceId)}`,
+      `Inspect source: ${status.reconciliation.firstBlocked.inspectCommand}`,
     );
   }
   return lines.join("\n");
@@ -391,6 +473,7 @@ function reviewCommandForUnblocker(
 ): string {
   return renderReviewCommand({
     mode: reviewModeForItemType(topUnblocker.itemType),
+    sourceId: topUnblocker.sourceId,
     subjectPrefix: topUnblocker.subjectId,
   });
 }

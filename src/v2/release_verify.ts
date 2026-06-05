@@ -1,11 +1,21 @@
 import { buildWorkbenchStatus } from "./status.ts";
+import { dcCommand } from "./command_prefix.ts";
 import {
   acceptedReleaseEntities,
+  acceptedReleaseLegalAttachments,
   acceptedReleaseLegalRefs,
   acceptedReleaseRelationships,
 } from "./release.ts";
-import { classifyReleaseReadiness, type ReleaseReadiness } from "./release_readiness.ts";
-import { releaseReadinessInputFromWorkbenchStatus } from "./release_summary.ts";
+import {
+  classifyReleaseReadiness,
+  type ReleaseReadiness,
+  releaseWarningReasons,
+} from "./release_readiness.ts";
+import {
+  buildReleaseSummaryFromStatus,
+  releaseReadinessInputFromSummary,
+  type ReleaseSummaryRows,
+} from "./release_summary.ts";
 import { isPublicHttpUrl } from "./url_safety.ts";
 import type { Workbench } from "./workbench.ts";
 
@@ -74,6 +84,12 @@ export interface ReleaseVerificationResult {
   ready: boolean;
   readiness: ReleaseReadiness;
   reasons: string[];
+  warningReasons: string[];
+  buildCommand?: string;
+  warningReviewCommand?: string;
+  publicBodyCompareCommand?: string;
+  firstFailedSourceId?: string;
+  firstFailedSourceErrorText?: string;
   sourceArtifactProblems: ReleaseArtifactProblem[];
   entityProvenanceCheckedCount: number;
   entityProvenanceProblems: ReleaseEntityProvenanceProblem[];
@@ -124,6 +140,38 @@ interface ReleaseRelationshipLegalRefProvenanceCheck {
 
 export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificationResult {
   const status = buildWorkbenchStatus(workbench);
+  const allEntities = workbench.canonicalEntities();
+  const acceptedEntities = acceptedReleaseEntities(allEntities);
+  const releaseEntityIds = new Set(acceptedEntities.map((row) => row.id));
+  const knownEntityIds = new Set(allEntities.map((row) => row.id));
+  const acceptedRelationships = acceptedReleaseRelationships(
+    workbench.canonicalRelationships(),
+    releaseEntityIds,
+    knownEntityIds,
+  );
+  const releaseRelationshipIds = new Set(acceptedRelationships.map((row) => row.id));
+  const sources = workbench.sourceInventory();
+  const acceptedDatasets = workbench.datasets();
+  const acceptedLegalRefs = acceptedReleaseLegalRefs(workbench.legalRefs());
+  const acceptedLegalRefIds = new Set(acceptedLegalRefs.map((row) => row.id));
+  const acceptedEntityLegalRefRows = acceptedReleaseLegalAttachments(
+    workbench.entityLegalRefs(),
+    acceptedLegalRefIds,
+  ).filter((row) => releaseEntityIds.has(row.entity_id));
+  const acceptedRelationshipLegalRefRows = acceptedReleaseLegalAttachments(
+    workbench.relationshipLegalRefs(),
+    acceptedLegalRefIds,
+  ).filter((row) => releaseRelationshipIds.has(row.relationship_id));
+  const summaryRows: ReleaseSummaryRows = {
+    entities: acceptedEntities,
+    relationships: acceptedRelationships,
+    sources,
+    datasets: acceptedDatasets,
+    legalRefs: acceptedLegalRefs,
+    entityLegalRefs: acceptedEntityLegalRefRows,
+    relationshipLegalRefs: acceptedRelationshipLegalRefRows,
+  };
+  const releaseSummary = buildReleaseSummaryFromStatus(status, summaryRows);
   const sourceArtifactProblems = validateSourceArtifacts(workbench.sourceArtifacts());
   const entityProvenance = validateEntityProvenance(workbench);
   const entityProvenanceProblems = entityProvenance.problems;
@@ -197,20 +245,33 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
       }`,
     );
   }
+  const readinessInput = releaseReadinessInputFromSummary(releaseSummary, {
+    blockingProblemCount: sourceArtifactProblems.length +
+      entityProvenanceProblems.length +
+      relationshipProvenanceProblems.length +
+      datasetProvenanceProblems.length +
+      legalRefProvenanceProblems.length +
+      entityLegalRefProvenanceProblems.length +
+      relationshipLegalRefProvenanceProblems.length,
+  });
+  const warningReasons = releaseWarningReasons(readinessInput);
+  const buildCommand = reasons.length === 0 ? dcCommand("release build") : undefined;
+  const warningReviewCommand = (status.review.humanDecisionOpen > 0 || status.review.deferred > 0)
+    ? dcCommand("review list --status all --decisions")
+    : undefined;
+  const publicBodyCompareCommand = status.publicBodies.releaseRiskVariantLeads > 0
+    ? dcCommand("source compare public-bodies")
+    : undefined;
   return {
     ready: reasons.length === 0,
-    readiness: classifyReleaseReadiness(
-      releaseReadinessInputFromWorkbenchStatus(status, {
-        blockingProblemCount: sourceArtifactProblems.length +
-          entityProvenanceProblems.length +
-          relationshipProvenanceProblems.length +
-          datasetProvenanceProblems.length +
-          legalRefProvenanceProblems.length +
-          entityLegalRefProvenanceProblems.length +
-          relationshipLegalRefProvenanceProblems.length,
-      }),
-    ),
+    readiness: classifyReleaseReadiness(readinessInput),
     reasons,
+    warningReasons,
+    buildCommand,
+    warningReviewCommand,
+    publicBodyCompareCommand,
+    firstFailedSourceId: status.sources.firstFailedSourceId,
+    firstFailedSourceErrorText: status.sources.firstFailedSourceErrorText,
     sourceArtifactProblems,
     entityProvenanceCheckedCount: entityProvenance.checkedCount,
     entityProvenanceProblems,
@@ -225,7 +286,7 @@ export function verifyWorkbenchRelease(workbench: Workbench): ReleaseVerificatio
     relationshipLegalRefProvenanceCheckedCount: relationshipLegalRefProvenance.checkedCount,
     relationshipLegalRefProvenanceProblems,
     legalAttachmentAudit,
-    nextCommand: status.nextCommand,
+    nextCommand: buildCommand ?? status.nextCommand,
     unresolvedStateNote: status.unresolvedStateNote,
   };
 }
@@ -243,6 +304,22 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
       lines.push(`- ${reason}`);
     }
   }
+  if (result.warningReasons.length > 0) {
+    lines.push("Warnings:");
+    for (const reason of result.warningReasons) {
+      lines.push(`- ${reason}`);
+    }
+    lines.push("Warnings do not block release build.");
+    if (result.warningReviewCommand) {
+      lines.push(`Review warnings: ${result.warningReviewCommand}`);
+    }
+    if (result.publicBodyCompareCommand) {
+      lines.push(`Compare public bodies: ${result.publicBodyCompareCommand}`);
+    }
+  }
+  if (result.buildCommand) {
+    lines.push(`Build: ${result.buildCommand}`);
+  }
   if (result.sourceArtifactProblems.length > 0) {
     const problems = result.sourceArtifactProblems.slice(0, 5);
     lines.push(
@@ -255,6 +332,12 @@ export function renderReleaseVerification(result: ReleaseVerificationResult): st
         `- ${problem.sourceId} ${problem.endpointId} ${problem.artifactKind}: ${problem.message}`,
       );
     }
+  }
+  if (result.firstFailedSourceId) {
+    lines.push(`First failed source: ${result.firstFailedSourceId}`);
+  }
+  if (result.firstFailedSourceErrorText) {
+    lines.push(`Failure detail: ${result.firstFailedSourceErrorText}`);
   }
   lines.push(
     `Entity rows checked: ${result.entityProvenanceCheckedCount} accepted entity row${

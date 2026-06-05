@@ -41,6 +41,9 @@ Deno.test("release readiness projection uses canonical release summary fields", 
     deferredReviewItemCount: 0,
     staleReviewItemCount: 0,
     blockedReconciliationCount: 0,
+    publicBodyReleaseRiskVariantLeadCount: 0,
+    acceptedMultiGovernorEntityCount: 0,
+    acceptedPublicBodyMissingOfficialUrlCount: 0,
     placeholderEntityCount: 0,
     blockingProblemCount: 0,
   });
@@ -64,6 +67,71 @@ Deno.test("release readiness projection uses canonical release summary fields", 
       }),
     ),
     "not-ready",
+  );
+});
+
+Deno.test("release readiness projection warns on accepted multi-governor entities", () => {
+  const summary: Partial<ReleaseSummary> = {
+    source_count: 1,
+    failed_source_count: 0,
+    open_human_decision_review_item_count: 0,
+    deferred_review_item_count: 0,
+    stale_review_item_count: 0,
+    blocked_reconciliation_count: 0,
+    public_body_release_risk_variant_lead_count: 0,
+    accepted_multi_governor_entity_count: 3,
+    placeholder_entity_count: 0,
+  };
+
+  assertEquals(releaseReadinessInputFromSummary(summary), {
+    sourceCount: 1,
+    failedSourceCount: 0,
+    openReviewItemCount: 0,
+    deferredReviewItemCount: 0,
+    staleReviewItemCount: 0,
+    blockedReconciliationCount: 0,
+    publicBodyReleaseRiskVariantLeadCount: 0,
+    acceptedMultiGovernorEntityCount: 3,
+    acceptedPublicBodyMissingOfficialUrlCount: 0,
+    placeholderEntityCount: 0,
+    blockingProblemCount: 0,
+  });
+  assertEquals(
+    classifyReleaseReadiness(releaseReadinessInputFromSummary(summary)),
+    "usable-with-warnings",
+  );
+});
+
+Deno.test("release readiness projection warns on accepted public bodies missing official URLs", () => {
+  const summary: Partial<ReleaseSummary> = {
+    source_count: 1,
+    failed_source_count: 0,
+    open_human_decision_review_item_count: 0,
+    deferred_review_item_count: 0,
+    stale_review_item_count: 0,
+    blocked_reconciliation_count: 0,
+    public_body_release_risk_variant_lead_count: 0,
+    accepted_multi_governor_entity_count: 0,
+    accepted_public_body_missing_official_url_count: 25,
+    placeholder_entity_count: 0,
+  };
+
+  assertEquals(releaseReadinessInputFromSummary(summary), {
+    sourceCount: 1,
+    failedSourceCount: 0,
+    openReviewItemCount: 0,
+    deferredReviewItemCount: 0,
+    staleReviewItemCount: 0,
+    blockedReconciliationCount: 0,
+    publicBodyReleaseRiskVariantLeadCount: 0,
+    acceptedMultiGovernorEntityCount: 0,
+    acceptedPublicBodyMissingOfficialUrlCount: 25,
+    placeholderEntityCount: 0,
+    blockingProblemCount: 0,
+  });
+  assertEquals(
+    classifyReleaseReadiness(releaseReadinessInputFromSummary(summary)),
+    "usable-with-warnings",
   );
 });
 
@@ -110,9 +178,13 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
     release_summary: {
       open_review_item_count: number;
       open_human_decision_review_item_count: number;
+      open_human_decision_review_item_count_by_type: Array<{ item_type: string; count: number }>;
       browse_only_open_review_item_count: number;
       deferred_review_item_count: number;
       blocked_reconciliation_count: number;
+      public_body_variant_lead_count: number;
+      public_body_release_risk_variant_lead_count: number;
+      public_body_governance_suffix_lead_count: number;
       placeholder_entity_count: number;
       blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
       failed_source_count: number;
@@ -125,6 +197,13 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   assertEquals(
     manifest.release_summary.open_human_decision_review_item_count,
     status.review.humanDecisionOpen,
+  );
+  assertEquals(
+    manifest.release_summary.open_human_decision_review_item_count_by_type,
+    status.review.humanDecisionOpenByItemType.map((row) => ({
+      item_type: row.itemType,
+      count: row.count,
+    })),
   );
   assertEquals(
     manifest.release_summary.browse_only_open_review_item_count,
@@ -144,6 +223,18 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
       count: row.count,
     })),
   );
+  assertEquals(
+    manifest.release_summary.public_body_variant_lead_count,
+    status.publicBodies.conservativeVariantLeads,
+  );
+  assertEquals(
+    manifest.release_summary.public_body_release_risk_variant_lead_count,
+    status.publicBodies.releaseRiskVariantLeads,
+  );
+  assertEquals(
+    manifest.release_summary.public_body_governance_suffix_lead_count,
+    status.publicBodies.governanceSuffixLeads,
+  );
   assert(manifest.release_summary.blocked_reconciliation_count > 0);
   assertEquals(manifest.release_summary.placeholder_entity_count, 1);
   assert(
@@ -153,47 +244,22 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   );
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  const inspectOutput = await runReleaseInspect(outDir);
+  const inspectText = inspectOutput.stdout;
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(inspectText, "Release readiness: not-ready");
   assertStringIncludes(inspectText, "Decisions: open=");
+  assertStringIncludes(inspectText, "Decision types:");
   assertStringIncludes(inspectText, "Browse: source-backed rows=");
   assert(!inspectText.includes("Blocked by source: council.committees="));
 
-  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+  const inspectJsonOutput = await runReleaseInspect(outDir, { json: true });
+  const inspectJson = JSON.parse(inspectJsonOutput.stdout) as {
     readiness: string;
     releaseSummary: {
       blocked_reconciliation_count: number;
       placeholder_entity_count: number;
+      open_human_decision_review_item_count_by_type: Array<{ item_type: string; count: number }>;
       blocked_reconciliation_by_source: Array<{ source_id: string; count: number }>;
     };
   };
@@ -201,6 +267,11 @@ Deno.test("release summary surfaces unresolved review debt and placeholder risk 
   assertEquals(inspectJson.readiness, "not-ready");
   assert(inspectJson.releaseSummary.blocked_reconciliation_count > 0);
   assertEquals(inspectJson.releaseSummary.placeholder_entity_count, 1);
+  assert(
+    inspectJson.releaseSummary.open_human_decision_review_item_count_by_type.some((row) =>
+      row.item_type === "relationship_candidate" && row.count > 0
+    ),
+  );
   assert(
     inspectJson.releaseSummary.blocked_reconciliation_by_source.some((row) =>
       row.source_id === "council.committees" && row.count > 0
@@ -266,40 +337,13 @@ Deno.test("release summary surfaces stale review debt neutrally", async () => {
   );
   assertReleaseReadmeOmitsWorkbenchStatusLanguage(readme);
 
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  const inspectOutput = await runReleaseInspect(outDir);
+  const inspectText = inspectOutput.stdout;
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(inspectText, "stale=1");
 
-  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+  const inspectJsonOutput = await runReleaseInspect(outDir, { json: true });
+  const inspectJson = JSON.parse(inspectJsonOutput.stdout) as {
     releaseSummary: {
       stale_review_item_count: number;
       stale_review_by_prior_decision_state: Array<{ prior_decision_state: string; count: number }>;
@@ -392,21 +436,8 @@ Deno.test("release summary keeps decision counts without serializing review ledg
   assert(!readme.includes("## Top unresolved review items"));
   assert(!readme.includes("Review fixture entity candidate"));
 
-  const inspectOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-    ],
-  }).output();
-  const inspectText = new TextDecoder().decode(inspectOutput.stdout);
+  const inspectOutput = await runReleaseInspect(outDir);
+  const inspectText = inspectOutput.stdout;
   assertEquals(inspectOutput.code, 0);
   assertStringIncludes(
     inspectText,
@@ -418,22 +449,8 @@ Deno.test("release summary keeps decision counts without serializing review ledg
   assert(!inspectText.includes("test.signature.entities(open=1,deferred=0)"));
   assert(!inspectText.includes("test.signature.legal_refs(open=0,deferred=1)"));
 
-  const inspectJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "release",
-      "inspect",
-      "--out",
-      outDir,
-      "--json",
-    ],
-  }).output();
-  const inspectJson = JSON.parse(new TextDecoder().decode(inspectJsonOutput.stdout)) as {
+  const inspectJsonOutput = await runReleaseInspect(outDir, { json: true });
+  const inspectJson = JSON.parse(inspectJsonOutput.stdout) as {
     releaseSummary: {
       review_debt_by_type?: unknown;
       review_debt_by_source?: unknown;
@@ -445,3 +462,29 @@ Deno.test("release summary keeps decision counts without serializing review ledg
   assertEquals(inspectJson.releaseSummary.review_debt_by_source, undefined);
   assertEquals(inspectJson.releaseSummary.top_unresolved_review_items, undefined);
 });
+
+async function runReleaseInspect(
+  outDir: string,
+  options: { json?: boolean } = {},
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "release",
+      "inspect",
+      "--out",
+      outDir,
+      ...(options.json ? ["--json"] : []),
+    ],
+  }).output();
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
+}
