@@ -113,6 +113,17 @@ export function resolveKnownEntityRef(name: string): string | undefined {
   return undefined;
 }
 
+export function resolveKnownEntityOfficialUrl(name: string): string | undefined {
+  const directUrl = knownEntityOfficialUrls.get(entityAliasKey(name));
+  if (directUrl) return directUrl;
+  const variants = acceptedStyleEntityVariants(name);
+  for (const variant of variants) {
+    const url = knownEntityOfficialUrls.get(entityAliasKey(variant));
+    if (url) return url;
+  }
+  return undefined;
+}
+
 export function buildKnownCouncilOversightEntityRef(rawValue: string): string {
   const baseName = extractScopedCouncilOversightBaseName(rawValue);
   return buildKnownEntityRef(baseName ?? rawValue);
@@ -201,6 +212,54 @@ export function maybeString(value: unknown): string | undefined {
   return text ? text : undefined;
 }
 
+export function resolveKnownLegalRefCorrection(
+  subjectName: string,
+  citationText: string,
+): { refType: "mayors_order"; normalizedCitation: string; url?: string } | undefined {
+  const normalizedSubject = normalizeName(subjectName).toLowerCase();
+  const normalizedCitation = normalizeName(citationText);
+  if (
+    /^interagency coordinating council(?:\s*\(icc\))?$/i.test(normalizedSubject) &&
+    /^(?:Mayor['’]?s?\s+Order\s+)?20012-49$/i.test(normalizedCitation)
+  ) {
+    return {
+      refType: "mayors_order",
+      normalizedCitation: "Mayor's Order 2012-49",
+      url:
+        "https://www.open-dc.gov/sites/default/files/Mayor%27s%20Order%202012-49-Interagency-Coordinating-Council.pdf",
+    };
+  }
+  if (
+    /^statewide independent living council(?:\s*\(silc\))?$/i.test(normalizedSubject) &&
+    /^1993-148$/i.test(normalizedCitation)
+  ) {
+    return {
+      refType: "mayors_order",
+      normalizedCitation: "Mayor's Order 93-148",
+    };
+  }
+  if (
+    /^statewide independent living council(?:\s*\(silc\))?$/i.test(normalizedSubject) &&
+    /^1993-148;\s*amended by 2001-79 and 2012-154$/i.test(normalizedCitation)
+  ) {
+    return {
+      refType: "mayors_order",
+      normalizedCitation: "Mayor's Order 1993-148; amended by 2001-79 and 2012-154",
+      url: "https://www.open-dc.gov/Mayors_Order_2012-154",
+    };
+  }
+  if (
+    /^public charter school credit enhancement committee$/i.test(normalizedSubject) &&
+    /^CDCR 26A-2600$/i.test(normalizedCitation)
+  ) {
+    return {
+      refType: "mayors_order",
+      normalizedCitation: "Mayor's Order 2016-037",
+    };
+  }
+  return undefined;
+}
+
 function entityAliasKey(name: string): string {
   return normalizeName(name).toLowerCase();
 }
@@ -242,7 +301,19 @@ const knownEntityRefs = new Map<string, string>([
     "alcoholic beverages and cannabis administration (abca)",
     "dc.alcoholic_beverage_and_cannabis_administration",
   ],
+  [
+    "mayor's office of general counsel",
+    "dc.mayor_s_office_of_legal_counsel",
+  ],
+  [
+    "mayor's office of the general counsel",
+    "dc.mayor_s_office_of_legal_counsel",
+  ],
   ["bicycle advisory council", "dc.bicycle_advisory_council"],
+  [
+    "board of architecture, interior design and landscape architect",
+    "dc.board_of_architecture_interior_design_and_landscape_architecture",
+  ],
   [
     "board of review of anti-deficiency violations",
     "dc.board_of_review_for_anti_deficiency_violations",
@@ -344,9 +415,10 @@ const knownEntityRefs = new Map<string, string>([
   ["mpd", "dc.metropolitan_police_department"],
   ["moddhh", "dc.office_for_the_deaf_deafblind_and_hard_of_hearing"],
   ["mopi", "dc.mayor_s_office_of_policy_and_innovation"],
-  ["mayor's office of veterans affairs (mova)", "dc.office_of_veterans_affairs"],
+  ["mayor's office of veterans affairs (mova)", "dc.mayor_s_office_of_veterans_affairs"],
   ["mayor", "dc.mayor"],
-  ["mayor's office of veteran's affairs", "dc.office_of_veterans_affairs"],
+  ["mayor's office of veteran's affairs", "dc.mayor_s_office_of_veterans_affairs"],
+  ["office of veterans affairs", "dc.mayor_s_office_of_veterans_affairs"],
   ["mayor's office of african affairs", "dc.mayor_s_office_on_african_affairs"],
   [
     "mayor's office of asian and pacific islander affairs (moapia)",
@@ -421,6 +493,7 @@ const knownEntityRefs = new Map<string, string>([
   ["office of the ombudsmen for children", "dc.office_of_the_ombudsperson_for_children"],
   ["dc department of human resources (dchr)", "dc.department_of_human_resources"],
   ["dc department of human resources", "dc.department_of_human_resources"],
+  ["dc office of zoning", "dc.office_of_zoning"],
   [
     "department of youth rehabilitative services",
     "dc.department_of_youth_rehabilitation_services",
@@ -457,4 +530,87 @@ const knownEntityRefs = new Map<string, string>([
   ],
   ["water and sewer authority (wasa)", "dc.dc_water"],
   ["washington metrorail safety commission", "dc.washington_metrorail_safety_commission"],
+]);
+
+const knownEntityOfficialUrls = new Map<string, string>([
+  [
+    "age-friendly dc task force",
+    "https://agefriendly.dc.gov/page/age-friendly-dc-task-force",
+  ],
+  [
+    "behavioral health planning council",
+    "https://dbh.dc.gov/service/behavioral-health-planning-council-bhpc",
+  ],
+  [
+    "office of independent juvenile justice facilities oversight",
+    "https://oijjfo.dc.gov/",
+  ],
+  [
+    "office of and commission on human rights",
+    "https://ohr.dc.gov/page/hearing-unit-and-dc-commission-human-rights",
+  ],
+  [
+    "office and commission on african affairs",
+    "https://communityaffairs.dc.gov/moaa",
+  ],
+  [
+    "office and commission on african american affairs",
+    "https://communityaffairs.dc.gov/moaaa",
+  ],
+  [
+    "office on caribbean affairs",
+    "https://communityaffairs.dc.gov/mocca",
+  ],
+  [
+    "office on religious affairs",
+    "https://communityaffairs.dc.gov/mora",
+  ],
+  [
+    "metropolitan washington council of governments board of directors (cog)",
+    "https://www.mwcog.org/committees/cog-board-of-directors/",
+  ],
+  [
+    "science advisory board",
+    "https://dfs.dc.gov/page/science-advisory-board",
+  ],
+  [
+    "research practice partnership",
+    "https://osse.dc.gov/page/research-practice-partnership",
+  ],
+  [
+    "statehood commission and delegation",
+    "https://statehood.dc.gov/page/new-columbia-statehood-commission",
+  ],
+  [
+    "clemency board",
+    "https://clemency.dc.gov/",
+  ],
+  [
+    "commission on poverty",
+    "https://does.dc.gov/service/dc-commission-poverty",
+  ],
+  [
+    "green finance authority",
+    "https://cfo.dc.gov/publication/2027-kb0-green-finance-authority",
+  ],
+  [
+    "metropolitan washington airports authority",
+    "https://www.mwaa.com/",
+  ],
+  [
+    "sustainable energy utility",
+    "https://doee.dc.gov/service/dc-sustainable-energy-utility-dcseu",
+  ],
+  [
+    "tobacco settlement financing corporation",
+    "https://cfo.dc.gov/page/district-columbia-tobacco-settlement-financing-corporation",
+  ],
+  [
+    "washington aqueduct",
+    "https://www.nab.usace.army.mil/Missions/Washington-Aqueduct/",
+  ],
+  [
+    "washington metropolitan area transit authority",
+    "https://wmata.com/",
+  ],
 ]);

@@ -19,12 +19,14 @@ import {
   captureSingle,
   fieldEvidence,
   resolveKnownEntityRef,
+  resolveKnownLegalRefCorrection,
   toAbsoluteUrl,
   toPublicHttpUrl,
 } from "./shared.ts";
 import type { ConnectorContext, ConnectorResult, SourceConnector } from "./shared.ts";
 import { detectEntityKind } from "../domain.ts";
 import { normalizeName, stripHtml } from "../domain.ts";
+import { DC_LAW_INDEX_URL, DcLawTitleIndex, looksLikeDcLawTitle } from "./dc_law_index.ts";
 
 const openDcSource: SourceDefinition = {
   sourceId: "open_dc.public_bodies",
@@ -46,6 +48,15 @@ const priorityPublicBodySlugs = new Set([
   "tax-revision-commission",
 ]);
 const openDcDetailFetchConcurrency = 6;
+const openDcSupplementalIndexUrls = [
+  "https://www.open-dc.gov/public-bodies-general-0",
+];
+
+interface OpenDcLawTitleIndex {
+  index: DcLawTitleIndex;
+  artifact: ReturnType<typeof artifact>;
+  artifactIndex: number;
+}
 
 export const openDcConnector: SourceConnector = {
   sourceId: openDcSource.sourceId,
@@ -69,21 +80,25 @@ export const openDcConnector: SourceConnector = {
       method: "GET",
       captureMode: "documents",
     };
-    const indexResponse = await context.fetcher(openDcSource.baseUrl);
-    const indexHtml = await indexResponse.text();
+    const indexPages = await fetchOpenDcIndexPages(context.fetcher);
     const links = selectOpenDcLinks(
-      parseOpenDcIndex(indexHtml),
+      indexPages.flatMap((page) => parseOpenDcIndex(page.html)),
       context.limit,
     );
     const detailRecords = await fetchOpenDcDetailRecords(context.fetcher, links);
-    const detailParsed = deriveOpenDcDetailParsed(detailRecords);
+    const lawTitleIndex = await fetchOpenDcLawTitleIndexIfNeeded(
+      context,
+      detailRecords,
+      detailRecords.length,
+    );
+    const detailParsed = deriveOpenDcDetailParsed(detailRecords, lawTitleIndex);
     return {
       source: openDcSource,
       endpointResults: [
         {
           endpoint: indexEndpoint,
           status: "success",
-          artifacts: [artifact("page", "html", openDcSource.baseUrl, indexHtml)],
+          artifacts: indexPages.map((page) => artifact("page", "html", page.url, page.html)),
           parsed: {
             items: links.map((link) => ({
               itemKey: link.slug,
@@ -97,15 +112,39 @@ export const openDcConnector: SourceConnector = {
         {
           endpoint: detailEndpoint,
           status: "success",
-          artifacts: detailRecords.map((record) =>
-            artifact("page", "html", record.detailUrl, record.detailHtml)
-          ),
+          artifacts: [
+            ...detailRecords.map((record) =>
+              artifact("page", "html", record.detailUrl, record.detailHtml)
+            ),
+            ...(lawTitleIndex ? [lawTitleIndex.artifact] : []),
+          ],
           parsed: detailParsed,
         },
       ],
     };
   },
 };
+
+async function fetchOpenDcIndexPages(
+  fetcher: ConnectorContext["fetcher"],
+): Promise<Array<{ url: string; html: string }>> {
+  const primaryResponse = await fetcher(openDcSource.baseUrl);
+  const primaryHtml = await primaryResponse.text();
+  const pages = [{ url: openDcSource.baseUrl, html: primaryHtml }];
+  if (!shouldFetchOpenDcSupplementalIndexes(primaryHtml)) {
+    return pages;
+  }
+  for (const url of openDcSupplementalIndexUrls) {
+    const response = await fetcher(url);
+    pages.push({ url, html: await response.text() });
+  }
+  return pages;
+}
+
+function shouldFetchOpenDcSupplementalIndexes(indexHtml: string): boolean {
+  return /Boards\s*&(?:amp;)?\s*Commissions\s*Tools/i.test(indexHtml) &&
+    /Office\s+of\s+Open\s+Government/i.test(indexHtml);
+}
 
 function selectOpenDcLinks(
   links: Array<{ href: string; text: string; slug: string }>,
@@ -238,7 +277,35 @@ async function fetchOpenDcDetailRecords(
   return records;
 }
 
-function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
+async function fetchOpenDcLawTitleIndexIfNeeded(
+  context: ConnectorContext,
+  records: OpenDcDetailRecord[],
+  artifactIndex: number,
+): Promise<OpenDcLawTitleIndex | undefined> {
+  if (
+    !records.some((record) => {
+      const authority = record.detail.enablingAuthority;
+      if (!authority || !looksLikeOpenDcLawTitle(authority)) return false;
+      return parseLegalReference(authority, record.detail.enablingAuthorityUrl).refType ===
+        "unknown";
+    })
+  ) {
+    return undefined;
+  }
+  context.onProgress?.({ message: "Fetching D.C. Council law title index" });
+  const response = await context.fetcher(DC_LAW_INDEX_URL);
+  const text = await response.text();
+  return {
+    index: DcLawTitleIndex.fromJsonText(text),
+    artifact: artifact("rows", "json", DC_LAW_INDEX_URL, text),
+    artifactIndex,
+  };
+}
+
+function deriveOpenDcDetailParsed(
+  records: OpenDcDetailRecord[],
+  lawTitleIndex?: OpenDcLawTitleIndex,
+): {
   items: SourceItemInput[];
   entityCandidates: EntityCandidateInput[];
   relationshipCandidates: RelationshipCandidateInput[];
@@ -403,19 +470,50 @@ function deriveOpenDcDetailParsed(records: OpenDcDetailRecord[]): {
     }
     if (detail.enablingAuthority) {
       const parsed = parseLegalReference(detail.enablingAuthority, detail.enablingAuthorityUrl);
+      const knownCorrection = resolveKnownLegalRefCorrection(detail.name, parsed.citationText);
+      const lawTitleMatch = !knownCorrection && parsed.refType === "unknown" &&
+          looksLikeOpenDcLawTitle(detail.enablingAuthority)
+        ? lawTitleIndex?.index.matchTitle(parsed.citationText)
+        : undefined;
       if (
-        shouldCreateOpenDcLegalRef(detail.enablingAuthority, detail.enablingAuthorityUrl, parsed)
+        shouldCreateOpenDcLegalRef(
+          detail.enablingAuthority,
+          detail.enablingAuthorityUrl,
+          parsed,
+          lawTitleMatch,
+        )
       ) {
         const legalRefId = buildLegalRefId(openDcSource.sourceId, `${itemKey}-authority`);
         legalRefs.push({
           legalRefId,
           sourceItemKey: itemKey,
-          refType: parsed.refType,
+          refType: knownCorrection?.refType ?? (lawTitleMatch ? "dc_law" : parsed.refType),
           citationText: parsed.citationText,
-          normalizedCitation: parsed.normalizedCitation,
-          url: detail.enablingAuthorityUrl,
-          needsReview: parsed.needsReview,
-          evidence: [fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex)],
+          normalizedCitation: knownCorrection?.normalizedCitation ?? lawTitleMatch?.citation ??
+            parsed.normalizedCitation,
+          url: knownCorrection?.url ?? lawTitleMatch?.url ?? detail.enablingAuthorityUrl,
+          needsReview: knownCorrection ? false : lawTitleMatch ? false : parsed.needsReview,
+          evidence: [
+            fieldEvidence("enablingAuthority", detail.enablingAuthority, artifactIndex),
+            ...(knownCorrection
+              ? [
+                fieldEvidence(
+                  "known legal ref correction",
+                  `${parsed.citationText} -> ${knownCorrection.normalizedCitation}`,
+                  artifactIndex,
+                ),
+              ]
+              : []),
+            ...(lawTitleMatch && lawTitleIndex
+              ? [
+                fieldEvidence(
+                  "DCCouncil law index",
+                  `${lawTitleMatch.citation}: ${lawTitleMatch.title}`,
+                  lawTitleIndex.artifactIndex,
+                ),
+              ]
+              : []),
+          ],
           attachEntityRef: proposedEntityId,
         });
       }
@@ -462,7 +560,9 @@ function normalizeOpenDcBaseName(value: string): string {
 }
 
 function isOpenDcNonBodyDetailTitle(value: string): boolean {
-  return /\((?:RECESS|DUPLICATE)\)\s*$/i.test(normalizeName(value));
+  const normalized = normalizeName(value);
+  return normalized === "Public Bodies" ||
+    /\((?:RECESS|DUPLICATE)\)\s*$/i.test(normalized);
 }
 
 function isAcronymLike(value: string): boolean {
@@ -481,9 +581,55 @@ function openDcRelationshipEndpointRef(
   ) {
     return undefined;
   }
+  if (shouldSuppressOpenDcStaleAgencyLabel(subjectEntityRef, normalizedLabel)) return undefined;
+  if (isDerivedAgencyTwinOfPublicBody(label, subjectName)) return undefined;
   if (matchesSubjectParentheticalAlias(label, subjectName)) return undefined;
   const endpointRef = buildKnownEntityRef(label);
   return endpointRef === subjectEntityRef ? undefined : endpointRef;
+}
+
+function shouldSuppressOpenDcStaleAgencyLabel(
+  subjectEntityRef: string,
+  normalizedLabel: string,
+): boolean {
+  return (
+    subjectEntityRef === "dc.state_rehabilitation_council_src" &&
+    normalizedLabel === "department of human services (dhs)"
+  ) || (
+    subjectEntityRef === "dc.commission_on_out_of_school_time_grants_and_youth_outcomes" &&
+    normalizedLabel === "executive office of the mayor"
+  ) || (
+    subjectEntityRef === "dc.police_officers_standards_and_training_board" &&
+    normalizedLabel === "office of police complaints"
+  );
+}
+
+function isDerivedAgencyTwinOfPublicBody(label: string, subjectName: string): boolean {
+  const subjectKey = normalizedPublicBodyBaseKey(subjectName);
+  const labelKey = normalizedAgencyBaseKey(label);
+  return !!subjectKey && subjectKey === labelKey;
+}
+
+function normalizedPublicBodyBaseKey(value: string): string | undefined {
+  const normalized = normalizeName(value).replace(/\s+\([^)]+\)\s*$/, "").trim();
+  const trailing = normalized.match(/^(.*?)\s+(Board|Commission|Council|Committee|Authority)$/i);
+  if (trailing?.[1]) return compactAliasKey(trailing[1]);
+  const leading = normalized.match(/^(Board|Commission|Council|Committee|Authority)\s+of\s+(.+)$/i);
+  if (leading?.[2]) return compactAliasKey(leading[2]);
+  return undefined;
+}
+
+function normalizedAgencyBaseKey(value: string): string | undefined {
+  const normalized = normalizeName(value).replace(/\s+\([^)]+\)\s*$/, "").trim();
+  const withoutLeading = normalized
+    .replace(/^Mayor['’]?s?\s+Office\s+of\s+/i, "")
+    .replace(/^Office\s+of\s+/i, "")
+    .replace(/^Department\s+of\s+/i, "");
+  const trailing = withoutLeading.match(
+    /^(.*?)\s+(Administration|Agency|Office|Department)$/i,
+  );
+  if (trailing?.[1]) return compactAliasKey(trailing[1]);
+  return undefined;
 }
 
 function matchesSubjectParentheticalAlias(label: string, subjectName: string): boolean {
@@ -504,9 +650,15 @@ function shouldCreateOpenDcLegalRef(
   authorityText: string,
   authorityUrl: string | undefined,
   parsed: ReturnType<typeof parseLegalReference>,
+  lawTitleMatch?: { citation: string; title: string; url: string },
 ): boolean {
+  if (lawTitleMatch) return true;
   if (parsed.refType !== "unknown") return true;
   return looksLikeOpenDcReviewableAuthority(authorityText, authorityUrl);
+}
+
+function looksLikeOpenDcLawTitle(authorityText?: string): boolean {
+  return !!authorityText && looksLikeDcLawTitle(authorityText);
 }
 
 function looksLikeOpenDcReviewableAuthority(
@@ -576,7 +728,6 @@ const openDcNonRelationshipAgencyLabels = new Set([
 
 const openDcReviewableNonRelationshipAgencyLabels = new Set([
   "department of eduaction",
-  "mayor's office of general counsel",
 ]);
 
 function parseOpenDcDetail(

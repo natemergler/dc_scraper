@@ -493,7 +493,7 @@ function buildAllCouncilmembersReviewRelationships(
     relationshipType: "member_of",
     rawValue:
       `${member.name} is listed on the Councilmembers page and implied by the Committee of the Whole all-Councilmembers summary, but is absent from the explicit committee roster.`,
-    needsReview: true,
+    needsReview: false,
     evidence: [
       fieldEvidence(
         "summary",

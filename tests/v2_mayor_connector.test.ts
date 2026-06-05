@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildEntityId } from "../src/v2/domain.ts";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
@@ -79,40 +79,22 @@ Deno.test("Mayor officeholder import releases the source-backed holds fact", asy
   await buildV2Release(workbench, outDir, { gitCommit: "fixture", repoRoot: dir });
   workbench.close();
 
-  const entities = JSON.parse(await Deno.readTextFile(join(outDir, "entities.json"))) as Array<{
-    id: string;
-    name: string;
-    kind: string;
-    official_url?: string;
-  }>;
-  const relationships = JSON.parse(
-    await Deno.readTextFile(join(outDir, "relationships.json")),
-  ) as Array<{
-    from_entity_id: string;
-    relationship_type: string;
-    to_entity_id: string;
-  }>;
+  const entitiesCsv = await Deno.readTextFile(join(outDir, "entities", "all_entities.csv"));
+  const relationshipsCsv = await Deno.readTextFile(
+    join(outDir, "relationships", "all_relationships.csv"),
+  );
 
-  assert(
-    entities.some((entity) =>
-      entity.id === buildEntityId("Muriel Bowser") &&
-      entity.name === "Muriel Bowser" &&
-      entity.kind === "public_official"
-    ),
+  assertStringIncludes(
+    entitiesCsv,
+    `${buildEntityId("Muriel Bowser")},Muriel Bowser,role_status_observation,public_official`,
   );
-  assert(
-    entities.some((entity) =>
-      entity.id === buildEntityId("Mayor") &&
-      entity.name === "Mayor" &&
-      entity.kind === "office" &&
-      entity.official_url === "https://mayor.dc.gov/"
-    ),
+  assertStringIncludes(
+    entitiesCsv,
+    `${buildEntityId("Mayor")},Mayor,agency_or_office,office`,
   );
-  assert(
-    relationships.some((relationship) =>
-      relationship.from_entity_id === buildEntityId("Muriel Bowser") &&
-      relationship.relationship_type === "holds" &&
-      relationship.to_entity_id === buildEntityId("Mayor")
-    ),
+  assertStringIncludes(entitiesCsv, "https://mayor.dc.gov/");
+  assertStringIncludes(
+    relationshipsCsv,
+    `representation_membership,holds,${buildEntityId("Muriel Bowser")},Muriel Bowser`,
   );
 });

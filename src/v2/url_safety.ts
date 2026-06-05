@@ -3,7 +3,8 @@ export function containsLocalPath(content: string): boolean {
   return /\bfile:/i.test(decoded) ||
     /\b[a-z]:\/Users\//i.test(decoded) ||
     /(^|[^a-z])\/Users\/[^"',\s]+/i.test(decoded) ||
-    /(^|[^a-z])\/(?:tmp|var\/home|home)\/[^"',\s]+/i.test(decoded);
+    /(^|[^a-z])\/(?:tmp|var(?:\/home|\/tmp)?|home|root|etc|opt|mnt|Volumes|private\/(?:tmp|var|etc))\/[^"',\s]+/i
+      .test(decoded);
 }
 
 export function isPublicHttpUrl(value: string | null | undefined): boolean {

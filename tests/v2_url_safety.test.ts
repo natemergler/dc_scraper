@@ -6,6 +6,9 @@ Deno.test("url safety detects decoded local paths without rejecting ordinary pub
   assertEquals(containsLocalPath("artifact at %2Ftmp%2Fdc-scraper%2Fsource.json"), true);
   assertEquals(containsLocalPath("file:///tmp/dc-scraper/source.json"), true);
   assertEquals(containsLocalPath("C:\\Users\\Nate\\source.json"), true);
+  assertEquals(containsLocalPath("artifact at /etc/dc-scraper/source.json"), true);
+  assertEquals(containsLocalPath("artifact at /var/tmp/dc-scraper/source.json"), true);
+  assertEquals(containsLocalPath("artifact at /root/dc-scraper/source.json"), true);
   assertEquals(containsLocalPath("https://example.com/tmp/source.json"), false);
 });
 

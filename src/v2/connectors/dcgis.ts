@@ -5,6 +5,7 @@ import {
   buildRelationshipCandidateId,
   buildReviewItemId,
   detectEntityKind,
+  normalizeName,
   parseLegalReference,
 } from "../domain.ts";
 import {
@@ -26,6 +27,8 @@ import {
   extractFirstUrl,
   fieldEvidence,
   maybeString,
+  resolveKnownEntityOfficialUrl,
+  resolveKnownLegalRefCorrection,
 } from "./shared.ts";
 import type { ConnectorContext, ConnectorResult, SourceConnector } from "./shared.ts";
 import type {
@@ -307,7 +310,7 @@ function buildDcgisEntityCandidates(
       rawKind: String(row.TYPE ?? "agency"),
       branch: agencyTaxonomyOnly ? undefined : maybeString(row.BRANCH),
       cluster: agencyTaxonomyOnly ? undefined : maybeString(row.MAYORAL_CLUSTER ?? row.CLUSTER_DC),
-      officialUrl: maybeString(row.WEB_URL),
+      officialUrl: maybeString(row.WEB_URL) ?? resolveKnownEntityOfficialUrl(identity.name),
       confidence: 0.95,
       duplicateHint: maybeString(row.WEB_URL),
       evidence: [
@@ -456,7 +459,8 @@ function buildDcgisRelationshipCandidates(
     const governingAgency = identity.governingAgency;
     if (
       !governingAgency || !identity.governingAgencyRef ||
-      identity.governingAgencyRef === identity.entityRef
+      identity.governingAgencyRef === identity.entityRef ||
+      shouldSuppressDerivedPublicBodyGoverningAgency(row, identity)
     ) continue;
     relationshipCandidates.push({
       relationshipCandidateId: buildRelationshipCandidateId(
@@ -473,6 +477,51 @@ function buildDcgisRelationshipCandidates(
     });
   }
   return relationshipCandidates;
+}
+
+function shouldSuppressDerivedPublicBodyGoverningAgency(
+  row: Record<string, unknown>,
+  identity: DcgisEntityIdentity,
+): boolean {
+  if (
+    identity.entityRef === "dc.commission_on_out_of_school_time_grants_and_youth_outcomes" &&
+    identity.governingAgencyRef === "dc.office_of_out_of_school_time_grants_and_youth_outcomes"
+  ) {
+    return true;
+  }
+  if (
+    identity.entityRef === "dc.police_officers_standards_and_training_board" &&
+    identity.governingAgencyRef === "dc.metropolitan_police_department" &&
+    /mpdc\.dc\.gov\/page\/dc-post-board-police-officers-standards-and-training-board/i.test(
+      maybeString(row.WEB_URL) ?? "",
+    )
+  ) {
+    return true;
+  }
+  if (
+    identity.entityRef === "dc.real_estate_commission" &&
+    identity.governingAgencyRef === "dc.department_of_buildings" &&
+    /dcopla\.com\/realestate/i.test(maybeString(row.WEB_URL) ?? "")
+  ) {
+    return true;
+  }
+  if (
+    identity.entityRef === "dc.board_of_barber_and_cosmetology" &&
+    identity.governingAgencyRef === "dc.dc_health" &&
+    /dchealth\.dc\.gov\/service\/barber-cosmetology-and-personal-grooming/i.test(
+      maybeString(row.WEB_URL) ?? "",
+    )
+  ) {
+    return true;
+  }
+  if (!identity.governingAgencyNeedsReview) return false;
+  const rawType = maybeString(row.TYPE)?.trim().toLowerCase();
+  if (rawType !== "board") return false;
+  const rawName = maybeString(row.NAME ?? row.AGENCY_NAME ?? row.SHORT_NAME);
+  if (!rawName || !identity.governingAgency) return false;
+  if (normalizeName(rawName) !== normalizeName(identity.governingAgency)) return false;
+  if (!/\b(?:administration|agency|department|office)\b$/i.test(rawName)) return false;
+  return publicBodyUrlPathIncludesType(maybeString(row.WEB_URL), "Board");
 }
 
 interface DcgisLawTitleIndex {
@@ -601,7 +650,9 @@ function buildDcgisLegalRefs(
     const identity = dcgisEntityIdentity(row, source.sourceId === "dcgis.agencies");
     if (!identity) continue;
     citationParts.forEach((citationText, index) => {
+      if (looksLikeDcgisNonLegalAuthority(citationText)) return;
       const parsed = parseLegalReference(citationText);
+      const knownCorrection = resolveKnownLegalRefCorrection(item.title, parsed.citationText);
       const lawTitleMatch = parsed.refType === "unknown"
         ? lawTitleIndex?.index.matchTitle(parsed.citationText)
         : undefined;
@@ -611,30 +662,40 @@ function buildDcgisLegalRefs(
       const actSuggestionMatch = malformedActNumber
         ? actSuggestionIndex?.matches.get(malformedActNumber)
         : undefined;
+      const autoAcceptedActSuggestion = !!actSuggestionMatch;
       const idSuffix = citationParts.length === 1
         ? `${item.itemKey}-legislation`
         : `${item.itemKey}-legislation-${index + 1}`;
       legalRefs.push({
         legalRefId: buildLegalRefId(source.sourceId, idSuffix),
         sourceItemKey: item.itemKey,
-        refType: lawTitleMatch ? "dc_law" : parsed.refType,
+        refType: knownCorrection?.refType ??
+          (lawTitleMatch ? "dc_law" : autoAcceptedActSuggestion ? "dc_act" : parsed.refType),
         citationText: parsed.citationText,
-        normalizedCitation: lawTitleMatch?.citation ?? parsed.normalizedCitation,
-        url: lawTitleMatch?.url ?? dcLawUrl(parsed.normalizedCitation) ??
+        normalizedCitation: knownCorrection?.normalizedCitation ?? lawTitleMatch?.citation ??
+          actSuggestionMatch?.suggestion.actCitation ?? parsed.normalizedCitation,
+        url: knownCorrection?.url ?? lawTitleMatch?.url ?? actSuggestionMatch?.suggestion.url ??
+          dcLawUrl(parsed.normalizedCitation) ??
           extractFirstUrl(citationText) ?? extractFirstUrl(legislation),
-        needsReview: lawTitleMatch ? false : parsed.needsReview,
-        suggestions: actSuggestionMatch
-          ? [{
-            refType: "dc_act",
-            normalizedCitation: actSuggestionMatch.suggestion.actCitation,
-            relatedCitation: actSuggestionMatch.suggestion.lawCitation,
-            title: actSuggestionMatch.suggestion.title,
-            url: actSuggestionMatch.suggestion.url,
-            source: "DCCouncil law XML",
-          }]
-          : undefined,
+        needsReview: knownCorrection
+          ? false
+          : lawTitleMatch
+          ? false
+          : autoAcceptedActSuggestion
+          ? false
+          : parsed.needsReview,
+        suggestions: undefined,
         evidence: [
           fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item)),
+          ...(knownCorrection
+            ? [
+              fieldEvidence(
+                "known legal ref correction",
+                `${parsed.citationText} -> ${knownCorrection.normalizedCitation}`,
+                dcgisRowArtifactIndex(item),
+              ),
+            ]
+            : []),
           ...(lawTitleMatch && lawTitleIndex
             ? [
               fieldEvidence(
@@ -673,10 +734,21 @@ function dcLawUrl(normalizedCitation?: string): string | undefined {
 }
 
 function splitDcgisLegalAuthority(value: string): string[] {
+  if (
+    /^[0-9]{2,4}-[0-9]{2,3}\s*;\s*amended\s+by\s+[0-9]{2,4}-[0-9]{2,3}(?:\s+and\s+[0-9]{2,4}-[0-9]{2,3})*$/i
+      .test(normalizeName(value))
+  ) {
+    return [value];
+  }
   const parts = value.split(";").map((part) => maybeString(part)).filter((part): part is string =>
     Boolean(part)
   );
   return parts.length > 1 ? parts : [value];
+}
+
+function looksLikeDcgisNonLegalAuthority(value: string): boolean {
+  const normalized = normalizeName(value);
+  return /\bbylaws?\b/i.test(normalized) || /\bguidelines?\b/i.test(normalized);
 }
 
 function dcgisRowArtifactIndex(item: SourceItemInput): number {
