@@ -8,7 +8,7 @@ package.
 The product shape is deliberately small:
 
 ```text
-source connector -> local artifact -> SQLite workbench -> audit/browse -> decide when needed -> release package
+source connector -> local artifact -> SQLite workbench -> audit -> browse -> decide when needed -> release package
 ```
 
 Local state lives under `data/`, `resolutions/`, and `releases/`. Those paths are ignored. Do not
@@ -49,7 +49,7 @@ current workbench or delete the old DB and let `dc init` create a fresh one.
 
 ## Happy Path
 
-Use one real fetch, one audit/browse pass, and one real release:
+Use one real fetch, one audit pass, one browse pass, and one real release:
 
 ```bash
 WORKBENCH_DB=data/workbench.sqlite
@@ -69,11 +69,17 @@ deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 For long all-source runs, let the fetch reach its final summary before treating the workbench as
 current. Use a single-source fetch or a smoke profile when you only need a quick operator check.
 
-`dc review` is the human path for true ambiguity, conflicts, edits, rejects, and deferrals. Safe
-materialized facts should be audited, browsed, verified, and released without turning them into
-manual review work. When review is needed, it opens with a ranked decision inbox for the current
-slice. Press Enter for the recommended packet or choose another packet from the list, then inspect
-the evidence and decide. Quit is safe; rerun `dc review` to resume.
+`dc audit` is the blocker and readiness view. Browse compiled model/evidence with entity commands,
+`review list --status all`, and source inspection. `dc review` is the human path for true ambiguity,
+conflicts, edits, rejects, and deferrals. Safe materialized facts should be audited, browsed,
+verified, and released without turning them into manual review work. When review is needed, it opens
+with a ranked decision inbox for the current slice. Press Enter for the recommended packet or choose
+another packet from the list, then inspect the evidence and decide. Quit is safe; rerun `dc review`
+to resume.
+
+Malformed legal labels can carry official suggestions in review without becoming accepted facts. For
+example, a malformed act label may show the official act/law metadata that could help a human
+normalize it, while the original legal ref remains pending until review.
 
 On current `main`, a healthy full structure refresh should mostly materialize on its own. The
 remaining review load should be small and source-specific, not a giant queue of safe additions.
@@ -100,8 +106,10 @@ deno task dc -- entity show dc.board_of_accountancy --json
 deno task dc -- release inspect --json
 ```
 
-`status`, `audit`, `review packets`, `review list`, and `entity show` are the main browse surfaces
-for unresolved, stale, or blocked work before opening interactive review.
+`status` and `audit` explain readiness, blockers, and next commands. `source inspect`, entity
+commands, and `review list --status all` are the main browse surfaces. `review packets` and
+`review list --decisions` narrow the actual human-decision surface before opening interactive
+review.
 
 ## Release Contract
 

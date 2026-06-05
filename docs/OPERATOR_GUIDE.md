@@ -47,7 +47,7 @@ Local workbench DBs are current-schema only: connect to a current preexisting DB
 refetch a fresh one. If an ignored local DB is not current, treat it as scratch state: point `--db`
 at a current workbench or delete the old DB and let `dc init` create a fresh one.
 
-## Audit And Review
+## Audit, Browse, And Review
 
 Check the current state before opening the manual decision inbox:
 
@@ -58,8 +58,9 @@ deno task dc -- entity search accountancy --db "$WORKBENCH_DB"
 deno task dc -- entity show dc.board_of_accountancy --db "$WORKBENCH_DB"
 ```
 
-Safe materialized facts are not manual review work. Browse them with `status`, `audit`, entity
-commands, and release verification. Use the manual path when those surfaces point at true ambiguity,
+Safe materialized facts are not manual review work. Use `status` and `audit` for readiness,
+blockers, and next commands. Browse compiled model/evidence with source inspection, entity commands,
+and `review list --status all`. Use the manual path when those surfaces point at true ambiguity,
 conflicts, edits, rejects, or deferrals:
 
 ```bash
@@ -71,10 +72,16 @@ Useful secondary seams:
 ```bash
 deno task dc -- review packets --mode relationships --db "$WORKBENCH_DB"
 deno task dc -- review list --mode relationships --limit 10 --db "$WORKBENCH_DB"
+deno task dc -- review list --decisions --db "$WORKBENCH_DB"
 ```
 
-`review packets`, `review list`, and `entity show` are browse surfaces for unresolved, stale, or
-blocked work. Use `dc review` when a packet needs an actual decision.
+`review list --status all` and `entity show` are browse surfaces for unresolved, stale, or blocked
+work. `review packets` and `review list --decisions` narrow the decision surface. Use `dc review`
+when a packet needs an actual decision.
+
+Malformed legal labels can show official suggestions without becoming accepted facts. Treat those
+suggestions as review evidence: normalize or accept only when the source-backed evidence supports
+the decision.
 
 Advanced/scriptable maintenance commands such as `review batch accept-safe` and
 `review batch defer-default` remain available after inspecting a narrow packet/list slice, but they
