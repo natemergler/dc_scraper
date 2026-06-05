@@ -43,6 +43,21 @@ interface RelationshipEndpointContext {
   to: EndpointStatus;
 }
 
+interface ReviewSessionCounts {
+  accepted: number;
+  rejected: number;
+  normalized: number;
+  edited: number;
+  skipped: number;
+  deferred: number;
+}
+
+interface RenderReviewItemOptions {
+  position?: number;
+  total?: number;
+  raw?: boolean;
+}
+
 type InteractiveReviewWorkbench = Pick<
   Workbench,
   "db" | "dbPath" | "listReviewItems" | "appendResolutionEvent"
@@ -59,6 +74,7 @@ export async function runInteractiveReview(
     : filters;
   materializeReviewReadyFacts(workbench);
   let stickyPacketId: string | undefined;
+  const sessionCounts = emptySessionCounts();
   while (true) {
     const snapshot = buildInteractiveReviewSnapshot(workbench, activeFilters);
     if (snapshot.items.length === 0) {
@@ -71,25 +87,28 @@ export async function runInteractiveReview(
           } or ${renderReviewPacketsCommand(filters)}.`,
         );
       } else {
-        console.log("No review items remain.");
+        printReviewSessionSummary(workbench, sessionCounts, filters);
       }
       return;
     }
-    if (!stickyPacketId || !snapshot.packets.some((packet) => packet.packetId === stickyPacketId)) {
+    if (
+      snapshot.rankedPackets.length === 1 &&
+      snapshot.rankedPackets[0].reviewItemIds.length === 1
+    ) {
+      stickyPacketId = snapshot.rankedPackets[0].packetId;
+    } else if (
+      !stickyPacketId || !snapshot.packets.some((packet) => packet.packetId === stickyPacketId)
+    ) {
       stickyPacketId = await promptReviewInbox(workbench, snapshot);
       if (!stickyPacketId) {
-        console.log(
-          `Review stopped. ${snapshot.items.length} item(s) remain. Resume with ${
-            renderResumeCommand(filters)
-          }.`,
-        );
+        printReviewSessionSummary(workbench, sessionCounts, filters);
         return;
       }
     }
     const selection = nextInteractiveReviewSelection(snapshot, stickyPacketId);
     const item = selection?.item;
     if (!item) {
-      console.log("No review items remain.");
+      printReviewSessionSummary(workbench, sessionCounts, filters);
       return;
     }
     const packet = selection.packet;
@@ -101,17 +120,30 @@ export async function runInteractiveReview(
       console.log(renderDecisionImpact(selection.decision));
       console.log("");
     }
-    console.log(renderReviewItem(workbench, item));
+    console.log(renderReviewItem(workbench, item, {
+      position: snapshot.items.findIndex((candidate) =>
+        candidate.reviewItemId === item.reviewItemId
+      ) +
+        1,
+      total: snapshot.items.length,
+    }));
     const promptedAction = await promptLine(`Action [${actionPrompt(item)}]: `);
     if (promptedAction === undefined || promptedAction === "q") {
-      console.log(
-        `Review stopped. ${snapshot.items.length} item(s) remain. Resume with ${
-          renderResumeCommand(filters)
-        }.`,
-      );
+      printReviewSessionSummary(workbench, sessionCounts, filters);
       return;
     }
-    const action = promptedAction === "" ? defaultActionKey(item.defaultAction) : promptedAction;
+    const action = promptedAction === "" ? "s" : promptedAction;
+    if (action === "s") {
+      sessionCounts.skipped += 1;
+      console.log("Skipped. This card will stay open.");
+      stickyPacketId = undefined;
+      continue;
+    }
+    if (action === "v" || action === "raw") {
+      console.log(renderReviewItem(workbench, item, { raw: true }));
+      console.log("");
+      continue;
+    }
     const event = await actionToEvent(item, action);
     if (!event) {
       console.log(
@@ -120,9 +152,82 @@ export async function runInteractiveReview(
       continue;
     }
     await workbench.appendResolutionEvent(event, resolutionsDir);
-    await Deno.stdout.write(encoder.encode("Saved resolution.\n"));
+    countResolutionEvent(sessionCounts, event.eventType, action);
+    await Deno.stdout.write(
+      encoder.encode(
+        event.eventType === "defer_review_item" ? "Saved defer.\n" : "Saved resolution.\n",
+      ),
+    );
     stickyPacketId = packet?.packetId;
   }
+}
+
+function emptySessionCounts(): ReviewSessionCounts {
+  return {
+    accepted: 0,
+    rejected: 0,
+    normalized: 0,
+    edited: 0,
+    skipped: 0,
+    deferred: 0,
+  };
+}
+
+function countResolutionEvent(
+  counts: ReviewSessionCounts,
+  eventType: ResolutionEventInput["eventType"],
+  action: string,
+): void {
+  if (eventType === "defer_review_item") {
+    counts.deferred += 1;
+    return;
+  }
+  if (eventType.startsWith("reject_")) {
+    counts.rejected += 1;
+    return;
+  }
+  if (action === "n") {
+    counts.normalized += 1;
+    return;
+  }
+  if (action === "e" || eventType === "merge_entity_candidates") {
+    counts.edited += 1;
+    return;
+  }
+  if (eventType.startsWith("accept_")) {
+    counts.accepted += 1;
+  }
+}
+
+function printReviewSessionSummary(
+  workbench: Pick<InteractiveReviewWorkbench, "db" | "listReviewItems">,
+  counts: ReviewSessionCounts,
+  filters: ReviewItemFilters,
+): void {
+  const open = workbench.listReviewItems({ ...filters, status: "open", limit: undefined }).length;
+  const deferred = workbench.listReviewItems({ ...filters, status: "deferred", limit: undefined })
+    .length;
+  const blocked = shouldFilterInteractiveItems({ ...filters, status: undefined })
+    ? projectOpenHumanDecisionWork(workbench as InteractiveReviewWorkbench, {
+      ...filters,
+      status: "open",
+    }).summary.filteredBlockedDiagnosticCount
+    : 0;
+  console.log("Review session summary:");
+  console.log(`  accepted: ${counts.accepted}`);
+  console.log(`  rejected: ${counts.rejected}`);
+  console.log(`  normalized: ${counts.normalized}`);
+  console.log(`  edited: ${counts.edited}`);
+  console.log(`  deferred: ${counts.deferred}`);
+  console.log(`  skipped: ${counts.skipped}`);
+  console.log("");
+  console.log("Remaining:");
+  console.log(`  open: ${open}`);
+  console.log(`  deferred: ${deferred}`);
+  console.log(`  blocked: ${blocked}`);
+  console.log("");
+  console.log("Next:");
+  console.log(`  ${renderResumeCommand(filters)}`);
 }
 
 interface InteractiveReviewSelection {
@@ -434,10 +539,32 @@ function renderReviewPacketsCommand(filters: ReviewItemFilters): string {
 export function renderReviewItem(
   store: Pick<WorkbenchStore, "db">,
   item: ReviewItemRecord,
+  options: RenderReviewItemOptions = {},
 ): string {
   const subject = reviewSubject(store, item);
   const context = reviewSubjectContext(store, item, subject);
   const omittedDetailKeys = specialOmittedDetailKeys(item, context.omittedDetailKeys);
+  if (options.raw) {
+    return [
+      "Raw details:",
+      `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
+      `item_type: ${item.itemType}`,
+      `status: ${item.status}`,
+      `default_action: ${item.defaultAction}`,
+      `reason: ${item.reason}`,
+      `details_json: ${JSON.stringify(item.details, null, 2)}`,
+      ...renderEvidenceBlock(reviewEvidence(store, item)),
+    ].filter((line): line is string => Boolean(line)).join("\n");
+  }
+  if (item.itemType === "legal_ref") {
+    return renderCompactLegalCard(store, item, subject, context, options);
+  }
+  if (item.itemType === "relationship_candidate") {
+    return renderCompactRelationshipCard(store, item, subject, context, options);
+  }
+  if (item.itemType === "entity_candidate") {
+    return renderCompactEntityCard(store, item, subject, context, options);
+  }
   return [
     `Review: ${context.title}`,
     [humanizeToken(item.itemType), context.infoLabel, item.status].filter(Boolean).join(" | "),
@@ -455,6 +582,188 @@ export function renderReviewItem(
     ...renderDetailsBlock(item.details, omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
+function renderCardHeader(
+  options: RenderReviewItemOptions,
+  kind: string,
+  label?: string,
+): string {
+  const prefix = options.position && options.total ? `[${options.position}/${options.total}] ` : "";
+  return `${prefix}${kind}${label ? ` · ${label}` : ""}`;
+}
+
+function renderCompactLegalCard(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+  context: ReviewSubjectContext,
+  options: RenderReviewItemOptions,
+): string {
+  const citation = subject?.itemType === "legal_ref" ? subject.citationText : context.title;
+  const refType = subject?.itemType === "legal_ref"
+    ? humanizeToken(subject.refType)
+    : context.infoLabel;
+  const normalized = stringValue(item.details.normalizedCitation) ?? "unknown";
+  return [
+    renderCardHeader(options, "legal citation", refType),
+    "",
+    "Subject:",
+    `  ${citation}`,
+    "",
+    "Source claim:",
+    `  ${sourceClaimLine(store, item, subject)}`,
+    "",
+    "Current parse:",
+    `  ${normalized}`,
+    ...renderIssueLines(item),
+    "",
+    "Release effect:",
+    "  excluded until accepted or normalized",
+    "",
+    "Actions:",
+    ...availableActionLabels(item).map((label) => `  ${label}`),
+    ...renderLegalSuggestionBlock(item),
+  ].filter((line): line is string => Boolean(line)).join("\n");
+}
+
+function renderCompactRelationshipCard(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+  context: ReviewSubjectContext,
+  options: RenderReviewItemOptions,
+): string {
+  const relationship = subject?.itemType === "relationship_candidate" ? subject : undefined;
+  const endpoints = context.relationshipEndpoints;
+  return [
+    renderCardHeader(options, "relationship", shortIssueLabel(item)),
+    "",
+    "From:",
+    `  ${
+      endpoints ? endpointTitle(endpoints.from) : relationship?.fromEntityRef ?? item.subjectId
+    }`,
+    "",
+    "Relationship:",
+    `  ${relationship?.relationshipType ?? context.infoLabel ?? "unknown"}`,
+    "",
+    "To:",
+    `  ${endpoints ? endpointTitle(endpoints.to) : relationship?.toEntityRef ?? "unknown"}`,
+    "",
+    "Source claim:",
+    `  ${sourceClaimLine(store, item, subject)}`,
+    "",
+    "Issue:",
+    `  ${shortIssueLabel(item)}`,
+    "",
+    "Release effect:",
+    "  relationship excluded until accepted",
+    "",
+    "Actions:",
+    ...availableActionLabels(item).map((label) => `  ${label}`),
+  ].join("\n");
+}
+
+function renderCompactEntityCard(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+  context: ReviewSubjectContext,
+  options: RenderReviewItemOptions,
+): string {
+  return [
+    renderCardHeader(options, "entity", context.infoLabel),
+    "",
+    "Subject:",
+    `  ${context.title}`,
+    "",
+    "Source claim:",
+    `  ${sourceClaimLine(store, item, subject)}`,
+    "",
+    "Issue:",
+    `  ${shortIssueLabel(item)}`,
+    "",
+    "Release effect:",
+    `  ${entityReleaseEffect(item)}`,
+    "",
+    "Actions:",
+    ...availableActionLabels(item).map((label) => `  ${label}`),
+  ].join("\n");
+}
+
+function subjectSourceClaim(
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+  evidence: ReviewEvidenceRow[],
+): string {
+  const firstEvidence = evidence[0];
+  if (subject?.itemType === "relationship_candidate") {
+    const value = subject.rawValue ?? firstEvidence?.observedValue;
+    const field = firstEvidence?.fieldPath ?? "source value";
+    return `${subject.source.sourceId} ${field} = ${formatClaimValue(value ?? "unknown")}`;
+  }
+  if (subject?.itemType === "legal_ref") {
+    const value = subject.citationText;
+    const field = firstEvidence?.fieldPath ?? "citation";
+    return `${subject.source.sourceId} ${field} = ${formatClaimValue(value)}`;
+  }
+  if (subject?.itemType === "entity_candidate") {
+    const value = firstEvidence?.observedValue ?? subject.name;
+    const field = firstEvidence?.fieldPath ?? "name";
+    return `${subject.source.sourceId} ${field} = ${formatClaimValue(value)}`;
+  }
+  const value = stringValue(item.details.rawValue) ?? stringValue(item.details.name) ??
+    stringValue(item.details.citationText);
+  return value ? formatClaimValue(value) : item.reason;
+}
+
+function formatClaimValue(value: unknown): string {
+  return typeof value === "string" ? JSON.stringify(value) : formatDetailValue(value);
+}
+
+function renderIssueLines(item: ReviewItemRecord): string[] {
+  return [
+    "",
+    "Issue:",
+    `  ${shortIssueLabel(item)}`,
+  ];
+}
+
+function shortIssueLabel(item: ReviewItemRecord): string {
+  if (typeof item.details.issue === "string") return humanizeToken(item.details.issue);
+  if (typeof item.details.whyDeferred === "string") return item.details.whyDeferred;
+  if (item.itemType === "relationship_candidate") {
+    if (item.defaultAction === "defer") return "endpoint ambiguity";
+    return "relationship needs review";
+  }
+  if (item.itemType === "legal_ref") {
+    const refType = stringValue(item.details.refType);
+    if (!refType || refType === "unknown") return "unknown citation";
+    return "legal citation needs review";
+  }
+  if (item.itemType === "entity_candidate") {
+    if (
+      typeof item.details.existingKind === "string" &&
+      typeof item.details.candidateKind === "string"
+    ) {
+      return "entity conflict";
+    }
+    return "entity candidate needs review";
+  }
+  return item.reason;
+}
+
+function entityReleaseEffect(item: ReviewItemRecord): string {
+  if (item.defaultAction === "defer") return "excluded until accepted, edited, or rejected";
+  return "accepted entity enters the release; rejected or deferred stays out";
+}
+
+function sourceClaimLine(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+): string {
+  return subjectSourceClaim(item, subject, reviewEvidence(store, item));
 }
 
 export function renderReviewItemSummary(
@@ -713,13 +1022,15 @@ function actionPrompt(item: ReviewItemRecord): string {
 
 function availableActionLabels(item: ReviewItemRecord): string[] {
   return availableActionKeys(item).map((key) => {
-    if (key === "") return `Enter ${item.defaultAction}`;
+    if (key === "") return "Enter skip";
+    if (key === "s") return "s skip";
     if (key === "a") return "a accept";
     if (key === "r") return "r reject";
     if (key === "m") return "m merge";
-    if (key === "e") return "e edit type/endpoints and accept";
-    if (key === "n") return "n normalize and accept";
+    if (key === "e") return "e edit";
+    if (key === "n") return "n normalize";
     if (key === "d") return "d defer";
+    if (key === "v") return "v raw details";
     if (key === "q") return "q quit";
     return key;
   });
@@ -732,10 +1043,10 @@ function sentenceList(values: string[]): string {
 }
 
 function availableActionKeys(item: ReviewItemRecord): string[] {
-  if (item.itemType === "entity_candidate") return ["", "a", "r", "m", "d", "q"];
-  if (item.itemType === "relationship_candidate") return ["", "a", "e", "r", "d", "q"];
-  if (item.itemType === "legal_ref") return ["", "a", "n", "r", "d", "q"];
-  return ["", "d", "q"];
+  if (item.itemType === "entity_candidate") return ["", "s", "a", "r", "m", "d", "v", "q"];
+  if (item.itemType === "relationship_candidate") return ["", "s", "a", "e", "r", "d", "v", "q"];
+  if (item.itemType === "legal_ref") return ["", "s", "a", "n", "r", "d", "v", "q"];
+  return ["", "s", "d", "v", "q"];
 }
 
 function renderDetailsBlock(

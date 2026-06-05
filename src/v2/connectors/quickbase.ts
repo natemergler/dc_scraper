@@ -5,6 +5,7 @@ import {
   buildRelationshipCandidateId,
   buildReviewItemId,
   type DatasetInput,
+  detectEntityKind,
   type EntityCandidateInput,
   normalizeName,
   type RelationshipCandidateInput,
@@ -302,13 +303,14 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     if (!seenBoards.has(board)) {
       seenBoards.set(board, "true");
       const candidateId = buildCandidateId(quickbaseSource.sourceId, board);
-      const cluster = deriveQuickbaseCluster(board);
+      const kind = detectEntityKind(undefined, board);
+      const cluster = deriveQuickbaseCluster(board, kind);
       entityCandidates.push({
         candidateId,
         sourceItemKey: itemKey,
         proposedEntityId: boardEntityId,
         name: board,
-        kind: "public_body",
+        kind,
         rawKind: "appointment_body",
         cluster,
         confidence: 0.95,
@@ -326,7 +328,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           {
             source: quickbaseSource.sourceId,
             name: board,
-            kind: "public_body",
+            kind,
             cluster,
             latestAppointmentStatus: appointmentStatus,
           },
@@ -1123,13 +1125,28 @@ function isQuickbaseDcAgencyRepresentative(value: string): boolean {
   return /\bDC Agency Representative\b/i.test(value);
 }
 
-function deriveQuickbaseCluster(board: string): string | undefined {
-  if (/task force/i.test(board)) return "Task Force";
-  if (/advisory committee/i.test(board)) return "Advisory Committee";
-  if (/committee/i.test(board)) return "Committee";
-  if (/commission/i.test(board)) return "Commission";
-  if (/board/i.test(board)) return "Board";
-  return undefined;
+function deriveQuickbaseCluster(board: string, kind: string): string | undefined {
+  const cluster = /task force/i.test(board)
+    ? "Task Force"
+    : /advisory committee/i.test(board)
+    ? "Advisory Committee"
+    : /committee/i.test(board)
+    ? "Committee"
+    : /commission/i.test(board)
+    ? "Commission"
+    : /board/i.test(board)
+    ? "Board"
+    : undefined;
+  if (!cluster) return undefined;
+  if (
+    (kind === "board" && cluster === "Board") ||
+    (kind === "commission" && cluster === "Commission") ||
+    (kind === "committee" && (cluster === "Committee" || cluster === "Advisory Committee")) ||
+    (kind === "task_force" && cluster === "Task Force")
+  ) {
+    return undefined;
+  }
+  return cluster;
 }
 
 function previewText(input: string): string {

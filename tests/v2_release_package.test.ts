@@ -257,7 +257,13 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.139', '139', 'budgetary', 'accepted', '[\"candidate.dcgis.agencies.1160\"]', datetime('now'), datetime('now'))",
   ).run();
   workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_settlement_fund', 'Example Settlement Fund', 'budgetary', 'accepted', '[\"candidate.dcgis.agencies.3002\"]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.april_board_of_accountancy', 'April Board of Accountancy -', 'board', 'https://www.open-dc.gov/public-bodies/april-board-accountancy-recess', 'accepted', '[\"candidate.open_dc.public_bodies.april_board_accountancy_recess\"]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, official_url, review_status, merged_candidate_ids, created_at, updated_at) values('dc.jobs_wages_and_benefits_working_group', 'Working group on jobs, wages and benefits will be a time phased advisory group to the Mayor', 'public_body', 'https://www.open-dc.gov/public-bodies/working-group-jobs-wages-and-benefits-will-be-time-phased-advisory-group-mayor', 'accepted', '[\"candidate.open_dc.public_bodies.working_group_jobs_wages_and_benefits_will_be_time_phased_advisory_group_mayor\"]', datetime('now'), datetime('now'))",
   ).run();
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.council', 'Council of the District of Columbia', 'council', 'accepted', '[]', datetime('now'), datetime('now'))",
@@ -275,10 +281,16 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.april_board_of_accountancy:part_of:dc.council', 'dc.april_board_of_accountancy', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
   ).run();
   workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.jobs_wages_and_benefits_working_group:part_of:dc.council', 'dc.jobs_wages_and_benefits_working_group', 'part_of', 'dc.council', 'accepted', 'event.1', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:part_of:dc.pending_body', 'dc.board_accountancy', 'part_of', 'dc.pending_body', 'accepted', 'event.1', datetime('now'))",
   ).run();
   workbench.db.prepare(
     "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.board_accountancy:overseen_by:dc.council', 'dc.board_accountancy', 'overseen_by', 'dc.council', 'rejected', 'event.1', datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_relationships(relationship_id, from_entity_id, relationship_type, to_entity_id, review_status, source_event_id, created_at) values('dc.example_settlement_fund:overseen_by:dc.council', 'dc.example_settlement_fund', 'overseen_by', 'dc.council', 'accepted', 'event.1', datetime('now'))",
   ).run();
   workbench.upsertSource(
     "open_dc.public_bodies",
@@ -418,7 +430,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
   );
   assert(!entityCsv.includes("source_item_id"));
   assert(!entityCsv.includes("dc.139,139,budgetary"));
+  assert(!entityCsv.includes("dc.example_settlement_fund"));
   assert(!entityCsv.includes("dc.april_board_of_accountancy"));
+  assert(!entityCsv.includes("dc.jobs_wages_and_benefits_working_group"));
   assert(!entityCsv.includes("dc.pending_body"));
   assert(!entityCsv.includes("not-for-release@example.com"));
   assertStringIncludes(
@@ -432,7 +446,9 @@ Deno.test("release builder creates focused v2 package with stable files and no r
     "relationship_id,from_entity_id,from_entity_name,relationship_type,to_entity_id,to_entity_name,legal_ref_id,ref_type,citation_text,normalized_citation,url,review_status",
   );
   assertStringIncludes(relationshipLegalRefsCsv, "dc.board_accountancy:part_of:dc.council");
+  assert(!relationshipsCsv.includes("dc.example_settlement_fund:overseen_by:dc.council"));
   assert(!relationshipsCsv.includes("dc.april_board_of_accountancy"));
+  assert(!relationshipsCsv.includes("dc.jobs_wages_and_benefits_working_group:part_of:dc.council"));
   assert(!relationshipsCsv.includes("dc.board_accountancy:part_of:dc.pending_body"));
   assert(!relationshipsCsv.includes("dc.board_accountancy:overseen_by:dc.council"));
   assert(!legalRefsCsv.includes("not-for-release@example.com"));

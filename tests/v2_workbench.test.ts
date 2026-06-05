@@ -4797,6 +4797,7 @@ Deno.test("Council oversight targets default to accept except exclusion targets"
             <ul>
               <li>Department of Health</li>
               <li>Cedar Hill Hospital</li>
+              <li>Pay-As-You-Go Capital</li>
               <li>Committee on Facilities and Procurement</li>
               <li>Department of Buildings (including construction codes)</li>
               <li>Office of the Attorney General (jointly, only for oversight purposes, with the Committee on the Judiciary and Public Safety)</li>
@@ -4818,7 +4819,12 @@ Deno.test("Council oversight targets default to accept except exclusion targets"
     item.details.rawValue === "Department of Health" &&
     item.subjectId.includes("committee_on_health_oversight")
   );
+  const parsed = result.endpointResults[0].parsed;
   const cedarHillItem = items.find((item) => item.details.rawValue === "Cedar Hill Hospital");
+  const paygoItem = items.find((item) => item.details.rawValue === "Pay-As-You-Go Capital");
+  const paygoRelationshipCandidate = parsed?.relationshipCandidates?.find((candidate) =>
+    candidate.rawValue === "Pay-As-You-Go Capital"
+  );
   const facilitiesItem = items.find((item) =>
     item.details.rawValue === "Committee on Facilities and Procurement"
   );
@@ -4843,6 +4849,13 @@ Deno.test("Council oversight targets default to accept except exclusion targets"
 
   assertEquals(healthItem?.defaultAction, "accept");
   assertEquals(cedarHillItem?.defaultAction, "accept");
+  assertEquals(paygoItem?.itemType, "source_status");
+  assertEquals(paygoItem?.defaultAction, "defer");
+  assertEquals(
+    paygoItem?.details.whyDeferred,
+    "Oversight text names a fund or financing bucket rather than a clearly modeled civic body, so the compact edge stays in review.",
+  );
+  assertEquals(paygoRelationshipCandidate, undefined);
   assertEquals(facilitiesItem?.defaultAction, "accept");
   assertEquals(includingItem?.defaultAction, "accept");
   assertEquals(jointlyItem?.defaultAction, "accept");

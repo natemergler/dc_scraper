@@ -733,6 +733,90 @@ Deno.test("council oversight imports auto-promote safe direct source bodies and 
   assertEquals(entityReviewItems.length, 0);
 });
 
+Deno.test("council oversight imports keep finance-style oversight targets as source review work instead of compact relationships", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return `
+            <html><body>
+              <a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a>
+            </body></html>
+          `;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return `
+            <html><body>
+              <h1>Committee of the Whole</h1>
+              <h2>Agencies Under This Committee</h2>
+              <ul>
+                <li>Pay-As-You-Go Capital</li>
+              </ul>
+            </body></html>
+          `;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+
+  const relationshipCount = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     where relationship_type = 'overseen_by'
+       and raw_value = 'Pay-As-You-Go Capital'`,
+  ).get() as { count: number };
+  const sourceReview = workbench.db.prepare(
+    `select review_item_id as reviewItemId,
+            subject_id as subjectId,
+            default_action as defaultAction,
+            json_extract(details_json, '$.rawValue') as rawValue,
+            json_extract(details_json, '$.committeeName') as committeeName,
+            json_extract(details_json, '$.whyDeferred') as whyDeferred
+     from review_items
+     where item_type = 'source_status'
+       and subject_id = 'council.committees'
+       and json_extract(details_json, '$.rawValue') = 'Pay-As-You-Go Capital'`,
+  ).get() as {
+    reviewItemId: string;
+    subjectId: string;
+    defaultAction: string;
+    rawValue: string;
+    committeeName: string;
+    whyDeferred: string;
+  } | undefined;
+  const blockedCount = workbench.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where state = 'blocked'
+       and json_extract(details_json, '$.rawValue') = 'Pay-As-You-Go Capital'`,
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(relationshipCount.count, 0);
+  assertEquals(sourceReview?.subjectId, "council.committees");
+  assertEquals(sourceReview?.defaultAction, "defer");
+  assertEquals(sourceReview?.rawValue, "Pay-As-You-Go Capital");
+  assertEquals(sourceReview?.committeeName, "Committee of the Whole");
+  assertEquals(
+    sourceReview?.whyDeferred,
+    "Oversight text names a fund or financing bucket rather than a clearly modeled civic body, so the compact edge stays in review.",
+  );
+  assertEquals(blockedCount.count, 0);
+});
+
 Deno.test("council oversight imports do not seed broad grouped source bodies as entity candidates", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");

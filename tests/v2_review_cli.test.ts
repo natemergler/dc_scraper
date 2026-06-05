@@ -67,9 +67,9 @@ Deno.test("relationship review rendering batches endpoint status lookup", async 
 
   assertEquals(queryCounts.endpointCandidateStatusQueries, 1);
   assertEquals(queryCounts.endpointCanonicalQueries, 1);
-  assertStringIncludes(queryCounts.output, "Review: Target Agency");
-  assertStringIncludes(queryCounts.output, "- from: dc.source_board");
-  assertStringIncludes(queryCounts.output, "- to: dc.target_agency");
+  assertStringIncludes(queryCounts.output, "relationship");
+  assertStringIncludes(queryCounts.output, "From:\n  Source Board");
+  assertStringIncludes(queryCounts.output, "To:\n  Target Agency");
 });
 
 Deno.test("dc review legal supports scripted normalize-and-quit flow for the remaining ambiguous ref", async () => {
@@ -113,7 +113,7 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   }).spawn();
   const writer = child.stdin.getWriter();
   await writer.write(
-    new TextEncoder().encode("\nn\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"),
+    new TextEncoder().encode("n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"),
   );
   await writer.close();
   const output = await child.output();
@@ -123,21 +123,18 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   assertEquals(stderr, "");
   assertStringIncludes(
     stdout,
-    "Mystery legal authority - test.signature.legal_refs legal reference [default defer; packet 1 open]",
+    "[1/1] legal citation · unknown",
   );
-  assertStringIncludes(stdout, "Review: Mystery legal authority");
-  assertStringIncludes(stdout, "legal ref | unknown | open");
+  assertStringIncludes(stdout, "Subject:\n  Mystery legal authority");
+  assertStringIncludes(stdout, "Current parse:\n  unknown");
   assertStringIncludes(
     stdout,
-    "question: Should this legal reference be accepted, normalized, rejected, or deferred?",
+    "Release effect:\n  excluded until accepted or normalized",
   );
-  assertStringIncludes(
-    stdout,
-    "impact: accept keeps this citation as source-backed legal context; reject drops it; defer keeps it pending.",
-  );
-  assertStringIncludes(stdout, "n normalize and accept");
+  assertStringIncludes(stdout, "  n normalize");
   assertStringIncludes(stdout, "Saved resolution.");
-  assertStringIncludes(stdout, "No review items remain.");
+  assertStringIncludes(stdout, "Review session summary:");
+  assertStringIncludes(stdout, "  normalized: 1");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -195,6 +192,119 @@ Deno.test("legal review renders official suggestions readably", async () => {
   );
   assertStringIncludes(text, "url: https://code.dccouncil.gov/us/dc/council/laws/21-261");
   assertEquals(text.includes('"suggestions"'), false);
+});
+
+Deno.test("interactive review skip, defer, and raw details have distinct effects", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.review_cli.raw_skip",
+      "Organizational ByLaws",
+      "https://example.com/raw-skip",
+    ),
+    dataDir,
+  );
+  workbench.close();
+
+  const reviewProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "legal",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const writer = reviewProcess.stdin.getWriter();
+  await writer.write(new TextEncoder().encode("v\ns\nq\n"));
+  await writer.close();
+  const output = await reviewProcess.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Raw details:");
+  assertStringIncludes(stdout, "ids: subject=legal.test.review_cli.raw_skip");
+  assertStringIncludes(stdout, "details_json:");
+  assertStringIncludes(stdout, "artifact:");
+  assertStringIncludes(stdout, "Skipped. This card will stay open.");
+  assertStringIncludes(stdout, "Review session summary:");
+  assertStringIncludes(stdout, "  skipped: 1");
+  assertStringIncludes(stdout, "  deferred: 0");
+  assertStringIncludes(stdout, "Remaining:");
+  assertStringIncludes(stdout, "  open: 1");
+
+  let resolutionText = "";
+  try {
+    for await (const entry of Deno.readDir(resolutionsDir)) {
+      if (!entry.isDirectory) continue;
+      for await (const child of Deno.readDir(join(resolutionsDir, entry.name))) {
+        resolutionText += await Deno.readTextFile(join(resolutionsDir, entry.name, child.name));
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  assertEquals(resolutionText, "");
+
+  const deferProcess = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "legal",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "piped",
+  }).spawn();
+  const deferWriter = deferProcess.stdin.getWriter();
+  await deferWriter.write(new TextEncoder().encode("d\nq\n"));
+  await deferWriter.close();
+  const deferOutput = await deferProcess.output();
+  const deferStdout = new TextDecoder().decode(deferOutput.stdout);
+  assertEquals(deferOutput.code, 0);
+  assertStringIncludes(deferStdout, "Saved defer.");
+  assertStringIncludes(deferStdout, "  deferred: 1");
+  assertStringIncludes(deferStdout, "  open: 0");
+  assertStringIncludes(deferStdout, "  deferred: 1");
+
+  const dayEntries: string[] = [];
+  for await (const entry of Deno.readDir(resolutionsDir)) {
+    if (!entry.isDirectory) continue;
+    for await (const child of Deno.readDir(join(resolutionsDir, entry.name))) {
+      dayEntries.push(await Deno.readTextFile(join(resolutionsDir, entry.name, child.name)));
+    }
+  }
+  assertStringIncludes(dayEntries.join("\n"), '"event_type":"defer_review_item"');
 });
 
 function countRenderEndpointStatusPrepares(
@@ -292,35 +402,30 @@ Deno.test("scripted review CLI accepts an explicit entity decision and entity sh
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\na\na\nq\n"));
+  await writer.write(new TextEncoder().encode("a\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  assertStringIncludes(reviewText, "Review: Board of Accountancy");
-  assertStringIncludes(reviewText, "entity candidate | board | open");
-  assertStringIncludes(reviewText, "source: test.review_cli.entities / Custom entity row");
-  assertStringIncludes(reviewText, "reason: Review fixture entity candidate");
+  assertStringIncludes(reviewText, "entity · board");
+  assertStringIncludes(reviewText, "Subject:\n  Board of Accountancy");
   assertStringIncludes(
     reviewText,
-    "question: Should this source entity candidate be accepted, merged, rejected, or deferred?",
-  );
-  assertStringIncludes(reviewText, "default: accept (Enter or a)");
-  assertStringIncludes(
-    reviewText,
-    "impact: accept promotes this candidate into canonical entities; reject or defer keeps it out of the release for now.",
+    'Source claim:\n  test.review_cli.entities name = "Board of Accountancy"',
   );
   assertStringIncludes(
     reviewText,
-    "actions: Enter accept, a accept, r reject, m merge, d defer, q quit",
+    "Issue:\n  entity candidate needs review",
   );
   assertStringIncludes(
     reviewText,
-    "ids: subject=candidate.test.review_cli.board_accountancy",
+    "Release effect:\n  accepted entity enters the release; rejected or deferred stays out",
   );
-  assertStringIncludes(reviewText, "evidence:");
-  assertStringIncludes(reviewText, "test.review_cli.entities: name <- Board of Accountancy");
-  assertStringIncludes(reviewText, "url: https://example.com/test.review_cli.entities");
-  assertStringIncludes(reviewText, "artifact:");
+  assertStringIncludes(reviewText, "  a accept");
+  assertEquals(
+    reviewText.includes("ids: subject=candidate.test.review_cli.board_accountancy"),
+    false,
+  );
+  assertEquals(reviewText.includes("artifact:"), false);
   assertStringIncludes(reviewText, "Saved resolution.");
   const searchOutput = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
@@ -448,17 +553,9 @@ Deno.test("entity conflict review rendering explains defer impact", async () => 
 
   assertStringIncludes(
     text,
-    "reason: Resolve entity candidate that conflicts with an accepted entity",
+    "Issue:\n  Candidate kind board conflicts with accepted agency for the same entity id.",
   );
-  assertStringIncludes(
-    text,
-    "why deferred: Candidate kind board conflicts with accepted agency for the same entity id.",
-  );
-  assertStringIncludes(text, "default: defer (Enter or d)");
-  assertStringIncludes(
-    text,
-    "impact: accept attaches this board candidate to existing agency dc.conflicted_review_body; defer keeps the source conflict out of the release until decided.",
-  );
+  assertStringIncludes(text, "Release effect:\n  excluded until accepted, edited, or rejected");
   assert(!text.includes("accept promotes this candidate into canonical entities"));
 });
 
@@ -588,12 +685,12 @@ Deno.test("interactive review Enter accepts the default action for an explicit e
   });
   const reviewProcess = reviewRun.spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.write(new TextEncoder().encode("a\nq\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "default: accept (Enter or a)");
+  assertStringIncludes(reviewText, "Enter skip");
   assertStringIncludes(reviewText, "Saved resolution.");
 
   const reopened = new Workbench(dbPath);
@@ -649,7 +746,7 @@ Deno.test("interactive review explains available actions after an unavailable ac
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nx\na\nq\n"));
+  await writer.write(new TextEncoder().encode("x\na\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -657,7 +754,7 @@ Deno.test("interactive review explains available actions after an unavailable ac
   assertEquals(output.code, 0);
   assertStringIncludes(
     stdout,
-    "That action is not available. Use Enter accept, a accept, r reject, m merge, d defer, or q quit.",
+    "That action is not available. Use Enter skip, s skip, a accept, r reject, m merge, d defer, v raw details, or q quit.",
   );
   assertStringIncludes(stdout, "Saved resolution.");
 });
@@ -798,7 +895,7 @@ Deno.test("interactive review starts with an inbox summary for the current slice
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.write(new TextEncoder().encode("\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -909,10 +1006,10 @@ Deno.test("interactive review gives deferred relationship packets packet-level i
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, "Decision inbox");
+  assertStringIncludes(stdout, "relationship");
   assertStringIncludes(
     stdout,
-    "1. [recommended] Committee on Health exclusion oversight - council.committees overseen_by [default defer; packet 1 open]",
+    'Source claim:\n  council.committees governingAgency = "Department of Buildings (excluding construction codes)"',
   );
 });
 
@@ -989,7 +1086,7 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.write(new TextEncoder().encode("q\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
@@ -997,10 +1094,9 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
   assertEquals(output.code, 0);
   assertStringIncludes(
     stdout,
-    "1. [recommended] Unblocking Agency - test.review_cli.graph_priority entity candidate [default accept; packet 1 open; unblocks 1]",
+    "Decision impact: unblocks 1 blocked relationship.",
   );
-  assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
-  assertStringIncludes(stdout, "Review: Unblocking Agency");
+  assertStringIncludes(stdout, "Subject:\n  Unblocking Agency");
 });
 
 Deno.test("interactive review --status deferred does not treat deferred items as actionable impact", async () => {
@@ -1074,13 +1170,13 @@ Deno.test("interactive review --status deferred does not treat deferred items as
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.write(new TextEncoder().encode("q\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, "Review: Deferred Priority Target");
+  assertStringIncludes(stdout, "Subject:\n  Deferred Priority Target");
   assertEquals(stdout.includes("Decision impact:"), false);
 });
 
@@ -1176,8 +1272,8 @@ Deno.test("interactive review --status all still prioritizes open unblocking wor
     "1. [recommended] Open Priority Target - zzz.open_priority entity candidate [default accept; packet 1 open; unblocks 1]",
   );
   assertStringIncludes(stdout, "Decision impact: unblocks 1 blocked relationship.");
-  assertStringIncludes(stdout, "Review: Open Priority Target");
-  assertEquals(stdout.includes("Review: Deferred First Alphabetically"), false);
+  assertStringIncludes(stdout, "Subject:\n  Open Priority Target");
+  assertEquals(stdout.includes("Subject:\n  Deferred First Alphabetically"), false);
 });
 
 Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of larger low-impact packets", async () => {
@@ -1349,16 +1445,19 @@ Deno.test("interactive review stays inside the current packet until it clears", 
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
+  await writer.write(new TextEncoder().encode("\na\na\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const stdout = new TextDecoder().decode(output.stdout);
 
   assertEquals(output.code, 0);
-  assertStringIncludes(stdout, "Review: Zzz Packet One");
+  assertStringIncludes(stdout, "Subject:\n  Zzz Packet One");
   assertStringIncludes(stdout, "Saved resolution.");
-  assertStringIncludes(stdout, "Review: Zzz Packet Two");
-  assertEquals(stdout.includes("Review: Aaa Other One"), false);
+  assertStringIncludes(stdout, "Subject:\n  Zzz Packet Two");
+  assert(
+    stdout.indexOf("Subject:\n  Zzz Packet Two") <
+      stdout.indexOf("Subject:\n  Aaa Other One"),
+  );
 });
 
 Deno.test("interactive review resume command preserves quoted filters", async () => {
@@ -1413,7 +1512,7 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
+  await writer.write(new TextEncoder().encode("q\n"));
   await writer.close();
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
@@ -1421,7 +1520,7 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "Resume with deno task dc -- review relationships --subject-prefix relationship.test.review_cli.quoted_resume --relationship-type overseen_by --raw-value-contains 'Committee on Health'\\''s Work'.",
+    "deno task dc -- review relationships --subject-prefix relationship.test.review_cli.quoted_resume --relationship-type overseen_by --raw-value-contains 'Committee on Health'\\''s Work'",
   );
 });
 
@@ -1667,7 +1766,8 @@ Deno.test("interactive review auto-accepts accepted-endpoint additive relationsh
   const reviewOutput = await reviewProcess.output();
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   assertEquals(reviewOutput.code, 0);
-  assertStringIncludes(reviewText, "No review items remain.");
+  assertStringIncludes(reviewText, "Review session summary:");
+  assertStringIncludes(reviewText, "  open: 0");
   assertEquals(reviewText.includes("Decision inbox"), false);
 });
 
@@ -1719,7 +1819,8 @@ Deno.test("interactive review auto-accepts safe legal refs before rendering", as
   const reviewText = new TextDecoder().decode(reviewOutput.stdout);
   const reviewError = new TextDecoder().decode(reviewOutput.stderr);
   assertEquals(reviewOutput.code, 0, reviewError);
-  assertStringIncludes(reviewText, "No review items remain.");
+  assertStringIncludes(reviewText, "Review session summary:");
+  assertStringIncludes(reviewText, "  open: 0");
 
   const reopened = new Workbench(dbPath);
   reopened.init();
@@ -1775,14 +1876,15 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
     stderr: "piped",
   }).spawn();
   const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\n"));
+  await writer.write(new TextEncoder().encode("d\nq\n"));
   await writer.close();
   const output = await reviewProcess.output();
   const text = new TextDecoder().decode(output.stdout);
   assertEquals(output.code, 0);
-  assertStringIncludes(text, "default: defer (Enter or d)");
-  assertStringIncludes(text, "Saved resolution.");
-  assertStringIncludes(text, "No review items remain.");
+  assertStringIncludes(text, "Saved defer.");
+  assertStringIncludes(text, "Review session summary:");
+  assertStringIncludes(text, "  deferred: 1");
+  assertEquals(text.split("Subject:\n  Mystery legal authority").length - 1, 1);
 
   const reopened = new Workbench(dbPath);
   reopened.init();
