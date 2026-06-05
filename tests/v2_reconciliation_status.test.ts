@@ -39,22 +39,8 @@ Deno.test("status json reports blocked reconciliation counts", async () => {
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const statusOutput = await runStatusCli(dbPath, { json: true });
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blocked: number;
       firstBlockedReason?: string;
@@ -125,23 +111,9 @@ Deno.test("status surfaces repeated blocked reconciliation families in json and 
   );
   workbench.close();
 
-  const jsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const jsonOutput = await runStatusCli(dbPath, { json: true });
   assertEquals(jsonOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+  const status = JSON.parse(jsonOutput.stdout) as {
     reconciliation: {
       blockedFamilies: Array<{
         sourceId: string;
@@ -173,22 +145,9 @@ Deno.test("status surfaces repeated blocked reconciliation families in json and 
     },
   ]);
 
-  const textOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const textOutput = await runStatusCli(dbPath);
   assertEquals(textOutput.code, 0);
-  const statusText = new TextDecoder().decode(textOutput.stdout);
+  const statusText = textOutput.stdout;
   assertStringIncludes(statusText, "Blocked families:");
   assertStringIncludes(
     statusText,
@@ -231,22 +190,8 @@ Deno.test("status surfaces blocked work by source with readable blocker labels",
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const statusOutput = await runStatusCli(dbPath, { json: true });
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blockedBySource: Array<{ sourceId: string; count: number }>;
       firstBlocked?: {
@@ -316,23 +261,10 @@ Deno.test("status surfaces the top actionable unblocker for blocked relationship
   }
   workbench.close();
 
-  const jsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const jsonOutput = await runStatusCli(dbPath, { json: true });
   assertEquals(jsonOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(jsonOutput.stdout)) as {
+  const status = JSON.parse(jsonOutput.stdout) as {
+    nextCommand: string;
     reconciliation: {
       topUnblocker?: {
         reviewItemId: string;
@@ -355,32 +287,27 @@ Deno.test("status surfaces the top actionable unblocker for blocked relationship
     defaultAction: "accept",
     downstreamBlockedCount: 2,
     reviewCommand:
-      "deno task dc -- review entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target",
+      `deno task dc -- review entities --source test.reconciliation.unblocker.entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target --db ${dbPath}`,
   });
+  assertEquals(
+    status.nextCommand,
+    `deno task dc -- review entities --source test.reconciliation.unblocker.entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target --db ${dbPath}`,
+  );
 
-  const textOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-    ],
-  }).output();
+  const textOutput = await runStatusCli(dbPath);
   assertEquals(textOutput.code, 0);
-  const statusText = new TextDecoder().decode(textOutput.stdout);
+  const statusText = textOutput.stdout;
   assertStringIncludes(
     statusText,
     "Top unblocker: Review fixture entity candidate (2 blocked relationships)",
   );
   assertStringIncludes(
     statusText,
-    "Review unblocker: deno task dc -- review entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target",
+    `Review unblocker: deno task dc -- review entities --source test.reconciliation.unblocker.entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target --db ${dbPath}`,
+  );
+  assertStringIncludes(
+    statusText,
+    `Next: deno task dc -- review entities --source test.reconciliation.unblocker.entities --subject-prefix candidate.test.reconciliation.unblocker.pending_target --db ${dbPath}`,
   );
 });
 
@@ -428,22 +355,8 @@ Deno.test("rejecting a prerequisite keeps dependent relationships blocked with r
   );
   workbench.close();
 
-  const statusOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "status",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const statusOutput = await runStatusCli(dbPath, { json: true });
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blockedByBlockerState: Array<{ blockerState: string; count: number }>;
       firstBlocked?: {
@@ -537,14 +450,12 @@ Deno.test("stale prerequisite candidates surface stale blocker audit for depende
   assert(blocked);
   assertEquals(blocked.blockerState, "stale_candidate");
   assertStringIncludes(blocked.detailsJson, '"state":"stale_candidate"');
-  assertEquals(relationshipReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length, 1);
+  assertEquals(relationshipReviewItems[0].conflictKind, "unresolved_symbol");
 
-  const statusOutput = await new Deno.Command("deno", {
-    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
-    cwd: Deno.cwd(),
-  }).output();
+  const statusOutput = await runStatusCli(dbPath, { json: true });
   assertEquals(statusOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blockedByBlockerState: Array<{ blockerState: string; count: number }>;
       firstBlocked?: {
@@ -650,14 +561,12 @@ Deno.test("replay-conflict prerequisite candidates surface conflict blocker audi
   assert(blocked);
   assertEquals(blocked.blockerState, "replay_conflict");
   assertStringIncludes(blocked.detailsJson, '"state":"replay_conflict"');
-  assertEquals(relationshipReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length, 1);
+  assertEquals(relationshipReviewItems[0].conflictKind, "unresolved_symbol");
 
-  const statusOutput = await new Deno.Command("deno", {
-    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
-    cwd: Deno.cwd(),
-  }).output();
+  const statusOutput = await runStatusCli(dbPath, { json: true });
   assertEquals(statusOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blockedByBlockerState: Array<{ blockerState: string; count: number }>;
       firstBlocked?: {
@@ -744,14 +653,12 @@ Deno.test("deferred prerequisite candidates surface deferred blocker audit for d
   assert(blocked);
   assertEquals(blocked.blockerState, "deferred_candidate");
   assertStringIncludes(blocked.detailsJson, '"state":"deferred_candidate"');
-  assertEquals(relationshipReviewItems.length, 0);
+  assertEquals(relationshipReviewItems.length, 1);
+  assertEquals(relationshipReviewItems[0].conflictKind, "unresolved_symbol");
 
-  const statusOutput = await new Deno.Command("deno", {
-    args: ["run", "-A", "scripts/dc.ts", "status", "--db", dbPath, "--json"],
-    cwd: Deno.cwd(),
-  }).output();
+  const statusOutput = await runStatusCli(dbPath, { json: true });
   assertEquals(statusOutput.code, 0);
-  const status = JSON.parse(new TextDecoder().decode(statusOutput.stdout)) as {
+  const status = JSON.parse(statusOutput.stdout) as {
     reconciliation: {
       blockedByBlockerState: Array<{ blockerState: string; count: number }>;
       firstBlocked?: {
@@ -777,3 +684,29 @@ Deno.test("deferred prerequisite candidates surface deferred blocker audit for d
     ),
   );
 });
+
+async function runStatusCli(
+  dbPath: string,
+  options: { json?: boolean } = {},
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "status",
+      "--db",
+      dbPath,
+      ...(options.json ? ["--json"] : []),
+    ],
+  }).output();
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
+}

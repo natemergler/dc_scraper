@@ -14,8 +14,10 @@ function queryPlanDetails(
   );
 }
 
-async function runSourceList(dbPath: string): Promise<Deno.CommandOutput> {
-  return await new Deno.Command(Deno.execPath(), {
+async function runSourceList(
+  dbPath: string,
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
     cwd: Deno.cwd(),
     args: [
       "run",
@@ -30,6 +32,11 @@ async function runSourceList(dbPath: string): Promise<Deno.CommandOutput> {
       dbPath,
     ],
   }).output();
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
 }
 
 const CURRENT_WORKBENCH_REQUIRED_MESSAGE =
@@ -50,10 +57,10 @@ Deno.test("fresh v2 workbench initializes and init is idempotent", async () => {
   const busyTimeout = workbench.db.prepare("pragma busy_timeout").value<[number]>()?.[0];
   const journalMode = workbench.db.prepare("pragma journal_mode").value<[string]>()?.[0];
   workbench.close();
-  assertEquals(first.schema.version, 17);
-  assertEquals(second.schema.version, 17);
+  assertEquals(first.schema.version, 18);
+  assertEquals(second.schema.version, 18);
   assertEquals(second.schema, {
-    version: 17,
+    version: 18,
     name: "v2_current_workbench_schema",
     initializedAt: second.schema.initializedAt,
   });
@@ -283,9 +290,9 @@ Deno.test("source list fails fast for non-current local workbench DBs", async ()
 
   const sourceListOutput = await runSourceList(dbPath);
   assertEquals(sourceListOutput.code, 1);
-  assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
+  assertEquals(sourceListOutput.stdout, "");
   assertStringIncludes(
-    new TextDecoder().decode(sourceListOutput.stderr),
+    sourceListOutput.stderr,
     CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });
@@ -300,9 +307,9 @@ Deno.test("source list fails fast for non-current workbench schema versions", as
 
   const sourceListOutput = await runSourceList(dbPath);
   assertEquals(sourceListOutput.code, 1);
-  assertEquals(new TextDecoder().decode(sourceListOutput.stdout), "");
+  assertEquals(sourceListOutput.stdout, "");
   assertStringIncludes(
-    new TextDecoder().decode(sourceListOutput.stderr),
+    sourceListOutput.stderr,
     CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });
@@ -325,7 +332,7 @@ Deno.test("source list does not mutate non-current databases", async () => {
   const sourceListOutput = await runSourceList(dbPath);
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
-    new TextDecoder().decode(sourceListOutput.stderr),
+    sourceListOutput.stderr,
     CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 
@@ -352,7 +359,7 @@ Deno.test("source list rejects a current schema record when required tables are 
 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
-    new TextDecoder().decode(sourceListOutput.stderr),
+    sourceListOutput.stderr,
     CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });
@@ -373,7 +380,7 @@ Deno.test("source list rejects current schema records with unexpected local tabl
 
   assertEquals(sourceListOutput.code, 1);
   assertStringIncludes(
-    new TextDecoder().decode(sourceListOutput.stderr),
+    sourceListOutput.stderr,
     CURRENT_WORKBENCH_REQUIRED_MESSAGE,
   );
 });

@@ -7,6 +7,14 @@ const LINKAGE_SOURCE_ID = "public_body_linkage";
 const LINKAGE_PREFIX = `relationship.${LINKAGE_SOURCE_ID}.`;
 const LINKAGE_REASON =
   "The source names a related board, but suffix similarity does not prove governance or that the link should be materialized.";
+const KNOWN_SAFE_GOVERNANCE_LINKS = new Set([
+  "dc.green_finance_authority|dc.green_finance_authority_board",
+  "dc.metropolitan_washington_airports_authority|dc.metropolitan_washington_airports_authority_board_of_directors",
+  "dc.metropolitan_washington_council_of_governments|dc.metropolitan_washington_council_of_governments_board_of_directors",
+  "dc.not_for_profit_hospital_corporation|dc.not_for_profit_hospital_corporation_board_of_directors",
+  "dc.tobacco_settlement_financing_corporation|dc.tobacco_settlement_financing_corporation_board_of_directors",
+  "dc.washington_metropolitan_area_transit_authority|dc.washington_metropolitan_area_transit_authority_board_of_directors",
+]);
 
 interface CandidateSourceRow {
   candidateId: string;
@@ -41,6 +49,12 @@ export function isPublicBodyLinkageRelationshipCandidateId(candidateId: string):
 
 export function publicBodyLinkageWhyDeferred(): string {
   return LINKAGE_REASON;
+}
+
+export function isKnownSafePublicBodyGovernanceLink(
+  row: Pick<DerivedPublicBodyLinkageCandidate, "fromEntityRef" | "toEntityRef">,
+): boolean {
+  return KNOWN_SAFE_GOVERNANCE_LINKS.has(`${row.fromEntityRef}|${row.toEntityRef}`);
 }
 
 function publicBodyLinkageCandidates(store: WorkbenchStore): DerivedPublicBodyLinkageCandidate[] {

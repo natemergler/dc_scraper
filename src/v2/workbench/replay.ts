@@ -851,14 +851,18 @@ function markRelationshipReplayConflict(
   run(
     store.db,
     `insert into review_items(
-       review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at
+       review_item_id, item_type, conflict_kind, subject_kind, subject_id, reason, default_action, status, proposed_actions_json, details_json, created_at, updated_at
      ) values(
-       ?, 'relationship_candidate', ?, ?, ?, 'open', ?, ?, ?
+       ?, 'relationship_candidate', 'fact_conflict', 'relationship', ?, ?, ?, 'open',
+       '[{"action":"accept_fact"},{"action":"reject_fact"},{"action":"defer"},{"action":"open_source_issue"}]', ?, ?, ?
      )
      on conflict(review_item_id) do update set
+       conflict_kind = excluded.conflict_kind,
+       subject_kind = excluded.subject_kind,
        reason = excluded.reason,
        default_action = excluded.default_action,
        status = 'open',
+       proposed_actions_json = excluded.proposed_actions_json,
        details_json = excluded.details_json,
        updated_at = excluded.updated_at`,
     [

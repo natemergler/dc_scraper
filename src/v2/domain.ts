@@ -15,6 +15,36 @@ export type ReviewItemType =
   | "source_status"
   | "placeholder_entity";
 
+export type ConflictKind =
+  | "fact_conflict"
+  | "unresolved_symbol"
+  | "parse_or_normalization_failure"
+  | "compiler_diagnostic";
+
+export type ConflictSubjectKind =
+  | "entity"
+  | "relationship"
+  | "legal_ref"
+  | "dataset"
+  | "source_item";
+
+export type ProposedReviewActionKind =
+  | "accept_fact"
+  | "reject_fact"
+  | "map_symbol"
+  | "create_alias_rule"
+  | "create_placeholder"
+  | "normalize_legal_ref"
+  | "mark_non_graphable"
+  | "defer"
+  | "open_source_issue";
+
+export interface ProposedReviewAction {
+  action: ProposedReviewActionKind;
+  label?: string;
+  payload?: Record<string, unknown>;
+}
+
 export type SourceTier = "tier0" | "tier1" | "tier2" | "tier3";
 export type SourceReleaseRole =
   | "structure"
@@ -159,9 +189,12 @@ export interface DatasetInput {
 export interface ReviewItemInput {
   reviewItemId: string;
   itemType: ReviewItemType;
+  conflictKind?: ConflictKind;
+  subjectKind?: ConflictSubjectKind;
   subjectId: string;
   reason: string;
   defaultAction: string;
+  proposedActions?: ProposedReviewAction[];
   details: Record<string, unknown>;
 }
 
@@ -214,10 +247,14 @@ export interface ResolutionEventInput {
 export interface ReviewItemRecord {
   reviewItemId: string;
   itemType: ReviewItemType;
+  conflictKind: ConflictKind;
+  subjectKind: ConflictSubjectKind;
   subjectId: string;
+  reviewCommand?: string;
   reason: string;
   defaultAction: string;
   status: ReviewStatus;
+  proposedActions: ProposedReviewAction[];
   details: Record<string, unknown>;
   subject?: ReviewItemSubjectContext;
 }
@@ -389,6 +426,15 @@ export function parseLegalReference(
       needsReview: false,
     };
   }
+  const dcLawUrlCitation = extractDcLawCitationFromUrl(url);
+  if (dcLawUrlCitation) {
+    return {
+      refType: "dc_law",
+      citationText: text,
+      normalizedCitation: dcLawUrlCitation,
+      needsReview: false,
+    };
+  }
   const dcActMatch = text.match(/D\.?\s*C\.?\s+Act\s+([0-9]{1,2}-[0-9]{1,4})/i);
   if (dcActMatch) {
     return {
@@ -504,6 +550,11 @@ export function parseLegalReference(
 
 function normalizeCodeSection(value: string): string {
   return value.replaceAll(/[–—]/g, "-");
+}
+
+function extractDcLawCitationFromUrl(url?: string): string | undefined {
+  const match = url?.match(/\/us\/dc\/council\/laws\/([0-9]{1,2}-[0-9]{1,4})(?:[/?#]|$)/i);
+  return match?.[1] ? `D.C. Law ${match[1]}` : undefined;
 }
 
 export function inverseRelationshipType(type: string): string {

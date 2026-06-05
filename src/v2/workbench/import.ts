@@ -24,6 +24,11 @@ import {
   reuseOrMarkStaleLegalRefDecisions,
   reuseOrMarkStaleRelationshipDecisions,
 } from "./replay.ts";
+import {
+  proposedActionsForInput,
+  reviewConflictKindForInput,
+  reviewSubjectKindForInput,
+} from "./review_conflicts.ts";
 import { augmentParsedOutputWithRelationshipEndpointCandidates } from "./seeded_endpoints.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -308,7 +313,7 @@ function importParsedOutput(
 ): void {
   if (!parsed) return;
   const insertReviewItem = store.db.prepare(
-    "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
+    "insert or replace into review_items(review_item_id, item_type, conflict_kind, subject_kind, subject_id, reason, default_action, status, proposed_actions_json, details_json, created_at, updated_at) values(?, ?, ?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
   );
   const sourceItemRows: unknown[][] = [];
   const entityCandidateRows: unknown[][] = [];
@@ -635,16 +640,27 @@ function importParsedOutput(
       );
     }
     const reviewItemId = buildReviewItemId(legalRef.legalRefId, "legal-ref");
+    const legalReviewItem: ReviewItemInput = {
+      reviewItemId,
+      itemType: "legal_ref",
+      subjectId: legalRef.legalRefId,
+      reason: legalReviewReason(legalRef),
+      defaultAction: legalDefaultAction(legalRef),
+      details: legalReviewDetails(legalRef),
+    };
     run(
       store.db,
-      "insert or replace into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at) values(?, 'legal_ref', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
+      "insert or replace into review_items(review_item_id, item_type, conflict_kind, subject_kind, subject_id, reason, default_action, status, proposed_actions_json, details_json, created_at, updated_at) values(?, 'legal_ref', ?, ?, ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, ?, coalesce((select created_at from review_items where review_item_id = ?), ?), ?)",
       [
         reviewItemId,
+        reviewConflictKindForInput(legalReviewItem),
+        reviewSubjectKindForInput(legalReviewItem),
         legalRef.legalRefId,
-        legalReviewReason(legalRef),
-        legalDefaultAction(legalRef),
+        legalReviewItem.reason,
+        legalReviewItem.defaultAction,
         reviewItemId,
-        JSON.stringify(legalReviewDetails(legalRef)),
+        JSON.stringify(proposedActionsForInput(legalReviewItem)),
+        JSON.stringify(legalReviewItem.details),
         reviewItemId,
         nowIso(),
         nowIso(),
@@ -720,10 +736,13 @@ function importParsedOutput(
       [
         resolvedReviewItem.reviewItemId,
         resolvedReviewItem.itemType,
+        reviewConflictKindForInput(resolvedReviewItem),
+        reviewSubjectKindForInput(resolvedReviewItem),
         resolvedReviewItem.subjectId,
         resolvedReviewItem.reason,
         resolvedReviewItem.defaultAction,
         resolvedReviewItem.reviewItemId,
+        JSON.stringify(proposedActionsForInput(resolvedReviewItem)),
         JSON.stringify(resolvedReviewItem.details),
         resolvedReviewItem.reviewItemId,
         nowIso(),

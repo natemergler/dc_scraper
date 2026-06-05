@@ -8,7 +8,7 @@ export interface WorkbenchSchemaContractRow {
   initializedAt: string;
 }
 
-const CURRENT_WORKBENCH_SCHEMA_VERSION = 17;
+const CURRENT_WORKBENCH_SCHEMA_VERSION = 18;
 const CURRENT_WORKBENCH_SCHEMA_NAME = "v2_current_workbench_schema";
 
 const CREATE_WORKBENCH_SQL = `create table sources(
@@ -122,10 +122,13 @@ create table canonical_entities(
 create table review_items(
   review_item_id text primary key,
   item_type text not null check(item_type in('entity_candidate', 'relationship_candidate', 'legal_ref', 'dataset', 'source_status', 'placeholder_entity')),
+  conflict_kind text not null default 'fact_conflict' check(conflict_kind in('fact_conflict', 'unresolved_symbol', 'parse_or_normalization_failure', 'compiler_diagnostic')),
+  subject_kind text not null default 'entity' check(subject_kind in('entity', 'relationship', 'legal_ref', 'dataset', 'source_item')),
   subject_id text not null,
   reason text not null,
   default_action text not null check(default_action in('accept', 'reject', 'defer')),
   status text not null default 'open' check(status in('open', 'resolved', 'deferred')),
+  proposed_actions_json text not null default '[]' check(json_valid(proposed_actions_json)),
   details_json text not null check(json_valid(details_json)),
   created_at text not null,
   updated_at text not null

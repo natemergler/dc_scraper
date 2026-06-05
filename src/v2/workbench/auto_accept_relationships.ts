@@ -3,6 +3,10 @@ import { buildKnownEntityRef, extractExcludedCouncilOversightNames } from "../co
 import { queryAll, queryOne, withTransaction } from "./db.ts";
 import { endpointStatusMap } from "./endpoint_status.ts";
 import { refreshLegalRefAttachments } from "./legal_ref_attachments.ts";
+import {
+  isKnownSafePublicBodyGovernanceLink,
+  isPublicBodyLinkageRelationshipCandidateId,
+} from "./public_body_linkage.ts";
 import { isLegalAuthorityRelationship } from "./relationship_kinds.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -98,10 +102,21 @@ function isSafeToAutoAccept(
   if (candidate.stalePriorDecision === 1) return false;
   if (candidate.replayConflict === 1) return false;
   if (isSafeCouncilOversightExclusion(store, endpointStatuses, candidate)) return true;
+  if (isSafeKnownPublicBodyGovernanceLink(endpointStatuses, candidate)) return true;
   if (candidate.defaultAction !== "accept") return false;
   if (candidate.whyDeferred) return false;
   if (candidate.needsReview !== 0 && !allowsNeedsReviewAutoAccept(candidate)) return false;
   if (sameFactDeferredReviewKeys.has(relationshipFactKey(candidate))) return false;
+  return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
+    endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
+}
+
+function isSafeKnownPublicBodyGovernanceLink(
+  endpointStatuses: ReturnType<typeof endpointStatusMap>,
+  candidate: AutoAcceptRelationshipRow,
+): boolean {
+  if (!isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) return false;
+  if (!isKnownSafePublicBodyGovernanceLink(candidate)) return false;
   return endpointStatuses.get(candidate.fromEntityRef)?.state === "accepted" &&
     endpointStatuses.get(candidate.toEntityRef)?.state === "accepted";
 }

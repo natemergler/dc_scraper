@@ -14,6 +14,7 @@ import {
   defaultActionForCouncilOversightTarget,
   extractScopedCouncilOversightBaseName,
   isScopedCouncilOversightTarget,
+  resolveKnownEntityOfficialUrl,
 } from "../connectors/shared.ts";
 import { queryOne } from "./db.ts";
 import type { WorkbenchStore } from "./store.ts";
@@ -147,6 +148,7 @@ function buildSeededRelationshipEndpointCandidate(
     proposedEntityId,
     name: observedName,
     kind,
+    officialUrl: resolveKnownEntityOfficialUrl(observedName),
     safeToAutoAccept,
     evidence: relationshipCandidate.evidence.map((evidence) => ({ ...evidence })),
   };

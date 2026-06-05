@@ -1,4 +1,5 @@
 import { nowIso } from "../domain.ts";
+import { resolveKnownEntityOfficialUrl } from "../connectors/shared.ts";
 import { queryAll, queryOne, run } from "./db.ts";
 import {
   compareAuthoritativeEntitySourcePrecedence,
@@ -25,6 +26,15 @@ interface AcceptedEntityCandidateRow {
   officialUrl?: string | null;
   confidence?: number | null;
 }
+
+const PUBLIC_BODY_URL_SPECIFICITY_KINDS = new Set([
+  "public_body",
+  "board",
+  "commission",
+  "committee",
+  "council",
+  "task_force",
+]);
 
 export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
   store: WorkbenchStore,
@@ -71,6 +81,9 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
   const branchCandidate = strongestCandidateForField(candidates, order, "branch");
   const clusterCandidate = strongestCandidateForField(candidates, order, "cluster");
   const officialUrlCandidate = strongestCandidateForField(candidates, order, "officialUrl");
+  const resolvedKnownOfficialUrl = resolveKnownEntityOfficialUrl(
+    nameCandidate?.name ?? current.name,
+  );
   run(
     store.db,
     `update canonical_entities
@@ -86,7 +99,7 @@ export function refreshCanonicalEntityFieldsFromAcceptedCandidates(
       kindCandidate?.kind ?? current.kind,
       branchCandidate?.branch ?? current.branch ?? null,
       clusterCandidate?.cluster ?? current.cluster ?? null,
-      officialUrlCandidate?.officialUrl ?? current.officialUrl ?? null,
+      officialUrlCandidate?.officialUrl ?? resolvedKnownOfficialUrl ?? current.officialUrl ?? null,
       nowIso(),
       entityId,
     ],
@@ -103,7 +116,22 @@ function strongestCandidateForField(
   const candidatesWithField = field === "name" || field === "kind"
     ? candidates
     : candidates.filter((candidate) => hasText(candidate[field]));
-  return candidatesWithField.toSorted((a, b) => compareCandidateStrength(a, b, order))[0];
+  return candidatesWithField.toSorted((a, b) =>
+    compareCandidateStrengthForField(a, b, order, field)
+  )[0];
+}
+
+function compareCandidateStrengthForField(
+  candidate: AcceptedEntityCandidateRow,
+  other: AcceptedEntityCandidateRow,
+  order: Map<string, number>,
+  field: CanonicalEntityField,
+): number {
+  if (field === "officialUrl") {
+    const officialUrlSpecificity = compareOfficialUrlSpecificity(candidate, other);
+    if (officialUrlSpecificity !== 0) return -officialUrlSpecificity;
+  }
+  return compareCandidateStrength(candidate, other, order);
 }
 
 function compareCandidateStrength(
@@ -127,6 +155,24 @@ function compareCandidateStrength(
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function compareOfficialUrlSpecificity(
+  candidate: AcceptedEntityCandidateRow,
+  other: AcceptedEntityCandidateRow,
+): number {
+  return officialUrlSpecificityScore(candidate) - officialUrlSpecificityScore(other);
+}
+
+function officialUrlSpecificityScore(candidate: AcceptedEntityCandidateRow): number {
+  if (!hasText(candidate.officialUrl)) return 0;
+  if (!PUBLIC_BODY_URL_SPECIFICITY_KINDS.has(candidate.kind)) return 0;
+  try {
+    const url = new URL(candidate.officialUrl);
+    return /\/service\//i.test(url.pathname) ? -1 : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function hasManualFieldResolution(store: WorkbenchStore, entityId: string): boolean {

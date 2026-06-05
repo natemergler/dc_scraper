@@ -1,7 +1,7 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createConnectorContext, getConnector } from "../src/v2/connectors.ts";
-import { buildEntityId } from "../src/v2/domain.ts";
+import { buildEntityId, slugify } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   councilCommitteeHealthDetailFixture,
@@ -10,6 +10,7 @@ import {
   councilMembersFixture,
   dcgisBoardsCommissionsCouncilsMetadataFixture,
   dcgisBoardsCommissionsCouncilsRowsFixture,
+  quickbaseAppointmentsCsvFixture,
   quickbaseFixture,
 } from "./helpers/v2_fixtures.ts";
 import {
@@ -1223,10 +1224,9 @@ Deno.test("DCGIS rewritten self-governing public-body rows stay pending for huma
   });
   workbench.close();
 
-  assertEquals(relationship?.reviewStatus, "pending");
+  assertEquals(relationship, undefined);
   assertEquals(canonicalRelationship, undefined);
-  assertEquals(reviewItems.length, 1);
-  assertEquals(reviewItems[0]?.defaultAction, "defer");
+  assertEquals(reviewItems.length, 0);
 });
 
 Deno.test("OANC commissioner entities auto-promote and explicit ANC structure relationships auto-accept", async () => {
@@ -1536,7 +1536,7 @@ Deno.test("Council committee chair, member, and part_of relationships auto-accep
   assertEquals(pendingCommitteeStructure.count, 0);
 });
 
-Deno.test("Committee of the Whole roster omissions become deferred relationship review", async () => {
+Deno.test("Committee of the Whole all-Councilmembers summary accepts omitted current members", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1638,18 +1638,867 @@ Deno.test("Committee of the Whole roster omissions become deferred relationship 
   workbench.close();
 
   assertEquals(ward7Relationship?.relationshipId, ward7CowRelationshipId);
-  assertEquals(ward8Relationship, undefined);
-  assertEquals(ward8Candidate?.needsReview, 1);
-  assertEquals(ward8Candidate?.reviewStatus, "pending");
+  assertEquals(ward8Relationship?.relationshipId, ward8CowRelationshipId);
+  assertEquals(ward8Candidate?.needsReview, 0);
+  assertEquals(ward8Candidate?.reviewStatus, "accepted");
   assert(ward8Candidate?.rawValue.includes("absent from the explicit committee roster"));
-  assertEquals(
-    ward8Review?.reason,
-    "Review Committee of the Whole roster/prose membership tension",
+  assertEquals(ward8Review, undefined);
+});
+
+Deno.test("safe seeded Council oversight endpoints auto-promote and auto-accept the unblocked relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_the_judiciary_and_public_safety', 'Committee on the Judiciary and Public Safety', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.batch_seeded_oversight",
+      sourceItemKey: "batch-seeded-oversight-row",
+      fromEntityRef: "dc.child_support_guideline_commission",
+      toEntityRef: "dc.committee_on_the_judiciary_and_public_safety",
+      relationshipType: "overseen_by",
+      rawValue: "Child Support Guideline Commission",
+    }),
+    dataDir,
   );
-  assertEquals(ward8Review?.defaultAction, "defer");
+  workbench.close();
+
+  const reopenedAfterImport = new Workbench(dbPath);
+  reopenedAfterImport.init();
+  const seededAfterImport = reopenedAfterImport.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedAfterImport = reopenedAfterImport.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingSeededEntityReview = reopenedAfterImport.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_batch_seeded_oversight",
+  });
+  reopenedAfterImport.close();
+  assertEquals(seededAfterImport?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(seededAfterImport?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedAfterImport?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(remainingSeededEntityReview.length, 0);
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.council.committees.relationship_council_committees_batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const reopenedAfterEntityBatch = new Workbench(dbPath);
+  reopenedAfterEntityBatch.init();
+  const seededEntity = reopenedAfterEntityBatch.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.child_support_guideline_commission'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedAfterEntityBatch = reopenedAfterEntityBatch.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const reviewReadyOversight = reopenedAfterEntityBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterEntityBatch.close();
+  assertEquals(seededEntity?.entityId, "dc.child_support_guideline_commission");
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedAfterEntityBatch?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(reviewReadyOversight.length, 0);
+
+  const relationshipBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees.batch_seeded_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(relationshipBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(relationshipBatchOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const reopenedAfterRelationshipBatch = new Workbench(dbPath);
+  reopenedAfterRelationshipBatch.init();
+  const acceptedRelationship = reopenedAfterRelationshipBatch.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingOversight = reopenedAfterRelationshipBatch.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.batch_seeded_oversight",
+  });
+  reopenedAfterRelationshipBatch.close();
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.child_support_guideline_commission:overseen_by:dc.committee_on_the_judiciary_and_public_safety",
+  );
+  assertEquals(remainingOversight.length, 0);
+});
+
+Deno.test("Council oversight endpoint can seed Council and auto-accept the explicit edge", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_of_the_whole', 'Committee of the Whole', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.self_seeded_oversight",
+      sourceItemKey: "self-seeded-oversight-row",
+      fromEntityRef: "dc.council_of_the_district_of_columbia",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Council of the District of Columbia",
+    }),
+    dataDir,
+  );
+
+  const seededEndpointCandidates = workbench.db.prepare(
+    `select candidate_id as candidateId
+     from entity_candidates
+     where proposed_entity_id = 'dc.council_of_the_district_of_columbia'`,
+  ).all() as Array<{ candidateId: string }>;
+  const seededEntityReview = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.committees.relationship_council_committees_self_seeded_oversight",
+  });
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole'`,
+  ).get() as { relationshipId: string } | undefined;
+  workbench.close();
+
+  assertEquals(seededEndpointCandidates, [{
+    candidateId:
+      "candidate.council.committees.relationship_council_committees_self_seeded_oversight_from_endpoint",
+  }]);
+  assertEquals(seededEntityReview.length, 0);
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.council_of_the_district_of_columbia:overseen_by:dc.committee_of_the_whole",
+  );
+});
+
+Deno.test("safe seeded Council member container endpoint auto-promotes and unblocks seat structure", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.ward_1_council_seat', 'Ward 1 Council Seat', 'council_role', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.members",
+      relationshipCandidateId: "relationship.council.members.ward_1_council_seat_council_part_of",
+      sourceItemKey: "council-members-page",
+      fromEntityRef: "dc.ward_1_council_seat",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "part_of",
+      rawValue: "Council of the District of Columbia",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+
+  const council = workbench.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.council_of_the_district_of_columbia'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const relationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.ward_1_council_seat:part_of:dc.council_of_the_district_of_columbia'`,
+  ).get() as { relationshipId: string } | undefined;
+  const reviewItems = workbench.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.council.members.relationship_council_members_ward_1_council_seat_council_part_of",
+  });
+  const blockers = workbench.db.prepare(
+    "select count(*) as count from reconciliation_items where subject_id = 'relationship.council.members.ward_1_council_seat_council_part_of'",
+  ).get() as { count: number };
+  workbench.close();
+
+  assertEquals(council?.entityId, "dc.council_of_the_district_of_columbia");
+  assertEquals(council?.reviewStatus, "accepted");
+  assertEquals(
+    relationship?.relationshipId,
+    "dc.ward_1_council_seat:part_of:dc.council_of_the_district_of_columbia",
+  );
+  assertEquals(reviewItems.length, 0);
+  assertEquals(blockers.count, 0);
+});
+
+Deno.test("safe seeded DCGIS governing-agency endpoints auto-promote and auto-accept the unblocked relationship", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.example_commission', 'Example Commission', 'commission', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "dcgis.boards_commissions_councils",
+      relationshipCandidateId:
+        "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+      sourceItemKey: "batch-seeded-governing-agency-row",
+      fromEntityRef: "dc.example_commission",
+      toEntityRef: "dc.example_target_agency",
+      relationshipType: "governed_by",
+      rawValue: "Example Target Agency",
+      needsReview: false,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const reopenedAfterImport = new Workbench(dbPath);
+  reopenedAfterImport.init();
+  const seededAfterImport = reopenedAfterImport.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.example_target_agency'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedAfterImport = reopenedAfterImport.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.example_commission:governed_by:dc.example_target_agency'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingSeededEntityReview = reopenedAfterImport.listReviewItems({
+    mode: "entities",
+    subjectPrefix:
+      "candidate.dcgis.boards_commissions_councils.relationship_dcgis_boards_commissions_councils_batch_seeded_governing_agency",
+  });
+  reopenedAfterImport.close();
+  assertEquals(
+    seededAfterImport?.entityId,
+    "dc.example_target_agency",
+  );
+  assertEquals(seededAfterImport?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedAfterImport?.relationshipId,
+    "dc.example_commission:governed_by:dc.example_target_agency",
+  );
+  assertEquals(remainingSeededEntityReview.length, 0);
+
+  const entityBatchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "entities",
+      "--subject-prefix",
+      "candidate.dcgis.boards_commissions_councils.relationship_dcgis_boards_commissions_councils_batch_seeded_governing_agency",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(entityBatchOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(entityBatchOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const seededEntity = reopened.db.prepare(
+    `select entity_id as entityId, review_status as reviewStatus
+     from canonical_entities
+     where entity_id = 'dc.example_target_agency'`,
+  ).get() as { entityId: string; reviewStatus: string } | undefined;
+  const acceptedRelationship = reopened.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.example_commission:governed_by:dc.example_target_agency'`,
+  ).get() as { relationshipId: string } | undefined;
+  const remainingRelationshipReview = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "governed_by",
+    subjectPrefix: "relationship.dcgis.boards_commissions_councils.batch_seeded_governing_agency",
+  });
+  reopened.close();
+  assertEquals(
+    seededEntity?.entityId,
+    "dc.example_target_agency",
+  );
+  assertEquals(seededEntity?.reviewStatus, "accepted");
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.example_commission:governed_by:dc.example_target_agency",
+  );
+  assertEquals(remainingRelationshipReview.length, 0);
+});
+
+Deno.test("accepted-endpoint filtered Council oversight relationships no longer wait for batch accept-safe", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  for (
+    const [entityId, name] of [
+      ["dc.dc_health", "Department of Health"],
+      ["dc.department_of_behavioral_health", "Department of Behavioral Health"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, 'agency', 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name);
+  }
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees.committee_on_health_oversight",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedOversight = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const unresolvedOversight = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees.committee_on_health_oversight",
+  });
+  reopened.close();
+  assertEquals(acceptedOversight.map((row) => row.relationshipId), [
+    "dc.dc_health:overseen_by:dc.committee_on_health",
+    "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health",
+    "dc.district_of_columbia_public_schools:overseen_by:dc.committee_of_the_whole",
+    "dc.office_of_the_state_superintendent_of_education:overseen_by:dc.committee_of_the_whole",
+  ]);
+  assertEquals(unresolvedOversight.length, 0);
+});
+
+Deno.test("accepted-endpoint scoped Council oversight no longer waits for batch accept-safe", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  workbench.close();
+
+  const batchOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      "review",
+      "batch",
+      "accept-safe",
+      "--mode",
+      "relationships",
+      "--relationship-type",
+      "overseen_by",
+      "--subject-prefix",
+      "relationship.council.committees",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+  }).output();
+  assertEquals(batchOutput.code, 0);
+  const batchText = new TextDecoder().decode(batchOutput.stdout);
+  assertStringIncludes(batchText, "Accepted 0 safe review item(s).");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedOversight = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships where relationship_type = 'overseen_by' order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const remainingOversight = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "overseen_by",
+    subjectPrefix: "relationship.council.committees",
+  });
+  const blockedOversight = reopened.db.prepare(
+    `select count(*) as count
+     from reconciliation_items
+     where subject_type = 'relationship_candidate'
+       and subject_id like 'relationship.council.committees.%'
+       and details_json like '%"relationshipType":"overseen_by"%'`,
+  ).get() as { count: number };
+  reopened.close();
   assert(
-    String(ward8Review?.details.whyDeferred).includes(
-      "explicit committee roster omits this member",
+    acceptedOversight.some((row) =>
+      row.relationshipId ===
+        "dc.department_of_behavioral_health:overseen_by:dc.committee_on_health"
+    ),
+  );
+  assert(
+    acceptedOversight.some((row) =>
+      row.relationshipId ===
+        "dc.district_of_columbia_public_schools:overseen_by:dc.committee_of_the_whole"
+    ),
+  );
+  assert(
+    acceptedOversight.some((row) =>
+      row.relationshipId ===
+        "dc.office_of_the_state_superintendent_of_education:overseen_by:dc.committee_of_the_whole"
+    ),
+  );
+  assertEquals(remainingOversight.length, 0);
+  assertEquals(blockedOversight.count, 0);
+});
+
+Deno.test("accepted-endpoint Quickbase seat structure, status, and authority no longer wait for batch accept-safe", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const appointmentsCsvWithAlias = `${quickbaseAppointmentsCsvFixture.trim()}
+"Commission on Nightlife and Culture (CNC)","Alcoholic Beverages and Cannabis Administration (ABCA) Designee","Filled","Mayoral Appointee, DC Agency Representative","Active"
+`;
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(
+      createConnectorContext({
+        fetcher: async (url: string) => {
+          const body = (() => {
+            switch (url) {
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+                return quickbaseFixture;
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+                return appointmentsCsvWithAlias;
+              default:
+                throw new Error(`Unexpected url ${url}`);
+            }
+          })();
+          return {
+            status: 200,
+            text: async () => body,
+            json: async <T>() => JSON.parse(body) as T,
+          };
+        },
+      }),
+    ),
+    dataDir,
+  );
+  for (
+    const subjectId of [
+      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc",
+      "candidate.mota.quickbase.commission_on_nightlife_and_culture_cnc_seat_alcoholic_beverage_and_cannabis_administration_designee",
+      "candidate.mota.quickbase.appointment_status_filled",
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  workbench.close();
+
+  const commonArgs = [
+    "run",
+    "--allow-read",
+    "--allow-write",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+    "--allow-ffi",
+    "scripts/dc.ts",
+    "review",
+    "batch",
+    "accept-safe",
+    "--mode",
+    "relationships",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ];
+
+  const hasSeatOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "has_seat",
+      "--raw-value",
+      "Alcoholic Beverages and Cannabis Administration (ABCA) Designee",
+    ],
+  }).output();
+  assertEquals(hasSeatOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(hasSeatOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const hasStatusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee",
+      "--relationship-type",
+      "has_status",
+    ],
+  }).output();
+  assertEquals(hasStatusOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(hasStatusOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const designatedByOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "designated_by",
+    ],
+  }).output();
+  assertEquals(designatedByOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(designatedByOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const appointedByOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      ...commonArgs,
+      "--subject-prefix",
+      "relationship.mota.quickbase",
+      "--relationship-type",
+      "appointed_by",
+    ],
+  }).output();
+  assertEquals(appointedByOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(appointedByOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  const remainingSeatRelationships = reopened.listReviewItems({
+    mode: "relationships",
+    relationshipType: "has_seat",
+    subjectPrefix: "relationship.mota.quickbase",
+  });
+  reopened.close();
+  const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
+  assert(
+    relationshipIds.includes(
+      "dc.commission_on_nightlife_and_culture:has_seat:dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee",
+    ),
+  );
+  assert(
+    relationshipIds.includes(
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:appointed_by:dc.mayor",
+    ),
+  );
+  assert(
+    relationshipIds.includes(
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:designated_by:dc.alcoholic_beverage_and_cannabis_administration",
+    ),
+  );
+  assert(
+    relationshipIds.includes(
+      "dc.commission_on_nightlife_and_culture_cnc_alcoholic_beverage_and_cannabis_administration_designee:has_status:status.filled",
+    ),
+  );
+  assertEquals(remainingSeatRelationships.length, 0);
+});
+
+Deno.test("accepted-endpoint Quickbase appointee observation relationships no longer wait for batch accept-safe", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    await getConnector("mota.quickbase").run(
+      createConnectorContext({
+        fetcher: async (url: string) => {
+          const body = (() => {
+            switch (url) {
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0":
+                return quickbaseFixture;
+              case "https://octo.quickbase.com/db/bjngwr9pe?a=q&qid=-1243452&bq=1&isDDR=1&skip=0&dlta=xs":
+                return quickbaseAppointmentsCsvFixture;
+              default:
+                throw new Error(`Unexpected url ${url}`);
+            }
+          })();
+          return {
+            status: 200,
+            text: async () => body,
+            json: async <T>() => JSON.parse(body) as T,
+          };
+        },
+      }),
+    ),
+    dataDir,
+  );
+  const appointeeCandidate = workbench.db.prepare(
+    `select candidate_id as candidateId,
+            proposed_entity_id as proposedEntityId
+     from entity_candidates
+     where kind = 'appointee_observation'
+       and name = 'John Smith'
+       and proposed_entity_id like 'observation.%'`,
+  ).get() as { candidateId: string; proposedEntityId: string } | undefined;
+  assert(appointeeCandidate);
+  for (
+    const subjectId of [
+      "candidate.mota.quickbase.council_of_the_district_of_columbia_seat_chairperson",
+      "candidate.mota.quickbase.appointment_status_filled",
+      appointeeCandidate.candidateId,
+    ]
+  ) {
+    await workbench.appendResolutionEvent(
+      { eventType: "accept_entity_candidate", subjectId, payload: {} },
+      resolutionsDir,
+    );
+  }
+  workbench.close();
+
+  const commonArgs = [
+    "run",
+    "--allow-read",
+    "--allow-write",
+    "--allow-env",
+    "--allow-run",
+    "--allow-net",
+    "--allow-ffi",
+    "scripts/dc.ts",
+    "review",
+    "batch",
+    "accept-safe",
+    "--mode",
+    "relationships",
+    "--subject-prefix",
+    `relationship.mota.quickbase.${slugify(appointeeCandidate.proposedEntityId)}`,
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ];
+
+  const holdsOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "holds"],
+  }).output();
+  assertEquals(holdsOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(holdsOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const statusOutput = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [...commonArgs, "--relationship-type", "has_status"],
+  }).output();
+  assertEquals(statusOutput.code, 0);
+  assertStringIncludes(
+    new TextDecoder().decode(statusOutput.stdout),
+    "Accepted 0 safe review item(s).",
+  );
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const acceptedRelationships = reopened.db.prepare(
+    "select relationship_id as relationshipId from canonical_relationships order by relationship_id",
+  ).all() as Array<{ relationshipId: string }>;
+  reopened.close();
+  const relationshipIds = acceptedRelationships.map((row) => row.relationshipId);
+  assert(
+    relationshipIds.includes(
+      `${appointeeCandidate.proposedEntityId}:has_status:status.filled`,
+    ),
+  );
+  assert(
+    relationshipIds.includes(
+      `${appointeeCandidate.proposedEntityId}:holds:dc.council_of_the_district_of_columbia_chairperson`,
     ),
   );
 });

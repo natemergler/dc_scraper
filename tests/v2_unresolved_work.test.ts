@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { buildReviewItemId } from "../src/v2/domain.ts";
+import { buildReviewItemId, type ConnectorResult } from "../src/v2/domain.ts";
 import { Workbench } from "../src/v2/workbench.ts";
 import {
   projectOpenHumanDecisionWork,
@@ -196,20 +196,23 @@ Deno.test("open human decision projection excludes browse-only source-backed add
 
   assertEquals(
     projection.items.map((item) => item.decision.subjectId),
-    ["candidate.test.unresolved_work.projection.pending_target"],
+    [
+      "candidate.test.unresolved_work.projection.pending_target",
+      "relationship.test.unresolved_work.projection.pending_dependency",
+    ],
   );
   assertEquals(
     projection.items[0].reviewItem.subjectId,
     "candidate.test.unresolved_work.projection.pending_target",
   );
-  assertEquals(projection.summary.openReviewItemCount, 3);
-  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 1);
+  assertEquals(projection.summary.openReviewItemCount, 4);
+  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 2);
   assertEquals(projection.summary.browseOnlyOpenReviewItemCount, 2);
-  assertEquals(projection.summary.filteredHumanDecisionOpenReviewItemCount, 1);
+  assertEquals(projection.summary.filteredHumanDecisionOpenReviewItemCount, 2);
   assertEquals(projection.summary.filteredBrowseOnlyOpenReviewItemCount, 2);
 });
 
-Deno.test("open human decision projection includes source status items marked for review", async () => {
+Deno.test("open human decision projection excludes source diagnostics", async () => {
   const dir = await Deno.makeTempDir();
   const workbench = new Workbench(join(dir, "workbench.sqlite"));
   workbench.init();
@@ -217,20 +220,26 @@ Deno.test("open human decision projection includes source status items marked fo
     `insert into review_items(
       review_item_id,
       item_type,
+      conflict_kind,
+      subject_kind,
       subject_id,
       reason,
       default_action,
       status,
+      proposed_actions_json,
       details_json,
       created_at,
       updated_at
     ) values(
       'review.source_status.needs_review',
       'source_status',
+      'compiler_diagnostic',
+      'source_item',
       'open_dc.public_bodies',
       'Review source label that did not map to a relationship endpoint',
       'defer',
       'open',
+      '[{"action":"mark_non_graphable"},{"action":"defer"},{"action":"open_source_issue"}]',
       '{"needsReview":true,"rawValue":"Department of Eduaction"}',
       datetime('now'),
       datetime('now')
@@ -239,12 +248,14 @@ Deno.test("open human decision projection includes source status items marked fo
 
   const projection = projectOpenHumanDecisionWork(workbench);
   const summary = reviewDecisionSummary(workbench);
+  const diagnostics = workbench.listReviewItems({ mode: "sources", status: "open" });
   workbench.close();
 
-  assertEquals(summary.humanDecisionOpen, 1);
-  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 1);
-  assertEquals(projection.items[0]?.reviewItem.itemType, "source_status");
-  assertEquals(projection.items[0]?.decision.sourceId, "open_dc.public_bodies");
+  assertEquals(summary.humanDecisionOpen, 0);
+  assertEquals(projection.summary.humanDecisionOpenReviewItemCount, 0);
+  assertEquals(projection.items.length, 0);
+  assertEquals(diagnostics[0]?.itemType, "source_status");
+  assertEquals(diagnostics[0]?.conflictKind, "compiler_diagnostic");
 });
 
 Deno.test("unresolved reconciliation summary groups repeated blocked families by source relationship and blocker", async () => {
@@ -670,6 +681,9 @@ Deno.test("open human decision projection preserves graph impact order and sourc
     [
       ["candidate.test.unresolved_work.projection_impact.high", 2],
       ["candidate.test.unresolved_work.projection_impact.low", 1],
+      ["relationship.test.unresolved_work.projection_impact.high.first", 0],
+      ["relationship.test.unresolved_work.projection_impact.high.second", 0],
+      ["relationship.test.unresolved_work.projection_impact.low", 0],
     ],
   );
   assertEquals(
@@ -690,4 +704,112 @@ function seedAcceptedEntity(
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run([entityId, name, kind]);
+}
+
+Deno.test("inventory-only imports keep existing unresolved relationship state unchanged", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.source_board', 'Source Board', 'board', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.inventory_only.relationships",
+      relationshipCandidateId: "relationship.test.inventory_only.pending_dependency",
+      sourceItemKey: "inventory-only-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.pending_target",
+      relationshipType: "governed_by",
+      rawValue: "Pending Target",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.inventory_only.entities",
+      candidateId: "candidate.test.inventory_only.pending_target",
+      sourceItemKey: "inventory-only-entity-row",
+      proposedEntityId: "dc.pending_target",
+      name: "Pending Target",
+      kind: "agency",
+      observedName: "Pending Target",
+    }),
+    dataDir,
+  );
+
+  const beforeOpen = workbench.listReviewItems({ status: "open" }).length;
+  const beforeBlocked = workbench.unresolvedWorkGraph().diagnostics.length;
+
+  await workbench.importConnectorResult(inventoryOnlySourceResult(), dataDir);
+
+  const afterOpen = workbench.listReviewItems({ status: "open" }).length;
+  const afterBlocked = workbench.unresolvedWorkGraph().diagnostics.length;
+  const inventory = workbench.sourceSummary("test.inventory_only.datasets");
+  const dataset = workbench.datasets().find((row) =>
+    row.id === "dataset.test.inventory_only.datasets.main"
+  );
+  workbench.close();
+
+  assert(beforeOpen > 0);
+  assertEquals(afterOpen, beforeOpen);
+  assert(beforeBlocked > 0);
+  assertEquals(afterBlocked, beforeBlocked);
+  assertEquals(inventory.itemCount, 1);
+  assertEquals(dataset?.name, "Inventory Only Dataset");
+});
+
+function inventoryOnlySourceResult(): ConnectorResult {
+  return {
+    source: {
+      sourceId: "test.inventory_only.datasets",
+      title: "Inventory Only Datasets",
+      kind: "fixture",
+      accessMethod: "fixture",
+      baseUrl: "https://example.com/inventory-only",
+    },
+    endpointResults: [{
+      endpoint: {
+        endpointId: "test.inventory_only.datasets.main",
+        sourceId: "test.inventory_only.datasets",
+        title: "Inventory only rows",
+        kind: "fixture",
+        url: "https://example.com/inventory-only",
+        method: "GET",
+        captureMode: "rows",
+      },
+      status: "success",
+      artifacts: [{
+        kind: "rows",
+        extension: "json",
+        fetchedUrl: "https://example.com/inventory-only",
+        contentText: JSON.stringify({ datasetId: "dataset.test.inventory_only.datasets.main" }),
+      }],
+      parsed: {
+        items: [{
+          itemKey: "inventory-only-dataset-row",
+          itemType: "fixture_dataset",
+          title: "Inventory only dataset row",
+          body: { name: "Inventory Only Dataset" },
+        }],
+        datasets: [{
+          datasetId: "dataset.test.inventory_only.datasets.main",
+          sourceItemKey: "inventory-only-dataset-row",
+          name: "Inventory Only Dataset",
+          category: "inventory",
+          ownerName: "District of Columbia",
+          accessMethod: "public_web",
+          artifactDepth: "sample",
+          officialUrl: "https://example.com/inventory-only/dataset",
+          evidence: [{
+            fieldPath: "name",
+            observedValue: "Inventory Only Dataset",
+          }],
+        }],
+      },
+    }],
+  };
 }

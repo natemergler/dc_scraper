@@ -5,6 +5,7 @@ import {
   buildRelationshipReviewDraft,
   type RelationshipReviewDraft,
 } from "./relationship_review.ts";
+import { proposedActionsForReviewItem } from "./review_conflicts.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface RelationshipCandidateRow {
@@ -22,6 +23,7 @@ interface ReconciliationStatements {
   deleteBlockers: ReturnType<WorkbenchStore["db"]["prepare"]>;
   insertBlocker: ReturnType<WorkbenchStore["db"]["prepare"]>;
   deleteReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
+  deleteUnresolvedReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
   deleteItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
   upsertReviewItem: ReturnType<WorkbenchStore["db"]["prepare"]>;
 }
@@ -148,20 +150,26 @@ function prepareReconciliationStatements(store: WorkbenchStore): ReconciliationS
     deleteReviewItem: store.db.prepare(
       "delete from review_items where item_type = 'relationship_candidate' and subject_id = ?",
     ),
+    deleteUnresolvedReviewItem: store.db.prepare(
+      "delete from review_items where item_type = 'relationship_candidate' and conflict_kind = 'unresolved_symbol' and subject_id = ?",
+    ),
     deleteItem: store.db.prepare(
       "delete from reconciliation_items where subject_type = 'relationship_candidate' and subject_id = ?",
     ),
     upsertReviewItem: store.db.prepare(
-      `insert into review_items(review_item_id, item_type, subject_id, reason, default_action, status, details_json, created_at, updated_at)
-       values(?, 'relationship_candidate', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?,
+      `insert into review_items(review_item_id, item_type, conflict_kind, subject_kind, subject_id, reason, default_action, status, proposed_actions_json, details_json, created_at, updated_at)
+       values(?, 'relationship_candidate', ?, 'relationship', ?, ?, ?, coalesce((select status from review_items where review_item_id = ?), 'open'), ?, ?,
          coalesce((select created_at from review_items where review_item_id = ?), ?), ?)
        on conflict(review_item_id) do update set
+         conflict_kind = excluded.conflict_kind,
+         subject_kind = excluded.subject_kind,
          reason = excluded.reason,
          default_action = excluded.default_action,
          status = case
            when review_items.status in ('resolved', 'deferred') then review_items.status
            else 'open'
          end,
+         proposed_actions_json = excluded.proposed_actions_json,
          details_json = excluded.details_json,
          updated_at = excluded.updated_at`,
     ),
@@ -175,14 +183,24 @@ function upsertBlockedRelationship(
   toStatus: EndpointStatus,
 ): void {
   const now = nowIso();
+  const reviewItemId = buildBlockedRelationshipReviewItemId(candidate);
   const details = {
+    unresolvedSymbol: true,
     relationshipType: candidate.relationshipType,
     rawValue: candidate.rawValue ?? null,
+    rawLabel: candidate.rawValue ?? firstBlockedEndpointLabel(fromStatus, toStatus),
+    dependentRelationship: {
+      relationshipCandidateId: candidate.relationshipCandidateId,
+      fromEntityRef: candidate.fromEntityRef,
+      relationshipType: candidate.relationshipType,
+      toEntityRef: candidate.toEntityRef,
+    },
     needsReview: candidate.needsReview === 1,
     fromEndpoint: fromStatus,
     toEndpoint: toStatus,
   };
   statements.upsertItem.run(candidate.relationshipCandidateId, JSON.stringify(details), now, now);
+  statements.deleteReviewItem.run(candidate.relationshipCandidateId);
   statements.deleteBlockers.run(candidate.relationshipCandidateId);
   for (const endpoint of [fromStatus, toStatus]) {
     if (endpoint.state === "accepted") continue;
@@ -196,7 +214,21 @@ function upsertBlockedRelationship(
       now,
     );
   }
-  statements.deleteReviewItem.run(candidate.relationshipCandidateId);
+  statements.upsertReviewItem.run(
+    reviewItemId,
+    "unresolved_symbol",
+    candidate.relationshipCandidateId,
+    "Resolve unresolved relationship endpoint symbol",
+    "defer",
+    reviewItemId,
+    JSON.stringify(
+      proposedActionsForReviewItem("unresolved_symbol", "relationship", "defer", details),
+    ),
+    JSON.stringify(details),
+    reviewItemId,
+    now,
+    now,
+  );
 }
 
 function clearRelationshipReconciliationState(
@@ -222,17 +254,38 @@ function upsertRelationshipReviewItem(
     sameFactReviewKeys,
   );
   const now = nowIso();
+  statements.deleteUnresolvedReviewItem.run(candidate.relationshipCandidateId);
   statements.upsertReviewItem.run(
     review.reviewItemId,
+    "fact_conflict",
     candidate.relationshipCandidateId,
     review.reason,
     review.defaultAction,
     review.reviewItemId,
+    JSON.stringify(
+      proposedActionsForReviewItem(
+        "fact_conflict",
+        "relationship",
+        review.defaultAction,
+        review.details,
+      ),
+    ),
     JSON.stringify(review.details),
     review.reviewItemId,
     now,
     now,
   );
+}
+
+function buildBlockedRelationshipReviewItemId(candidate: RelationshipCandidateRow): string {
+  return `${candidate.relationshipCandidateId}.unresolved-symbol`;
+}
+
+function firstBlockedEndpointLabel(fromStatus: EndpointStatus, toStatus: EndpointStatus): string {
+  for (const endpoint of [fromStatus, toStatus]) {
+    if (endpoint.state !== "accepted") return endpoint.name ?? endpoint.entityId;
+  }
+  return toStatus.name ?? toStatus.entityId;
 }
 
 function shouldHideCorroboratingSameFactReview(

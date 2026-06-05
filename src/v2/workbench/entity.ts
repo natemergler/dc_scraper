@@ -1,4 +1,6 @@
 import {
+  type ConflictKind,
+  type ConflictSubjectKind,
   type EntitySearchResult,
   type EntityView,
   inverseRelationshipType,
@@ -7,6 +9,8 @@ import {
   type ReviewStatus,
 } from "../domain.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { parseProposedActions } from "./review_conflicts.ts";
+import { renderReviewCommand, reviewModeForItemType } from "./review_command_args.ts";
 import { type ReviewSubject, reviewSubject } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 
@@ -43,10 +47,13 @@ interface EntityIncomingRow {
 interface EntityReviewItemRow {
   reviewItemId: string;
   itemType: ReviewItemRecord["itemType"];
+  conflictKind: ConflictKind;
+  subjectKind: ConflictSubjectKind;
   subjectId: string;
   reason: string;
   defaultAction: string;
   status: ReviewStatus;
+  proposedActionsJson: string;
   detailsJson: string;
 }
 
@@ -191,10 +198,13 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
     store.db,
     `select review_items.review_item_id as reviewItemId,
             review_items.item_type as itemType,
+            review_items.conflict_kind as conflictKind,
+            review_items.subject_kind as subjectKind,
             review_items.subject_id as subjectId,
             review_items.reason,
             review_items.default_action as defaultAction,
             review_items.status,
+            review_items.proposed_actions_json as proposedActionsJson,
             review_items.details_json as detailsJson
      from review_items
      where review_items.status != 'resolved'
@@ -202,10 +212,13 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
      union
      select review_items.review_item_id as reviewItemId,
             review_items.item_type as itemType,
+            review_items.conflict_kind as conflictKind,
+            review_items.subject_kind as subjectKind,
             review_items.subject_id as subjectId,
             review_items.reason,
             review_items.default_action as defaultAction,
             review_items.status,
+            review_items.proposed_actions_json as proposedActionsJson,
             review_items.details_json as detailsJson
      from review_items
      join entity_candidates
@@ -215,10 +228,13 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
      union
      select review_items.review_item_id as reviewItemId,
             review_items.item_type as itemType,
+            review_items.conflict_kind as conflictKind,
+            review_items.subject_kind as subjectKind,
             review_items.subject_id as subjectId,
             review_items.reason,
             review_items.default_action as defaultAction,
             review_items.status,
+            review_items.proposed_actions_json as proposedActionsJson,
             review_items.details_json as detailsJson
      from review_items
      join relationship_candidates
@@ -228,10 +244,13 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
      union
      select review_items.review_item_id as reviewItemId,
             review_items.item_type as itemType,
+            review_items.conflict_kind as conflictKind,
+            review_items.subject_kind as subjectKind,
             review_items.subject_id as subjectId,
             review_items.reason,
             review_items.default_action as defaultAction,
             review_items.status,
+            review_items.proposed_actions_json as proposedActionsJson,
             review_items.details_json as detailsJson
      from review_items
      join entity_legal_refs
@@ -265,18 +284,37 @@ export function entityView(store: WorkbenchStore, entityId: string): EntityView 
       const item = {
         reviewItemId: row.reviewItemId,
         itemType: row.itemType,
+        conflictKind: row.conflictKind,
+        subjectKind: row.subjectKind,
         subjectId: row.subjectId,
         reason: row.reason,
         defaultAction: row.defaultAction,
         status: row.status,
+        proposedActions: parseProposedActions(row.proposedActionsJson),
         details: JSON.parse(row.detailsJson) as Record<string, unknown>,
       };
       return {
         ...item,
-        subject: entityReviewSubjectContext(reviewSubject(store, item)),
+        ...entityReviewCommand(reviewSubject(store, item), item),
       };
     }),
     legalRefs,
+  };
+}
+
+function entityReviewCommand(
+  subject: ReviewSubject | undefined,
+  item: Pick<ReviewItemRecord, "itemType" | "subjectId">,
+): Pick<ReviewItemRecord, "reviewCommand" | "subject"> {
+  const context = entityReviewSubjectContext(subject);
+  if (!context?.sourceId) return { subject: context };
+  return {
+    subject: context,
+    reviewCommand: renderReviewCommand({
+      mode: reviewModeForItemType(item.itemType),
+      sourceId: context.sourceId,
+      subjectPrefix: item.subjectId,
+    }),
   };
 }
 

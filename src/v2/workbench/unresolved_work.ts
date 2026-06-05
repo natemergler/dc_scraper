@@ -1,22 +1,29 @@
 import {
   buildEntityId,
+  type ConflictKind,
+  type ConflictSubjectKind,
+  type ProposedReviewAction,
   type ReviewItemRecord,
   type ReviewItemType,
   type ReviewStatus,
 } from "../domain.ts";
 import { queryAll } from "./db.ts";
 import { isHumanDecisionReviewItem, listReviewItems, type ReviewItemFilters } from "./review.ts";
+import { parseProposedActions } from "./review_conflicts.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 export interface UnresolvedDecisionNode {
   nodeId: string;
   reviewItemId: string;
   itemType: ReviewItemType;
+  conflictKind: ConflictKind;
+  subjectKind: ConflictSubjectKind;
   subjectId: string;
   sourceId: string;
   reason: string;
   defaultAction: string;
   status: ReviewStatus;
+  proposedActions: ProposedReviewAction[];
   details: Record<string, unknown>;
   downstreamBlockedCount: number;
   blockedSubjectIds: string[];
@@ -119,11 +126,14 @@ export interface UnresolvedReconciliationSummary {
 interface DecisionRow {
   reviewItemId: string;
   itemType: ReviewItemType;
+  conflictKind: ConflictKind;
+  subjectKind: ConflictSubjectKind;
   subjectId: string;
   sourceId?: string | null;
   reason: string;
   defaultAction: string;
   status: ReviewStatus;
+  proposedActionsJson: string;
   detailsJson: string;
 }
 
@@ -367,6 +377,8 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
     store.db,
     `select review_items.review_item_id as reviewItemId,
             review_items.item_type as itemType,
+            review_items.conflict_kind as conflictKind,
+            review_items.subject_kind as subjectKind,
             review_items.subject_id as subjectId,
             coalesce(
               entity_source.source_id,
@@ -379,6 +391,7 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
             review_items.reason,
             review_items.default_action as defaultAction,
             review_items.status,
+            review_items.proposed_actions_json as proposedActionsJson,
             review_items.details_json as detailsJson
      from review_items
      left join entity_candidates
@@ -399,11 +412,14 @@ function readDecisionNodes(store: Pick<WorkbenchStore, "db">): UnresolvedDecisio
     nodeId: decisionNodeId(row.reviewItemId),
     reviewItemId: row.reviewItemId,
     itemType: row.itemType,
+    conflictKind: row.conflictKind,
+    subjectKind: row.subjectKind,
     subjectId: row.subjectId,
     sourceId: row.sourceId ?? "unknown",
     reason: row.reason,
     defaultAction: row.defaultAction,
     status: row.status,
+    proposedActions: parseProposedActions(row.proposedActionsJson),
     details: parseDetails(row.detailsJson),
     downstreamBlockedCount: 0,
     blockedSubjectIds: [],

@@ -139,7 +139,7 @@ Deno.test("accepting a prerequisite entity reprocesses blocked relationships int
   ).get() as { count: number };
   workbench.close();
 
-  assertEquals(before.length, 0);
+  assertEquals(before.length, 1);
   assertEquals(blockedBefore.count, 1);
   assert(
     after.some((item) => item.subjectId === "relationship.test.reprocess.accept"),
@@ -731,6 +731,111 @@ Deno.test("council oversight imports auto-promote safe direct source bodies and 
   );
   assertEquals(blockedCount.count, 0);
   assertEquals(entityReviewItems.length, 0);
+});
+
+Deno.test("council oversight known public bodies fill official URLs during seeded auto-promotion", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_on_transportation_and_the_environment', 'Committee on Transportation and the Environment', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+  workbench.db.prepare(
+    "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values('dc.committee_of_the_whole', 'Committee of the Whole', 'committee', 'accepted', '[]', datetime('now'), datetime('now'))",
+  ).run();
+
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_known_url",
+      sourceItemKey: "seeded-oversight-known-url-row",
+      fromEntityRef: "dc.washington_metropolitan_area_transit_authority",
+      toEntityRef: "dc.committee_on_transportation_and_the_environment",
+      relationshipType: "overseen_by",
+      rawValue: "Washington Metropolitan Area Transit Authority",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId: "relationship.council.committees.seeded_oversight_known_url.rpp",
+      sourceItemKey: "seeded-oversight-known-url-rpp-row",
+      fromEntityRef: "dc.research_practice_partnership",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Research Practice Partnership",
+    }),
+    dataDir,
+  );
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "council.committees",
+      relationshipCandidateId:
+        "relationship.council.committees.seeded_oversight_known_url.statehood",
+      sourceItemKey: "seeded-oversight-known-url-statehood-row",
+      fromEntityRef: "dc.statehood_commission_and_delegation",
+      toEntityRef: "dc.committee_of_the_whole",
+      relationshipType: "overseen_by",
+      rawValue: "Statehood Commission and delegation",
+    }),
+    dataDir,
+  );
+
+  const canonicalEntities = workbench.db.prepare(
+    `select entity_id as entityId,
+            review_status as reviewStatus,
+            official_url as officialUrl
+     from canonical_entities
+     where entity_id in (
+       'dc.washington_metropolitan_area_transit_authority',
+       'dc.research_practice_partnership',
+       'dc.statehood_commission_and_delegation'
+     )
+     order by entity_id`,
+  ).all() as Array<{
+    entityId: string;
+    reviewStatus: string;
+    officialUrl: string | null;
+  }>;
+  const entities = new Map(canonicalEntities.map((row) => [row.entityId, row]));
+  const acceptedRelationship = workbench.db.prepare(
+    `select relationship_id as relationshipId
+     from canonical_relationships
+     where relationship_id = 'dc.washington_metropolitan_area_transit_authority:overseen_by:dc.committee_on_transportation_and_the_environment'`,
+  ).get() as { relationshipId: string } | undefined;
+  workbench.close();
+
+  assertEquals(
+    entities.get("dc.washington_metropolitan_area_transit_authority")?.reviewStatus,
+    "accepted",
+  );
+  assertEquals(
+    entities.get("dc.washington_metropolitan_area_transit_authority")?.officialUrl,
+    "https://wmata.com/",
+  );
+  assertEquals(
+    entities.get("dc.research_practice_partnership")?.reviewStatus,
+    "accepted",
+  );
+  assertEquals(
+    entities.get("dc.research_practice_partnership")?.officialUrl,
+    "https://osse.dc.gov/page/research-practice-partnership",
+  );
+  assertEquals(
+    entities.get("dc.statehood_commission_and_delegation")?.reviewStatus,
+    "accepted",
+  );
+  assertEquals(
+    entities.get("dc.statehood_commission_and_delegation")?.officialUrl,
+    "https://statehood.dc.gov/page/new-columbia-statehood-commission",
+  );
+  assertEquals(
+    acceptedRelationship?.relationshipId,
+    "dc.washington_metropolitan_area_transit_authority:overseen_by:dc.committee_on_transportation_and_the_environment",
+  );
 });
 
 Deno.test("council oversight imports keep finance-style oversight targets as source review work instead of compact relationships", async () => {
@@ -1441,7 +1546,7 @@ Deno.test("merging a prerequisite entity candidate reprocesses blocked relations
   ).get() as { reviewStatus: string };
   workbench.close();
 
-  assertEquals(before.length, 0);
+  assertEquals(before.length, 1);
   assertEquals(blockedBefore.count, 1);
   assertEquals(mergedTarget.reviewStatus, "accepted");
   assert(
@@ -1655,6 +1760,51 @@ Deno.test("blocked relationship acceptance fails instead of creating placeholder
   assertEquals(placeholder.count, 0);
 });
 
+Deno.test("blocked relationship reconciliation stores endpoint status for audit", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  const fetcher = async (url: string) => ({
+    status: 200,
+    text: async () => {
+      switch (url) {
+        case "https://dccouncil.gov/committees/":
+          return councilCommitteesFixture;
+        case "https://dccouncil.gov/committees/committee-of-the-whole/":
+          return councilCommitteeWholeDetailFixture;
+        case "https://dccouncil.gov/committees/committee-on-health/":
+          return councilCommitteeHealthDetailFixture;
+        default:
+          throw new Error(`Unexpected url ${url}`);
+      }
+    },
+    json: async <T>() => {
+      throw new Error(`No json fixture for ${url}`) as T;
+    },
+  });
+  await workbench.importConnectorResult(
+    await getConnector("council.committees").run(createConnectorContext({ fetcher })),
+    dataDir,
+  );
+  const reconciliationItem = workbench.db.prepare(
+    `select details_json as detailsJson
+     from reconciliation_items
+     where subject_id = 'relationship.council.committees.committee_of_the_whole_part_of'`,
+  ).get() as { detailsJson: string } | undefined;
+  workbench.close();
+  assert(reconciliationItem);
+  assertStringIncludes(
+    reconciliationItem.detailsJson,
+    '"fromEndpoint":{"entityId":"dc.committee_of_the_whole","state":"accepted"',
+  );
+  assertStringIncludes(
+    reconciliationItem.detailsJson,
+    '"toEndpoint":{"entityId":"dc.council_of_the_district_of_columbia","state":"missing"',
+  );
+});
+
 Deno.test("placeholder endpoints keep relationship candidates blocked until the placeholder is resolved", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -1730,7 +1880,7 @@ Deno.test("placeholder endpoints keep relationship candidates blocked until the 
 
   assert(blockedBefore);
   assertStringIncludes(blockedBefore.detailsJson, '"state":"placeholder"');
-  assertEquals(reviewBefore.length, 0);
+  assertEquals(reviewBefore.length, 2);
   assertEquals(blockedAfter.count, 0);
   assertEquals(
     relationshipAfter?.relationshipId,
@@ -1932,7 +2082,7 @@ Deno.test("dcgis legal refs do not use public-body homepage urls as citation url
   assertEquals(legalRef.url, "https://code.dccouncil.gov/us/dc/council/laws/22-155");
 });
 
-Deno.test("dcgis unknown legal refs leave homepage urls absent for review", async () => {
+Deno.test("dcgis non-legal authority text stays as source evidence instead of legal ref work", async () => {
   const rowsFixture = {
     features: [{
       attributes: {
@@ -1970,12 +2120,8 @@ Deno.test("dcgis unknown legal refs leave homepage urls absent for review", asyn
   const result = await getConnector("dcgis.boards_commissions_councils").run(
     createConnectorContext({ fetcher }),
   );
-  const legalRef = result.endpointResults[0]?.parsed?.legalRefs?.[0];
-
-  assert(legalRef);
-  assertEquals(legalRef.refType, "unknown");
-  assertEquals(legalRef.needsReview, true);
-  assertEquals(legalRef.url, undefined);
+  const legalRefs = result.endpointResults[0]?.parsed?.legalRefs ?? [];
+  assertEquals(legalRefs.length, 0);
 });
 
 Deno.test("dcgis agency branch labels do not emit structural relationships", async () => {
@@ -2135,7 +2281,7 @@ Deno.test("accepted prerequisite refetch clears stale blocker and reprocesses de
   workbench.close();
 
   assertEquals(blockedBefore.count, 1);
-  assertEquals(reviewBefore.length, 0);
+  assertEquals(reviewBefore.length, 1);
   assertEquals(blockedAfter.count, 0);
   assert(
     reviewAfter.some((item) => item.subjectId === "relationship.test.reconciliation.refetch"),

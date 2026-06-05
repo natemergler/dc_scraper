@@ -971,6 +971,7 @@ function acceptLegalRef(
   const parsed = parseLegalReference(legalRef.citationText, legalRef.url);
   const inferredRefType = legalRef.refType === "unknown" ? parsed.refType : legalRef.refType;
   const refType = String(payload.refType ?? inferredRefType);
+  assertValidLegalRefType(refType);
   const normalizedCitation = payload.normalizedCitation === null ? null : String(
     payload.normalizedCitation ?? legalRef.normalizedCitation ?? parsed.normalizedCitation ?? "",
   );
@@ -985,6 +986,29 @@ function acceptLegalRef(
     ],
   );
   resolveReviewBySubject(store, legalRefId);
+}
+
+function assertValidLegalRefType(refType: string): void {
+  if (
+    [
+      "dc_code",
+      "dcmr",
+      "dc_register",
+      "mayors_order",
+      "dc_law",
+      "dc_act",
+      "dc_bill",
+      "us_code",
+      "public_law",
+      "reorganization_plan",
+      "unknown",
+    ].includes(refType)
+  ) {
+    return;
+  }
+  throw new Error(
+    `Invalid legal ref type "${refType}". Valid choices: dc_law, dc_act, mayors_order, dc_code, dcmr, dc_register, dc_bill, us_code, public_law, reorganization_plan.`,
+  );
 }
 
 function setLegalRefStatus(

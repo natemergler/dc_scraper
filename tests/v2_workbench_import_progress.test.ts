@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import type { ConnectorResult } from "../src/v2/domain.ts";
 import type { ImportProgressEvent } from "../src/v2/workbench/import.ts";
@@ -75,6 +75,87 @@ Deno.test("workbench import keeps rollback progress preparatory", async () => {
     "Prepared source items items=1 fields=0",
     "Prepared entity candidates candidates=1 evidence=1",
   ]);
+});
+
+Deno.test("failed parsed imports keep artifacts but roll back partial typed rows", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+
+  await assertRejects(
+    () =>
+      workbench.importConnectorResult(
+        {
+          source: {
+            sourceId: "test.bad_parse",
+            title: "Bad Parse Fixture",
+            kind: "fixture",
+            accessMethod: "fixture",
+            baseUrl: "https://example.test",
+          },
+          endpointResults: [{
+            endpoint: {
+              endpointId: "test.bad_parse.main",
+              sourceId: "test.bad_parse",
+              title: "Main",
+              kind: "fixture",
+              url: "https://example.test/source",
+              method: "GET",
+              captureMode: "fixture",
+            },
+            status: "success",
+            artifacts: [{
+              kind: "json",
+              extension: "json",
+              contentText: JSON.stringify({ ok: false }),
+              fetchedUrl: "https://example.test/source",
+            }],
+            parsed: {
+              items: [{
+                itemKey: "known",
+                itemType: "fixture",
+                title: "Known Item",
+                body: { name: "Known Item" },
+              }],
+              entityCandidates: [{
+                candidateId: "candidate.test.bad_parse.missing",
+                sourceItemKey: "missing",
+                proposedEntityId: "dc.missing",
+                name: "Missing",
+                kind: "fixture",
+                evidence: [],
+              }],
+            },
+          }],
+        },
+        dataDir,
+      ),
+    Error,
+    "Missing source item for key missing",
+  );
+
+  const runStatus = workbench.db.prepare(
+    "select status, error_text as errorText from source_runs where source_id = ?",
+  ).get("test.bad_parse") as { status: string; errorText: string };
+  const summary = workbench.sourceSummary("test.bad_parse");
+  const listRow = workbench.listSources().find((row) => row.sourceId === "test.bad_parse");
+  const counts = workbench.db.prepare(
+    `select
+       (select count(*) from source_artifacts) as artifacts,
+       (select count(*) from source_items) as items,
+       (select count(*) from entity_candidates) as entityCandidates`,
+  ).get() as { artifacts: number; items: number; entityCandidates: number };
+  workbench.close();
+
+  assertEquals(runStatus.status, "failed");
+  assertStringIncludes(runStatus.errorText, "Missing source item for key missing");
+  assertEquals(summary.latestStatus, "failed");
+  assertStringIncludes(summary.latestErrorText ?? "", "Missing source item for key missing");
+  assertEquals(listRow?.latestStatus, "failed");
+  assertStringIncludes(listRow?.latestErrorText ?? "", "Missing source item for key missing");
+  assertEquals(counts, { artifacts: 1, items: 0, entityCandidates: 0 });
 });
 
 Deno.test("workbench import preserves evidence across bulk insert chunks", async () => {

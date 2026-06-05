@@ -9,6 +9,7 @@ export interface SourceSummary {
   title: string;
   latestStatus?: string;
   latestRunFinishedAt?: string;
+  latestErrorText?: string;
   latestArtifactPath?: string;
   itemCount: number;
   fieldCount: number;
@@ -21,6 +22,7 @@ export interface SourceListRow {
   title: string;
   latestStatus?: string;
   latestRunFinishedAt?: string;
+  latestErrorText?: string;
 }
 
 export interface PublicBodyComparisonSourceSummary {
@@ -48,7 +50,8 @@ export interface PublicBodyComparisonRow {
 export type PublicBodyVariantMatchKind =
   | "acronym_parenthetical"
   | "parenthetical_alias"
-  | "governance_suffix";
+  | "governance_suffix"
+  | "profession_suffix";
 
 export interface PublicBodyVariantMatchName {
   candidateId: string;
@@ -78,6 +81,8 @@ export interface PublicBodyComparisonReport {
   exclusiveNameCount: number;
   conservativeVariantMatches: PublicBodyVariantMatch[];
   conservativeVariantMatchCount: number;
+  releaseRiskVariantMatches: PublicBodyVariantMatch[];
+  releaseRiskVariantMatchCount: number;
 }
 
 interface PublicBodyComparisonCandidateRow {
@@ -133,9 +138,13 @@ export function sourceSummary(store: WorkbenchStore, sourceId: string): SourceSu
     [sourceId],
   );
   if (!source) throw new Error(`Unknown source: ${sourceId}`);
-  const latestRun = queryOne<{ latestStatus?: string; latestRunFinishedAt?: string }>(
+  const latestRun = queryOne<{
+    latestStatus?: string;
+    latestRunFinishedAt?: string;
+    latestErrorText?: string;
+  }>(
     store.db,
-    `select status as latestStatus, finished_at as latestRunFinishedAt
+    `select status as latestStatus, finished_at as latestRunFinishedAt, error_text as latestErrorText
      from source_runs
      where source_id = ?
      order by coalesce(finished_at, started_at) desc
@@ -187,7 +196,13 @@ export function listSources(store: WorkbenchStore): SourceListRow[] {
          where source_runs.source_id = sources.source_id
          order by coalesce(finished_at, started_at) desc
          limit 1
-       ) as latestRunFinishedAt
+       ) as latestRunFinishedAt,
+       (
+         select error_text from source_runs
+         where source_runs.source_id = sources.source_id
+         order by coalesce(finished_at, started_at) desc
+         limit 1
+       ) as latestErrorText
      from sources
     order by sources.source_id`,
   );
@@ -226,6 +241,9 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
   );
   const groupedRows = buildExactPublicBodyComparisonRows(rows);
   const conservativeVariantMatches = buildConservativeVariantMatches(rows);
+  const releaseRiskVariantMatches = conservativeVariantMatches.filter((match) =>
+    isReleaseRiskVariantMatch(match)
+  );
   const normalizedNameCountBySource = new Map<string, number>();
   const sharedNameCountBySource = new Map<string, number>();
   for (const row of groupedRows) {
@@ -253,6 +271,8 @@ export function comparePublicBodies(store: WorkbenchStore): PublicBodyComparison
     exclusiveNameCount: groupedRows.filter((row) => row.sourceIds.length === 1).length,
     conservativeVariantMatches,
     conservativeVariantMatchCount: conservativeVariantMatches.length,
+    releaseRiskVariantMatches,
+    releaseRiskVariantMatchCount: releaseRiskVariantMatches.length,
   };
 }
 
@@ -316,6 +336,12 @@ function buildConservativeVariantMatches(
         sourceTitles: new Map<string, string>(),
       };
       if (!grouped.has(groupKey)) grouped.set(groupKey, group);
+      if (
+        !key.matchKind &&
+        normalizedComparisonKey(row.displayName) === groupKey
+      ) {
+        group.variantName = row.displayName;
+      }
       if (key.matchKind) group.matchKinds.add(key.matchKind);
       group.names.set(`${row.sourceId}:${normalizedComparisonKey(row.normalizedName)}`, entry);
       group.normalizedNames.add(normalizedComparisonKey(row.normalizedName));
@@ -392,6 +418,14 @@ function conservativeVariantKeys(
       });
     }
   }
+  for (const variantName of professionSuffixVariantNames(nameWithoutParenthetical || normalized)) {
+    if (variantName && variantName !== normalized) {
+      variants.push({
+        variantName,
+        matchKind: "profession_suffix",
+      });
+    }
+  }
   return variants.filter((variant, index, all) =>
     all.findIndex((candidate) =>
       normalizedComparisonKey(candidate.variantName) ===
@@ -401,13 +435,27 @@ function conservativeVariantKeys(
   );
 }
 
+function professionSuffixVariantNames(displayName: string): string[] {
+  const normalized = normalizeName(displayName);
+  const variants = new Set<string>();
+  if (/\barchitect$/i.test(normalized)) {
+    variants.add(normalized.replace(/\barchitect$/i, "architecture"));
+  }
+  return [...variants].map((value) => normalizeName(value)).filter((value) => value !== normalized);
+}
+
 function isAcronymLike(value: string): boolean {
   const normalized = normalizeName(value);
   return /^[A-Z0-9][A-Z0-9/&.\-\s]{1,11}$/.test(normalized);
 }
 
 function normalizedComparisonKey(value: string): string {
-  return normalizeName(value).toLowerCase();
+  return normalizeName(value)
+    .toLowerCase()
+    .replaceAll(/&/g, " and ")
+    .replaceAll(/[^a-z0-9]+/g, " ")
+    .replaceAll(/\s+/g, " ")
+    .trim();
 }
 
 function compareVariantMatchKinds(
@@ -418,6 +466,7 @@ function compareVariantMatchKinds(
     "acronym_parenthetical",
     "parenthetical_alias",
     "governance_suffix",
+    "profession_suffix",
   ];
   return order.indexOf(a) - order.indexOf(b);
 }
@@ -433,6 +482,16 @@ function compareVariantMatchNames(
   return aIsExact - bIsExact ||
     a.sourceId.localeCompare(b.sourceId) ||
     a.displayName.localeCompare(b.displayName);
+}
+
+function isReleaseRiskVariantMatch(match: PublicBodyVariantMatch): boolean {
+  if (match.matchKinds.every((kind) => kind === "governance_suffix")) return false;
+  const acceptedEntityIds = new Set(
+    match.names
+      .filter((name) => name.reviewStatus === "accepted")
+      .map((name) => name.proposedEntityId),
+  );
+  return acceptedEntityIds.size > 1;
 }
 
 function isPublicBodyComparisonCandidate(
