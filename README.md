@@ -1,26 +1,20 @@
-# DC civic-data workbench
+> [!WARNING]
+> Vibe-coded and partially tested. Do not assume anything here works.
 
-This repo is a maintainer-first local workbench for source-backed D.C. civic structure data. It
-fetches public sources into local artifacts, normalizes typed candidates into a SQLite workbench,
+# DC Data CLI
+
+This repo is a maintainer-first local CLI for D.C. civic structure data. It
+fetches public sources, normalizes typed candidates into a SQLite file,
 records replayable JSONL decisions when resolution is needed, and builds a compact public release
 package.
 
-The product shape is deliberately small:
+
 
 ```text
 source connector -> local artifact -> SQLite workbench -> audit -> browse -> decide when needed -> release package
 ```
 
-Local state lives under `data/`, `resolutions/`, and `releases/`. Those paths are ignored. Do not
-commit raw captures, generated candidates, or workbench databases.
-
-## Who This Is For
-
-- A maintainer who wants a trustworthy local review surface for D.C. civic structure.
-- A contributor who wants to add or debug one source lane without learning hidden repo lore.
-- A release consumer who wants a boring, self-explanatory package instead of a workbench dump.
-
-## Five-Minute Path
+Local state lives under `data/`, `resolutions/`, and `releases/`. 
 
 ```bash
 WORKBENCH_DB=data/workbench.sqlite
@@ -30,69 +24,18 @@ FRESH_RELEASE_DIR=releases/fresh-smoke
 deno task ok
 deno task dc -- init --db "$WORKBENCH_DB"
 deno task dc -- source list --db "$WORKBENCH_DB"
-deno task dc -- source fetch dcgis.agencies --limit 25 --db "$WORKBENCH_DB" --data-dir "$WORKBENCH_ARTIFACTS"
-deno task dc -- status --db "$WORKBENCH_DB"
-deno task dc -- audit --db "$WORKBENCH_DB"
-deno task dc -- release verify --db "$WORKBENCH_DB"
-deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out "$FRESH_RELEASE_DIR"
-deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
-```
-
-The default workbench database is `data/workbench.sqlite`. The `--limit 25` fetch is a small slice
-for orientation. Use `deno task dc -- source fetch --all` when you need the full configured-source
-workbench. A full fetch can take a while because it walks several public source lanes; expect
-per-source progress and a final succeeded/failed summary before moving on.
-
-Local workbench DBs are current-schema only. Reuse a current preexisting DB, or create and refetch a
-fresh one. If an ignored local DB is not current, treat it as scratch state: point `--db` at a
-current workbench or delete the old DB and let `dc init` create a fresh one.
-
-## Happy Path
-
-Use one real fetch, one audit pass, one browse pass, and one real release:
-
-```bash
-WORKBENCH_DB=data/workbench.sqlite
-WORKBENCH_ARTIFACTS=data/v2_artifacts
-FRESH_RELEASE_DIR=releases/fresh-smoke
-
 deno task dc -- source fetch --all --db "$WORKBENCH_DB" --data-dir "$WORKBENCH_ARTIFACTS"
-deno task dc -- source inspect dcgis.agencies --db "$WORKBENCH_DB"
 deno task dc -- status --db "$WORKBENCH_DB"
 deno task dc -- audit --db "$WORKBENCH_DB"
-deno task dc -- entity search accountancy --db "$WORKBENCH_DB"
 deno task dc -- release verify --db "$WORKBENCH_DB"
 deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out "$FRESH_RELEASE_DIR"
 deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 ```
 
-For long all-source runs, let the fetch reach its final summary before treating the workbench as
-current. Use a single-source fetch or a smoke profile when you only need a quick operator check.
+The default workbench database is `data/workbench.sqlite`.  Use `deno task dc -- source fetch --all` when you need the full configured-source data
 
-`dc audit` is the blocker and readiness view. Browse compiled model/evidence with entity commands,
-`review list --status all`, and source inspection. `dc review` is the human path for true ambiguity,
-conflicts, edits, rejects, and deferrals. Safe materialized facts should be audited, browsed,
-verified, and released without turning them into manual review work. When review is needed, it opens
-with a ranked decision inbox for the current slice. Press Enter for the recommended packet or choose
-another packet from the list, then inspect the evidence and decide. Quit is safe; rerun `dc review`
-to resume.
 
-Malformed legal labels can carry official suggestions in review without becoming accepted facts. For
-example, a malformed act label may show the official act/law metadata that could help a human
-normalize it, while the original legal ref remains pending until review.
 
-On current `main`, a healthy full structure refresh should mostly materialize on its own. The
-remaining review load should be small and source-specific, not a giant queue of safe additions.
-
-## Inspect And Smoke
-
-Use the temp-workbench smoke profiles when you want a clean operator rehearsal:
-
-```bash
-deno task dc -- smoke tier0
-deno task dc -- smoke structure
-deno task dc -- smoke inventory
-```
 
 Use inspection commands when you want scriptable state:
 
@@ -110,54 +53,6 @@ deno task dc -- release verify --json
 deno task dc -- release build --json
 deno task dc -- release inspect --json
 ```
-
-`status --json` includes `review.browseCommand` when source-backed browse rows are present.
-`status --json` and `audit --json` include failed-source detail and blocked-source `inspectCommand`
-handoffs when a source or reconciliation lane needs inspection, and those handoff commands stay
-scoped to the active workbench when `--db` is used. `source list --json` includes latest fetch
-status, failure text, and `fetchCommand` for configured sources. `source inspect --json` includes
-`fetchCommand` for retrying or fetching the inspected lane and `browseCommand` when the source has
-rows to inspect. `source compare public-bodies` prints `Next:` for the first unresolved conservative
-variant lead; `source compare public-bodies --json` includes `reviewCommands` on conservative
-variant leads that still need human review, `releaseRiskVariantMatchCount` for the accepted
-duplicate-risk subset, and `nextCommand` for the first review handoff. When `--db` is used, source
-list/inspect/fetch/compare handoff commands stay scoped to that workbench. `source fetch
---json`
-includes `successCount` and `failureCount` for scriptable fetch summaries. `smoke --json` includes
-`successCount`, `failureCount`, `releaseOutDir`, `releaseVerifyCommand`, `releaseBuildCommand`,
-`releaseInspectCommand`, and top-level `nextCommand` for temp-workbench rehearsals. `review packets`
-prints `Next:` for the first packet. `review packets --json` includes `summary`, `reviewCommand`,
-`nextCommand`, `itemCount`, `openCount`, and `deferredCount` for scriptable handoff into focused
-review. `review list --json` includes `summary`, `sourceId`, `label`, `reviewCommand`,
-`nextCommand`, `decisionCount`, and `browseCount` for scriptable browse and audit displays. When
-`--db` is used, review list/packets handoff commands stay scoped to that workbench.
-`entity search
---json` includes `showCommand` for each result. `entity show --json` includes
-`reviewCommand` on review items with source context and `nextCommand` for the first attached review
-handoff. When `--db` is used, entity search/show handoff commands stay scoped to that workbench.
-`release verify
---json` includes `buildCommand`, `warningReasons`, `warningReviewCommand`, and
-`publicBodyCompareCommand` for non-blocking review or public-body duplicate-risk warnings, plus
-failed-source detail when failed sources block release readiness; when `--db` is used, those handoff
-commands stay scoped to the verified workbench. `release inspect --json` includes `warningReasons`
-separately from blocking `readinessReasons` when the built package is usable with warnings or not
-ready. `release inspect
---json` includes `warningReviewCommand`, `publicBodyCompareCommand`, and
-`browseCommand` when the package still points back to review, public-body comparison, or browse
-work. `release inspect
---json` includes `inspectCommand` when blocked reconciliation still points at
-one source. `release
-inspect --json` includes `nextCommand` for the highest-priority follow-up from
-the built package surface. Built-package `releaseSummary` keeps broad
-`public_body_variant_lead_count` context while `public_body_release_risk_variant_lead_count` tracks
-only accepted duplicate-risk leads that still affect release warnings. `release build
---json`
-includes `inspectCommand` and `nextCommand` for inspecting the built package.
-
-`status` and `audit` explain readiness, blockers, and next commands. `source inspect`, entity
-commands, and `review list --status all` are the main browse surfaces. `review packets` and
-`review list --decisions` narrow the actual human-decision surface before opening interactive
-review. `entity search` prints a `Show:` handoff for each result.
 
 ## Release Contract
 
@@ -188,36 +83,3 @@ review. `entity search` prints a `Show:` handoff for each result.
 
 The release SQLite database is rebuilt from whitelisted release tables and views. It is not a copy
 of the full workbench database.
-
-## How To Know It Is Healthy
-
-- `deno task dc -- status` shows current unresolved work and the next suggested command.
-- `deno task dc -- audit` shows blocked reconciliation and review reasons when status alone is not
-  enough.
-- `deno task dc -- release verify` fails fast when source artifact provenance is not clean, release
-  blockers remain, or release rows no longer trace to source-backed decisions or references. Visible
-  review decisions remain visible without automatically invalidating source-backed release rows.
-- `deno task dc -- release inspect` checks the built package on disk against the manifest and
-  reports package integrity, release readiness reasons, and the built package summary.
-
-A healthy current full-source run ends with a compact set of explicit human decisions, not broad
-manual approval of routine source-backed facts.
-
-## Current Docs
-
-- [DESIGN.md](DESIGN.md) is the live architecture note for the current model.
-- [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) is the maintainer workflow.
-- [docs/CONNECTOR_AUTHORING.md](docs/CONNECTOR_AUTHORING.md) is the contributor guide for source
-  work.
-- [docs/RELEASE_CONTRACT.md](docs/RELEASE_CONTRACT.md) is the public package contract.
-- [docs/SOURCE_COVERAGE.md](docs/SOURCE_COVERAGE.md) is the operator view of current source lanes.
-- [docs/DATA_HYGIENE.md](docs/DATA_HYGIENE.md) is the generated-data and privacy boundary note.
-
-Historical planning notes and campaign logs belong outside the tracked tree or under ignored scratch
-paths such as `.agent/`; they are not the current truth surface.
-
-## Privacy Boundary
-
-Public civic names, offices, roles, statuses, source URLs, and legal citations are in scope.
-Personal contact details are out of scope: emails, phone numbers, home addresses, contact fields,
-private notes, contact metadata, and local paths should stay out of release exports.
