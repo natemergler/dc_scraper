@@ -4159,6 +4159,21 @@ Deno.test("governance suffix public-body leads become deferred relationship revi
     kind: "board",
     officialUrl: "https://www.mwaa.com/about/board-directors",
   });
+  await importComparisonCandidate({
+    sourceId: "council.committees",
+    title: "Council Committees Fixture",
+    candidateId: "candidate.council.committees.seu",
+    name: "Sustainable Energy Utility",
+    kind: "public_body",
+  });
+  await importComparisonCandidate({
+    sourceId: "dcgis.boards_commissions_councils",
+    title: "DCGIS Fixture",
+    candidateId: "candidate.dcgis.boards_commissions_councils.seu_advisory_board",
+    name: "Sustainable Energy Utility Advisory Board",
+    kind: "board",
+    officialUrl: "https://doee.dc.gov/service/dc-seu-advisory-board",
+  });
 
   const relationship = workbench.db.prepare(
     `select relationship_candidate_id as relationshipCandidateId,
@@ -4196,13 +4211,22 @@ Deno.test("governance suffix public-body leads become deferred relationship revi
   assertEquals(reviewItem.reason, "Review public-body governance-suffix linkage lead");
   assertEquals(
     reviewItem.details.whyDeferred,
-    "The source names a related board or advisory board, but suffix similarity does not prove these are the same entity or that the link should be materialized.",
+    "The source names a related board, but suffix similarity does not prove governance or that the link should be materialized.",
   );
 
   const accepted = workbench.db.prepare(
     "select count(*) as count from canonical_relationships where relationship_type = 'governed_by' and from_entity_id = ? and to_entity_id = ?",
   ).get(relationship.fromEntityRef, relationship.toEntityRef) as { count: number };
   assertEquals(accepted.count, 0);
+
+  const advisoryLead = workbench.db.prepare(
+    `select count(*) as count
+     from relationship_candidates
+     where relationship_candidate_id like 'relationship.public_body_linkage.%'
+       and from_entity_ref = 'dc.sustainable_energy_utility'
+       and to_entity_ref = 'dc.sustainable_energy_utility_advisory_board'`,
+  ).get() as { count: number };
+  assertEquals(advisoryLead.count, 0);
   workbench.close();
 });
 

@@ -6,7 +6,7 @@ import type { WorkbenchStore } from "./store.ts";
 const LINKAGE_SOURCE_ID = "public_body_linkage";
 const LINKAGE_PREFIX = `relationship.${LINKAGE_SOURCE_ID}.`;
 const LINKAGE_REASON =
-  "The source names a related board or advisory board, but suffix similarity does not prove these are the same entity or that the link should be materialized.";
+  "The source names a related board, but suffix similarity does not prove governance or that the link should be materialized.";
 
 interface CandidateSourceRow {
   candidateId: string;
@@ -54,7 +54,7 @@ function publicBodyLinkageCandidates(store: WorkbenchStore): DerivedPublicBodyLi
     const baseRows = match.names.filter((name) => isVariantBaseName(name, match.variantName));
     const relatedRows = match.names.filter((name) =>
       !isVariantBaseName(name, match.variantName) &&
-      isGovernanceSuffixName(name.displayName, match.variantName)
+      isGoverningBoardSuffixName(name.displayName, match.variantName)
     );
     for (const base of uniqueNamesByEntity(baseRows)) {
       for (const related of uniqueNamesByEntity(relatedRows)) {
@@ -99,11 +99,11 @@ function isVariantBaseName(name: PublicBodyVariantMatchName, variantName: string
   return normalizedKey(name.displayName) === normalizedKey(variantName);
 }
 
-function isGovernanceSuffixName(displayName: string, variantName: string): boolean {
+function isGoverningBoardSuffixName(displayName: string, variantName: string): boolean {
   const normalized = normalizeName(displayName.replace(/\s+\([^)]*\)\s*$/, ""));
   const variant = normalizeName(variantName);
   return new RegExp(
-    `^${escapeRegExp(variant)}\\s+(?:advisory\\s+board|board(?:\\s+of\\s+directors)?)$`,
+    `^${escapeRegExp(variant)}\\s+board(?:\\s+of\\s+directors)?$`,
     "i",
   ).test(normalized);
 }
