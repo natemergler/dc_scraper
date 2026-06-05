@@ -300,7 +300,7 @@ export function acceptedReleaseEntities<
 >(rows: T[]): T[] {
   return rows.filter((row) =>
     row.review_status === "accepted" &&
-    !(row.kind === "budgetary" && /^[0-9]+$/.test(row.name)) &&
+    row.kind !== "budgetary" &&
     !isOpenDcNonBodyReleaseEntity(row)
   );
 }
@@ -327,12 +327,23 @@ function releaseRelationshipEndpointIsEligible(
   return releaseEntityIds.has(entityId) || !(knownEntityIds?.has(entityId) ?? true);
 }
 
-function isOpenDcNonBodyReleaseEntity(row: { official_url?: string | null }): boolean {
-  return Boolean(
+function isOpenDcNonBodyReleaseEntity(
+  row: { name: string; official_url?: string | null },
+): boolean {
+  if (
     row.official_url?.match(
       /^https:\/\/www\.open-dc\.gov\/public-bodies\/.*(?:-recess|-duplicate)(?:[/?#]|$)/i,
-    ),
-  );
+    )
+  ) {
+    return true;
+  }
+  if (
+    row.official_url?.match(/^https:\/\/www\.open-dc\.gov\/public-bodies\//i) &&
+    /\b(?:will|shall)\s+be\b/i.test(row.name)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function acceptedReleaseLegalAttachments<
