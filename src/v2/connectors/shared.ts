@@ -165,7 +165,29 @@ export function councilOversightReviewPolicy(
         "Oversight text uses exclusion wording, so the compact edge needs a human decision.",
     };
   }
+  if (looksLikeFinanceBucketCouncilOversightTarget(normalized)) {
+    return {
+      defaultAction: "defer",
+      whyDeferred:
+        "Oversight text names a fund or financing bucket rather than a clearly modeled civic body, so the compact edge stays in review.",
+    };
+  }
   return { defaultAction: "accept" };
+}
+
+export function shouldSkipCouncilOversightCompactRelationship(
+  rawValue?: string | null,
+): boolean {
+  return typeof rawValue === "string" &&
+    looksLikeFinanceBucketCouncilOversightTarget(rawValue);
+}
+
+function looksLikeFinanceBucketCouncilOversightTarget(rawValue: string): boolean {
+  const normalized = normalizeName(rawValue).toLowerCase();
+  return /\btrust fund\b/.test(normalized) ||
+    /\bpaid leave fund\b/.test(normalized) ||
+    /\bretiree health contribution\b/.test(normalized) ||
+    /\bpay[-\s]?as[-\s]?you[-\s]?go\b/.test(normalized);
 }
 
 export function extractFirstUrl(input: string): string | undefined {

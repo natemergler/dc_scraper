@@ -20,6 +20,7 @@ import {
   councilOversightReviewPolicy,
   defaultActionForCouncilOversightTarget,
   fieldEvidence,
+  shouldSkipCouncilOversightCompactRelationship,
 } from "./shared.ts";
 import type { ConnectorContext, SourceConnector } from "./shared.ts";
 import { normalizeName, slugify, stripHtml } from "../domain.ts";
@@ -135,11 +136,22 @@ export const councilCommitteesConnector: SourceConnector = {
       rawValue: "Council committee",
       evidence: [fieldEvidence("committee", committee.name, 0)],
     }));
+    const sourceReviewItems: ReviewItemInput[] = [];
     for (const detail of committeeDetails) {
       for (
         const [index, target] of detail.oversightTargets.filter(isExplicitOversightTarget)
           .entries()
       ) {
+        if (shouldSkipCouncilOversightCompactRelationship(target)) {
+          sourceReviewItems.push(buildCouncilOversightSourceReviewItem({
+            committeeName: detail.committee.name,
+            committeeSlug: detail.committee.slug,
+            committeeUrl: detail.committee.url,
+            itemKey: `${detail.committee.slug}:oversight`,
+            rawValue: target,
+          }));
+          continue;
+        }
         relationshipCandidates.push({
           relationshipCandidateId: buildRelationshipCandidateId(
             councilCommitteesSource.sourceId,
@@ -211,6 +223,7 @@ export const councilCommitteesConnector: SourceConnector = {
           ...relationshipReviewPolicyDetails(candidate),
         },
       })),
+      ...sourceReviewItems,
     ];
     return {
       source: councilCommitteesSource,
@@ -252,6 +265,37 @@ function relationshipReviewPolicyDetails(
 
 function isExplicitOversightTarget(target: string): boolean {
   return !/^all of the\b/i.test(target.trim());
+}
+
+function buildCouncilOversightSourceReviewItem(input: {
+  committeeName: string;
+  committeeSlug: string;
+  committeeUrl: string;
+  itemKey: string;
+  rawValue: string;
+}): ReviewItemInput {
+  return {
+    reviewItemId: buildReviewItemId(
+      councilCommitteesSource.sourceId,
+      `${input.committeeSlug}-oversight-source-note-${input.rawValue}`,
+    ),
+    itemType: "source_status",
+    subjectId: councilCommitteesSource.sourceId,
+    reason: "Review Council oversight target left out of the compact relationship model",
+    defaultAction: "defer",
+    details: {
+      needsReview: true,
+      sourceId: councilCommitteesSource.sourceId,
+      endpointId: "council.committees.page",
+      itemKey: input.itemKey,
+      committeeName: input.committeeName,
+      committeeUrl: input.committeeUrl,
+      rawValue: input.rawValue,
+      relationshipType: "overseen_by",
+      whyDeferred: councilOversightReviewPolicy(input.rawValue).whyDeferred ??
+        "Council oversight target still needs review before it can enter the compact relationship model.",
+    },
+  };
 }
 
 function buildCommitteeMemberRelationships(
