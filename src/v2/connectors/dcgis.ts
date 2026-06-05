@@ -7,7 +7,18 @@ import {
   detectEntityKind,
   parseLegalReference,
 } from "../domain.ts";
-import { DC_LAW_INDEX_URL, DcLawTitleIndex, looksLikeDcLawTitle } from "./dc_law_index.ts";
+import {
+  actSuggestionFromLawXml,
+  DC_LAW_INDEX_URL,
+  type DcLawActSuggestion,
+  DcLawTitleIndex,
+  dcLawXmlPeriodIndexUrl,
+  dcLawXmlRawUrl,
+  lawXmlNumbersFromPeriodIndex,
+  looksLikeDcLawTitle,
+  malformedDcActNumber,
+  periodFromActNumber,
+} from "./dc_law_index.ts";
 import {
   artifact,
   buildCandidateReviewItem,
@@ -181,10 +192,17 @@ async function runDcgisTableSource(
   }
   const fields = buildDcgisFields(metadata);
   const items = buildDcgisItems(fetchedRows, options.itemType);
-  const lawTitleIndex = await fetchLawTitleIndexIfNeeded(context, items, rowArtifacts.length + 1);
+  let nextArtifactIndex = rowArtifacts.length + 1;
+  const lawTitleIndex = await fetchLawTitleIndexIfNeeded(context, items, nextArtifactIndex);
+  if (lawTitleIndex) nextArtifactIndex += 1;
+  const actSuggestionIndex = await fetchActSuggestionIndexIfNeeded(
+    context,
+    items,
+    nextArtifactIndex,
+  );
   const entityCandidates = buildDcgisEntityCandidates(source, items);
   const relationshipCandidates = buildDcgisRelationshipCandidates(source, items);
-  const legalRefs = buildDcgisLegalRefs(source, items, lawTitleIndex);
+  const legalRefs = buildDcgisLegalRefs(source, items, lawTitleIndex, actSuggestionIndex);
   const reviewItems = buildDcgisReviewItems(
     options.entityReason,
     options.relationshipReason,
@@ -200,6 +218,7 @@ async function runDcgisTableSource(
         artifact("schema", "json", metadataUrl, metadataText),
         ...rowArtifacts,
         ...(lawTitleIndex ? [lawTitleIndex.artifact] : []),
+        ...(actSuggestionIndex?.artifacts ?? []),
       ],
       parsed: {
         fields,
@@ -462,6 +481,16 @@ interface DcgisLawTitleIndex {
   artifactIndex: number;
 }
 
+interface DcgisActSuggestionMatch {
+  suggestion: DcLawActSuggestion;
+  artifactIndex: number;
+}
+
+interface DcgisActSuggestionIndex {
+  matches: Map<string, DcgisActSuggestionMatch>;
+  artifacts: ArtifactCaptureInput[];
+}
+
 async function fetchLawTitleIndexIfNeeded(
   context: ConnectorContext,
   items: SourceItemInput[],
@@ -476,6 +505,69 @@ async function fetchLawTitleIndexIfNeeded(
     artifact: artifact("rows", "json", DC_LAW_INDEX_URL, text),
     artifactIndex,
   };
+}
+
+async function fetchActSuggestionIndexIfNeeded(
+  context: ConnectorContext,
+  items: SourceItemInput[],
+  nextArtifactIndex: number,
+): Promise<DcgisActSuggestionIndex | undefined> {
+  const wanted = dcgisMalformedActNumbersByPeriod(items);
+  if (wanted.size === 0) return undefined;
+
+  const artifacts: ArtifactCaptureInput[] = [];
+  const matches = new Map<string, DcgisActSuggestionMatch>();
+  let artifactIndex = nextArtifactIndex;
+  for (const [period, actNumbers] of wanted) {
+    context.onProgress?.({ message: `Fetching D.C. Council law XML period ${period} index` });
+    const periodIndexUrl = dcLawXmlPeriodIndexUrl(period);
+    const periodIndexResponse = await context.fetcher(periodIndexUrl);
+    const periodIndexText = await periodIndexResponse.text();
+    artifacts.push(artifact("rows", "xml", periodIndexUrl, periodIndexText));
+    artifactIndex += 1;
+
+    for (const lawNumber of lawXmlNumbersFromPeriodIndex(periodIndexText)) {
+      const unresolved = [...actNumbers].filter((actNumber) => !matches.has(actNumber));
+      if (unresolved.length === 0) break;
+      const lawXmlUrl = dcLawXmlRawUrl(period, lawNumber);
+      const lawXmlResponse = await context.fetcher(lawXmlUrl);
+      const lawXmlText = await lawXmlResponse.text();
+      const suggestions: Array<{ actNumber: string; suggestion: DcLawActSuggestion }> = [];
+      for (const actNumber of unresolved) {
+        const suggestion = actSuggestionFromLawXml(lawXmlText, actNumber);
+        if (suggestion) suggestions.push({ actNumber, suggestion });
+      }
+      if (suggestions.length > 0) {
+        const lawArtifactIndex = artifactIndex;
+        artifacts.push(artifact("rows", "xml", lawXmlUrl, lawXmlText));
+        artifactIndex += 1;
+        for (const { actNumber, suggestion } of suggestions) {
+          matches.set(actNumber, { suggestion, artifactIndex: lawArtifactIndex });
+        }
+      }
+    }
+  }
+  return artifacts.length > 0 ? { matches, artifacts } : undefined;
+}
+
+function dcgisMalformedActNumbersByPeriod(items: SourceItemInput[]): Map<string, Set<string>> {
+  const wanted = new Map<string, Set<string>>();
+  for (const item of items) {
+    const row = item.body as Record<string, unknown>;
+    const legislation = maybeString(row.LEGISLATION ?? row.AUTHORIZING_ORDER_LAW);
+    if (!legislation) continue;
+    for (const citationText of splitDcgisLegalAuthority(legislation)) {
+      const parsed = parseLegalReference(citationText);
+      if (parsed.refType !== "unknown") continue;
+      const actNumber = malformedDcActNumber(parsed.citationText);
+      const period = actNumber ? periodFromActNumber(actNumber) : undefined;
+      if (!actNumber || !period) continue;
+      const actNumbers = wanted.get(period) ?? new Set<string>();
+      actNumbers.add(actNumber);
+      wanted.set(period, actNumbers);
+    }
+  }
+  return wanted;
 }
 
 function dcgisItemsNeedLawTitleIndex(items: SourceItemInput[]): boolean {
@@ -495,6 +587,7 @@ function buildDcgisLegalRefs(
   source: SourceDefinition,
   items: SourceItemInput[],
   lawTitleIndex?: DcgisLawTitleIndex,
+  actSuggestionIndex?: DcgisActSuggestionIndex,
 ): LegalRefInput[] {
   const legalRefs: LegalRefInput[] = [];
   for (const item of items) {
@@ -512,6 +605,12 @@ function buildDcgisLegalRefs(
       const lawTitleMatch = parsed.refType === "unknown"
         ? lawTitleIndex?.index.matchTitle(parsed.citationText)
         : undefined;
+      const malformedActNumber = parsed.refType === "unknown"
+        ? malformedDcActNumber(parsed.citationText)
+        : undefined;
+      const actSuggestionMatch = malformedActNumber
+        ? actSuggestionIndex?.matches.get(malformedActNumber)
+        : undefined;
       const idSuffix = citationParts.length === 1
         ? `${item.itemKey}-legislation`
         : `${item.itemKey}-legislation-${index + 1}`;
@@ -524,6 +623,16 @@ function buildDcgisLegalRefs(
         url: lawTitleMatch?.url ?? dcLawUrl(parsed.normalizedCitation) ??
           extractFirstUrl(citationText) ?? extractFirstUrl(legislation),
         needsReview: lawTitleMatch ? false : parsed.needsReview,
+        suggestions: actSuggestionMatch
+          ? [{
+            refType: "dc_act",
+            normalizedCitation: actSuggestionMatch.suggestion.actCitation,
+            relatedCitation: actSuggestionMatch.suggestion.lawCitation,
+            title: actSuggestionMatch.suggestion.title,
+            url: actSuggestionMatch.suggestion.url,
+            source: "DCCouncil law XML",
+          }]
+          : undefined,
         evidence: [
           fieldEvidence(legislationField, legislation, dcgisRowArtifactIndex(item)),
           ...(lawTitleMatch && lawTitleIndex
@@ -532,6 +641,19 @@ function buildDcgisLegalRefs(
                 "DCCouncil law index",
                 `${lawTitleMatch.citation}: ${lawTitleMatch.title}`,
                 lawTitleIndex.artifactIndex,
+              ),
+            ]
+            : []),
+          ...(actSuggestionMatch
+            ? [
+              fieldEvidence(
+                "DCCouncil law XML act suggestion",
+                `${actSuggestionMatch.suggestion.actCitation} appears in ${actSuggestionMatch.suggestion.lawCitation}${
+                  actSuggestionMatch.suggestion.title
+                    ? `: ${actSuggestionMatch.suggestion.title}`
+                    : ""
+                }`,
+                actSuggestionMatch.artifactIndex,
               ),
             ]
             : []),

@@ -451,6 +451,7 @@ export function renderReviewItem(
     `actions: ${availableActionLabels(item).join(", ")}`,
     `ids: subject=${item.subjectId}, review=${item.reviewItemId}`,
     ...renderRelationshipBlock(item, subject, context.relationshipEndpoints),
+    ...renderLegalSuggestionBlock(item),
     ...renderDetailsBlock(item.details, omittedDetailKeys),
     ...renderEvidenceBlock(reviewEvidence(store, item)),
   ].filter((line): line is string => Boolean(line)).join("\n");
@@ -701,6 +702,7 @@ function specialOmittedDetailKeys(item: ReviewItemRecord, omittedKeys: string[])
     ...omittedKeys,
     ...(typeof item.details.whyDeferred === "string" ? ["whyDeferred"] : []),
     ...(typeof item.details.identityQuestion === "string" ? ["identityQuestion"] : []),
+    ...(Array.isArray(item.details.suggestions) ? ["suggestions"] : []),
   ];
 }
 
@@ -749,6 +751,30 @@ function renderDetailsBlock(
     "details:",
     ...entries.map(([key, value]) => `- ${key}: ${formatDetailValue(value)}`),
   ];
+}
+
+function renderLegalSuggestionBlock(item: ReviewItemRecord): string[] {
+  if (item.itemType !== "legal_ref") return [];
+  if (!Array.isArray(item.details.suggestions) || item.details.suggestions.length === 0) {
+    return [];
+  }
+  const lines = item.details.suggestions.flatMap((suggestion) => {
+    if (!isRecord(suggestion)) return [];
+    const normalizedCitation = stringValue(suggestion.normalizedCitation);
+    if (!normalizedCitation) return [];
+    const relatedCitation = stringValue(suggestion.relatedCitation);
+    const title = stringValue(suggestion.title);
+    const url = stringValue(suggestion.url);
+    const source = stringValue(suggestion.source);
+    return [
+      `- ${normalizedCitation}${relatedCitation ? ` via ${relatedCitation}` : ""}${
+        source ? ` (${source})` : ""
+      }`,
+      title ? `  title: ${title}` : undefined,
+      url ? `  url: ${url}` : undefined,
+    ].filter((line): line is string => line !== undefined);
+  });
+  return lines.length > 0 ? ["suggestions:", ...lines] : [];
 }
 
 function renderRelationshipBlock(
@@ -895,6 +921,14 @@ function formatDetailValue(value: unknown): string {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (value === null || value === undefined) return "null";
   return JSON.stringify(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 async function promptLine(promptText: string): Promise<string | undefined> {

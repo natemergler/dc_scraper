@@ -1129,6 +1129,7 @@ function legalReviewDetails(legalRef: LegalRefInput): Record<string, unknown> {
     normalizedCitation: legalRef.normalizedCitation ?? null,
     url: legalRef.url ?? null,
     needsReview: legalRef.needsReview === true,
+    suggestions: legalRef.suggestions ?? [],
     attachEntityRef: legalRef.attachEntityRef ?? null,
     attachRelationshipRef: legalRef.attachRelationshipRef ?? null,
   };

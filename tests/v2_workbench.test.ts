@@ -2844,7 +2844,12 @@ Deno.test("DCGIS bare year-number legal refs stay pending instead of importing a
   assertEquals(openReviewCount.count, 1);
 });
 
-Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels", async () => {
+Deno.test("DCGIS malformed act labels surface official suggestions without resolving the ref", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
   const rowsWithMalformedAct = {
     features: [{
       attributes: {
@@ -2868,6 +2873,29 @@ Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels"
           return JSON.stringify(dcgisBoardsCommissionsCouncilsMetadataFixture);
         case "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json":
           return JSON.stringify(rowsWithMalformedAct);
+        case "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/index.xml":
+          return `
+            <container>
+              <xi:include href="./laws/21-260.xml"/>
+              <xi:include href="./laws/21-261.xml"/>
+            </container>
+          `;
+        case "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/laws/21-260.xml":
+          return `
+            <document id="D.C. Law 21-260">
+              <num type="law">21-260</num>
+              <num type="act">21-678</num>
+            </document>
+          `;
+        case "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/laws/21-261.xml":
+          return `
+            <document id="D.C. Law 21-261">
+              <num type="law">21-261</num>
+              <num type="bill">21-865</num>
+              <num type="act">21-679</num>
+              <heading type="short">Office of Out of School Time Grants and Youth Outcomes Establishment Act of 2016</heading>
+            </document>
+          `;
         default:
           throw new Error(`Unexpected url ${url}`);
       }
@@ -2882,15 +2910,53 @@ Deno.test("DCGIS legal refs do not fetch the law index for malformed act labels"
   const result = await getConnector("dcgis.boards_commissions_councils").run(
     createConnectorContext({ fetcher }),
   );
+  await workbench.importConnectorResult(result, dataDir);
   const legalRef = result.endpointResults[0].parsed?.legalRefs?.[0];
+  const row = workbench.db.prepare(
+    "select ref_type as refType, normalized_citation as normalizedCitation, review_status as reviewStatus from legal_refs where legal_ref_id = ?",
+  ).get("legal.dcgis.boards_commissions_councils.76_legislation") as {
+    refType: string;
+    normalizedCitation: string | null;
+    reviewStatus: string;
+  };
+  const reviewItem = workbench.db.prepare(
+    "select default_action as defaultAction, details_json as detailsJson from review_items where subject_id = ? and status = 'open'",
+  ).get("legal.dcgis.boards_commissions_councils.76_legislation") as {
+    defaultAction: string;
+    detailsJson: string;
+  };
+  workbench.close();
+  const reviewDetails = JSON.parse(reviewItem.detailsJson) as Record<string, unknown>;
   assertEquals(
     fetchedUrls.includes("https://raw.githubusercontent.com/DCCouncil/law-html/master/index.json"),
     false,
   );
-  assertEquals(result.endpointResults[0].artifacts.length, 2);
+  assertEquals(fetchedUrls, [
+    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=json",
+    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24/query?where=1%3D1&outFields=OBJECTID%2CENTITY_ID%2CNAME%2CSHORT_NAME%2CTYPE%2CWEB_URL%2CGOVERNING_AGENCY%2CAUTHORIZING_ORDER_LAW%2CCLUSTER_DC&orderByFields=OBJECTID&returnGeometry=false&resultOffset=0&resultRecordCount=1000&f=json",
+    "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/index.xml",
+    "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/laws/21-260.xml",
+    "https://raw.githubusercontent.com/DCCouncil/law-xml/main/us/dc/council/periods/21/laws/21-261.xml",
+  ]);
+  assertEquals(result.endpointResults[0].artifacts.length, 4);
   assertEquals(legalRef?.refType, "unknown");
   assertEquals(legalRef?.normalizedCitation, undefined);
   assertEquals(legalRef?.needsReview, true);
+  assertEquals(row, {
+    refType: "unknown",
+    normalizedCitation: null,
+    reviewStatus: "pending",
+  });
+  assertEquals(reviewItem.defaultAction, "defer");
+  assertEquals(legalRef?.suggestions, [{
+    refType: "dc_act",
+    normalizedCitation: "D.C. Act 21-679",
+    relatedCitation: "D.C. Law 21-261",
+    title: "Office of Out of School Time Grants and Youth Outcomes Establishment Act of 2016",
+    url: "https://code.dccouncil.gov/us/dc/council/laws/21-261",
+    source: "DCCouncil law XML",
+  }]);
+  assertEquals(reviewDetails.suggestions, legalRef?.suggestions);
 });
 
 Deno.test("DCGIS legal refs keep duplicate D.C. law title matches in review", async () => {
