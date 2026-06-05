@@ -309,11 +309,58 @@ Deno.test("Quickbase board labels resolve through accepted-style entity refs", a
     boardCandidate?.proposedEntityId,
     "dc.board_of_ethics_and_government_accountability",
   );
-  assertEquals(boardCandidate?.kind, "public_body");
+  assertEquals(boardCandidate?.kind, "board");
   assertEquals(boardCandidate?.rawKind, "appointment_body");
+  assertEquals(boardCandidate?.cluster, undefined);
   assertEquals(
     seatRelationship?.fromEntityRef,
     "dc.board_of_ethics_and_government_accountability",
+  );
+});
+
+Deno.test("quickbase connector infers specific body kinds from board labels without redundant clusters", async () => {
+  const csv = `
+"board or commission - b or c","seat designation (specific role)","appointment status","appointee designation","board status"
+"Building Energy Performance Standards Task Force (BEPS)","Member","Filled","Jane Doe","Active"
+"Education Commission of the States (ECS)","Member","Filled","Jane Doe","Active"
+"Health Equity Committee (HEC)","Member","Filled","Jane Doe","Active"
+"Advisory Group on Artificial Intelligence Values Alignment (AIVA)","Member","Filled","Jane Doe","Active"
+`.trim();
+  const result = await runQuickbaseConnector(csv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  const entityKinds = new Map(
+    (parsed.entityCandidates ?? [])
+      .filter((candidate) =>
+        [
+          "Building Energy Performance Standards Task Force (BEPS)",
+          "Education Commission of the States (ECS)",
+          "Health Equity Committee (HEC)",
+          "Advisory Group on Artificial Intelligence Values Alignment (AIVA)",
+        ].includes(candidate.name)
+      )
+      .map((candidate) => [candidate.name, { kind: candidate.kind, cluster: candidate.cluster }]),
+  );
+
+  assertEquals(entityKinds.get("Building Energy Performance Standards Task Force (BEPS)"), {
+    kind: "task_force",
+    cluster: undefined,
+  });
+  assertEquals(entityKinds.get("Education Commission of the States (ECS)"), {
+    kind: "commission",
+    cluster: undefined,
+  });
+  assertEquals(entityKinds.get("Health Equity Committee (HEC)"), {
+    kind: "committee",
+    cluster: undefined,
+  });
+  assertEquals(
+    entityKinds.get("Advisory Group on Artificial Intelligence Values Alignment (AIVA)"),
+    {
+      kind: "public_body",
+      cluster: undefined,
+    },
   );
 });
 
