@@ -17,4 +17,4 @@ Live-source validation is opt-in, temp-workbench-first, and kept out of default 
 ## Consequences
 
 - Fixture coverage and targeted temp-workbench smokes are the normal validation surface.
-- `dc smoke <profile>` is the preferred first-class operator seam for live-source rehearsal.
+- `dc smoke <profile>` is the preferred first-class operator path for live-source rehearsal.

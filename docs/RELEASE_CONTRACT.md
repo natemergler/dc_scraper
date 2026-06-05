@@ -10,19 +10,33 @@ The release contains exactly these public files:
 - `README.md`
 - `manifest.json`
 - `dcgov.sqlite`
-- `entities.csv/json`
-- `relationships.csv/json`
-- `sources.csv/json`
-- `datasets.csv/json`
-- `legal_refs.csv/json`
-- `entity_legal_refs.csv/json`
-- `relationship_legal_refs.csv/json`
+- `01_sources_and_portals.csv`
+- `02_public_datasets.csv`
+- `03_legal_authorities.csv`
+- `entities/all_entities.csv`
+- `entities/elected_and_seats.csv`
+- `entities/agencies_and_offices.csv`
+- `entities/boards_commissions_public_bodies.csv`
+- `entities/council_committees.csv`
+- `entities/courts_and_legal_bodies.csv`
+- `entities/wards_ancs_smds.csv`
+- `entities/roles_statuses_observations.csv`
+- `relationships/all_relationships.csv`
+- `relationships/structure_relationships.csv`
+- `relationships/authority_relationships.csv`
+- `relationships/representation_membership_relationships.csv`
+- `references/entity_sources.csv`
+- `references/relationship_sources.csv`
+- `references/entity_legal_authorities.csv`
+- `references/relationship_legal_authorities.csv`
 
 ## Trust Model
 
 - Accepted canonical facts are public.
 - Source inventory and dataset inventory are public.
-- Compact `relationships.*` rows expose accepted directed facts, not row-level evidence payloads.
+- CSV files are human-facing grouped views; `dcgov.sqlite` is the full queryable package.
+- Compact `relationships/all_relationships.csv` rows expose accepted directed facts, not row-level
+  evidence payloads.
 - Evidence remains source-backed, compact, and auditable in the workbench before handoff.
 - Personal contact details and local filesystem paths are never allowed in release output.
 - The generated `README.md` is a public package guide. It does not carry review status, readiness,
@@ -30,13 +44,13 @@ The release contains exactly these public files:
 
 ## Model Semantics
 
-- `entities.*` contains canonical civic entities such as public bodies, offices, seats/roles, status
-  markers, and source-backed public official observations.
+- `entities/all_entities.csv` contains canonical civic entities such as public bodies, offices,
+  seats/roles, status markers, and source-backed public official observations.
 - Public official observations are source-backed role or seat observations, not a personnel or
   contact directory.
-- `datasets.*` and `legal_refs.*` are separate inventory/reference tables. They are not promoted to
-  civic entities unless a source-backed entity fact supports that.
-- `relationships.*` stores one directed fact per row:
+- `02_public_datasets.csv` and `03_legal_authorities.csv` are separate inventory/reference views.
+  They are not promoted to civic entities unless a source-backed entity fact supports that.
+- `relationships/all_relationships.csv` stores one directed fact per row:
   `from_entity_id --relationship_type--> to_entity_id`.
 - Relationship types cover structure, authority/source, and civic role facts; incoming/backlink
   views are derived instead of storing inverse facts.
@@ -85,9 +99,15 @@ inspect surfaces without automatically invalidating source-backed release rows.
 
 `release inspect` checks the built release directory against `manifest.json`: expected file count,
 actual file count, file hashes, missing files, and unexpected entries. Package-integrity problems
-make the built-package summary conservative even when the manifest itself can be read. The default
-text output stays compact; use `release inspect --json` for structured package-integrity and
-release-summary details from `release_summary`.
+make the built-package summary conservative even when the manifest itself can be read; known
+package-integrity problems are counted in readiness reasons. It also prints compact blocking
+readiness reasons and warning reasons from `release_summary` when the package is warning or not
+ready. The default text output stays compact; use `release inspect --json` for structured
+package-integrity, blocking `readinessReasons`, `warningReasons`, `warningReviewCommand`,
+`publicBodyCompareCommand`, `browseCommand`, `inspectCommand`, `nextCommand`, and release-summary
+details from `release_summary`. The summary keeps broad `public_body_variant_lead_count` linkage
+context while `public_body_release_risk_variant_lead_count` isolates accepted duplicate-risk leads
+that still drive release warnings.
 
 ## Query Cookbook
 

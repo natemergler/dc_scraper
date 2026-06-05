@@ -94,22 +94,70 @@ deno task dc -- smoke structure
 deno task dc -- smoke inventory
 ```
 
-Use the inspection seams when you want scriptable state:
+Use inspection commands when you want scriptable state:
 
 ```bash
 deno task dc -- status --json
 deno task dc -- source list --json
 deno task dc -- source inspect dcgis.agencies --json
+deno task dc -- source compare public-bodies --json
+deno task dc -- smoke tier0 --json
 deno task dc -- review packets --mode relationships --json
 deno task dc -- review list --json
+deno task dc -- entity search accountancy --json
 deno task dc -- entity show dc.board_of_accountancy --json
+deno task dc -- release verify --json
+deno task dc -- release build --json
 deno task dc -- release inspect --json
 ```
+
+`status --json` includes `review.browseCommand` when source-backed browse rows are present.
+`status --json` and `audit --json` include failed-source detail and blocked-source `inspectCommand`
+handoffs when a source or reconciliation lane needs inspection, and those handoff commands stay
+scoped to the active workbench when `--db` is used. `source list --json` includes latest fetch
+status, failure text, and `fetchCommand` for configured sources. `source inspect --json` includes
+`fetchCommand` for retrying or fetching the inspected lane and `browseCommand` when the source has
+rows to inspect. `source compare public-bodies` prints `Next:` for the first unresolved conservative
+variant lead; `source compare public-bodies --json` includes `reviewCommands` on conservative
+variant leads that still need human review, `releaseRiskVariantMatchCount` for the accepted
+duplicate-risk subset, and `nextCommand` for the first review handoff. When `--db` is used, source
+list/inspect/fetch/compare handoff commands stay scoped to that workbench. `source fetch
+--json`
+includes `successCount` and `failureCount` for scriptable fetch summaries. `smoke --json` includes
+`successCount`, `failureCount`, `releaseOutDir`, `releaseVerifyCommand`, `releaseBuildCommand`,
+`releaseInspectCommand`, and top-level `nextCommand` for temp-workbench rehearsals. `review packets`
+prints `Next:` for the first packet. `review packets --json` includes `summary`, `reviewCommand`,
+`nextCommand`, `itemCount`, `openCount`, and `deferredCount` for scriptable handoff into focused
+review. `review list --json` includes `summary`, `sourceId`, `label`, `reviewCommand`,
+`nextCommand`, `decisionCount`, and `browseCount` for scriptable browse and audit displays. When
+`--db` is used, review list/packets handoff commands stay scoped to that workbench.
+`entity search
+--json` includes `showCommand` for each result. `entity show --json` includes
+`reviewCommand` on review items with source context and `nextCommand` for the first attached review
+handoff. When `--db` is used, entity search/show handoff commands stay scoped to that workbench.
+`release verify
+--json` includes `buildCommand`, `warningReasons`, `warningReviewCommand`, and
+`publicBodyCompareCommand` for non-blocking review or public-body duplicate-risk warnings, plus
+failed-source detail when failed sources block release readiness; when `--db` is used, those handoff
+commands stay scoped to the verified workbench. `release inspect --json` includes `warningReasons`
+separately from blocking `readinessReasons` when the built package is usable with warnings or not
+ready. `release inspect
+--json` includes `warningReviewCommand`, `publicBodyCompareCommand`, and
+`browseCommand` when the package still points back to review, public-body comparison, or browse
+work. `release inspect
+--json` includes `inspectCommand` when blocked reconciliation still points at
+one source. `release
+inspect --json` includes `nextCommand` for the highest-priority follow-up from
+the built package surface. Built-package `releaseSummary` keeps broad
+`public_body_variant_lead_count` context while `public_body_release_risk_variant_lead_count` tracks
+only accepted duplicate-risk leads that still affect release warnings. `release build
+--json`
+includes `inspectCommand` and `nextCommand` for inspecting the built package.
 
 `status` and `audit` explain readiness, blockers, and next commands. `source inspect`, entity
 commands, and `review list --status all` are the main browse surfaces. `review packets` and
 `review list --decisions` narrow the actual human-decision surface before opening interactive
-review.
+review. `entity search` prints a `Show:` handoff for each result.
 
 ## Release Contract
 
@@ -118,13 +166,25 @@ review.
 - `README.md`
 - `manifest.json`
 - `dcgov.sqlite`
-- `entities.csv/json`
-- `relationships.csv/json`
-- `sources.csv/json`
-- `datasets.csv/json`
-- `legal_refs.csv/json`
-- `entity_legal_refs.csv/json`
-- `relationship_legal_refs.csv/json`
+- `01_sources_and_portals.csv`
+- `02_public_datasets.csv`
+- `03_legal_authorities.csv`
+- `entities/all_entities.csv`
+- `entities/elected_and_seats.csv`
+- `entities/agencies_and_offices.csv`
+- `entities/boards_commissions_public_bodies.csv`
+- `entities/council_committees.csv`
+- `entities/courts_and_legal_bodies.csv`
+- `entities/wards_ancs_smds.csv`
+- `entities/roles_statuses_observations.csv`
+- `relationships/all_relationships.csv`
+- `relationships/structure_relationships.csv`
+- `relationships/authority_relationships.csv`
+- `relationships/representation_membership_relationships.csv`
+- `references/entity_sources.csv`
+- `references/relationship_sources.csv`
+- `references/entity_legal_authorities.csv`
+- `references/relationship_legal_authorities.csv`
 
 The release SQLite database is rebuilt from whitelisted release tables and views. It is not a copy
 of the full workbench database.
@@ -138,7 +198,7 @@ of the full workbench database.
   blockers remain, or release rows no longer trace to source-backed decisions or references. Visible
   review decisions remain visible without automatically invalidating source-backed release rows.
 - `deno task dc -- release inspect` checks the built package on disk against the manifest and
-  reports package integrity plus the built package summary.
+  reports package integrity, release readiness reasons, and the built package summary.
 
 A healthy current full-source run ends with a compact set of explicit human decisions, not broad
 manual approval of routine source-backed facts.
@@ -147,7 +207,7 @@ manual approval of routine source-backed facts.
 
 - [DESIGN.md](DESIGN.md) is the live architecture note for the current model.
 - [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) is the maintainer workflow.
-- [docs/CONNECTOR_AUTHORING.md](docs/CONNECTOR_AUTHORING.md) is the contributor seam for source
+- [docs/CONNECTOR_AUTHORING.md](docs/CONNECTOR_AUTHORING.md) is the contributor guide for source
   work.
 - [docs/RELEASE_CONTRACT.md](docs/RELEASE_CONTRACT.md) is the public package contract.
 - [docs/SOURCE_COVERAGE.md](docs/SOURCE_COVERAGE.md) is the operator view of current source lanes.
@@ -160,4 +220,4 @@ paths such as `.agent/`; they are not the current truth surface.
 
 Public civic names, offices, roles, statuses, source URLs, and legal citations are in scope.
 Personal contact details are out of scope: emails, phone numbers, home addresses, contact fields,
-private notes, and contact metadata should stay out of release exports.
+private notes, contact metadata, and local paths should stay out of release exports.

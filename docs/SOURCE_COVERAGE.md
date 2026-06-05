@@ -4,7 +4,8 @@ This is the live source map for the workbench. It describes what each configured
 what it contributes today, and what still limits completeness, confidence, or source-backed coverage
 in the current civic-structure release. It is not a changelog.
 
-Use `deno task dc -- source list --json` for the machine-readable configured surface. Use
+Use `deno task dc -- source list --json` for the machine-readable configured surface, including
+latest fetch status, failure text, and per-source fetch commands. Use
 `deno task dc -- smoke structure`, `deno task dc -- smoke tier0`, and
 `deno task dc -- smoke inventory` for clean temp-workbench rehearsals.
 
