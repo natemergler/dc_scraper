@@ -150,6 +150,53 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   );
 });
 
+Deno.test("legal review renders official suggestions readably", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticLegalRefSourceResult(
+      "legal.test.signature.legal_refs.malformed_act",
+      "D.G. AGT 21-679",
+      "https://example.com/malformed-act",
+    ),
+    dataDir,
+  );
+  const item = workbench.listReviewItems({ mode: "legal" })[0];
+  workbench.db.prepare("update review_items set details_json = ? where review_item_id = ?").run(
+    JSON.stringify({
+      citationText: "D.G. AGT 21-679",
+      refType: "unknown",
+      normalizedCitation: null,
+      url: "https://example.com/malformed-act",
+      needsReview: true,
+      suggestions: [{
+        refType: "dc_act",
+        normalizedCitation: "D.C. Act 21-679",
+        relatedCitation: "D.C. Law 21-261",
+        title: "Office of Out of School Time Grants and Youth Outcomes Establishment Act of 2016",
+        url: "https://code.dccouncil.gov/us/dc/council/laws/21-261",
+        source: "DCCouncil law XML",
+      }],
+    }),
+    item.reviewItemId,
+  );
+
+  const text = renderReviewItem(workbench, workbench.listReviewItems({ mode: "legal" })[0]);
+  workbench.close();
+
+  assertStringIncludes(text, "suggestions:");
+  assertStringIncludes(text, "- D.C. Act 21-679 via D.C. Law 21-261 (DCCouncil law XML)");
+  assertStringIncludes(
+    text,
+    "title: Office of Out of School Time Grants and Youth Outcomes Establishment Act of 2016",
+  );
+  assertStringIncludes(text, "url: https://code.dccouncil.gov/us/dc/council/laws/21-261");
+  assertEquals(text.includes('"suggestions"'), false);
+});
+
 function countRenderEndpointStatusPrepares(
   workbench: Workbench,
   item: ReturnType<Workbench["listReviewItems"]>[number],

@@ -129,9 +129,19 @@ export interface LegalRefInput {
   normalizedCitation?: string;
   url?: string;
   needsReview?: boolean;
+  suggestions?: LegalRefSuggestionInput[];
   evidence: EvidenceInput[];
   attachEntityRef?: string;
   attachRelationshipRef?: string;
+}
+
+export interface LegalRefSuggestionInput {
+  refType: string;
+  normalizedCitation: string;
+  relatedCitation?: string;
+  title?: string;
+  url?: string;
+  source: string;
 }
 
 export interface DatasetInput {
