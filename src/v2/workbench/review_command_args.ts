@@ -1,4 +1,5 @@
 import { dcCommand } from "../command_prefix.ts";
+import type { ReviewItemType } from "../domain.ts";
 import type { ReviewItemFilters } from "./review.ts";
 
 export function renderReviewCommand(
@@ -52,6 +53,23 @@ export function reviewModeSubcommand(mode: string | undefined): string | undefin
   return mode && ["entities", "relationships", "legal", "sources"].includes(mode)
     ? mode
     : undefined;
+}
+
+export function reviewModeForItemType(
+  itemType: ReviewItemType,
+): "entities" | "relationships" | "legal" | "sources" {
+  switch (itemType) {
+    case "entity_candidate":
+    case "placeholder_entity":
+      return "entities";
+    case "relationship_candidate":
+      return "relationships";
+    case "legal_ref":
+      return "legal";
+    case "dataset":
+    case "source_status":
+      return "sources";
+  }
 }
 
 function quoteShellArg(value: string): string {

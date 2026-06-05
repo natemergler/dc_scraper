@@ -1,6 +1,6 @@
 import { type ReviewItemRecord, slugify } from "../domain.ts";
 import type { ReviewItemFilters } from "./review.ts";
-import { renderReviewCommand } from "./review_command_args.ts";
+import { renderReviewCommand, reviewModeForItemType } from "./review_command_args.ts";
 import { reviewSubjectSourceIds } from "./review_subject.ts";
 import type { WorkbenchStore } from "./store.ts";
 import { projectOpenHumanDecisionWork, type UnresolvedDecisionNode } from "./unresolved_work.ts";
@@ -24,6 +24,8 @@ export interface ReviewPacketRecord {
 
 export type ReviewPacketJsonRecord = Omit<ReviewPacketRecord, "reviewItemIds"> & {
   reviewItemIds?: string[];
+  reviewCommand: string;
+  summary: string;
 };
 
 export type ReviewPacketPriorityDecision = Pick<
@@ -152,9 +154,11 @@ export function reviewPacketJsonRecord(
   packet: ReviewPacketRecord,
   options: { includeReviewItemIds?: boolean } = {},
 ): ReviewPacketJsonRecord {
-  if (options.includeReviewItemIds) return packet;
+  const reviewCommand = reviewPacketCommand(packet);
+  const summary = renderReviewPacketSummary(packet);
+  if (options.includeReviewItemIds) return { ...packet, reviewCommand, summary };
   const { reviewItemIds: _reviewItemIds, ...compactPacket } = packet;
-  return compactPacket;
+  return { ...compactPacket, reviewCommand, summary };
 }
 
 export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
@@ -173,30 +177,14 @@ export function renderReviewPacketSummary(packet: ReviewPacketRecord): string {
 }
 
 function reviewPacketCommand(packet: ReviewPacketRecord): string {
-  const mode = modeForPacket(packet);
+  const mode = reviewModeForItemType(packet.itemType);
   return renderReviewCommand({
     mode,
     sourceId: packet.sourceId === "unknown" ? undefined : packet.sourceId,
-    type: mode ? undefined : packet.itemType,
     subjectPrefix: packet.subjectPrefix,
     relationshipType: packet.relationshipType,
     refType: packet.refType,
   });
-}
-
-function modeForPacket(packet: ReviewPacketRecord): ReviewItemFilters["mode"] {
-  switch (packet.itemType) {
-    case "entity_candidate":
-    case "placeholder_entity":
-      return "entities";
-    case "relationship_candidate":
-      return "relationships";
-    case "legal_ref":
-      return "legal";
-    case "dataset":
-    case "source_status":
-      return "sources";
-  }
 }
 
 export function renderReviewPacketHeader(packet: ReviewPacketRecord): string {

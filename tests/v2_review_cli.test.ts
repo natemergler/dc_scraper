@@ -72,6 +72,67 @@ Deno.test("relationship review rendering batches endpoint status lookup", async 
   assertStringIncludes(queryCounts.output, "To:\n  Target Agency");
 });
 
+Deno.test("dc review relationships can edit endpoints before accepting", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const resolutionsDir = join(dir, "resolutions");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  for (
+    const [entityId, name, kind] of [
+      ["dc.source_board", "Source Board", "board"],
+      ["dc.council_of_the_district_of_columbia", "Council of the District of Columbia", "council"],
+    ]
+  ) {
+    workbench.db.prepare(
+      "insert or ignore into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
+    ).run(entityId, name, kind);
+  }
+  await workbench.importConnectorResult(
+    syntheticCustomRelationshipSourceResult({
+      sourceId: "test.review_cli.relationships",
+      relationshipCandidateId: "relationship.test.review_cli.editable",
+      sourceItemKey: "review-cli-relationship-row",
+      fromEntityRef: "dc.source_board",
+      toEntityRef: "dc.council_of_the_district_of_columbia",
+      relationshipType: "governed_by",
+      rawValue: "Council of the District of Columbia",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await runDcCli(
+    [
+      "review",
+      "relationships",
+      "--subject-prefix",
+      "relationship.test.review_cli.editable",
+      "--db",
+      dbPath,
+      "--resolutions-dir",
+      resolutionsDir,
+    ],
+    { stdin: "\ne\npart_of\n\ndc.council_of_the_district_of_columbia\n" },
+  );
+  const text = output.stdout;
+  assertEquals(output.code, 0);
+  assertStringIncludes(text, "Relationship type:");
+  assertStringIncludes(text, "From entity id (blank keeps source):");
+  assertStringIncludes(text, "To entity id (blank keeps source):");
+  assertStringIncludes(text, "Saved resolution.");
+
+  const reopened = new Workbench(dbPath);
+  reopened.init();
+  const relationships = reopened.canonicalRelationships();
+  reopened.close();
+  assertEquals(relationships.map((row) => row.id), [
+    "dc.source_board:part_of:dc.council_of_the_district_of_columbia",
+  ]);
+});
+
 Deno.test("dc review legal supports scripted normalize-and-quit flow for the remaining ambiguous ref", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
@@ -89,17 +150,8 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
   );
   workbench.close();
 
-  const child = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "legal",
       "--db",
@@ -107,18 +159,10 @@ Deno.test("dc review legal supports scripted normalize-and-quit flow for the rem
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = child.stdin.getWriter();
-  await writer.write(
-    new TextEncoder().encode("n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n"),
+    { stdin: "n\ndcmr\nDCMR and D.C. Register entrypoint\nq\n" },
   );
-  await writer.close();
-  const output = await child.output();
-  const stdout = new TextDecoder().decode(output.stdout);
-  const stderr = new TextDecoder().decode(output.stderr);
+  const stdout = output.stdout;
+  const stderr = output.stderr;
   assertEquals(output.code, 0);
   assertEquals(stderr, "");
   assertStringIncludes(
@@ -211,17 +255,8 @@ Deno.test("interactive review skip, defer, and raw details have distinct effects
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "legal",
       "--db",
@@ -229,15 +264,9 @@ Deno.test("interactive review skip, defer, and raw details have distinct effects
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("v\ns\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "v\ns\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, "Raw details:");
@@ -264,17 +293,8 @@ Deno.test("interactive review skip, defer, and raw details have distinct effects
   }
   assertEquals(resolutionText, "");
 
-  const deferProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const deferOutput = await runDcCli(
+    [
       "review",
       "legal",
       "--db",
@@ -282,15 +302,9 @@ Deno.test("interactive review skip, defer, and raw details have distinct effects
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const deferWriter = deferProcess.stdin.getWriter();
-  await deferWriter.write(new TextEncoder().encode("d\nq\n"));
-  await deferWriter.close();
-  const deferOutput = await deferProcess.output();
-  const deferStdout = new TextDecoder().decode(deferOutput.stdout);
+    { stdin: "d\nq\n" },
+  );
+  const deferStdout = deferOutput.stdout;
   assertEquals(deferOutput.code, 0);
   assertStringIncludes(deferStdout, "Saved defer.");
   assertStringIncludes(deferStdout, "  deferred: 1");
@@ -375,17 +389,8 @@ Deno.test("scripted review CLI accepts an explicit entity decision and entity sh
     dataDir,
   );
   workbench.close();
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -396,16 +401,9 @@ Deno.test("scripted review CLI accepts an explicit entity decision and entity sh
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("a\nq\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "a\nq\n" },
+  );
+  const reviewText = reviewOutput.stdout;
   assertStringIncludes(reviewText, "entity · board");
   assertStringIncludes(reviewText, "Subject:\n  Board of Accountancy");
   assertStringIncludes(
@@ -427,93 +425,43 @@ Deno.test("scripted review CLI accepts an explicit entity decision and entity sh
   );
   assertEquals(reviewText.includes("artifact:"), false);
   assertStringIncludes(reviewText, "Saved resolution.");
-  const searchOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "search",
-      "accountancy",
-      "--db",
-      dbPath,
-    ],
-  }).output();
-  assertStringIncludes(new TextDecoder().decode(searchOutput.stdout), "dc.board_of_accountancy");
-  const searchJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "search",
-      "accountancy",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
+  const searchOutput = await runDcCli(["entity", "search", "accountancy", "--db", dbPath]);
+  assertStringIncludes(searchOutput.stdout, "dc.board_of_accountancy");
+  const searchJsonOutput = await runDcCli([
+    "entity",
+    "search",
+    "accountancy",
+    "--db",
+    dbPath,
+    "--json",
+  ]);
   const searchJson = JSON.parse(
-    new TextDecoder().decode(searchJsonOutput.stdout),
+    searchJsonOutput.stdout,
   ) as Array<{ entityId: string; name: string }>;
   assertEquals(searchJsonOutput.code, 0);
   assertEquals(searchJson[0].entityId, "dc.board_of_accountancy");
-  const showOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "show",
-      "dc.board_of_accountancy",
-      "--db",
-      dbPath,
-    ],
-  }).output();
-  const showText = new TextDecoder().decode(showOutput.stdout);
+  const showOutput = await runDcCli([
+    "entity",
+    "show",
+    "dc.board_of_accountancy",
+    "--db",
+    dbPath,
+  ]);
+  const showText = showOutput.stdout;
   assertStringIncludes(showText, "Board of Accountancy");
   assertStringIncludes(showText, "evidence:");
   assertStringIncludes(showText, "open_dc.public_bodies:");
   assertStringIncludes(showText, "artifact:");
   assertStringIncludes(showText, "legal_refs:");
-  const showJsonOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "entity",
-      "show",
-      "dc.board_of_accountancy",
-      "--db",
-      dbPath,
-      "--json",
-    ],
-  }).output();
-  const showJson = JSON.parse(new TextDecoder().decode(showJsonOutput.stdout)) as {
+  const showJsonOutput = await runDcCli([
+    "entity",
+    "show",
+    "dc.board_of_accountancy",
+    "--db",
+    dbPath,
+    "--json",
+  ]);
+  const showJson = JSON.parse(showJsonOutput.stdout) as {
     entityId: string;
     evidence: Array<{ fieldPath: string }>;
     legalRefs: Array<{ refType: string }>;
@@ -660,17 +608,8 @@ Deno.test("interactive review Enter accepts the default action for an explicit e
   );
   workbench.close();
 
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -679,16 +618,9 @@ Deno.test("interactive review Enter accepts the default action for an explicit e
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("a\nq\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "a\nq\n" },
+  );
+  const reviewText = reviewOutput.stdout;
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(reviewText, "Enter skip");
   assertStringIncludes(reviewText, "Saved resolution.");
@@ -722,17 +654,8 @@ Deno.test("interactive review explains available actions after an unavailable ac
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -741,15 +664,9 @@ Deno.test("interactive review explains available actions after an unavailable ac
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("x\na\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "x\na\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(
@@ -792,17 +709,8 @@ Deno.test("interactive review sends plain source-backed additions to browse surf
   );
   workbench.close();
 
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -811,16 +719,9 @@ Deno.test("interactive review sends plain source-backed additions to browse surf
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "q\n" },
+  );
+  const reviewText = reviewOutput.stdout;
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
@@ -871,17 +772,8 @@ Deno.test("interactive review starts with an inbox summary for the current slice
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "relationships",
@@ -890,15 +782,9 @@ Deno.test("interactive review starts with an inbox summary for the current slice
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, "Decision inbox");
@@ -976,17 +862,8 @@ Deno.test("interactive review gives deferred relationship packets packet-level i
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "relationships",
@@ -995,15 +872,9 @@ Deno.test("interactive review gives deferred relationship packets packet-level i
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "q\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, "relationship");
@@ -1062,17 +933,8 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -1081,15 +943,9 @@ Deno.test("interactive review prioritizes decisions that unblock relationships",
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "q\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(
@@ -1144,17 +1000,8 @@ Deno.test("interactive review --status deferred does not treat deferred items as
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -1165,15 +1012,9 @@ Deno.test("interactive review --status deferred does not treat deferred items as
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "q\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, "Subject:\n  Deferred Priority Target");
@@ -1235,17 +1076,8 @@ Deno.test("interactive review --status all still prioritizes open unblocking wor
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -1256,15 +1088,9 @@ Deno.test("interactive review --status all still prioritizes open unblocking wor
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\n\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "\n\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(
@@ -1337,17 +1163,8 @@ Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -1356,15 +1173,9 @@ Deno.test("interactive decision inbox ranks smaller high-impact packets ahead of
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assert(
@@ -1421,17 +1232,8 @@ Deno.test("interactive review stays inside the current packet until it clears", 
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "--mode",
       "entities",
@@ -1440,15 +1242,9 @@ Deno.test("interactive review stays inside the current packet until it clears", 
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("\na\na\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+    { stdin: "\na\na\nq\n" },
+  );
+  const stdout = output.stdout;
 
   assertEquals(output.code, 0);
   assertStringIncludes(stdout, "Subject:\n  Zzz Packet One");
@@ -1483,17 +1279,8 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "relationships",
       "--relationship-type",
@@ -1507,15 +1294,9 @@ Deno.test("interactive review resume command preserves quoted filters", async ()
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "q\n" },
+  );
+  const reviewText = reviewOutput.stdout;
 
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
@@ -1545,17 +1326,8 @@ Deno.test("interactive review browse commands preserve source filters for plain 
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "--source",
       "test.review_cli.source_resume",
@@ -1564,15 +1336,9 @@ Deno.test("interactive review browse commands preserve source filters for plain 
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "q\n" },
+  );
+  const reviewText = reviewOutput.stdout;
 
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
@@ -1581,7 +1347,7 @@ Deno.test("interactive review browse commands preserve source filters for plain 
   );
 });
 
-Deno.test("interactive review points to audit when only blocked reconciliation remains", async () => {
+Deno.test("interactive review renders unresolved symbols instead of hiding them in audit", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1604,44 +1370,33 @@ Deno.test("interactive review points to audit when only blocked reconciliation r
   );
   workbench.close();
 
-  const reviewOutput = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "--source",
-      "test.review_cli.blocked_only",
-      "--db",
-      dbPath,
-      "--resolutions-dir",
-      resolutionsDir,
-    ],
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+  const reviewOutput = await runDcCli([
+    "review",
+    "--source",
+    "test.review_cli.blocked_only",
+    "--db",
+    dbPath,
+    "--resolutions-dir",
+    resolutionsDir,
+  ]);
+  const reviewText = reviewOutput.stdout;
 
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(
     reviewText,
-    "No direct review decisions remain. 1 blocked reconciliation item remains.",
+    "[1/1] relationship · endpoint ambiguity",
   );
-  assertStringIncludes(
-    reviewText,
-    "First blocked: Missing Agency [governed_by from test.review_cli.blocked_only]",
+  assertStringIncludes(reviewText, "To:\n  dc.missing_agency");
+  assertStringIncludes(reviewText, "Proposed actions:");
+  assertStringIncludes(reviewText, "  map_symbol");
+  assertStringIncludes(reviewText, "  create_placeholder");
+  assertEquals(
+    reviewText.includes("Inspect blocked dependencies with deno task dc -- audit."),
+    false,
   );
-  assertStringIncludes(reviewText, "Inspect blocked dependencies with deno task dc -- audit.");
-  assertEquals(reviewText.includes("No review items remain."), false);
 });
 
-Deno.test("interactive relationship review reports filtered blocked reconciliation", async () => {
+Deno.test("interactive relationship review groups unresolved symbols in the inbox", async () => {
   const dir = await Deno.makeTempDir();
   const dbPath = join(dir, "workbench.sqlite");
   const dataDir = join(dir, "artifacts");
@@ -1657,17 +1412,8 @@ Deno.test("interactive relationship review reports filtered blocked reconciliati
   );
   workbench.close();
 
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "relationships",
       "--relationship-type",
@@ -1679,24 +1425,17 @@ Deno.test("interactive relationship review reports filtered blocked reconciliati
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "q\n" },
+  );
+  const reviewText = reviewOutput.stdout;
   assertEquals(reviewOutput.code, 0);
+  assertStringIncludes(reviewText, "Decision inbox");
+  assertStringIncludes(reviewText, "Open items in this slice: 2");
   assertStringIncludes(
     reviewText,
-    "No direct review decisions remain. 2 blocked reconciliation items remain.",
+    "open_dc.public_bodies governed_by [default defer; packet 2 open]",
   );
-  assertStringIncludes(reviewText, "First blocked:");
-  assertStringIncludes(reviewText, "[governed_by from open_dc.public_bodies]");
-  assertStringIncludes(reviewText, "Inspect blocked dependencies with deno task dc -- audit.");
+  assertEquals(reviewText.includes("No direct review decisions remain."), false);
 });
 
 Deno.test("interactive review auto-accepts accepted-endpoint additive relationships before rendering", async () => {
@@ -1733,17 +1472,8 @@ Deno.test("interactive review auto-accepts accepted-endpoint additive relationsh
   );
   workbench.close();
 
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "relationships",
       "--relationship-type",
@@ -1755,16 +1485,9 @@ Deno.test("interactive review auto-accepts accepted-endpoint additive relationsh
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const reviewProcess = reviewRun.spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("q\n"));
-  await writer.close();
-  const reviewOutput = await reviewProcess.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
+    { stdin: "q\n" },
+  );
+  const reviewText = reviewOutput.stdout;
   assertEquals(reviewOutput.code, 0);
   assertStringIncludes(reviewText, "Review session summary:");
   assertStringIncludes(reviewText, "  open: 0");
@@ -1792,17 +1515,8 @@ Deno.test("interactive review auto-accepts safe legal refs before rendering", as
   ).run(legalRefId);
   workbench.close();
 
-  const reviewRun = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const reviewOutput = await runDcCli(
+    [
       "review",
       "legal",
       "--db",
@@ -1810,14 +1524,10 @@ Deno.test("interactive review auto-accepts safe legal refs before rendering", as
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  await reviewRun.stdin.close();
-  const reviewOutput = await reviewRun.output();
-  const reviewText = new TextDecoder().decode(reviewOutput.stdout);
-  const reviewError = new TextDecoder().decode(reviewOutput.stderr);
+    { stdin: "" },
+  );
+  const reviewText = reviewOutput.stdout;
+  const reviewError = reviewOutput.stderr;
   assertEquals(reviewOutput.code, 0, reviewError);
   assertStringIncludes(reviewText, "Review session summary:");
   assertStringIncludes(reviewText, "  open: 0");
@@ -1851,17 +1561,8 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
   );
   workbench.close();
 
-  const reviewProcess = new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
-      "--allow-net",
-      "--allow-ffi",
-      "scripts/dc.ts",
+  const output = await runDcCli(
+    [
       "review",
       "legal",
       "--subject-prefix",
@@ -1871,15 +1572,9 @@ Deno.test("interactive review does not resurface a deferred item in the same ses
       "--resolutions-dir",
       resolutionsDir,
     ],
-    stdin: "piped",
-    stdout: "piped",
-    stderr: "piped",
-  }).spawn();
-  const writer = reviewProcess.stdin.getWriter();
-  await writer.write(new TextEncoder().encode("d\nq\n"));
-  await writer.close();
-  const output = await reviewProcess.output();
-  const text = new TextDecoder().decode(output.stdout);
+    { stdin: "d\nq\n" },
+  );
+  const text = output.stdout;
   assertEquals(output.code, 0);
   assertStringIncludes(text, "Saved defer.");
   assertStringIncludes(text, "Review session summary:");
@@ -1906,4 +1601,47 @@ function seedAcceptedEntity(
   workbench.db.prepare(
     "insert into canonical_entities(entity_id, name, kind, review_status, merged_candidate_ids, created_at, updated_at) values(?, ?, ?, 'accepted', '[]', datetime('now'), datetime('now'))",
   ).run([entityId, name, kind]);
+}
+
+async function runDcCli(
+  args: string[],
+  options: { stdin?: string } = {},
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const command = new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      "--allow-net",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      ...args,
+    ],
+    stdin: options.stdin === undefined ? "null" : "piped",
+    stdout: "piped",
+    stderr: "piped",
+  });
+  if (options.stdin === undefined) {
+    const output = await command.output();
+    return decodeCommandOutput(output);
+  }
+
+  const process = command.spawn();
+  const writer = process.stdin.getWriter();
+  await writer.write(new TextEncoder().encode(options.stdin));
+  await writer.close();
+  return decodeCommandOutput(await process.output());
+}
+
+function decodeCommandOutput(
+  output: Deno.CommandOutput,
+): { code: number; stdout: string; stderr: string } {
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
 }

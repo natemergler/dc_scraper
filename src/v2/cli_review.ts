@@ -13,10 +13,12 @@ import {
   runBatchDeferDefault,
   runInteractiveReview,
 } from "./workbench/review_cli.ts";
+import { renderReviewCommand, reviewModeForItemType } from "./workbench/review_command_args.ts";
 import type { Workbench } from "./workbench.ts";
 import { isHumanDecisionReviewItem, reviewItemWorkKind } from "./workbench/review.ts";
 
 export interface ReviewCommandOptions {
+  dbPath?: string;
   json?: boolean;
   resolutionsDir: string;
 }
@@ -57,25 +59,61 @@ export async function handleReviewCommand(
         : baseItems;
       const items = filteredItems;
       const sourceIds = reviewSubjectSourceIds(workbench, items);
+      const entries = items.map((item) => {
+        const summary = renderReviewItemSummary(workbench, item);
+        return {
+          item,
+          summary,
+        };
+      });
       return {
-        items: items.map((item) => ({
-          ...item,
-          sourceId: sourceIds.get(item.reviewItemId) ?? "unknown",
-          label: reviewItemLabel(item),
-          workKind: reviewItemWorkKind(item),
-          humanDecision: isHumanDecisionReviewItem(item),
-        })),
-        summaries: items.map((item) => renderReviewItemSummary(workbench, item)),
+        items: entries.map(({ item, summary }) => {
+          const sourceId = sourceIds.get(item.reviewItemId) ?? "unknown";
+          const humanDecision = isHumanDecisionReviewItem(item);
+          return {
+            ...item,
+            sourceId,
+            label: reviewItemLabel(item),
+            summary,
+            workKind: reviewItemWorkKind(item),
+            humanDecision,
+            reviewCommand: humanDecision
+              ? renderReviewCommand({
+                mode: reviewModeForItemType(item.itemType),
+                sourceId: sourceId === "unknown" ? undefined : sourceId,
+                subjectPrefix: item.subjectId,
+              })
+              : undefined,
+          };
+        }),
+        summaries: entries.map((entry) => entry.summary),
       };
     });
     if (options.json) {
-      console.log(JSON.stringify({ count: items.length, items }, null, 2));
+      const scopedItems = items.map((item) => scopeReviewItemRecord(item, options.dbPath));
+      const decisionCount = scopedItems.filter((item) => item.humanDecision).length;
+      const nextCommand = scopedItems.find((item) => item.humanDecision)?.reviewCommand;
+      console.log(JSON.stringify(
+        {
+          count: scopedItems.length,
+          decisionCount,
+          browseCount: scopedItems.length - decisionCount,
+          nextCommand,
+          items: scopedItems,
+        },
+        null,
+        2,
+      ));
       return true;
     }
     console.log(`${reviewListHeading(items)}: ${items.length}`);
     for (const summary of summaries) {
       console.log(summary);
       console.log("");
+    }
+    const nextCommand = items.find((item) => item.humanDecision)?.reviewCommand;
+    if (nextCommand) {
+      console.log(`Next: ${scopeDbCommand(nextCommand, options.dbPath) ?? nextCommand}`);
     }
     return true;
   }
@@ -92,14 +130,25 @@ export async function handleReviewCommand(
         : listReviewPackets(workbench, filters)
     );
     if (options.json) {
+      const itemCount = packets.reduce((sum, packet) => sum + packet.count, 0);
+      const openCount = packets.reduce((sum, packet) => sum + packet.openCount, 0);
+      const deferredCount = packets.reduce((sum, packet) => sum + packet.deferredCount, 0);
+      const packetRecords = packets.map((packet) =>
+        scopeReviewPacketRecord(
+          reviewPacketJsonRecord(packet, { includeReviewItemIds }),
+          options.dbPath,
+        )
+      );
       console.log(
         JSON.stringify(
           {
             count: packets.length,
+            itemCount,
+            openCount,
+            deferredCount,
             includeReviewItemIds,
-            packets: packets.map((packet) =>
-              reviewPacketJsonRecord(packet, { includeReviewItemIds })
-            ),
+            nextCommand: packetRecords[0]?.reviewCommand,
+            packets: packetRecords,
           },
           null,
           2,
@@ -108,9 +157,14 @@ export async function handleReviewCommand(
       return true;
     }
     console.log(`${reviewPacketsHeading(filters)}: ${packets.length}`);
+    const packetRecords = packets.map((packet) => reviewPacketJsonRecord(packet));
     for (const packet of packets) {
-      console.log(renderReviewPacketSummary(packet));
+      console.log(scopeReviewPacketSummary(renderReviewPacketSummary(packet), options.dbPath));
       console.log("");
+    }
+    const nextCommand = packetRecords[0]?.reviewCommand;
+    if (nextCommand) {
+      console.log(`Next: ${scopeDbCommand(nextCommand, options.dbPath) ?? nextCommand}`);
     }
     return true;
   }
@@ -191,6 +245,36 @@ function reviewListHeading(
 
 function reviewPacketsHeading(filters: ReviewItemFilters): string {
   return filters.status === undefined ? "Decision packets" : "Review packets";
+}
+
+function scopeReviewPacketSummary(summary: string, dbPath?: string): string {
+  if (!dbPath) return summary;
+  return summary.replace(
+    /^review: (.+)$/m,
+    (_match, command: string) => `review: ${scopeDbCommand(command, dbPath) ?? command}`,
+  );
+}
+
+function scopeReviewItemRecord<T extends { reviewCommand?: string }>(item: T, dbPath?: string): T {
+  const reviewCommand = scopeDbCommand(item.reviewCommand, dbPath);
+  return reviewCommand ? { ...item, reviewCommand } : item;
+}
+
+function scopeReviewPacketRecord<T extends { reviewCommand: string }>(
+  packet: T,
+  dbPath?: string,
+): T {
+  return {
+    ...packet,
+    reviewCommand: scopeDbCommand(packet.reviewCommand, dbPath) ?? packet.reviewCommand,
+  };
+}
+
+function scopeDbCommand(command: string | undefined, dbPath?: string): string | undefined {
+  if (!command || !dbPath || !command.startsWith(dcCommand("")) || command.includes(" --db ")) {
+    return command;
+  }
+  return `${command} --db ${dbPath}`;
 }
 
 function printReviewBatchHelp(tips: string[] = []): void {

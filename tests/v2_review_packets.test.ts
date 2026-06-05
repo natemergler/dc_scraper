@@ -108,24 +108,42 @@ Deno.test("review packets group explicit-safe and high-confidence entity work wi
     "--json",
   ]);
   const rawBody = JSON.parse(new TextDecoder().decode(rawOutput.stdout)) as {
+    count: number;
+    itemCount: number;
+    openCount: number;
+    deferredCount: number;
     includeReviewItemIds: boolean;
+    nextCommand?: string;
     packets: Array<{
       itemType: string;
       sourceId: string;
       count: number;
       subjectPrefix?: string;
+      reviewCommand?: string;
       reviewItemIds?: string[];
       nextCommand?: string;
     }>;
   };
 
   assertEquals(rawOutput.code, 0);
+  assertEquals(rawBody.count, 1);
+  assertEquals(rawBody.itemCount, 2);
+  assertEquals(rawBody.openCount, 2);
+  assertEquals(rawBody.deferredCount, 0);
   assertEquals(rawBody.includeReviewItemIds, false);
+  assertEquals(
+    rawBody.nextCommand,
+    `deno task dc -- review entities --source test.packet.mixed_entities --subject-prefix candidate.test.packet.mixed_entities --db ${dbPath}`,
+  );
   assertEquals(rawBody.packets.length, 1);
   assertEquals(rawBody.packets[0].itemType, "entity_candidate");
   assertEquals(rawBody.packets[0].sourceId, "test.packet.mixed_entities");
   assertEquals(rawBody.packets[0].count, 2);
   assertEquals(rawBody.packets[0].subjectPrefix, "candidate.test.packet.mixed_entities");
+  assertEquals(
+    rawBody.packets[0].reviewCommand,
+    `deno task dc -- review entities --source test.packet.mixed_entities --subject-prefix candidate.test.packet.mixed_entities --db ${dbPath}`,
+  );
   assertEquals(rawBody.packets[0].reviewItemIds, undefined);
   assertEquals(rawBody.packets[0].nextCommand, undefined);
 
@@ -302,7 +320,11 @@ Deno.test("review packets groups related relationship work conservatively", asyn
   assertStringIncludes(textBody, "[2] test.review_packets.group_a relationship_candidate");
   assertStringIncludes(
     textBody,
-    "review: deno task dc -- review relationships --source test.review_packets.group_a --subject-prefix relationship.test.review_packets.group_a --relationship-type overseen_by",
+    `review: deno task dc -- review relationships --source test.review_packets.group_a --subject-prefix relationship.test.review_packets.group_a --relationship-type overseen_by --db ${dbPath}`,
+  );
+  assertStringIncludes(
+    textBody,
+    `Next: deno task dc -- review relationships --source test.review_packets.group_a --subject-prefix relationship.test.review_packets.group_a --relationship-type overseen_by --db ${dbPath}`,
   );
   assertEquals(textBody.includes("packet_id:"), false);
 

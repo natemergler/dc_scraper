@@ -1,14 +1,23 @@
-import type { ReviewItemRecord, ReviewStatus } from "../domain.ts";
+import type {
+  ConflictKind,
+  ConflictSubjectKind,
+  ReviewItemRecord,
+  ReviewStatus,
+} from "../domain.ts";
 import { queryAll, queryOne } from "./db.ts";
+import { parseProposedActions } from "./review_conflicts.ts";
 import type { WorkbenchStore } from "./store.ts";
 
 interface ReviewItemRow {
   reviewItemId: string;
   itemType: ReviewItemRecord["itemType"];
+  conflictKind: ConflictKind;
+  subjectKind: ConflictSubjectKind;
   subjectId: string;
   reason: string;
   defaultAction: string;
   status: ReviewStatus;
+  proposedActionsJson: string;
   detailsJson: string;
 }
 
@@ -43,6 +52,7 @@ export interface ReviewDecisionSummary {
   humanDecisionOpen: number;
   browseOnlyOpen: number;
   deferred: number;
+  humanDecisionOpenByItemType: Array<{ itemType: ReviewItemRecord["itemType"]; count: number }>;
 }
 
 export type ReviewWorkKind = "decision" | "browse" | "deferred" | "resolved";
@@ -69,6 +79,8 @@ export function listReviewItems(
     where.push("review_items.item_type = 'legal_ref'");
   } else if (filters.mode === "sources") {
     where.push("review_items.item_type = 'source_status'");
+  } else if (!filters.type && !filters.decisionsOnly) {
+    where.push("review_items.conflict_kind != 'compiler_diagnostic'");
   }
   if (filters.type) {
     where.push("review_items.item_type = ?");
@@ -111,10 +123,13 @@ export function listReviewItems(
   const sql = `
 select review_items.review_item_id as reviewItemId,
        review_items.item_type as itemType,
+       review_items.conflict_kind as conflictKind,
+       review_items.subject_kind as subjectKind,
        review_items.subject_id as subjectId,
        review_items.reason,
        review_items.default_action as defaultAction,
        review_items.status,
+       review_items.proposed_actions_json as proposedActionsJson,
        review_items.details_json as detailsJson
 from review_items
 left join entity_candidates on entity_candidates.candidate_id = review_items.subject_id
@@ -161,17 +176,22 @@ order by
   return queryAll<ReviewItemRow>(store.db, sql, params).map((row) => ({
     reviewItemId: row.reviewItemId,
     itemType: row.itemType,
+    conflictKind: row.conflictKind,
+    subjectKind: row.subjectKind,
     subjectId: row.subjectId,
     reason: row.reason,
     defaultAction: row.defaultAction,
     status: row.status,
+    proposedActions: parseProposedActions(row.proposedActionsJson),
     details: parseDetails(row.detailsJson),
   }));
 }
 
 export function isHumanDecisionReviewItem(item: ReviewItemRecord): boolean {
   if (item.status !== "open") return false;
-  if (item.itemType === "source_status") return item.details.needsReview === true;
+  if (item.conflictKind === "compiler_diagnostic") return false;
+  if (item.conflictKind === "unresolved_symbol") return true;
+  if (item.itemType === "source_status") return false;
   if (item.defaultAction !== "accept") return true;
   if (item.details.stalePriorDecision === true) return true;
   if (item.details.replayConflict === true) return true;
@@ -195,13 +215,20 @@ export function reviewItemWorkKind(item: ReviewItemRecord): ReviewWorkKind {
 
 export function reviewDecisionSummary(store: WorkbenchStore): ReviewDecisionSummary {
   const openItems = listReviewItems(store, { status: "open" });
-  const humanDecisionOpen = openItems.filter(isHumanDecisionReviewItem).length;
+  const humanDecisionItems = openItems.filter(isHumanDecisionReviewItem);
+  const humanDecisionOpen = humanDecisionItems.length;
   const deferred = listReviewItems(store, { status: "deferred" }).length;
+  const byItemType = new Map<ReviewItemRecord["itemType"], number>();
+  for (const item of humanDecisionItems) {
+    byItemType.set(item.itemType, (byItemType.get(item.itemType) ?? 0) + 1);
+  }
   return {
     open: openItems.length,
     humanDecisionOpen,
     browseOnlyOpen: openItems.length - humanDecisionOpen,
     deferred,
+    humanDecisionOpenByItemType: [...byItemType.entries()].sort(([a], [b]) => a.localeCompare(b))
+      .map(([itemType, count]) => ({ itemType, count })),
   };
 }
 

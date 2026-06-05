@@ -125,31 +125,23 @@ Deno.test("review list json includes source and label context", async () => {
   );
   workbench.close();
 
-  const output = await new Deno.Command(Deno.execPath(), {
-    cwd: Deno.cwd(),
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-ffi",
-      "scripts/dc.ts",
-      "review",
-      "list",
-      "--mode",
-      "entities",
-      "--db",
-      dbPath,
-      "--limit",
-      "1",
-      "--json",
-    ],
-  }).output();
-  const stdout = new TextDecoder().decode(output.stdout);
-  const stderr = new TextDecoder().decode(output.stderr);
-  assertEquals(output.code, 0, stderr);
-  const parsed = JSON.parse(stdout) as {
+  const output = await runDcCli([
+    "review",
+    "list",
+    "--mode",
+    "entities",
+    "--db",
+    dbPath,
+    "--limit",
+    "1",
+    "--json",
+  ]);
+  assertEquals(output.code, 0, output.stderr);
+  const parsed = JSON.parse(output.stdout) as {
     count: number;
+    decisionCount: number;
+    browseCount: number;
+    nextCommand?: string;
     items: Array<{
       sourceId?: string;
       label?: string;
@@ -159,12 +151,76 @@ Deno.test("review list json includes source and label context", async () => {
     }>;
   };
   assertEquals(parsed.count, 1);
+  assertEquals(parsed.decisionCount, 0);
+  assertEquals(parsed.browseCount, 1);
+  assertEquals(parsed.nextCommand, undefined);
   assertEquals(parsed.items[0].sourceId, "test.review_list.entities");
   assertEquals(parsed.items[0].label, "Review List Board");
   assertStringIncludes(parsed.items[0].subjectId, "candidate.test.review_list.entity");
   assertEquals(parsed.items[0].workKind, "browse");
   assertEquals(parsed.items[0].humanDecision, false);
 });
+
+Deno.test("review list text points decision slices to the focused review command", async () => {
+  const dir = await Deno.makeTempDir();
+  const dbPath = join(dir, "workbench.sqlite");
+  const dataDir = join(dir, "artifacts");
+  const workbench = new Workbench(dbPath);
+  workbench.init();
+  await workbench.importConnectorResult(
+    syntheticCustomEntitySourceResult({
+      sourceId: "test.review_list.text_decision",
+      candidateId: "candidate.test.review_list.text_decision.entity",
+      sourceItemKey: "review-list-text-decision-row",
+      proposedEntityId: "dc.review_list_text_decision_board",
+      name: "Review List Text Decision Board",
+      kind: "board",
+      observedName: "Review List Text Decision Board",
+      needsReview: true,
+    }),
+    dataDir,
+  );
+  workbench.close();
+
+  const output = await runDcCli([
+    "review",
+    "list",
+    "--mode",
+    "entities",
+    "--db",
+    dbPath,
+    "--limit",
+    "1",
+  ]);
+  assertEquals(output.code, 0, output.stderr);
+  assertStringIncludes(output.stdout, "Decision items: 1");
+  assertStringIncludes(
+    output.stdout,
+    "Next: deno task dc -- review entities --source test.review_list.text_decision --subject-prefix candidate.test.review_list.text_decision.entity",
+  );
+});
+
+async function runDcCli(
+  args: string[],
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const output = await new Deno.Command(Deno.execPath(), {
+    cwd: Deno.cwd(),
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "scripts/dc.ts",
+      ...args,
+    ],
+  }).output();
+  return {
+    code: output.code,
+    stdout: new TextDecoder().decode(output.stdout),
+    stderr: new TextDecoder().decode(output.stderr),
+  };
+}
 
 function findReviewItem(
   items: ReviewItemRecord[],

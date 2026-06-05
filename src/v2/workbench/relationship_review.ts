@@ -4,6 +4,7 @@ import {
   defaultActionForCouncilOversightTarget,
 } from "../connectors/shared.ts";
 import {
+  isKnownSafePublicBodyGovernanceLink,
   isPublicBodyLinkageRelationshipCandidateId,
   publicBodyLinkageWhyDeferred,
 } from "./public_body_linkage.ts";
@@ -112,6 +113,7 @@ function reviewDefaultAction(
   candidate: RelationshipReviewCandidate,
 ): "accept" | "defer" {
   if (isPublicBodyLinkageRelationshipCandidateId(candidate.relationshipCandidateId)) {
+    if (isKnownSafePublicBodyGovernanceLink(candidate)) return "accept";
     return "defer";
   }
   switch (candidate.sourceId) {

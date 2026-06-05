@@ -623,6 +623,8 @@ function renderCompactLegalCard(
     "",
     "Actions:",
     ...availableActionLabels(item).map((label) => `  ${label}`),
+    ...renderProposedActions(item),
+    ...renderLegalRefTypeChoices(),
     ...renderLegalSuggestionBlock(item),
   ].filter((line): line is string => Boolean(line)).join("\n");
 }
@@ -661,6 +663,8 @@ function renderCompactRelationshipCard(
     "",
     "Actions:",
     ...availableActionLabels(item).map((label) => `  ${label}`),
+    ...renderProposedActions(item),
+    ...renderRelationshipConflictGroup(store, item, relationship),
   ].join("\n");
 }
 
@@ -688,6 +692,7 @@ function renderCompactEntityCard(
     "",
     "Actions:",
     ...availableActionLabels(item).map((label) => `  ${label}`),
+    ...renderProposedActions(item),
   ].join("\n");
 }
 
@@ -814,6 +819,7 @@ export async function runBatchAcceptSafe(
   if (skipped.length > 0) {
     console.log(`Skipped ${skipped.length} item(s) that were not safe to auto-accept.`);
   }
+  console.log(`Next: ${dcCommand("status")}`);
 }
 
 export async function runBatchDeferDefault(
@@ -840,6 +846,7 @@ export async function runBatchDeferDefault(
   if (skipped > 0) {
     console.log(`Skipped ${skipped} item(s) whose default action was not defer.`);
   }
+  console.log(`Next: ${dcCommand("status")}`);
 }
 
 function batchAcceptEvent(item: ReviewItemRecord): ResolutionEventInput {
@@ -904,9 +911,14 @@ async function actionToEvent(
     }
     if (action === "n") {
       const refType = await promptLine("Ref type: ");
+      const normalizedRefType = normalizeLegalRefTypeInput(refType ?? "");
+      if (refType && !normalizedRefType) {
+        console.log(renderLegalRefTypeChoices().join("\n"));
+        return undefined;
+      }
       const normalizedCitation = await promptLine("Normalized citation: ");
       const payload: Record<string, unknown> = {};
-      if (refType) payload.refType = refType;
+      if (normalizedRefType) payload.refType = normalizedRefType;
       if (normalizedCitation) payload.normalizedCitation = normalizedCitation;
       return {
         eventType: "accept_legal_ref",
@@ -1036,6 +1048,62 @@ function availableActionLabels(item: ReviewItemRecord): string[] {
   });
 }
 
+function renderProposedActions(item: ReviewItemRecord): string[] {
+  if (item.proposedActions.length === 0) return [];
+  return [
+    "Proposed actions:",
+    ...item.proposedActions.map((action) =>
+      `  ${action.action}${action.label ? ` - ${action.label}` : ""}`
+    ),
+  ];
+}
+
+function renderLegalRefTypeChoices(): string[] {
+  return [
+    "Valid legal ref types:",
+    "  dc law / dclaw / law -> dc_law",
+    "  dc act / dcact / act -> dc_act",
+    "  mayor order / mayors_order / mo -> mayors_order",
+    "  dc code / code -> dc_code",
+    "  dcmr -> dcmr",
+    "  dc register / register -> dc_register",
+    "  dc bill / bill -> dc_bill",
+    "  us code / uscode -> us_code",
+    "  public law / publiclaw -> public_law",
+    "  reorganization plan / reorg -> reorganization_plan",
+  ];
+}
+
+function normalizeLegalRefTypeInput(value: string): string | undefined {
+  const normalized = value.trim().toLowerCase().replaceAll(/[\s-]+/g, "_");
+  if (!normalized) return undefined;
+  const aliases = new Map<string, string>([
+    ["dc_law", "dc_law"],
+    ["dclaw", "dc_law"],
+    ["law", "dc_law"],
+    ["dc_act", "dc_act"],
+    ["dcact", "dc_act"],
+    ["act", "dc_act"],
+    ["mayor_order", "mayors_order"],
+    ["mayors_order", "mayors_order"],
+    ["mo", "mayors_order"],
+    ["dc_code", "dc_code"],
+    ["code", "dc_code"],
+    ["dcmr", "dcmr"],
+    ["dc_register", "dc_register"],
+    ["register", "dc_register"],
+    ["dc_bill", "dc_bill"],
+    ["bill", "dc_bill"],
+    ["us_code", "us_code"],
+    ["uscode", "us_code"],
+    ["public_law", "public_law"],
+    ["publiclaw", "public_law"],
+    ["reorganization_plan", "reorganization_plan"],
+    ["reorg", "reorganization_plan"],
+  ]);
+  return aliases.get(normalized);
+}
+
 function sentenceList(values: string[]): string {
   if (values.length <= 1) return values.join("");
   if (values.length === 2) return `${values[0]} or ${values[1]}`;
@@ -1105,6 +1173,50 @@ function renderRelationshipBlock(
     `- source: ${relationship.source.sourceId} / ${relationship.source.itemTitle}`,
     relationship.rawValue ? `- raw value: ${relationship.rawValue}` : undefined,
   ].filter((line): line is string => Boolean(line));
+}
+
+function renderRelationshipConflictGroup(
+  store: Pick<WorkbenchStore, "db">,
+  item: ReviewItemRecord,
+  subject: ReviewSubject | undefined,
+): string[] {
+  if (item.itemType !== "relationship_candidate") return [];
+  if (!subject || subject.itemType !== "relationship_candidate") return [];
+  const rows = store.db.prepare(
+    `select relationship_candidates.relationship_candidate_id as relationshipCandidateId,
+            source_items.source_id as sourceId,
+            relationship_candidates.raw_value as rawValue,
+            group_concat(relationship_candidate_evidence.field_path || ' <- ' || relationship_candidate_evidence.observed_value, char(10)) as evidenceText
+     from relationship_candidates
+     join source_items on source_items.source_item_id = relationship_candidates.source_item_id
+     left join relationship_candidate_evidence
+       on relationship_candidate_evidence.relationship_candidate_id = relationship_candidates.relationship_candidate_id
+     where relationship_candidates.from_entity_ref = ?
+       and relationship_candidates.relationship_type = ?
+       and relationship_candidates.to_entity_ref = ?
+       and relationship_candidates.review_status = 'pending'
+     group by relationship_candidates.relationship_candidate_id, source_items.source_id, relationship_candidates.raw_value
+     order by source_items.source_id, relationship_candidates.relationship_candidate_id`,
+  ).all(
+    subject.fromEntityRef,
+    subject.relationshipType,
+    subject.toEntityRef,
+  ) as Array<{
+    relationshipCandidateId: string;
+    sourceId: string;
+    rawValue?: string | null;
+    evidenceText?: string | null;
+  }>;
+  if (rows.length <= 1) return [];
+  return [
+    "",
+    "Conflict group:",
+    ...rows.map((row) =>
+      `  ${row.sourceId}: ${row.rawValue ?? row.relationshipCandidateId}${
+        row.evidenceText ? ` (${row.evidenceText.replaceAll("\n", "; ")})` : ""
+      }`
+    ),
+  ];
 }
 
 function renderEndpointStatus(endpoint: EndpointStatus): string {
