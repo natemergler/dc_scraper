@@ -284,6 +284,7 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
   const relationshipCandidates: RelationshipCandidateInput[] = [];
   const reviewItems: ReviewItemInput[] = [];
   const relationshipKeys = new Set<string>();
+  const appointeeObservationRows: QuickbaseAppointeeObservationRow[] = [];
 
   for (const [index, row] of rows.entries()) {
     const itemKey = `row-${index + 1}`;
@@ -490,117 +491,15 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
     }
 
     if (appointeeObservationRecord) {
-      if (!seenAppointeeObservations.has(appointeeObservationRecord.dedupeKey)) {
-        seenAppointeeObservations.add(appointeeObservationRecord.dedupeKey);
-        entityCandidates.push({
-          candidateId: appointeeObservationRecord.candidateId,
-          sourceItemKey: itemKey,
-          proposedEntityId: appointeeObservationRecord.entityId,
-          name: appointeeObservationRecord.name,
-          kind: "appointee_observation",
-          rawKind: "appointee_observation",
-          cluster: "Appointment Observation",
-          confidence: 0.9,
-          duplicateHint: `${board}::${appointeeObservationRecord.name}`,
-          evidence: appointeeObservationRecord.evidence,
-        });
-        reviewItems.push(
-          buildCandidateReviewItem(
-            appointeeObservationRecord.candidateId,
-            "Review public appointee observation from Quickbase appointment row",
-            "accept",
-            {
-              source: quickbaseSource.sourceId,
-              board,
-              publicAppointeeName: appointeeObservationRecord.name,
-              appointmentStatus,
-              seatDesignation: seat,
-            },
-          ),
-        );
-      }
-    }
-
-    if (appointeeObservationRecord && seatRecord) {
-      const relationshipCandidateId = buildRelationshipCandidateId(
-        quickbaseSource.sourceId,
-        `${appointeeObservationRecord.entityId}-holds-${seatRecord.entityId}`,
-      );
-      const relationshipKey = `${appointeeObservationRecord.entityId}>${seatRecord.entityId}:holds`;
-      if (!relationshipKeys.has(relationshipKey)) {
-        relationshipKeys.add(relationshipKey);
-        const candidate: RelationshipCandidateInput = {
-          relationshipCandidateId,
-          sourceItemKey: itemKey,
-          fromEntityRef: appointeeObservationRecord.entityId,
-          toEntityRef: seatRecord.entityId,
-          relationshipType: "holds",
-          rawValue: seatRecord.rawValue,
-          needsReview: true,
-          evidence: [
-            ...appointeeObservationRecord.evidence,
-            fieldEvidence(quickbaseColumns.seat, seatRecord.rawValue),
-            fieldEvidence(quickbaseColumns.status, appointmentStatus),
-          ],
-        };
-        relationshipCandidates.push(candidate);
-        reviewItems.push({
-          reviewItemId: buildReviewItemId(relationshipCandidateId, "appointee-seat"),
-          itemType: "relationship_candidate",
-          subjectId: relationshipCandidateId,
-          reason:
-            "Review public appointee observation holding a seat from Quickbase appointment row",
-          defaultAction: "accept",
-          details: {
-            fromEntityRef: appointeeObservationRecord.entityId,
-            toEntityRef: seatRecord.entityId,
-            relationshipType: candidate.relationshipType,
-            rawValue: seatRecord.rawValue,
-            appointmentStatus,
-          },
-        });
-      }
-    }
-
-    if (appointeeObservationRecord && statusRecord) {
-      const relationshipCandidateId = buildRelationshipCandidateId(
-        quickbaseSource.sourceId,
-        `${appointeeObservationRecord.entityId}-has-status-${statusRecord.entityId}`,
-      );
-      const relationshipKey =
-        `${appointeeObservationRecord.entityId}>${statusRecord.entityId}:has_status`;
-      if (!relationshipKeys.has(relationshipKey)) {
-        relationshipKeys.add(relationshipKey);
-        const candidate: RelationshipCandidateInput = {
-          relationshipCandidateId,
-          sourceItemKey: itemKey,
-          fromEntityRef: appointeeObservationRecord.entityId,
-          toEntityRef: statusRecord.entityId,
-          relationshipType: "has_status",
-          rawValue: statusRecord.rawValue,
-          needsReview: true,
-          evidence: [
-            ...appointeeObservationRecord.evidence,
-            fieldEvidence(quickbaseColumns.status, statusRecord.rawValue),
-            fieldEvidence(quickbaseColumns.seat, seat),
-          ],
-        };
-        relationshipCandidates.push(candidate);
-        reviewItems.push({
-          reviewItemId: buildReviewItemId(relationshipCandidateId, "appointee-status"),
-          itemType: "relationship_candidate",
-          subjectId: relationshipCandidateId,
-          reason: "Review public appointee observation status from Quickbase appointment row",
-          defaultAction: "accept",
-          details: {
-            fromEntityRef: appointeeObservationRecord.entityId,
-            toEntityRef: statusRecord.entityId,
-            relationshipType: candidate.relationshipType,
-            rawValue: statusRecord.rawValue,
-            seatDesignation: seat,
-          },
-        });
-      }
+      appointeeObservationRows.push({
+        itemKey,
+        board,
+        appointmentStatus,
+        seat,
+        appointeeObservationRecord,
+        seatRecord,
+        statusRecord,
+      });
     }
 
     for (const authority of parseSeatAuthorities(seat, appointeeDesignation)) {
@@ -651,6 +550,158 @@ function deriveQuickbaseParsedOutput(rows: Array<Record<string, string>>): Quick
           appointmentStatus,
         },
       });
+    }
+  }
+
+  const groupedAppointeeObservationRows = new Map<string, QuickbaseAppointeeObservationRow[]>();
+  for (const row of appointeeObservationRows) {
+    const rowsForGroup =
+      groupedAppointeeObservationRows.get(row.appointeeObservationRecord.groupKey) ??
+        [];
+    rowsForGroup.push(row);
+    groupedAppointeeObservationRows.set(row.appointeeObservationRecord.groupKey, rowsForGroup);
+  }
+
+  for (const rowsForGroup of groupedAppointeeObservationRows.values()) {
+    const datedRows = rowsForGroup.filter((row) =>
+      row.appointeeObservationRecord.appointmentDate !== ""
+    );
+    const rowsToEmit = datedRows.length > 0
+      ? (() => {
+        const seenDates = new Set<string>();
+        const uniqueRows: QuickbaseAppointeeObservationRow[] = [];
+        for (const row of datedRows) {
+          const dateKey = row.appointeeObservationRecord.appointmentDate;
+          if (seenDates.has(dateKey)) continue;
+          seenDates.add(dateKey);
+          uniqueRows.push(row);
+        }
+        return uniqueRows;
+      })()
+      : rowsForGroup.slice(0, 1);
+
+    for (const row of rowsToEmit) {
+      const {
+        appointeeObservationRecord,
+        board,
+        appointmentStatus,
+        seat,
+        seatRecord,
+        statusRecord,
+        itemKey,
+      } = row;
+      if (!seenAppointeeObservations.has(appointeeObservationRecord.dedupeKey)) {
+        seenAppointeeObservations.add(appointeeObservationRecord.dedupeKey);
+        entityCandidates.push({
+          candidateId: appointeeObservationRecord.candidateId,
+          sourceItemKey: itemKey,
+          proposedEntityId: appointeeObservationRecord.entityId,
+          name: appointeeObservationRecord.name,
+          kind: "appointee_observation",
+          rawKind: "appointee_observation",
+          cluster: "Appointment Observation",
+          confidence: 0.9,
+          duplicateHint: `${board}::${appointeeObservationRecord.name}`,
+          evidence: appointeeObservationRecord.evidence,
+        });
+        reviewItems.push(
+          buildCandidateReviewItem(
+            appointeeObservationRecord.candidateId,
+            "Review public appointee observation from Quickbase appointment row",
+            "accept",
+            {
+              source: quickbaseSource.sourceId,
+              board,
+              publicAppointeeName: appointeeObservationRecord.name,
+              appointmentStatus,
+              seatDesignation: seat,
+            },
+          ),
+        );
+      }
+
+      if (seatRecord) {
+        const relationshipCandidateId = buildRelationshipCandidateId(
+          quickbaseSource.sourceId,
+          `${appointeeObservationRecord.entityId}-holds-${seatRecord.entityId}`,
+        );
+        const relationshipKey =
+          `${appointeeObservationRecord.entityId}>${seatRecord.entityId}:holds`;
+        if (!relationshipKeys.has(relationshipKey)) {
+          relationshipKeys.add(relationshipKey);
+          const candidate: RelationshipCandidateInput = {
+            relationshipCandidateId,
+            sourceItemKey: itemKey,
+            fromEntityRef: appointeeObservationRecord.entityId,
+            toEntityRef: seatRecord.entityId,
+            relationshipType: "holds",
+            rawValue: seatRecord.rawValue,
+            needsReview: true,
+            evidence: [
+              ...appointeeObservationRecord.evidence,
+              fieldEvidence(quickbaseColumns.seat, seatRecord.rawValue),
+              fieldEvidence(quickbaseColumns.status, appointmentStatus),
+            ],
+          };
+          relationshipCandidates.push(candidate);
+          reviewItems.push({
+            reviewItemId: buildReviewItemId(relationshipCandidateId, "appointee-seat"),
+            itemType: "relationship_candidate",
+            subjectId: relationshipCandidateId,
+            reason:
+              "Review public appointee observation holding a seat from Quickbase appointment row",
+            defaultAction: "accept",
+            details: {
+              fromEntityRef: appointeeObservationRecord.entityId,
+              toEntityRef: seatRecord.entityId,
+              relationshipType: candidate.relationshipType,
+              rawValue: seatRecord.rawValue,
+              appointmentStatus,
+            },
+          });
+        }
+      }
+
+      if (statusRecord) {
+        const relationshipCandidateId = buildRelationshipCandidateId(
+          quickbaseSource.sourceId,
+          `${appointeeObservationRecord.entityId}-has-status-${statusRecord.entityId}`,
+        );
+        const relationshipKey =
+          `${appointeeObservationRecord.entityId}>${statusRecord.entityId}:has_status`;
+        if (!relationshipKeys.has(relationshipKey)) {
+          relationshipKeys.add(relationshipKey);
+          const candidate: RelationshipCandidateInput = {
+            relationshipCandidateId,
+            sourceItemKey: itemKey,
+            fromEntityRef: appointeeObservationRecord.entityId,
+            toEntityRef: statusRecord.entityId,
+            relationshipType: "has_status",
+            rawValue: statusRecord.rawValue,
+            needsReview: true,
+            evidence: [
+              ...appointeeObservationRecord.evidence,
+              fieldEvidence(quickbaseColumns.status, statusRecord.rawValue),
+              fieldEvidence(quickbaseColumns.seat, seat),
+            ],
+          };
+          relationshipCandidates.push(candidate);
+          reviewItems.push({
+            reviewItemId: buildReviewItemId(relationshipCandidateId, "appointee-status"),
+            itemType: "relationship_candidate",
+            subjectId: relationshipCandidateId,
+            reason: "Review public appointee observation status from Quickbase appointment row",
+            defaultAction: "accept",
+            details: {
+              fromEntityRef: appointeeObservationRecord.entityId,
+              toEntityRef: statusRecord.entityId,
+              relationshipType: candidate.relationshipType,
+              rawValue: statusRecord.rawValue,
+              seatDesignation: seat,
+            },
+          });
+        }
+      }
     }
   }
 
@@ -706,9 +757,21 @@ interface AppointeeNameRecord {
 interface QuickbaseAppointeeObservationRecord {
   candidateId: string;
   entityId: string;
+  groupKey: string;
   dedupeKey: string;
+  appointmentDate: string;
   name: string;
   evidence: Array<ReturnType<typeof fieldEvidence>>;
+}
+
+interface QuickbaseAppointeeObservationRow {
+  itemKey: string;
+  board: string;
+  appointmentStatus: string;
+  seat: string;
+  appointeeObservationRecord: QuickbaseAppointeeObservationRecord;
+  seatRecord: QuickbaseSeatRecord | undefined;
+  statusRecord: QuickbaseSeatStatusRecord | undefined;
 }
 
 function buildSeatRecord(board: string, seat: string): QuickbaseSeatRecord | undefined {
@@ -752,14 +815,15 @@ function buildAppointeeObservationRecord(
       normalizeQuickbaseObservationKeyPart(appointeeName.name)
     ? ""
     : appointeeDesignation;
-  const dedupeKey = [
+  const groupKey = [
     boardEntityId,
     seatRecord?.entityId ?? "",
     normalizeQuickbaseObservationKeyPart(appointeeName.name),
     normalizeQuickbaseObservationKeyPart(appointmentStatus),
     normalizeQuickbaseObservationKeyPart(publicRole),
-    normalizeQuickbaseObservationKeyPart(appointmentDate),
   ].join("::");
+  const appointmentDateKey = normalizeQuickbaseObservationKeyPart(appointmentDate);
+  const dedupeKey = [groupKey, appointmentDateKey].join("::");
   const entityBase = [
     board,
     seatRecord?.label ?? "",
@@ -776,7 +840,9 @@ function buildAppointeeObservationRecord(
   return {
     candidateId: buildCandidateId(quickbaseSource.sourceId, `appointee-observation-${dedupeKey}`),
     entityId: buildEntityId(entityBase, "observation"),
+    groupKey,
     dedupeKey,
+    appointmentDate,
     name: appointeeName.name,
     evidence: [...appointeeName.evidence, ...seatEvidence, fieldEvidence("row", String(rowIndex))],
   };

@@ -206,6 +206,60 @@ Deno.test("quickbase connector dedupes exact duplicate appointee observations at
   );
 });
 
+Deno.test("quickbase connector collapses blank and filled appointment dates into one observation", async () => {
+  const dateMixedRowsCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","","jane.doe@dc.gov"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+`.trim();
+  const result = await runQuickbaseConnector(dateMixedRowsCsv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 2);
+  assertEquals(
+    (parsed.entityCandidates ?? []).filter((candidate) =>
+      candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
+    ).length,
+    1,
+  );
+  assertEquals(
+    (parsed.relationshipCandidates ?? []).filter((candidate) =>
+      candidate.relationshipType === "holds" &&
+      candidate.toEntityRef ===
+        "dc.board_of_ethics_and_government_accountability_bega_public_member"
+    ).length,
+    1,
+  );
+});
+
+Deno.test("quickbase connector keeps different non-empty appointment dates distinct", async () => {
+  const dateDistinctRowsCsv = `
+"Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","02-16-2016","jane.doe@dc.gov"
+"","Jane","Doe","","New Appointment","Board of Ethics and Government Accountability (BEGA)","Public Member","Filled","Mayoral Appointee","03-01-2020","jane.doe@dc.gov"
+`.trim();
+  const result = await runQuickbaseConnector(dateDistinctRowsCsv);
+
+  const parsed = result.endpointResults[1].parsed;
+  assert(parsed);
+  assertEquals(parsed.items?.length, 2);
+  assertEquals(
+    (parsed.entityCandidates ?? []).filter((candidate) =>
+      candidate.kind === "appointee_observation" && candidate.name === "Jane Doe"
+    ).length,
+    2,
+  );
+  assertEquals(
+    (parsed.relationshipCandidates ?? []).filter((candidate) =>
+      candidate.relationshipType === "holds" &&
+      candidate.toEntityRef ===
+        "dc.board_of_ethics_and_government_accountability_bega_public_member"
+    ).length,
+    2,
+  );
+});
+
 Deno.test("quickbase connector keeps non-identical appointee observations distinct", async () => {
   const changedRowsCsv = `
 "Prefix","First Name","Last Name","Suffix","Appointment","BOARD OR COMMISSION - B or C","Seat Designation (specific role)","Appointment Status","Appointee Designation","Appointment Date","Commission Email Address"
