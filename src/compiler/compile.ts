@@ -14,6 +14,7 @@ export interface CompileOptions {
   jurisdiction: string;
   fragments: Array<EntryFragment | RelationFragment>;
   kindRegistry: KindRegistry;
+  findings?: Finding[];
   revisions?: Revision[];
   generatedAt?: string;
 }
@@ -49,7 +50,7 @@ type MutableRelations = Record<string, Array<MutableRelationShape>>;
 const defaultTimestamp = () => new Date().toISOString();
 
 export function compileFragments(input: CompileOptions): CompilerResult {
-  const findings: Finding[] = [];
+  const findings: Finding[] = [...(input.findings ?? [])];
   const conflicts: Finding[] = [];
 
   const entryFragments = input.fragments.filter((fragment): fragment is EntryFragment =>

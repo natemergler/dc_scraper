@@ -809,6 +809,83 @@ Deno.test("state generation can compile agency, board, and commission sources to
   }
 });
 
+Deno.test("state generation persists interpreter findings in workspace", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-findings-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-findings-output-" });
+  const restoreFetch = mockArcGISFetch(
+    new Map([
+      [
+        "0",
+        {
+          features: [
+            {
+              attributes: {
+                OBJECTID: 1,
+                AGENCY_ID: "a-1",
+                AGENCY_NAME: "Agency One",
+                SHORT_NAME: "A1",
+              },
+            },
+            {
+              attributes: {
+                OBJECTID: 2,
+                AGENCY_ID: "a-2",
+                SHORT_NAME: "A2",
+              },
+            },
+          ],
+          exceededTransferLimit: false,
+          objectIdFieldName: "OBJECTID",
+        },
+      ],
+    ]),
+  );
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.agencies",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    try {
+      assertEquals(countRows(db, "findings"), 1);
+      const findingRow = db.db.prepare(
+        "SELECT source, payload FROM findings ORDER BY id ASC",
+      ).get() as { source: string; payload: string } | undefined;
+      assertEquals(findingRow?.source, "dc.interpreter.agency_name_missing");
+      const finding = JSON.parse(findingRow?.payload ?? "{}") as {
+        kind: string;
+        code: string;
+      };
+      assertEquals(finding.kind, "warn");
+      assertEquals(finding.code, "dc.interpreter.agency_name_missing");
+    } finally {
+      closeWorkspace(db);
+    }
+  } finally {
+    restoreFetch();
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("state generation can compile authority source", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-authority-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-authority-output-" });

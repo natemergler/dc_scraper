@@ -1,10 +1,10 @@
-export type EntryFamily =
-  | "organization"
-  | "person"
-  | "position"
-  | "area"
-  | "authority"
-  | (string & {});
+export type LiteralUnion<LiteralType extends BaseType, BaseType extends string = string> =
+  | LiteralType
+  | (BaseType & Record<never, never>);
+
+export type EntryFamily = LiteralUnion<
+  "organization" | "person" | "position" | "area" | "authority"
+>;
 
 export interface ValidationIssue {
   code: string;

@@ -8,6 +8,7 @@ import {
   initWorkspace,
   loadRecords,
   openWorkspace,
+  saveFinding,
   saveRecords,
   saveSnapshot,
   type Workspace,
@@ -17,7 +18,7 @@ import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
 
-import { type EntryFragment, type RelationFragment } from "../core/types.ts";
+import { type EntryFragment, type Finding, type RelationFragment } from "../core/types.ts";
 import {
   type DcInterpreterContext,
   normalizeAgencyLookupKey,
@@ -35,6 +36,11 @@ type CliOptions = {
   releaseRoot: string;
   limit?: number;
   args: string[];
+};
+
+type WorkspaceCompilation = {
+  fragments: Array<EntryFragment | RelationFragment>;
+  findings: Finding[];
 };
 
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
@@ -140,14 +146,20 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
 
     const revisionRoot = join(stateRoot, "..", "revisions");
     const revisions = await loadRevisions(revisionRoot);
-    const workspaceFragments = compileFromWorkspace(workspace);
+    const workspaceCompilation = compileFromWorkspace(workspace);
     const result = compileFragments({
       jurisdiction: dcRuntime.jurisdiction,
-      fragments: workspaceFragments,
+      fragments: workspaceCompilation.fragments,
       kindRegistry: dcRuntime.kinds,
+      findings: workspaceCompilation.findings,
       revisions: [...dcRuntime.revisions, ...revisions],
       generatedAt: new Date().toISOString(),
     });
+
+    workspace.db.run("DELETE FROM findings");
+    for (const finding of [...result.findings, ...result.conflicts]) {
+      saveFinding(workspace, finding);
+    }
 
     if (!result.ok || !result.state) {
       for (const finding of result.conflicts) {
@@ -225,8 +237,9 @@ async function runExport(
 
 function compileFromWorkspace(
   workspace: Workspace,
-): Array<EntryFragment | RelationFragment> {
+): WorkspaceCompilation {
   const allFragments: Array<EntryFragment | RelationFragment> = [];
+  const allFindings: Finding[] = [];
   const interpreterContext: DcInterpreterContext = {};
 
   for (const sourceBinding of dcRuntime.sources) {
@@ -234,6 +247,7 @@ function compileFromWorkspace(
     const interpreted = sourceBinding.interpret(records, interpreterContext);
 
     allFragments.push(...interpreted.entryFragments, ...interpreted.relationFragments);
+    allFindings.push(...interpreted.findings);
 
     if (sourceBinding.source.id === "dcgis.agencies") {
       for (const entryFragment of interpreted.entryFragments) {
@@ -267,7 +281,7 @@ function compileFromWorkspace(
       }
     }
   }
-  return allFragments;
+  return { fragments: allFragments, findings: allFindings };
 }
 
 function parseCommand(args: string[]): Command {

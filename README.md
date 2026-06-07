@@ -20,6 +20,25 @@ ideas. The new architecture is a clean break.
 
 DC is the first jurisdiction. The system should be general enough for other jurisdictions later.
 
+## CLI Surface
+
+Run the CLI with `deno task civic -- <command>`.
+
+- `collect <source-id>` pulls one source into the ignored workspace.
+- `state generate` rebuilds committed state from workspace records and tracked revisions.
+- `state index` loads committed state back into the workspace SQLite index.
+- `check` validates the committed state in place.
+- `export` builds release artifacts from indexed committed state.
+
+Typical operator flow:
+
+```text
+collect -> state generate -> state index -> check -> export
+```
+
+Use `collect` whenever a source refreshes, rerun `state generate` after source or revision changes,
+and treat `check` as the last stop before `export`.
+
 ## Shape
 
 ```text
