@@ -19,7 +19,8 @@ Deno.test("openWorkspace + initWorkspace creates workspace schema", () => {
   initWorkspace(workspace);
 
   const foreignKeys = workspace.db.prepare("PRAGMA foreign_keys").get() as
-    { foreign_keys: number } | undefined;
+    | { foreign_keys: number }
+    | undefined;
   assertEquals(foreignKeys?.foreign_keys, 1);
 
   const schemaRows = workspace.db.prepare("SELECT name FROM sqlite_master WHERE type='table'")

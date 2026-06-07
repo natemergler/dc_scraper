@@ -21,7 +21,10 @@ export async function writeCommittedState(state: LedgerState, stateRoot: string)
   await ensureDir(entriesDir);
   const expectedEntryFiles = new Set(Array.from(state.entries.keys()).map((id) => `${id}.json`));
   for await (const candidate of Deno.readDir(entriesDir)) {
-    if (candidate.isFile && candidate.name.endsWith(".json") && !expectedEntryFiles.has(candidate.name)) {
+    if (
+      candidate.isFile && candidate.name.endsWith(".json") &&
+      !expectedEntryFiles.has(candidate.name)
+    ) {
       await Deno.remove(join(entriesDir, candidate.name));
     }
   }

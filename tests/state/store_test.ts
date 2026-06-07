@@ -155,13 +155,13 @@ Deno.test("backlinks are generated from outgoing relations and not stored in fil
   try {
     await writeCommittedState(state, stateRoot);
     const rawA = await Deno.readTextFile(`${stateRoot}/entries/dc.agency:a.json`);
-  assertEquals(rawA.includes('"backlinks"'), false);
+    assertEquals(rawA.includes('"backlinks"'), false);
 
-  const loaded = await loadCommittedState(stateRoot, registry);
-  const backlinksForB = loaded.backlinks.get("dc.agency:b");
-  assertEquals((backlinksForB ?? []).length, 1);
-  assertEquals(backlinksForB?.[0].kind, "dc.relation:manages");
-  assertEquals(backlinksForB?.[0].to, "dc.agency:a");
+    const loaded = await loadCommittedState(stateRoot, registry);
+    const backlinksForB = loaded.backlinks.get("dc.agency:b");
+    assertEquals((backlinksForB ?? []).length, 1);
+    assertEquals(backlinksForB?.[0].kind, "dc.relation:manages");
+    assertEquals(backlinksForB?.[0].to, "dc.agency:a");
   } finally {
     await Deno.remove(stateRoot, { recursive: true });
   }
@@ -215,9 +215,12 @@ Deno.test("writeCommittedState removes stale committed entry files", async () =>
       },
       Deno.errors.NotFound,
     );
-    assertEquals(await loadCommittedState(stateRoot, registry).then((loaded) =>
-      loaded.state.entries.has("dc.agency:active")
-    ), true);
+    assertEquals(
+      await loadCommittedState(stateRoot, registry).then((loaded) =>
+        loaded.state.entries.has("dc.agency:active")
+      ),
+      true,
+    );
   } finally {
     await Deno.remove(stateRoot, { recursive: true });
   }

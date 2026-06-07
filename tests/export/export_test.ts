@@ -36,7 +36,12 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
           kind: "dc.agency",
           name: "District Agency",
           citations: [
-            { source: "gazette", sourceRecordId: "a-1", locator: "1", url: "https://example.com/a/1" },
+            {
+              source: "gazette",
+              sourceRecordId: "a-1",
+              locator: "1",
+              url: "https://example.com/a/1",
+            },
           ],
           attributes: { shortName: "DA", alias: "Agency One" },
         }),
@@ -87,7 +92,12 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
         "dc.relation:governs",
         "dc.agency:a-1",
         JSON.stringify([
-          { source: "registry", sourceRecordId: "rel-b-1", locator: "5", url: "https://example.com/r/1" },
+          {
+            source: "registry",
+            sourceRecordId: "rel-b-1",
+            locator: "5",
+            url: "https://example.com/r/1",
+          },
         ]),
         "dc.commission:c-1",
         "dc.relation:affiliated_with",
@@ -219,8 +229,12 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
 });
 
 Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async () => {
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "civic-ledger-export-test-bad-citations-" });
-  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-export-result-bad-citations-" });
+  const workspaceRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-export-test-bad-citations-",
+  });
+  const releaseRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-export-result-bad-citations-",
+  });
 
   const workspace = openWorkspace(workspaceRoot);
   initWorkspace(workspace);
@@ -308,9 +322,9 @@ function parseCsvRows(contents: string): string[][] {
     const character = contents[index];
 
     if (inQuotes) {
-      if (character === "\"") {
-        if (contents[index + 1] === "\"") {
-          currentField += "\"";
+      if (character === '"') {
+        if (contents[index + 1] === '"') {
+          currentField += '"';
           index += 1;
         } else {
           inQuotes = false;
@@ -321,7 +335,7 @@ function parseCsvRows(contents: string): string[][] {
       continue;
     }
 
-    if (character === "\"") {
+    if (character === '"') {
       inQuotes = true;
       continue;
     }
