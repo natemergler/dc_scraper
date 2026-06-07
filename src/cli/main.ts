@@ -1,3 +1,4 @@
+import { Command } from "@cliffy/command";
 import { join } from "@std/path";
 
 import { loadCommittedState, writeCommittedState } from "../state/store.ts";
@@ -24,18 +25,11 @@ import {
   normalizeAgencyLookupKey,
 } from "../jurisdictions/dc/interpreters/context.ts";
 
-type Command =
-  | { type: "collect"; sourceId: string; args: string[] }
-  | { type: "state"; subcommand: "generate" | "index"; args: string[] }
-  | { type: "check"; args: string[] }
-  | { type: "export"; args: string[] };
-
 type CliOptions = {
-  workspaceRoot: string;
+  workspace: string;
   stateRoot: string;
   releaseRoot: string;
   limit?: number;
-  args: string[];
 };
 
 type WorkspaceCompilation = {
@@ -45,32 +39,12 @@ type WorkspaceCompilation = {
 
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
   try {
-    const options = parseOptions(rawArgs);
-    const command = parseCommand(options.args);
-
-    const workspaceRoot = options.workspaceRoot;
-    const stateRoot = options.stateRoot;
-
-    switch (command.type) {
-      case "collect":
-        return await runCollect(command, workspaceRoot, options.limit);
-
-      case "state":
-        if (command.subcommand === "generate") {
-          return await runStateGenerate(workspaceRoot, stateRoot);
-        }
-        return await runStateIndex(workspaceRoot, stateRoot);
-
-      case "check":
-        return await runCheck(workspaceRoot, stateRoot);
-
-      case "export":
-        return await runExport(workspaceRoot, stateRoot, options.releaseRoot);
-
-      default: {
-        return 1;
-      }
-    }
+    let exitCode = 0;
+    const cli = createCli((code) => {
+      exitCode = code;
+    });
+    await cli.parse(rawArgs);
+    return exitCode;
   } catch (error) {
     console.error((error as Error).message);
     return 1;
@@ -78,15 +52,13 @@ export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
 }
 
 async function runCollect(
-  command: Extract<Command, { type: "collect" }>,
+  sourceId: string,
   workspaceRoot: string,
   limit?: number,
 ): Promise<number> {
-  const sourceBinding = dcRuntime.sources.find((candidate) =>
-    candidate.source.id === command.sourceId
-  );
+  const sourceBinding = dcRuntime.sources.find((candidate) => candidate.source.id === sourceId);
   if (!sourceBinding) {
-    throw new Error(`unknown source id: ${command.sourceId}`);
+    throw new Error(`unknown source id: ${sourceId}`);
   }
 
   const reader = new ArcGISTableReader();
@@ -131,7 +103,7 @@ async function runCollect(
     }
 
     console.log(
-      `collected ${command.sourceId}: ${result.snapshots.length} snapshots, ${result.records.length} records`,
+      `collected ${sourceId}: ${result.snapshots.length} snapshots, ${result.records.length} records`,
     );
     return 0;
   } finally {
@@ -284,94 +256,70 @@ function compileFromWorkspace(
   return { fragments: allFragments, findings: allFindings };
 }
 
-function parseCommand(args: string[]): Command {
-  const [command, ...rest] = args;
-  if (!command) {
-    throw new Error("missing command");
-  }
+function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
+  const root = new Command<CliOptions>()
+    .name("dc")
+    .throwErrors()
+    .globalOption("--workspace <path:string>", "Workspace root path.", {
+      default: ".civic/workspace",
+    })
+    .globalOption("--state-root <path:string>", "Committed state root path.", {
+      default: join("ledger", dcRuntime.jurisdiction, "state"),
+    })
+    .globalOption("--release-root <path:string>", "Release output root path.", {
+      default: "releases/latest",
+    })
+    .globalOption("--limit <limit:integer>", "Limit collected records.")
+    .action(() => {
+      throw new Error("missing command");
+    });
 
-  if (command === "collect") {
-    const [sourceId] = rest;
-    if (!sourceId) {
-      throw new Error("collect requires a source id");
-    }
-    return { type: "collect", sourceId, args: rest };
-  }
+  root.command("collect <sourceId:string>", "Collect one source into the workspace.")
+    .action(async (options, sourceId) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runCollect(sourceId, cliOptions.workspace, cliOptions.limit));
+    });
 
-  if (command === "state") {
-    const [subcommand] = rest;
-    if (subcommand !== "generate" && subcommand !== "index") {
+  const state = new Command<CliOptions>()
+    .description("State management commands.")
+    .action(() => {
       throw new Error("state requires `generate` or `index`");
-    }
-    return { type: "state", subcommand, args: rest };
-  }
+    });
 
-  if (command === "check") {
-    return { type: "check", args: rest };
-  }
+  state.command("generate", "Compile committed state from workspace records.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runStateGenerate(cliOptions.workspace, cliOptions.stateRoot));
+    });
 
-  if (command === "export") {
-    return { type: "export", args: rest };
-  }
+  state.command("index", "Index committed state into the workspace.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runStateIndex(cliOptions.workspace, cliOptions.stateRoot));
+    });
 
-  throw new Error(`unknown command: ${command}`);
+  root.command("state", state);
+
+  root.command("check", "Validate committed state.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runCheck(cliOptions.workspace, cliOptions.stateRoot));
+    });
+
+  root.command("export", "Export release artifacts from committed state.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(
+        await runExport(cliOptions.workspace, cliOptions.stateRoot, cliOptions.releaseRoot),
+      );
+    });
+
+  return root;
 }
 
-function parseOptions(rawArgs: string[]): CliOptions {
-  const args: string[] = [];
-  let workspaceRoot = ".civic/workspace";
-  let stateRoot = join("ledger", dcRuntime.jurisdiction, "state");
-  let releaseRoot = "releases/latest";
-  let limit: number | undefined;
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const current = rawArgs[index];
-    if (current === "--workspace") {
-      const value = rawArgs[index + 1];
-      if (!value || value.startsWith("--")) {
-        throw new Error("--workspace requires a path");
-      }
-      workspaceRoot = value;
-      index += 1;
-      continue;
-    }
-    if (current === "--state-root") {
-      const value = rawArgs[index + 1];
-      if (!value || value.startsWith("--")) {
-        throw new Error("--state-root requires a path");
-      }
-      stateRoot = value;
-      index += 1;
-      continue;
-    }
-    if (current === "--release-root") {
-      const value = rawArgs[index + 1];
-      if (!value || value.startsWith("--")) {
-        throw new Error("--release-root requires a path");
-      }
-      releaseRoot = value;
-      index += 1;
-      continue;
-    }
-    if (current === "--limit") {
-      const rawLimit = rawArgs[index + 1];
-      const parsed = Number.parseInt(rawLimit ?? "", 10);
-      if (!rawLimit || !Number.isFinite(parsed) || parsed < 0) {
-        throw new Error("--limit requires a non-negative integer");
-      }
-      limit = parsed;
-      index += 1;
-      continue;
-    }
-
-    args.push(current);
+function validateCliOptions(options: CliOptions): CliOptions {
+  if (options.limit !== undefined && options.limit < 0) {
+    throw new Error("--limit requires a non-negative integer");
   }
-
-  return {
-    workspaceRoot,
-    stateRoot,
-    releaseRoot,
-    limit,
-    args,
-  };
+  return options;
 }
