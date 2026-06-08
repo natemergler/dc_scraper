@@ -11,3 +11,7 @@ export const dcGovernsRelation = defineRelationKind({
 export const dcReportsToRelation = defineRelationKind({
   kind: "dc.relation:reports_to",
 });
+
+export const dcContainsRelation = defineRelationKind({
+  kind: "dc.relation:contains",
+});
