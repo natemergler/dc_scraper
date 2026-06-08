@@ -7,6 +7,7 @@ import {
 } from "../../../core/types.ts";
 import { collectRecordCitations } from "./citations.ts";
 import { fileSafeLedgerId } from "./context.ts";
+import { dcAncCommissionerSeatKind } from "../kinds/anc_commissioner_seat.ts";
 
 export interface DcgisSmdsInterpreterResult {
   entryFragments: EntryFragment[];
@@ -19,10 +20,12 @@ export interface DcGisSmdPayload {
   ANC_ID?: unknown;
   NAME?: unknown;
   WEB_URL?: unknown;
+  EMAIL?: unknown;
 }
 
 const dcSmdKind = "dc.smd" as const;
-const relationKind = "dc.relation:contains" as const;
+const containsRelationKind = "dc.relation:contains" as const;
+const representsRelationKind = "dc.relation:represents" as const;
 const sourceKind = "dcgis.smds" as const;
 
 function asString(value: unknown): string | null {
@@ -51,6 +54,10 @@ function makeSmdProvisionalId(smdId: string): string {
 
 function makeAncProvisionalId(ancId: string): string {
   return `dc.anc:${fileSafeLedgerId(ancId)}`;
+}
+
+function makeSeatProvisionalId(smdId: string): string {
+  return `dc.anc_commissioner_seat:${fileSafeLedgerId(smdId)}`;
 }
 
 export function interpretDcgisSmds(
@@ -104,10 +111,12 @@ export function interpretDcgisSmds(
     }
 
     const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
+    const ancId = parseAncId(sourceRecord);
+    const officeEmail = asString(sourceRecord.EMAIL);
+
     const attributes: Record<string, unknown> = {
       sourceSmdId: smdId,
     };
-    const ancId = parseAncId(sourceRecord);
     if (ancId) {
       attributes.sourceAncId = ancId;
     }
@@ -116,6 +125,7 @@ export function interpretDcgisSmds(
       attributes.webUrl = webUrl;
     }
     const provisionalId = makeSmdProvisionalId(smdId);
+    const seatProvisionalId = makeSeatProvisionalId(smdId);
     entryFragments.push({
       fragmentType: "entry",
       source: sourceKind,
@@ -128,22 +138,53 @@ export function interpretDcgisSmds(
       citations,
     });
 
-    if (!ancId) {
+    const seatAttributes: Record<string, unknown> = {
+      sourceSmdId: smdId,
+    };
+    if (ancId) {
+      seatAttributes.sourceAncId = ancId;
+    }
+    if (officeEmail) {
+      seatAttributes.officeEmail = officeEmail;
+    }
+
+    entryFragments.push({
+      fragmentType: "entry",
+      source: sourceKind,
+      sourceRecordId: record.key,
+      provisionalId: seatProvisionalId,
+      family: dcAncCommissionerSeatKind.family,
+      kind: dcAncCommissionerSeatKind.kind,
+      name: `Commissioner Seat for ${smdName}`,
+      attributes: seatAttributes,
+      citations,
+    });
+
+    if (ancId) {
+      relationFragments.push({
+        fragmentType: "relation",
+        source: sourceKind,
+        sourceRecordId: record.key,
+        from: makeAncProvisionalId(ancId),
+        relationKind: containsRelationKind,
+        to: provisionalId,
+        citations,
+      });
+    } else {
       findings.push({
         kind: "warn",
         code: "dc.interpreter.smd_anc_id_missing",
         message: `dcgis.smds record ${record.key} has no ANC id`,
         citation: cite(sourceKind, record.key),
       });
-      continue;
     }
 
     relationFragments.push({
       fragmentType: "relation",
       source: sourceKind,
       sourceRecordId: record.key,
-      from: makeAncProvisionalId(ancId),
-      relationKind,
+      from: seatProvisionalId,
+      relationKind: representsRelationKind,
       to: provisionalId,
       citations,
     });

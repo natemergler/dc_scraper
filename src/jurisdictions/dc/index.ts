@@ -4,12 +4,14 @@ import { dcAgencyKind } from "./kinds/agency.ts";
 import { dcBoardKind } from "./kinds/board.ts";
 import { dcCommissionKind } from "./kinds/commission.ts";
 import { dcAuthorityKind } from "./kinds/authority.ts";
+import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import {
   dcAffiliatedWithRelation,
   dcContainsRelation,
   dcGovernsRelation,
   dcReportsToRelation,
+  dcRepresentsRelation,
 } from "./kinds/relation.ts";
 import { interpretDcgisAgencies } from "./interpreters/dcgis_agencies.ts";
 import { dcgisAgenciesBinding } from "./sources/dcgis_agencies.ts";
@@ -48,11 +50,13 @@ dcKindRegistry.register(dcAgencyKind);
 dcKindRegistry.register(dcBoardKind);
 dcKindRegistry.register(dcCommissionKind);
 dcKindRegistry.register(dcAuthorityKind);
+dcKindRegistry.register(dcAncCommissionerSeatKind);
 dcKindRegistry.register(dcSmdKind);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
+dcKindRegistry.registerRelation(dcRepresentsRelation);
 
 export const dcRuntime: DcJurisdictionRuntime = {
   jurisdiction: dcJurisdiction,

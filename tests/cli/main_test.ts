@@ -809,7 +809,7 @@ Deno.test("state generation can compile agency, board, and commission sources to
   }
 });
 
-Deno.test("state generation can compile ANC and SMD sources together", async () => {
+Deno.test("state generation can compile ANC and SMD sources together with commissioner seats", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-output-" });
   const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-release-" });
@@ -923,6 +923,8 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
     assertEquals(stateEntryFiles.includes("dc.anc:3~2F4G.json"), true);
     assertEquals(stateEntryFiles.includes("dc.smd:1A01.json"), true);
     assertEquals(stateEntryFiles.includes("dc.smd:3~2F4G01.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.anc_commissioner_seat:1A01.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.anc_commissioner_seat:3~2F4G01.json"), true);
 
     const ancSlashEntry = JSON.parse(
       await Deno.readTextFile(join(stateRoot, "entries", "dc.anc:3~2F4G.json")),
@@ -945,6 +947,26 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
     assertEquals(smdSlashEntry.id, "dc.smd:3~2F4G01");
     assertEquals(smdSlashEntry.attributes.sourceSmdId, "3/4G01");
     assertEquals(smdSlashEntry.attributes.sourceAncId, "3/4G");
+    assertEquals(Object.hasOwn(smdSlashEntry.relations, "dc.relation:represents"), false);
+    assertEquals(Object.hasOwn(smdSlashEntry.attributes, "email"), false);
+    assertEquals(Object.hasOwn(smdSlashEntry.attributes, "officeEmail"), false);
+
+    const seatSlashEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc_commissioner_seat:3~2F4G01.json")),
+    ) as {
+      id: string;
+      family: string;
+      kind: string;
+      attributes: Record<string, unknown>;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(seatSlashEntry.id, "dc.anc_commissioner_seat:3~2F4G01");
+    assertEquals(seatSlashEntry.family, "position");
+    assertEquals(seatSlashEntry.kind, "dc.anc_commissioner_seat");
+    assertEquals(seatSlashEntry.attributes.sourceSmdId, "3/4G01");
+    assertEquals(seatSlashEntry.attributes.sourceAncId, "3/4G");
+    assertEquals(seatSlashEntry.attributes.officeEmail, "john@example.com");
+    assertEquals(seatSlashEntry.relations["dc.relation:represents"][0]?.to, "dc.smd:3~2F4G01");
 
     const indexCode = await runCli([
       "--workspace",
@@ -958,8 +980,8 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "state_entries"), 4);
-    assertEquals(countRows(db, "state_relations"), 2);
+    assertEquals(countRows(db, "state_entries"), 6);
+    assertEquals(countRows(db, "state_relations"), 4);
     closeWorkspace(db);
 
     const checkCode = await runCli([
@@ -983,28 +1005,48 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 4);
-    assertEquals(manifest.counts.relations, 2);
-    assertEquals(manifest.counts.citations, 6);
+    assertEquals(manifest.counts.entries, 6);
+    assertEquals(manifest.counts.relations, 4);
+    assertEquals(manifest.counts.citations, 10);
     assertEquals(manifest.counts.sources, 2);
     assertEquals(manifest.counts.relationKinds["dc.relation:contains"], 2);
+    assertEquals(manifest.counts.relationKinds["dc.relation:represents"], 2);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
     assertEquals(entriesCsv.includes("dc.anc:3~2F4G"), true);
     assertEquals(entriesCsv.includes("dc.smd:3~2F4G01"), true);
+    assertEquals(entriesCsv.includes("dc.anc_commissioner_seat:3~2F4G01"), true);
+    assertEquals(entriesCsv.includes("Jane Doe"), false);
+    assertEquals(entriesCsv.includes("John Smith"), false);
+    assertEquals(entriesCsv.includes("jane@example.com"), true);
+    assertEquals(entriesCsv.includes("john@example.com"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:contains"), true);
+    assertEquals(relationsCsv.includes("dc.relation:represents"), true);
     assertEquals(relationsCsv.includes("dc.anc:3~2F4G"), true);
     assertEquals(relationsCsv.includes("dc.smd:3~2F4G01"), true);
+    assertEquals(relationsCsv.includes("dc.anc_commissioner_seat:3~2F4G01"), true);
+    assertEquals(relationsCsv.includes("Jane Doe"), false);
+    assertEquals(relationsCsv.includes("John Smith"), false);
+    assertEquals(relationsCsv.includes("jane@example.com"), false);
+    assertEquals(relationsCsv.includes("john@example.com"), false);
 
     const citationsCsv = await Deno.readTextFile(join(releaseRoot, "citations.csv"));
     assertEquals(citationsCsv.includes("3/4G01"), true);
     assertEquals(citationsCsv.includes("3/4G"), true);
+    assertEquals(citationsCsv.includes("Jane Doe"), false);
+    assertEquals(citationsCsv.includes("John Smith"), false);
+    assertEquals(citationsCsv.includes("jane@example.com"), false);
+    assertEquals(citationsCsv.includes("john@example.com"), false);
 
     const sourcesCsv = await Deno.readTextFile(join(releaseRoot, "sources.csv"));
     assertEquals(sourcesCsv.includes("dcgis.ancs"), true);
     assertEquals(sourcesCsv.includes("dcgis.smds"), true);
+    assertEquals(sourcesCsv.includes("Jane Doe"), false);
+    assertEquals(sourcesCsv.includes("John Smith"), false);
+    assertEquals(sourcesCsv.includes("jane@example.com"), false);
+    assertEquals(sourcesCsv.includes("john@example.com"), false);
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });
