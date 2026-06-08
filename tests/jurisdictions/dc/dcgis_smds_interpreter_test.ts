@@ -47,7 +47,12 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(output.findings, []);
   assertEquals(output.entryFragments.some((fragment) => fragment.kind === "dc.person"), false);
 
-  const [normalSmdEntry, normalSeatEntry, slashSmdEntry, slashSeatEntry] = output.entryFragments;
+  const [
+    normalSmdEntry,
+    normalSeatEntry,
+    slashSmdEntry,
+    slashSeatEntry,
+  ] = output.entryFragments;
   const [
     normalContainsRelation,
     normalRepresentsRelation,
@@ -81,6 +86,9 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(normalSeatEntry.name, "Commissioner Seat for SMD 1A01");
   assertEquals(normalSeatEntry.attributes.sourceSmdId, "1A01");
   assertEquals(normalSeatEntry.attributes.sourceAncId, "1A");
+  assertEquals(normalSeatEntry.attributes.sourceRepresentativeName, "Jane Doe");
+  assertEquals(normalSeatEntry.attributes.sourceFirstName, "Jane");
+  assertEquals(normalSeatEntry.attributes.sourceLastName, "Doe");
   assertEquals(normalSeatEntry.attributes.officeEmail, "jane@example.com");
   assertEquals(normalSeatEntry.citations, [cite(dcgisSmdsSource.id, "1A01")]);
   assertEquals(Object.hasOwn(normalSeatEntry.attributes, "email"), false);
@@ -112,6 +120,9 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(slashSeatEntry.name, "Commissioner Seat for SMD 3/4G01");
   assertEquals(slashSeatEntry.attributes.sourceSmdId, "3/4G01");
   assertEquals(slashSeatEntry.attributes.sourceAncId, "3/4G");
+  assertEquals(slashSeatEntry.attributes.sourceRepresentativeName, "John Smith");
+  assertEquals(slashSeatEntry.attributes.sourceFirstName, "John");
+  assertEquals(slashSeatEntry.attributes.sourceLastName, "Smith");
   assertEquals(slashSeatEntry.attributes.officeEmail, "john@example.com");
   assertEquals(slashSeatEntry.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
   assertEquals(Object.hasOwn(slashSeatEntry.attributes, "email"), false);
@@ -165,9 +176,11 @@ Deno.test("dcgis.smds emits SMD and seat entries when ANC id is missing", () => 
 
   assertEquals(output.entryFragments.length, 2);
   assertEquals(output.relationFragments.length, 1);
-  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings.length, 2);
   assertEquals(output.findings[0].kind, "warn");
-  assertEquals(output.findings[0].code, "dc.interpreter.smd_anc_id_missing");
+  assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_missing");
+  assertEquals(output.findings[1].kind, "warn");
+  assertEquals(output.findings[1].code, "dc.interpreter.smd_anc_id_missing");
   assertEquals(output.entryFragments[0].provisionalId, "dc.smd:1A99");
   assertEquals(output.entryFragments[0].kind, "dc.smd");
   assertEquals(output.entryFragments[0].attributes.sourceSmdId, "1A99");
@@ -176,10 +189,101 @@ Deno.test("dcgis.smds emits SMD and seat entries when ANC id is missing", () => 
   assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
   assertEquals(output.entryFragments[1].attributes.sourceSmdId, "1A99");
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceAncId"), false);
+  assertEquals(
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
+    false,
+  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "officeEmail"), false);
   assertEquals(output.relationFragments[0].from, "dc.anc_commissioner_seat:1A99");
   assertEquals(output.relationFragments[0].to, "dc.smd:1A99");
   assertEquals(output.relationFragments[0].relationKind, "dc.relation:represents");
+});
+
+Deno.test("dcgis.smds skips commissioner provenance when representative fields are absent", () => {
+  const output = interpretDcgisSmds([
+    {
+      source: dcgisSmdsSource.id,
+      snapshotKey: "page-0",
+      key: "2B03",
+      payload: {
+        SMD_ID: "2B03",
+        ANC_ID: "2B",
+        NAME: "SMD 2B03",
+        EMAIL: "seat@example.com",
+      },
+    },
+  ]);
+
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 2);
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_missing");
+  assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
+  assertEquals(output.entryFragments[1].attributes.officeEmail, "seat@example.com");
+  assertEquals(
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
+    false,
+  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
+});
+
+Deno.test("dcgis.smds stores commissioner provenance on the seat", () => {
+  const output = interpretDcgisSmds([
+    {
+      source: dcgisSmdsSource.id,
+      snapshotKey: "page-0",
+      key: "3C07",
+      payload: {
+        SMD_ID: "3C07",
+        ANC_ID: "3C",
+        NAME: "SMD 3C07",
+        REP_NAME: "JEAN EVANS",
+        FIRST_NAME: "JAKE",
+        LAST_NAME: "FALESCHINI",
+      },
+    },
+  ]);
+
+  assertEquals(output.findings, []);
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 2);
+  const seatEntry = output.entryFragments[1];
+  assertEquals(seatEntry.kind, "dc.anc_commissioner_seat");
+  assertEquals(seatEntry.attributes.sourceRepresentativeName, "JEAN EVANS");
+  assertEquals(seatEntry.attributes.sourceFirstName, "JAKE");
+  assertEquals(seatEntry.attributes.sourceLastName, "FALESCHINI");
+});
+
+Deno.test("dcgis.smds skips commissioner provenance when seat is vacant", () => {
+  const output = interpretDcgisSmds([
+    {
+      source: dcgisSmdsSource.id,
+      snapshotKey: "page-0",
+      key: "4D02",
+      payload: {
+        SMD_ID: "4D02",
+        ANC_ID: "4D",
+        NAME: "SMD 4D02",
+        REP_NAME: "VACANT",
+        EMAIL: "4d02@anc.dc.gov",
+      },
+    },
+  ]);
+
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 2);
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_vacant");
+  assertEquals(
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
+    false,
+  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
+  assertEquals(output.entryFragments[1].attributes.officeEmail, "4d02@anc.dc.gov");
 });
 
 Deno.test("dcgis.smds reports warning when SMD id is missing", () => {

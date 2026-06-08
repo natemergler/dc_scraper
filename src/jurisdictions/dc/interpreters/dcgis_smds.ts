@@ -19,6 +19,9 @@ export interface DcGisSmdPayload {
   SMD_ID?: unknown;
   ANC_ID?: unknown;
   NAME?: unknown;
+  REP_NAME?: unknown;
+  FIRST_NAME?: unknown;
+  LAST_NAME?: unknown;
   WEB_URL?: unknown;
   EMAIL?: unknown;
 }
@@ -48,6 +51,18 @@ function parseSmdName(payload: Record<string, unknown>): string | null {
   return asString(payload.NAME);
 }
 
+function parseRepresentativeName(payload: Record<string, unknown>): string | null {
+  return asString(payload.REP_NAME);
+}
+
+function parseFirstName(payload: Record<string, unknown>): string | null {
+  return asString(payload.FIRST_NAME);
+}
+
+function parseLastName(payload: Record<string, unknown>): string | null {
+  return asString(payload.LAST_NAME);
+}
+
 function makeSmdProvisionalId(smdId: string): string {
   return `dc.smd:${fileSafeLedgerId(smdId)}`;
 }
@@ -58,6 +73,10 @@ function makeAncProvisionalId(ancId: string): string {
 
 function makeSeatProvisionalId(smdId: string): string {
   return `dc.anc_commissioner_seat:${fileSafeLedgerId(smdId)}`;
+}
+
+function isVacantRepresentativeName(name: string | null): boolean {
+  return name !== null && name.trim().toUpperCase() === "VACANT";
 }
 
 export function interpretDcgisSmds(
@@ -113,6 +132,9 @@ export function interpretDcgisSmds(
     const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
     const ancId = parseAncId(sourceRecord);
     const officeEmail = asString(sourceRecord.EMAIL);
+    const representativeName = parseRepresentativeName(sourceRecord);
+    const firstName = parseFirstName(sourceRecord);
+    const lastName = parseLastName(sourceRecord);
 
     const attributes: Record<string, unknown> = {
       sourceSmdId: smdId,
@@ -147,6 +169,15 @@ export function interpretDcgisSmds(
     if (officeEmail) {
       seatAttributes.officeEmail = officeEmail;
     }
+    if (representativeName && !isVacantRepresentativeName(representativeName)) {
+      seatAttributes.sourceRepresentativeName = representativeName;
+      if (firstName) {
+        seatAttributes.sourceFirstName = firstName;
+      }
+      if (lastName) {
+        seatAttributes.sourceLastName = lastName;
+      }
+    }
 
     entryFragments.push({
       fragmentType: "entry",
@@ -159,6 +190,23 @@ export function interpretDcgisSmds(
       attributes: seatAttributes,
       citations,
     });
+
+    if (representativeName && isVacantRepresentativeName(representativeName)) {
+      findings.push({
+        kind: "warn",
+        code: "dc.interpreter.smd_representative_vacant",
+        message:
+          `dcgis.smds record ${record.key} is vacant; skipping current commissioner provenance`,
+        citation: cite(sourceKind, record.key),
+      });
+    } else if (!representativeName) {
+      findings.push({
+        kind: "warn",
+        code: "dc.interpreter.smd_representative_missing",
+        message: `dcgis.smds record ${record.key} has no representative name fields`,
+        citation: cite(sourceKind, record.key),
+      });
+    }
 
     if (ancId) {
       relationFragments.push({

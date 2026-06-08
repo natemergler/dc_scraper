@@ -923,6 +923,8 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(stateEntryFiles.includes("dc.anc:3~2F4G.json"), true);
     assertEquals(stateEntryFiles.includes("dc.smd:1A01.json"), true);
     assertEquals(stateEntryFiles.includes("dc.smd:3~2F4G01.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.person:anc_commissioner_1A01.json"), false);
+    assertEquals(stateEntryFiles.includes("dc.person:anc_commissioner_3~2F4G01.json"), false);
     assertEquals(stateEntryFiles.includes("dc.anc_commissioner_seat:1A01.json"), true);
     assertEquals(stateEntryFiles.includes("dc.anc_commissioner_seat:3~2F4G01.json"), true);
 
@@ -948,6 +950,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(smdSlashEntry.attributes.sourceSmdId, "3/4G01");
     assertEquals(smdSlashEntry.attributes.sourceAncId, "3/4G");
     assertEquals(Object.hasOwn(smdSlashEntry.relations, "dc.relation:represents"), false);
+    assertEquals(Object.hasOwn(smdSlashEntry.relations, "dc.relation:holds"), false);
     assertEquals(Object.hasOwn(smdSlashEntry.attributes, "email"), false);
     assertEquals(Object.hasOwn(smdSlashEntry.attributes, "officeEmail"), false);
 
@@ -965,8 +968,12 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(seatSlashEntry.kind, "dc.anc_commissioner_seat");
     assertEquals(seatSlashEntry.attributes.sourceSmdId, "3/4G01");
     assertEquals(seatSlashEntry.attributes.sourceAncId, "3/4G");
+    assertEquals(seatSlashEntry.attributes.sourceRepresentativeName, "John Smith");
+    assertEquals(seatSlashEntry.attributes.sourceFirstName, "John");
+    assertEquals(seatSlashEntry.attributes.sourceLastName, "Smith");
     assertEquals(seatSlashEntry.attributes.officeEmail, "john@example.com");
     assertEquals(seatSlashEntry.relations["dc.relation:represents"][0]?.to, "dc.smd:3~2F4G01");
+    assertEquals(Object.hasOwn(seatSlashEntry.relations, "dc.relation:holds"), false);
 
     const indexCode = await runCli([
       "--workspace",
@@ -1016,10 +1023,11 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(entriesCsv.includes("dc.anc:3~2F4G"), true);
     assertEquals(entriesCsv.includes("dc.smd:3~2F4G01"), true);
     assertEquals(entriesCsv.includes("dc.anc_commissioner_seat:3~2F4G01"), true);
-    assertEquals(entriesCsv.includes("Jane Doe"), false);
-    assertEquals(entriesCsv.includes("John Smith"), false);
+    assertEquals(entriesCsv.includes("Jane Doe"), true);
+    assertEquals(entriesCsv.includes("John Smith"), true);
     assertEquals(entriesCsv.includes("jane@example.com"), true);
     assertEquals(entriesCsv.includes("john@example.com"), true);
+    assertEquals(entriesCsv.includes("dc.person:anc_commissioner_3~2F4G01"), false);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:contains"), true);
@@ -1031,6 +1039,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(relationsCsv.includes("John Smith"), false);
     assertEquals(relationsCsv.includes("jane@example.com"), false);
     assertEquals(relationsCsv.includes("john@example.com"), false);
+    assertEquals(relationsCsv.includes("dc.person:anc_commissioner_3~2F4G01"), false);
 
     const citationsCsv = await Deno.readTextFile(join(releaseRoot, "citations.csv"));
     assertEquals(citationsCsv.includes("3/4G01"), true);
