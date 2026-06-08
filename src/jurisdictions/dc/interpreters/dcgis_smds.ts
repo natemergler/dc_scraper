@@ -8,7 +8,6 @@ import {
 import { collectRecordCitations } from "./citations.ts";
 import { fileSafeLedgerId } from "./context.ts";
 import { dcAncCommissionerSeatKind } from "../kinds/anc_commissioner_seat.ts";
-import { dcPersonKind } from "../kinds/person.ts";
 
 export interface DcgisSmdsInterpreterResult {
   entryFragments: EntryFragment[];
@@ -30,7 +29,6 @@ export interface DcGisSmdPayload {
 const dcSmdKind = "dc.smd" as const;
 const containsRelationKind = "dc.relation:contains" as const;
 const representsRelationKind = "dc.relation:represents" as const;
-const holdsRelationKind = "dc.relation:holds" as const;
 const sourceKind = "dcgis.smds" as const;
 
 function asString(value: unknown): string | null {
@@ -75,10 +73,6 @@ function makeAncProvisionalId(ancId: string): string {
 
 function makeSeatProvisionalId(smdId: string): string {
   return `dc.anc_commissioner_seat:${fileSafeLedgerId(smdId)}`;
-}
-
-function makeCommissionerProvisionalId(smdId: string): string {
-  return `dc.person:anc_commissioner_${fileSafeLedgerId(smdId)}`;
 }
 
 function isVacantRepresentativeName(name: string | null): boolean {
@@ -154,7 +148,6 @@ export function interpretDcgisSmds(
     }
     const provisionalId = makeSmdProvisionalId(smdId);
     const seatProvisionalId = makeSeatProvisionalId(smdId);
-    const commissionerProvisionalId = makeCommissionerProvisionalId(smdId);
     entryFragments.push({
       fragmentType: "entry",
       source: sourceKind,
@@ -176,6 +169,15 @@ export function interpretDcgisSmds(
     if (officeEmail) {
       seatAttributes.officeEmail = officeEmail;
     }
+    if (representativeName && !isVacantRepresentativeName(representativeName)) {
+      seatAttributes.sourceRepresentativeName = representativeName;
+      if (firstName) {
+        seatAttributes.sourceFirstName = firstName;
+      }
+      if (lastName) {
+        seatAttributes.sourceLastName = lastName;
+      }
+    }
 
     entryFragments.push({
       fragmentType: "entry",
@@ -189,40 +191,15 @@ export function interpretDcgisSmds(
       citations,
     });
 
-    if (representativeName && !isVacantRepresentativeName(representativeName)) {
-      const commissionerAttributes: Record<string, unknown> = {
-        sourceSmdId: smdId,
-        sourceRepresentativeName: representativeName,
-      };
-      if (ancId) {
-        commissionerAttributes.sourceAncId = ancId;
-      }
-      if (firstName) {
-        commissionerAttributes.firstName = firstName;
-      }
-      if (lastName) {
-        commissionerAttributes.lastName = lastName;
-      }
-
-      entryFragments.push({
-        fragmentType: "entry",
-        source: sourceKind,
-        sourceRecordId: record.key,
-        provisionalId: commissionerProvisionalId,
-        family: dcPersonKind.family,
-        kind: dcPersonKind.kind,
-        name: representativeName,
-        attributes: commissionerAttributes,
-        citations,
-      });
-    } else if (representativeName && isVacantRepresentativeName(representativeName)) {
+    if (representativeName && isVacantRepresentativeName(representativeName)) {
       findings.push({
         kind: "warn",
         code: "dc.interpreter.smd_representative_vacant",
-        message: `dcgis.smds record ${record.key} is vacant; skipping commissioner person`,
+        message:
+          `dcgis.smds record ${record.key} is vacant; skipping current commissioner provenance`,
         citation: cite(sourceKind, record.key),
       });
-    } else {
+    } else if (!representativeName) {
       findings.push({
         kind: "warn",
         code: "dc.interpreter.smd_representative_missing",
@@ -259,18 +236,6 @@ export function interpretDcgisSmds(
       to: provisionalId,
       citations,
     });
-
-    if (representativeName && !isVacantRepresentativeName(representativeName)) {
-      relationFragments.push({
-        fragmentType: "relation",
-        source: sourceKind,
-        sourceRecordId: record.key,
-        from: commissionerProvisionalId,
-        relationKind: holdsRelationKind,
-        to: seatProvisionalId,
-        citations,
-      });
-    }
   }
 
   return { entryFragments, relationFragments, findings };

@@ -42,26 +42,22 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
     },
   ]);
 
-  assertEquals(output.entryFragments.length, 6);
-  assertEquals(output.relationFragments.length, 6);
+  assertEquals(output.entryFragments.length, 4);
+  assertEquals(output.relationFragments.length, 4);
   assertEquals(output.findings, []);
-  assertEquals(output.entryFragments.some((fragment) => fragment.kind === "dc.person"), true);
+  assertEquals(output.entryFragments.some((fragment) => fragment.kind === "dc.person"), false);
 
   const [
     normalSmdEntry,
     normalSeatEntry,
-    normalPersonEntry,
     slashSmdEntry,
     slashSeatEntry,
-    slashPersonEntry,
   ] = output.entryFragments;
   const [
     normalContainsRelation,
     normalRepresentsRelation,
-    normalHoldsRelation,
     slashContainsRelation,
     slashRepresentsRelation,
-    slashHoldsRelation,
   ] = output.relationFragments;
 
   assertEquals(normalSmdEntry.fragmentType, "entry");
@@ -90,26 +86,13 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(normalSeatEntry.name, "Commissioner Seat for SMD 1A01");
   assertEquals(normalSeatEntry.attributes.sourceSmdId, "1A01");
   assertEquals(normalSeatEntry.attributes.sourceAncId, "1A");
+  assertEquals(normalSeatEntry.attributes.sourceRepresentativeName, "Jane Doe");
+  assertEquals(normalSeatEntry.attributes.sourceFirstName, "Jane");
+  assertEquals(normalSeatEntry.attributes.sourceLastName, "Doe");
   assertEquals(normalSeatEntry.attributes.officeEmail, "jane@example.com");
   assertEquals(normalSeatEntry.citations, [cite(dcgisSmdsSource.id, "1A01")]);
   assertEquals(Object.hasOwn(normalSeatEntry.attributes, "email"), false);
   assertEquals(Object.hasOwn(normalSeatEntry.attributes, "repName"), false);
-
-  assertEquals(normalPersonEntry.fragmentType, "entry");
-  assertEquals(normalPersonEntry.source, dcgisSmdsSource.id);
-  assertEquals(normalPersonEntry.sourceRecordId, "1A01");
-  assertEquals(normalPersonEntry.provisionalId, "dc.person:anc_commissioner_1A01");
-  assertEquals(normalPersonEntry.kind, "dc.person");
-  assertEquals(normalPersonEntry.family, "person");
-  assertEquals(normalPersonEntry.name, "Jane Doe");
-  assertEquals(normalPersonEntry.attributes.sourceSmdId, "1A01");
-  assertEquals(normalPersonEntry.attributes.sourceAncId, "1A");
-  assertEquals(normalPersonEntry.attributes.sourceRepresentativeName, "Jane Doe");
-  assertEquals(normalPersonEntry.attributes.firstName, "Jane");
-  assertEquals(normalPersonEntry.attributes.lastName, "Doe");
-  assertEquals(normalPersonEntry.citations, [cite(dcgisSmdsSource.id, "1A01")]);
-  assertEquals(Object.hasOwn(normalPersonEntry.attributes, "officeEmail"), false);
-  assertEquals(Object.hasOwn(normalPersonEntry.attributes, "email"), false);
 
   assertEquals(slashSmdEntry.fragmentType, "entry");
   assertEquals(slashSmdEntry.source, dcgisSmdsSource.id);
@@ -137,26 +120,13 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(slashSeatEntry.name, "Commissioner Seat for SMD 3/4G01");
   assertEquals(slashSeatEntry.attributes.sourceSmdId, "3/4G01");
   assertEquals(slashSeatEntry.attributes.sourceAncId, "3/4G");
+  assertEquals(slashSeatEntry.attributes.sourceRepresentativeName, "John Smith");
+  assertEquals(slashSeatEntry.attributes.sourceFirstName, "John");
+  assertEquals(slashSeatEntry.attributes.sourceLastName, "Smith");
   assertEquals(slashSeatEntry.attributes.officeEmail, "john@example.com");
   assertEquals(slashSeatEntry.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
   assertEquals(Object.hasOwn(slashSeatEntry.attributes, "email"), false);
   assertEquals(Object.hasOwn(slashSeatEntry.attributes, "repName"), false);
-
-  assertEquals(slashPersonEntry.fragmentType, "entry");
-  assertEquals(slashPersonEntry.source, dcgisSmdsSource.id);
-  assertEquals(slashPersonEntry.sourceRecordId, "3/4G01");
-  assertEquals(slashPersonEntry.provisionalId, "dc.person:anc_commissioner_3~2F4G01");
-  assertEquals(slashPersonEntry.kind, "dc.person");
-  assertEquals(slashPersonEntry.family, "person");
-  assertEquals(slashPersonEntry.name, "John Smith");
-  assertEquals(slashPersonEntry.attributes.sourceSmdId, "3/4G01");
-  assertEquals(slashPersonEntry.attributes.sourceAncId, "3/4G");
-  assertEquals(slashPersonEntry.attributes.sourceRepresentativeName, "John Smith");
-  assertEquals(slashPersonEntry.attributes.firstName, "John");
-  assertEquals(slashPersonEntry.attributes.lastName, "Smith");
-  assertEquals(slashPersonEntry.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
-  assertEquals(Object.hasOwn(slashPersonEntry.attributes, "officeEmail"), false);
-  assertEquals(Object.hasOwn(slashPersonEntry.attributes, "email"), false);
 
   assertEquals(normalContainsRelation.fragmentType, "relation");
   assertEquals(normalContainsRelation.source, dcgisSmdsSource.id);
@@ -174,14 +144,6 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(normalRepresentsRelation.relationKind, "dc.relation:represents");
   assertEquals(normalRepresentsRelation.citations, [cite(dcgisSmdsSource.id, "1A01")]);
 
-  assertEquals(normalHoldsRelation.fragmentType, "relation");
-  assertEquals(normalHoldsRelation.source, dcgisSmdsSource.id);
-  assertEquals(normalHoldsRelation.sourceRecordId, "1A01");
-  assertEquals(normalHoldsRelation.from, "dc.person:anc_commissioner_1A01");
-  assertEquals(normalHoldsRelation.to, "dc.anc_commissioner_seat:1A01");
-  assertEquals(normalHoldsRelation.relationKind, "dc.relation:holds");
-  assertEquals(normalHoldsRelation.citations, [cite(dcgisSmdsSource.id, "1A01")]);
-
   assertEquals(slashContainsRelation.fragmentType, "relation");
   assertEquals(slashContainsRelation.source, dcgisSmdsSource.id);
   assertEquals(slashContainsRelation.sourceRecordId, "3/4G01");
@@ -197,14 +159,6 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(slashRepresentsRelation.to, "dc.smd:3~2F4G01");
   assertEquals(slashRepresentsRelation.relationKind, "dc.relation:represents");
   assertEquals(slashRepresentsRelation.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
-
-  assertEquals(slashHoldsRelation.fragmentType, "relation");
-  assertEquals(slashHoldsRelation.source, dcgisSmdsSource.id);
-  assertEquals(slashHoldsRelation.sourceRecordId, "3/4G01");
-  assertEquals(slashHoldsRelation.from, "dc.person:anc_commissioner_3~2F4G01");
-  assertEquals(slashHoldsRelation.to, "dc.anc_commissioner_seat:3~2F4G01");
-  assertEquals(slashHoldsRelation.relationKind, "dc.relation:holds");
-  assertEquals(slashHoldsRelation.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
 });
 
 Deno.test("dcgis.smds emits SMD and seat entries when ANC id is missing", () => {
@@ -235,13 +189,19 @@ Deno.test("dcgis.smds emits SMD and seat entries when ANC id is missing", () => 
   assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
   assertEquals(output.entryFragments[1].attributes.sourceSmdId, "1A99");
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceAncId"), false);
+  assertEquals(
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
+    false,
+  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "officeEmail"), false);
   assertEquals(output.relationFragments[0].from, "dc.anc_commissioner_seat:1A99");
   assertEquals(output.relationFragments[0].to, "dc.smd:1A99");
   assertEquals(output.relationFragments[0].relationKind, "dc.relation:represents");
 });
 
-Deno.test("dcgis.smds skips commissioner entry when representative fields are absent", () => {
+Deno.test("dcgis.smds skips commissioner provenance when representative fields are absent", () => {
   const output = interpretDcgisSmds([
     {
       source: dcgisSmdsSource.id,
@@ -260,19 +220,17 @@ Deno.test("dcgis.smds skips commissioner entry when representative fields are ab
   assertEquals(output.relationFragments.length, 2);
   assertEquals(output.findings.length, 1);
   assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_missing");
-  assertEquals(
-    output.entryFragments.some((fragment) => fragment.kind === "dc.person"),
-    false,
-  );
-  assertEquals(
-    output.relationFragments.some((fragment) => fragment.relationKind === "dc.relation:holds"),
-    false,
-  );
   assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
   assertEquals(output.entryFragments[1].attributes.officeEmail, "seat@example.com");
+  assertEquals(
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
+    false,
+  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
 });
 
-Deno.test("dcgis.smds uses REP_NAME even when name parts disagree", () => {
+Deno.test("dcgis.smds stores commissioner provenance on the seat", () => {
   const output = interpretDcgisSmds([
     {
       source: dcgisSmdsSource.id,
@@ -290,17 +248,16 @@ Deno.test("dcgis.smds uses REP_NAME even when name parts disagree", () => {
   ]);
 
   assertEquals(output.findings, []);
-  assertEquals(output.entryFragments.length, 3);
-  assertEquals(output.relationFragments.length, 3);
-  const personEntry = output.entryFragments[2];
-  assertEquals(personEntry.kind, "dc.person");
-  assertEquals(personEntry.name, "JEAN EVANS");
-  assertEquals(personEntry.attributes.sourceRepresentativeName, "JEAN EVANS");
-  assertEquals(personEntry.attributes.firstName, "JAKE");
-  assertEquals(personEntry.attributes.lastName, "FALESCHINI");
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 2);
+  const seatEntry = output.entryFragments[1];
+  assertEquals(seatEntry.kind, "dc.anc_commissioner_seat");
+  assertEquals(seatEntry.attributes.sourceRepresentativeName, "JEAN EVANS");
+  assertEquals(seatEntry.attributes.sourceFirstName, "JAKE");
+  assertEquals(seatEntry.attributes.sourceLastName, "FALESCHINI");
 });
 
-Deno.test("dcgis.smds skips commissioner entry when seat is vacant", () => {
+Deno.test("dcgis.smds skips commissioner provenance when seat is vacant", () => {
   const output = interpretDcgisSmds([
     {
       source: dcgisSmdsSource.id,
@@ -321,13 +278,11 @@ Deno.test("dcgis.smds skips commissioner entry when seat is vacant", () => {
   assertEquals(output.findings.length, 1);
   assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_vacant");
   assertEquals(
-    output.entryFragments.some((fragment) => fragment.kind === "dc.person"),
+    Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
     false,
   );
-  assertEquals(
-    output.relationFragments.some((fragment) => fragment.relationKind === "dc.relation:holds"),
-    false,
-  );
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
   assertEquals(output.entryFragments[1].attributes.officeEmail, "4d02@anc.dc.gov");
 });
 

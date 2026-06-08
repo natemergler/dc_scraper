@@ -6,6 +6,9 @@ export const dcAncCommissionerSeatKind = defineEntryKind({
   attributes: {
     sourceSmdId: { required: true, type: "string" },
     sourceAncId: { required: false, type: "string" },
+    sourceRepresentativeName: { required: false, type: "string" },
+    sourceFirstName: { required: false, type: "string" },
+    sourceLastName: { required: false, type: "string" },
     officeEmail: { required: false, type: "string" },
   },
 });

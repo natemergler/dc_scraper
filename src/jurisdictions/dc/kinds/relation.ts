@@ -19,7 +19,3 @@ export const dcContainsRelation = defineRelationKind({
 export const dcRepresentsRelation = defineRelationKind({
   kind: "dc.relation:represents",
 });
-
-export const dcHoldsRelation = defineRelationKind({
-  kind: "dc.relation:holds",
-});
