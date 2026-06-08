@@ -1548,6 +1548,41 @@ Deno.test("export fails when state root is missing files", async () => {
   }
 });
 
+Deno.test("CLI script prints help when run directly", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("Usage: dc"), true);
+});
+
+Deno.test("CLI task tolerates task separator before help", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: ["task", "civic", "--", "--help"],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("Usage: dc"), true);
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {

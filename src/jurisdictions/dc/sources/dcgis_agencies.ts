@@ -24,7 +24,9 @@ export const dcgisAgenciesSource: DcGisAgenciesSource = {
   jurisdiction: dcgisJurisdiction,
   kind: "agencies",
   type: "arcgis.table",
-  tableUrl: "https://opendata.dc.gov/arcgis/rest/services/DCGIS/AGENCIES/FeatureServer/0/query",
+  tableUrl:
+    "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6",
+  where: "TYPE = 'Agency'",
   outFields: ["*"],
   pageSize: 500,
 };

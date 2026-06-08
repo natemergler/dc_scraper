@@ -43,7 +43,7 @@ export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
     const cli = createCli((code) => {
       exitCode = code;
     });
-    await cli.parse(rawArgs);
+    await cli.parse(normalizeRawArgs(rawArgs));
     return exitCode;
   } catch (error) {
     console.error((error as Error).message);
@@ -322,4 +322,15 @@ function validateCliOptions(options: CliOptions): CliOptions {
     throw new Error("--limit requires a non-negative integer");
   }
   return options;
+}
+
+function normalizeRawArgs(rawArgs: string[]): string[] {
+  if (rawArgs[0] === "--") {
+    return rawArgs.slice(1);
+  }
+  return rawArgs;
+}
+
+if (import.meta.main) {
+  Deno.exit(await runCli());
 }

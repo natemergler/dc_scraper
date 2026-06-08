@@ -125,7 +125,7 @@ export class ArcGISTableReader implements Reader<ArcGISTableSource> {
     offset: number,
     limit: number,
   ): Promise<ArcGISJsonResponse> {
-    const url = new URL(source.tableUrl);
+    const url = this.buildQueryUrl(source.tableUrl);
     const params = new URLSearchParams(url.search);
     params.set("where", source.where ?? "1=1");
     params.set("outFields", source.outFields?.join(",") ?? "*");
@@ -168,6 +168,14 @@ export class ArcGISTableReader implements Reader<ArcGISTableSource> {
     }
 
     return payload;
+  }
+
+  private buildQueryUrl(tableUrl: string): URL {
+    const url = new URL(tableUrl);
+    if (!url.pathname.endsWith("/query")) {
+      url.pathname = `${url.pathname.replace(/\/$/, "")}/query`;
+    }
+    return url;
   }
 
   private getSourceRecordId(

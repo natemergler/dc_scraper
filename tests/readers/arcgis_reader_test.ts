@@ -148,3 +148,33 @@ Deno.test("ArcGIS reader surfaces ArcGIS API error payload", async () => {
     "ArcGIS query error for dcgis.agencies: Invalid query",
   );
 });
+
+Deno.test("ArcGIS reader appends /query for layer URLs", async () => {
+  let requestedPath = "";
+
+  const reader = new ArcGISTableReader({
+    fetcher: async (input: string) => {
+      requestedPath = new URL(input).pathname;
+      return new Response(
+        JSON.stringify({
+          features: [{ attributes: { OBJECTID: 1, Name: "Metro" } }],
+          exceededTransferLimit: false,
+        }),
+        { status: 200 },
+      );
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/civic-reader-workspace" },
+    source: {
+      id: "dcgis.agencies",
+      jurisdiction: "dc",
+      type: "arcgis.table",
+      tableUrl: "https://example.com/arcgis/layer/6",
+    },
+  });
+
+  assertEquals(requestedPath, "/arcgis/layer/6/query");
+  assertEquals(result.records.length, 1);
+});

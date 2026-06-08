@@ -22,7 +22,7 @@ DC is the first jurisdiction. The system should be general enough for other juri
 
 ## CLI Surface
 
-Run the CLI with `deno task civic -- <command>`.
+Run the CLI with `deno task civic <command>`.
 
 - `collect <source-id>` pulls one source into the ignored workspace.
 - `state generate` rebuilds committed state from workspace records and tracked revisions.
