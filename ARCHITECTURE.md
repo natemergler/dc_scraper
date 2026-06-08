@@ -295,19 +295,18 @@ authority
 
 Jurisdictions define kinds within families.
 
-Examples for DC:
+Examples for DC (current kinds):
 
 ```text
 dc.agency
 dc.board
 dc.commission
-dc.council_committee
-dc.ward
+dc.authority
 dc.anc
 dc.smd
-dc.elected_seat
-dc.code_section
-dc.mayors_order
+dc.anc_commissioner_seat
+dc.committee
+dc.councilmember
 ```
 
 ## Kind definitions

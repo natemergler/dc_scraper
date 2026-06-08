@@ -272,20 +272,18 @@ No committing snapshots, records, workspace DBs, or release artifacts by default
 No pretending everything is complete
 ```
 
-## First implementation slice
+## Current implementation
 
-The first slice should prove the architecture with the smallest useful path:
+The following slices have landed:
 
 ```text
-one generic reader: ArcGIS table
-one DC source: DCGIS agencies
-one DC interpreter: agency records -> fragments
-one compiler path: fragments + rules + revisions -> state
-one or two entry kinds: dc.agency and maybe dc.code_section / dc.authority
-inline citations
-one file per entry state
-workspace SQLite index
-minimal export
+ArcGIS table reader           -> agencies, boards, commissions, authorities, ANCs, SMDs
+dccouncil.gov HTML readers    -> council members and committees
+agency/board/commission        -> dc.agency, dc.board, dc.commission
+authority                      -> dc.authority
+ANC/SMD                        -> dc.anc, dc.smd
+commissioner seats             -> dc.anc_commissioner_seat (with provenance)
+Council                        -> dc.councilmember, dc.committee
 ```
 
-Everything else waits.
+Next work should harden existing paths before adding new sources or entry kinds.

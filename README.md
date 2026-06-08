@@ -81,22 +81,20 @@ commit state + revision
 
 State is editable, but committed state should be reproducible from sources, rules, and revisions.
 
-## First target
+## Current coverage
 
-The first useful slice is intentionally small:
+The following source families are wired:
 
 ```text
-ArcGIS table reader
-DCGIS agencies source
-DC agency interpreter
-ledger compiler
-one-file-per-entry state
-inline citations
-workspace SQLite index
-minimal export
+ArcGIS table reader           - DCGIS agencies, boards, commissions, authorities, ANCs, SMDs
+dccouncil.gov HTML reader     - Council members and committee pages
+DC agency/board/commission    -> organization entries with governance relations
+DC ANC/SMD                    -> area entries with containment relations
+DC ANC commissioner seats     -> position entries with representation relations
+DC Council members            -> person entries with committee membership relations
 ```
 
-Everything else waits until that path works.
+Everything else waits until the above path is stable.
 
 ## Docs
 
