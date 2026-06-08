@@ -15,6 +15,8 @@ import {
   type Workspace,
 } from "../workspace/workspace.ts";
 import { ArcGISTableReader } from "../readers/arcgis_table.ts";
+import { DCCouncilmembersReader } from "../readers/dccouncil_councilmembers.ts";
+import { DCCouncilCommitteePagesReader } from "../readers/dccouncil_committee_pages.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
@@ -61,27 +63,10 @@ async function runCollect(
     throw new Error(`unknown source id: ${sourceId}`);
   }
 
-  const reader = new ArcGISTableReader();
   const workspace = openWorkspace(workspaceRoot);
   try {
     initWorkspace(workspace);
-    const source = sourceBinding.source as {
-      id: string;
-      jurisdiction: string;
-      type: "arcgis.table";
-      tableUrl: string;
-      outFields?: string[];
-      where?: string;
-      pageSize?: number;
-      objectIdField?: string;
-      idField?: string;
-    };
-
-    const result = await reader.collect({
-      workspace: { root: workspaceRoot },
-      source,
-      limit,
-    });
+    const result = await collectSourceRecords(sourceBinding.source, workspaceRoot, limit);
 
     for (const snapshot of result.snapshots) {
       const snapshotId = saveSnapshot(workspace, {
@@ -109,6 +94,45 @@ async function runCollect(
   } finally {
     closeWorkspace(workspace);
   }
+}
+
+async function collectSourceRecords(
+  source: {
+    id: string;
+    jurisdiction: string;
+    type: string;
+  },
+  workspaceRoot: string,
+  limit?: number,
+) {
+  if (source.type === "arcgis.table") {
+    const reader = new ArcGISTableReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<ArcGISTableReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "dccouncil.committees") {
+    const reader = new DCCouncilCommitteePagesReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<DCCouncilCommitteePagesReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "dccouncil.members") {
+    const reader = new DCCouncilmembersReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<DCCouncilmembersReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  throw new Error(`unsupported source type: ${source.type}`);
 }
 
 async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promise<number> {
