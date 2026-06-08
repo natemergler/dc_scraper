@@ -59,27 +59,27 @@ Deno.test("dcgis.smds records become SMD entries and contains relations", () => 
   assertEquals(normalEntry.attributes.sourceSmdId, "1A01");
   assertEquals(normalEntry.attributes.sourceAncId, "1A");
   assertEquals(normalEntry.attributes.webUrl, "https://example/smd/1A01");
-  assertEquals(normalEntry.attributes.email, "jane@example.com");
   assertEquals(normalEntry.citations, [cite(dcgisSmdsSource.id, "row-1")]);
   assertEquals(Object.hasOwn(normalEntry.attributes, "repName"), false);
   assertEquals(Object.hasOwn(normalEntry.attributes, "firstName"), false);
   assertEquals(Object.hasOwn(normalEntry.attributes, "lastName"), false);
+  assertEquals(Object.hasOwn(normalEntry.attributes, "email"), false);
 
   assertEquals(slashEntry.fragmentType, "entry");
   assertEquals(slashEntry.source, dcgisSmdsSource.id);
   assertEquals(slashEntry.sourceRecordId, "row-2");
-  assertEquals(slashEntry.provisionalId, "dc.smd:3-4G01");
+  assertEquals(slashEntry.provisionalId, "dc.smd:3~2F4G01");
   assertEquals(slashEntry.kind, "dc.smd");
   assertEquals(slashEntry.family, "area");
   assertEquals(slashEntry.name, "SMD 3/4G01");
   assertEquals(slashEntry.attributes.sourceSmdId, "3/4G01");
   assertEquals(slashEntry.attributes.sourceAncId, "3/4G");
   assertEquals(slashEntry.attributes.webUrl, "https://example/smd/3-4G01");
-  assertEquals(slashEntry.attributes.email, "john@example.com");
   assertEquals(slashEntry.citations, [cite(dcgisSmdsSource.id, "row-2")]);
   assertEquals(Object.hasOwn(slashEntry.attributes, "repName"), false);
   assertEquals(Object.hasOwn(slashEntry.attributes, "firstName"), false);
   assertEquals(Object.hasOwn(slashEntry.attributes, "lastName"), false);
+  assertEquals(Object.hasOwn(slashEntry.attributes, "email"), false);
 
   assertEquals(normalRelation.fragmentType, "relation");
   assertEquals(normalRelation.from, "dc.anc:1A");
@@ -88,8 +88,8 @@ Deno.test("dcgis.smds records become SMD entries and contains relations", () => 
   assertEquals(normalRelation.citations, [cite(dcgisSmdsSource.id, "row-1")]);
 
   assertEquals(slashRelation.fragmentType, "relation");
-  assertEquals(slashRelation.from, "dc.anc:3-4G");
-  assertEquals(slashRelation.to, "dc.smd:3-4G01");
+  assertEquals(slashRelation.from, "dc.anc:3~2F4G");
+  assertEquals(slashRelation.to, "dc.smd:3~2F4G01");
   assertEquals(slashRelation.relationKind, "dc.relation:contains");
   assertEquals(slashRelation.citations, [cite(dcgisSmdsSource.id, "row-2")]);
 });

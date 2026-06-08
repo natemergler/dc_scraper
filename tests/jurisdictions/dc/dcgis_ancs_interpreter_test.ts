@@ -55,7 +55,7 @@ Deno.test("dcgis.ancs records become ANC entries", () => {
   assertEquals(slashEntry.fragmentType, "entry");
   assertEquals(slashEntry.source, dcgisAncsSource.id);
   assertEquals(slashEntry.sourceRecordId, "row-2");
-  assertEquals(slashEntry.provisionalId, "dc.anc:3-4G");
+  assertEquals(slashEntry.provisionalId, "dc.anc:3~2F4G");
   assertEquals(slashEntry.kind, "dc.anc");
   assertEquals(slashEntry.family, "organization");
   assertEquals(slashEntry.name, "ANC 3/4G");

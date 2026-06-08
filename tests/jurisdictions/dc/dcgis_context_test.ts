@@ -1,5 +1,13 @@
 import { assertEquals } from "@std/assert";
-import { normalizeAgencyLookupKey } from "../../../src/jurisdictions/dc/interpreters/context.ts";
+import {
+  fileSafeLedgerId,
+  normalizeAgencyLookupKey,
+} from "../../../src/jurisdictions/dc/interpreters/context.ts";
+
+Deno.test("fileSafeLedgerId preserves distinct ids for slash and hyphen inputs", () => {
+  assertEquals(fileSafeLedgerId("3/4G"), "3~2F4G");
+  assertEquals(fileSafeLedgerId("3-4G"), "3-4G");
+});
 
 Deno.test("normalizeAgencyLookupKey normalizes punctuation and common abbreviations", () => {
   assertEquals(
