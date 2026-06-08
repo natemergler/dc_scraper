@@ -2,6 +2,10 @@ export interface DcInterpreterContext {
   agencyLookup?: Map<string, string>;
 }
 
+export function fileSafeLedgerId(input: string): string {
+  return input.replace(/\//g, "-");
+}
+
 export function normalizeAgencyLookupKey(input: string): string {
   const lowered = input.trim().toLowerCase();
   const withAndExpansion = lowered

@@ -809,6 +809,210 @@ Deno.test("state generation can compile agency, board, and commission sources to
   }
 });
 
+Deno.test("state generation can compile ANC and SMD sources together", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-output-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-anc-smd-release-" });
+
+  const responses = [
+    {
+      features: [
+        {
+          attributes: {
+            OBJECTID: 1,
+            ANC_ID: "1A",
+            NAME: "ANC 1A",
+            WEB_URL: "https://example/anc/1A",
+            GIS_ID: "gis-1A",
+          },
+        },
+        {
+          attributes: {
+            OBJECTID: 2,
+            ANC_ID: "3/4G",
+            NAME: "ANC 3/4G",
+            WEB_URL: "https://example/anc/3-4G",
+            GIS_ID: "gis-3-4G",
+          },
+        },
+      ],
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+    {
+      features: [
+        {
+          attributes: {
+            OBJECTID: 21,
+            SMD_ID: "1A01",
+            ANC_ID: "1A",
+            NAME: "SMD 1A01",
+            REP_NAME: "Jane Doe",
+            FIRST_NAME: "Jane",
+            LAST_NAME: "Doe",
+            WEB_URL: "https://example/smd/1A01",
+            EMAIL: "jane@example.com",
+          },
+        },
+        {
+          attributes: {
+            OBJECTID: 22,
+            SMD_ID: "3/4G01",
+            ANC_ID: "3/4G",
+            NAME: "SMD 3/4G01",
+            REP_NAME: "John Smith",
+            FIRST_NAME: "John",
+            LAST_NAME: "Smith",
+            WEB_URL: "https://example/smd/3-4G01",
+            EMAIL: "john@example.com",
+          },
+        },
+      ],
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+  ];
+
+  const originalFetch = globalThis.fetch;
+  let callCount = 0;
+  globalThis.fetch = (async (_input: string | URL | Request, _init?: RequestInit) => {
+    const response = responses[callCount];
+    callCount += 1;
+    if (!response) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const ancCollectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.ancs",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(ancCollectCode, 0);
+
+    const smdCollectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.smds",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(smdCollectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntryFiles = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntryFiles.includes("dc.anc:1A.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.anc:3-4G.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.smd:1A01.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.smd:3-4G01.json"), true);
+
+    const ancSlashEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc:3-4G.json")),
+    ) as {
+      id: string;
+      attributes: Record<string, unknown>;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(ancSlashEntry.id, "dc.anc:3-4G");
+    assertEquals(ancSlashEntry.attributes.sourceAncId, "3/4G");
+    assertEquals(ancSlashEntry.relations["dc.relation:contains"][0]?.to, "dc.smd:3-4G01");
+
+    const smdSlashEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.smd:3-4G01.json")),
+    ) as {
+      id: string;
+      attributes: Record<string, unknown>;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(smdSlashEntry.id, "dc.smd:3-4G01");
+    assertEquals(smdSlashEntry.attributes.sourceSmdId, "3/4G01");
+    assertEquals(smdSlashEntry.attributes.sourceAncId, "3/4G");
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 4);
+    assertEquals(countRows(db, "state_relations"), 2);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 4);
+    assertEquals(manifest.counts.relations, 2);
+    assertEquals(manifest.counts.citations, 6);
+    assertEquals(manifest.counts.sources, 2);
+    assertEquals(manifest.counts.relationKinds["dc.relation:contains"], 2);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("dc.anc:3-4G"), true);
+    assertEquals(entriesCsv.includes("dc.smd:3-4G01"), true);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:contains"), true);
+    assertEquals(relationsCsv.includes("dc.anc:3-4G"), true);
+    assertEquals(relationsCsv.includes("dc.smd:3-4G01"), true);
+
+    const citationsCsv = await Deno.readTextFile(join(releaseRoot, "citations.csv"));
+    assertEquals(citationsCsv.includes("3/4G01"), true);
+    assertEquals(citationsCsv.includes("3/4G"), true);
+
+    const sourcesCsv = await Deno.readTextFile(join(releaseRoot, "sources.csv"));
+    assertEquals(sourcesCsv.includes("dcgis.ancs"), true);
+    assertEquals(sourcesCsv.includes("dcgis.smds"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 Deno.test("state generation persists interpreter findings in workspace", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-findings-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-findings-output-" });
@@ -1564,7 +1768,7 @@ Deno.test("CLI script prints help when run directly", async () => {
   });
 
   const output = await command.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
 
   assertEquals(output.code, 0);
   assertEquals(stdout.includes("Usage: dc"), true);
@@ -1577,7 +1781,7 @@ Deno.test("CLI task tolerates task separator before help", async () => {
   });
 
   const output = await command.output();
-  const stdout = new TextDecoder().decode(output.stdout);
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
 
   assertEquals(output.code, 0);
   assertEquals(stdout.includes("Usage: dc"), true);
@@ -1597,6 +1801,21 @@ function countRows(db: ReturnType<typeof openWorkspace>, table: string): number 
   const statement = db.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`);
   const row = statement.get() as { count: number } | undefined;
   return row?.count ?? 0;
+}
+
+function stripAnsi(input: string): string {
+  let output = "";
+  for (let index = 0; index < input.length; index += 1) {
+    if (input[index] === "\u001b" && input[index + 1] === "[") {
+      index += 2;
+      while (index < input.length && input[index] !== "m") {
+        index += 1;
+      }
+      continue;
+    }
+    output += input[index];
+  }
+  return output;
 }
 
 async function exists(path: string): Promise<boolean> {
