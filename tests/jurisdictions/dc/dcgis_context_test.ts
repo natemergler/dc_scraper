@@ -7,6 +7,8 @@ import {
 Deno.test("fileSafeLedgerId preserves distinct ids for slash and hyphen inputs", () => {
   assertEquals(fileSafeLedgerId("3/4G"), "3~2F4G");
   assertEquals(fileSafeLedgerId("3-4G"), "3-4G");
+  assertEquals(fileSafeLedgerId("3~2F4G"), "3~7E2F4G");
+  assertEquals(fileSafeLedgerId("3~2F4G") !== fileSafeLedgerId("3/4G"), true);
 });
 
 Deno.test("normalizeAgencyLookupKey normalizes punctuation and common abbreviations", () => {
