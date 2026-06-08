@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> Active development for the ledger rewrite is happening on [`next/ledger`](https://github.com/natemergler/dc_scraper/tree/next/ledger). Start there for the current direction; `main` is the older DC Data CLI snapshot.
+
 > [!WARNING]
 > Vibe-coded and partially tested. Do not assume anything here works.
 
