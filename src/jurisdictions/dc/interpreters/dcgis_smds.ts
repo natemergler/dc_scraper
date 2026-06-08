@@ -19,7 +19,6 @@ export interface DcGisSmdPayload {
   ANC_ID?: unknown;
   NAME?: unknown;
   WEB_URL?: unknown;
-  EMAIL?: unknown;
 }
 
 const dcSmdKind = "dc.smd" as const;
@@ -116,11 +115,6 @@ export function interpretDcgisSmds(
     if (webUrl) {
       attributes.webUrl = webUrl;
     }
-    const email = asString(sourceRecord.EMAIL);
-    if (email) {
-      attributes.email = email;
-    }
-
     const provisionalId = makeSmdProvisionalId(smdId);
     entryFragments.push({
       fragmentType: "entry",

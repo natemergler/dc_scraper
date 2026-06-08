@@ -3,7 +3,7 @@ export interface DcInterpreterContext {
 }
 
 export function fileSafeLedgerId(input: string): string {
-  return input.replace(/\//g, "-");
+  return encodeURIComponent(input).replace(/%/g, "~");
 }
 
 export function normalizeAgencyLookupKey(input: string): string {

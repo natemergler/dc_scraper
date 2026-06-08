@@ -920,29 +920,29 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
 
     const stateEntryFiles = await listEntryFiles(join(stateRoot, "entries"));
     assertEquals(stateEntryFiles.includes("dc.anc:1A.json"), true);
-    assertEquals(stateEntryFiles.includes("dc.anc:3-4G.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.anc:3~2F4G.json"), true);
     assertEquals(stateEntryFiles.includes("dc.smd:1A01.json"), true);
-    assertEquals(stateEntryFiles.includes("dc.smd:3-4G01.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.smd:3~2F4G01.json"), true);
 
     const ancSlashEntry = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc:3-4G.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc:3~2F4G.json")),
     ) as {
       id: string;
       attributes: Record<string, unknown>;
       relations: Record<string, Array<{ kind: string; to: string }>>;
     };
-    assertEquals(ancSlashEntry.id, "dc.anc:3-4G");
+    assertEquals(ancSlashEntry.id, "dc.anc:3~2F4G");
     assertEquals(ancSlashEntry.attributes.sourceAncId, "3/4G");
-    assertEquals(ancSlashEntry.relations["dc.relation:contains"][0]?.to, "dc.smd:3-4G01");
+    assertEquals(ancSlashEntry.relations["dc.relation:contains"][0]?.to, "dc.smd:3~2F4G01");
 
     const smdSlashEntry = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.smd:3-4G01.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.smd:3~2F4G01.json")),
     ) as {
       id: string;
       attributes: Record<string, unknown>;
       relations: Record<string, Array<{ kind: string; to: string }>>;
     };
-    assertEquals(smdSlashEntry.id, "dc.smd:3-4G01");
+    assertEquals(smdSlashEntry.id, "dc.smd:3~2F4G01");
     assertEquals(smdSlashEntry.attributes.sourceSmdId, "3/4G01");
     assertEquals(smdSlashEntry.attributes.sourceAncId, "3/4G");
 
@@ -990,13 +990,13 @@ Deno.test("state generation can compile ANC and SMD sources together", async () 
     assertEquals(manifest.counts.relationKinds["dc.relation:contains"], 2);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
-    assertEquals(entriesCsv.includes("dc.anc:3-4G"), true);
-    assertEquals(entriesCsv.includes("dc.smd:3-4G01"), true);
+    assertEquals(entriesCsv.includes("dc.anc:3~2F4G"), true);
+    assertEquals(entriesCsv.includes("dc.smd:3~2F4G01"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:contains"), true);
-    assertEquals(relationsCsv.includes("dc.anc:3-4G"), true);
-    assertEquals(relationsCsv.includes("dc.smd:3-4G01"), true);
+    assertEquals(relationsCsv.includes("dc.anc:3~2F4G"), true);
+    assertEquals(relationsCsv.includes("dc.smd:3~2F4G01"), true);
 
     const citationsCsv = await Deno.readTextFile(join(releaseRoot, "citations.csv"));
     assertEquals(citationsCsv.includes("3/4G01"), true);
