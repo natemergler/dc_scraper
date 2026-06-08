@@ -5,11 +5,15 @@ import { dcBoardKind } from "./kinds/board.ts";
 import { dcCommissionKind } from "./kinds/commission.ts";
 import { dcAuthorityKind } from "./kinds/authority.ts";
 import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
+import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
+import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import {
   dcAffiliatedWithRelation,
+  dcChairsRelation,
   dcContainsRelation,
   dcGovernsRelation,
+  dcMemberOfRelation,
   dcReportsToRelation,
   dcRepresentsRelation,
 } from "./kinds/relation.ts";
@@ -20,6 +24,8 @@ import { dcgisBoardsBinding } from "./sources/dcgis_boards.ts";
 import { dcgisAuthoritiesBinding } from "./sources/dcgis_authorities.ts";
 import { dcgisAncsBinding } from "./sources/dcgis_ancs.ts";
 import { dcgisSmdsBinding } from "./sources/dcgis_smds.ts";
+import { dccouncilCommitteesBinding } from "./sources/dccouncil_committees.ts";
+import { dccouncilMembersBinding } from "./sources/dccouncil_members.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 
@@ -51,10 +57,14 @@ dcKindRegistry.register(dcBoardKind);
 dcKindRegistry.register(dcCommissionKind);
 dcKindRegistry.register(dcAuthorityKind);
 dcKindRegistry.register(dcAncCommissionerSeatKind);
+dcKindRegistry.register(dcCouncilCommitteeKind);
+dcKindRegistry.register(dcCouncilmemberKind);
 dcKindRegistry.register(dcSmdKind);
+dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
+dcKindRegistry.registerRelation(dcMemberOfRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
 dcKindRegistry.registerRelation(dcRepresentsRelation);
 
@@ -68,6 +78,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dcgisCommissionsBinding,
     dcgisAuthoritiesBinding,
     dcgisSmdsBinding,
+    dccouncilMembersBinding,
+    dccouncilCommitteesBinding,
   ],
   revisions: [],
 };

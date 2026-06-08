@@ -1,5 +1,6 @@
 export interface DcInterpreterContext {
   agencyLookup?: Map<string, string>;
+  councilmemberLookup?: Map<string, { provisionalId: string; sourceRecordId: string }>;
 }
 
 export function fileSafeLedgerId(input: string): string {

@@ -227,6 +227,240 @@ Deno.test("collect command supports dcgis.authorities source", async () => {
   }
 });
 
+Deno.test("state generation can compile Council committees and councilmembers together", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-council-committees-" });
+  const stateRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-council-committees-state-",
+  });
+  const releaseRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-council-committees-release-",
+  });
+
+  const responses = new Map<string, string>([
+    [
+      "https://dccouncil.gov/councilmembers/",
+      `
+      <a href="https://dccouncil.gov/council/phil-mendelson/">Chairman Phil Mendelson</a>
+      <a href="https://dccouncil.gov/council/anita-bonds/">At-Large Councilmember Anita Bonds</a>
+      <a href="https://dccouncil.gov/council/ward-2-councilmember-brooke-pinto/">Ward 2 Councilmember Brooke Pinto</a>
+      <a href="https://dccouncil.gov/council/zachary-parker/">Ward 5 Councilmember Zachary Parker</a>
+      <a href="https://dccouncil.gov/council/at-large-councilmember-doni-crawford/">At-Large Councilmember Doni Crawford</a>
+      <a href="https://dccouncil.gov/council/councilmember-trayon-white-sr/">Ward 8 Councilmember Trayon White, Sr.</a>
+      `,
+    ],
+    [
+      "https://dccouncil.gov/committees/",
+      `
+      <h3>Committees</h3>
+      <ul>
+        <li><a href="https://dccouncil.gov/committees/committee-of-the-whole/">Committee of the Whole</a></li>
+        <li><a href="https://dccouncil.gov/committees/committee-on-youth-affairs/">Committee on Youth Affairs</a></li>
+      </ul>
+      `,
+    ],
+    [
+      "https://dccouncil.gov/committees/committee-of-the-whole/",
+      `
+      <h1>Committee of the Whole</h1>
+      <h2>Councilmembers</h2>
+      <h4>Chairperson</h4>
+      <p><a href="https://dccouncil.gov/council/phil-mendelson/">Chairman Phil Mendelson</a></p>
+      <hr>
+      <h4>Councilmembers</h4>
+      <ul>
+        <li><a href="https://dccouncil.gov/council/anita-bonds/">At-Large Councilmember Anita Bonds</a></li>
+      </ul>
+      <h2>Agencies Under This Committee</h2>
+      `,
+    ],
+    [
+      "https://dccouncil.gov/committees/committee-on-youth-affairs/",
+      `
+      <h1>Committee on Youth Affairs</h1>
+      <h2>Councilmembers</h2>
+      <h4>Chairperson</h4>
+      <p><a href="https://dccouncil.gov/council/zachary-parker/">Ward 5 Councilmember Zachary Parker</a></p>
+      <hr>
+      <h4>Councilmembers</h4>
+      <ul>
+        <li><a href="https://dccouncil.gov/council/at-large-councilmember-doni-crawford/">At-Large Councilmember Doni Crawford</a></li>
+        <li><a href="https://dccouncil.gov/council/ward-2-councilmember-brooke-pinto/">Ward 2 Councilmember Brooke Pinto</a></li>
+      </ul>
+      <h2>Agencies Under This Committee</h2>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const body = responses.get(key);
+    if (!body) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(body, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const membersCollectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dccouncil.members",
+      "--limit",
+      "6",
+    ]);
+    assertEquals(membersCollectCode, 0);
+
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dccouncil.committees",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const committeeEntryFiles = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(committeeEntryFiles.includes("dc.committee:committee-of-the-whole.json"), true);
+    assertEquals(
+      committeeEntryFiles.includes("dc.committee:committee-on-youth-affairs.json"),
+      true,
+    );
+    assertEquals(committeeEntryFiles.includes("dc.councilmember:phil-mendelson.json"), true);
+    assertEquals(committeeEntryFiles.includes("dc.councilmember:anita-bonds.json"), true);
+    assertEquals(
+      committeeEntryFiles.includes("dc.councilmember:councilmember-trayon-white-sr.json"),
+      true,
+    );
+
+    const committeeEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.committee:committee-of-the-whole.json"),
+      ),
+    ) as {
+      id: string;
+      kind: string;
+      attributes: Record<string, unknown>;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(committeeEntry.id, "dc.committee:committee-of-the-whole");
+    assertEquals(committeeEntry.kind, "dc.committee");
+    assertEquals(committeeEntry.attributes.sourceCommitteeSlug, "committee-of-the-whole");
+    assertEquals(Object.hasOwn(committeeEntry.relations, "dc.relation:member_of"), false);
+
+    const chairEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.councilmember:phil-mendelson.json")),
+    ) as {
+      id: string;
+      family: string;
+      kind: string;
+      attributes: Record<string, unknown>;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(chairEntry.id, "dc.councilmember:phil-mendelson");
+    assertEquals(chairEntry.family, "person");
+    assertEquals(chairEntry.kind, "dc.councilmember");
+    assertEquals(chairEntry.attributes.sourceProfileSlug, "phil-mendelson");
+    assertEquals(
+      chairEntry.relations["dc.relation:chairs"][0]?.to,
+      "dc.committee:committee-of-the-whole",
+    );
+    assertEquals(
+      chairEntry.relations["dc.relation:member_of"][0]?.to,
+      "dc.committee:committee-of-the-whole",
+    );
+
+    const ward8Entry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.councilmember:councilmember-trayon-white-sr.json"),
+      ),
+    ) as {
+      id: string;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(
+      ward8Entry.relations["dc.relation:member_of"][0]?.to,
+      "dc.committee:committee-of-the-whole",
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 8);
+    assertEquals(countRows(db, "state_relations"), 11);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 8);
+    assertEquals(manifest.counts.relations, 11);
+    assertEquals(manifest.counts.relationKinds["dc.relation:chairs"], 2);
+    assertEquals(manifest.counts.relationKinds["dc.relation:member_of"], 9);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("dc.committee:committee-of-the-whole"), true);
+    assertEquals(entriesCsv.includes("dc.councilmember:phil-mendelson"), true);
+    assertEquals(entriesCsv.includes("Committee of the Whole"), true);
+    assertEquals(entriesCsv.includes("Trayon White"), true);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:chairs"), true);
+    assertEquals(relationsCsv.includes("dc.relation:member_of"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 Deno.test("state commands generate index check committed state", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-output-" });
