@@ -8,6 +8,7 @@ import {
 import { collectRecordCitations } from "./citations.ts";
 import { fileSafeLedgerId } from "./context.ts";
 import { dcAncCommissionerSeatKind } from "../kinds/anc_commissioner_seat.ts";
+import { dcPersonKind } from "../kinds/person.ts";
 
 export interface DcgisSmdsInterpreterResult {
   entryFragments: EntryFragment[];
@@ -19,6 +20,9 @@ export interface DcGisSmdPayload {
   SMD_ID?: unknown;
   ANC_ID?: unknown;
   NAME?: unknown;
+  REP_NAME?: unknown;
+  FIRST_NAME?: unknown;
+  LAST_NAME?: unknown;
   WEB_URL?: unknown;
   EMAIL?: unknown;
 }
@@ -26,6 +30,7 @@ export interface DcGisSmdPayload {
 const dcSmdKind = "dc.smd" as const;
 const containsRelationKind = "dc.relation:contains" as const;
 const representsRelationKind = "dc.relation:represents" as const;
+const holdsRelationKind = "dc.relation:holds" as const;
 const sourceKind = "dcgis.smds" as const;
 
 function asString(value: unknown): string | null {
@@ -48,6 +53,18 @@ function parseSmdName(payload: Record<string, unknown>): string | null {
   return asString(payload.NAME);
 }
 
+function parseRepresentativeName(payload: Record<string, unknown>): string | null {
+  return asString(payload.REP_NAME);
+}
+
+function parseFirstName(payload: Record<string, unknown>): string | null {
+  return asString(payload.FIRST_NAME);
+}
+
+function parseLastName(payload: Record<string, unknown>): string | null {
+  return asString(payload.LAST_NAME);
+}
+
 function makeSmdProvisionalId(smdId: string): string {
   return `dc.smd:${fileSafeLedgerId(smdId)}`;
 }
@@ -58,6 +75,14 @@ function makeAncProvisionalId(ancId: string): string {
 
 function makeSeatProvisionalId(smdId: string): string {
   return `dc.anc_commissioner_seat:${fileSafeLedgerId(smdId)}`;
+}
+
+function makeCommissionerProvisionalId(smdId: string): string {
+  return `dc.person:anc_commissioner_${fileSafeLedgerId(smdId)}`;
+}
+
+function isVacantRepresentativeName(name: string | null): boolean {
+  return name !== null && name.trim().toUpperCase() === "VACANT";
 }
 
 export function interpretDcgisSmds(
@@ -113,6 +138,9 @@ export function interpretDcgisSmds(
     const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
     const ancId = parseAncId(sourceRecord);
     const officeEmail = asString(sourceRecord.EMAIL);
+    const representativeName = parseRepresentativeName(sourceRecord);
+    const firstName = parseFirstName(sourceRecord);
+    const lastName = parseLastName(sourceRecord);
 
     const attributes: Record<string, unknown> = {
       sourceSmdId: smdId,
@@ -126,6 +154,7 @@ export function interpretDcgisSmds(
     }
     const provisionalId = makeSmdProvisionalId(smdId);
     const seatProvisionalId = makeSeatProvisionalId(smdId);
+    const commissionerProvisionalId = makeCommissionerProvisionalId(smdId);
     entryFragments.push({
       fragmentType: "entry",
       source: sourceKind,
@@ -160,6 +189,48 @@ export function interpretDcgisSmds(
       citations,
     });
 
+    if (representativeName && !isVacantRepresentativeName(representativeName)) {
+      const commissionerAttributes: Record<string, unknown> = {
+        sourceSmdId: smdId,
+        sourceRepresentativeName: representativeName,
+      };
+      if (ancId) {
+        commissionerAttributes.sourceAncId = ancId;
+      }
+      if (firstName) {
+        commissionerAttributes.firstName = firstName;
+      }
+      if (lastName) {
+        commissionerAttributes.lastName = lastName;
+      }
+
+      entryFragments.push({
+        fragmentType: "entry",
+        source: sourceKind,
+        sourceRecordId: record.key,
+        provisionalId: commissionerProvisionalId,
+        family: dcPersonKind.family,
+        kind: dcPersonKind.kind,
+        name: representativeName,
+        attributes: commissionerAttributes,
+        citations,
+      });
+    } else if (representativeName && isVacantRepresentativeName(representativeName)) {
+      findings.push({
+        kind: "warn",
+        code: "dc.interpreter.smd_representative_vacant",
+        message: `dcgis.smds record ${record.key} is vacant; skipping commissioner person`,
+        citation: cite(sourceKind, record.key),
+      });
+    } else {
+      findings.push({
+        kind: "warn",
+        code: "dc.interpreter.smd_representative_missing",
+        message: `dcgis.smds record ${record.key} has no representative name fields`,
+        citation: cite(sourceKind, record.key),
+      });
+    }
+
     if (ancId) {
       relationFragments.push({
         fragmentType: "relation",
@@ -188,6 +259,18 @@ export function interpretDcgisSmds(
       to: provisionalId,
       citations,
     });
+
+    if (representativeName && !isVacantRepresentativeName(representativeName)) {
+      relationFragments.push({
+        fragmentType: "relation",
+        source: sourceKind,
+        sourceRecordId: record.key,
+        from: commissionerProvisionalId,
+        relationKind: holdsRelationKind,
+        to: seatProvisionalId,
+        citations,
+      });
+    }
   }
 
   return { entryFragments, relationFragments, findings };

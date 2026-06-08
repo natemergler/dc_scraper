@@ -5,11 +5,13 @@ import { dcBoardKind } from "./kinds/board.ts";
 import { dcCommissionKind } from "./kinds/commission.ts";
 import { dcAuthorityKind } from "./kinds/authority.ts";
 import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
+import { dcPersonKind } from "./kinds/person.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import {
   dcAffiliatedWithRelation,
   dcContainsRelation,
   dcGovernsRelation,
+  dcHoldsRelation,
   dcReportsToRelation,
   dcRepresentsRelation,
 } from "./kinds/relation.ts";
@@ -51,10 +53,12 @@ dcKindRegistry.register(dcBoardKind);
 dcKindRegistry.register(dcCommissionKind);
 dcKindRegistry.register(dcAuthorityKind);
 dcKindRegistry.register(dcAncCommissionerSeatKind);
+dcKindRegistry.register(dcPersonKind);
 dcKindRegistry.register(dcSmdKind);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
+dcKindRegistry.registerRelation(dcHoldsRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
 dcKindRegistry.registerRelation(dcRepresentsRelation);
 
