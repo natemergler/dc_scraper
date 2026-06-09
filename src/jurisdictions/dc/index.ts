@@ -26,6 +26,7 @@ import { dcgisAncsBinding } from "./sources/dcgis_ancs.ts";
 import { dcgisSmdsBinding } from "./sources/dcgis_smds.ts";
 import { dccouncilCommitteesBinding } from "./sources/dccouncil_committees.ts";
 import { dccouncilMembersBinding } from "./sources/dccouncil_members.ts";
+import { openDCPublicBodiesBinding } from "./sources/open_dc_public_bodies.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 
@@ -80,6 +81,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dcgisSmdsBinding,
     dccouncilMembersBinding,
     dccouncilCommitteesBinding,
+    openDCPublicBodiesBinding,
   ],
   revisions: [],
 };
