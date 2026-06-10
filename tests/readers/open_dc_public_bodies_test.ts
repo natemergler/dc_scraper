@@ -11,6 +11,8 @@ const RELATIVE_INDEX_HTML = `
     <tr><td><a href="/public-bodies/advisory-board/">Advisory Board (AB)</a></td></tr>
     <tr><td><a href="/public-bodies/planning-commission">Planning Commission</a></td></tr>
     <tr><td><a href="/public-bodies/water-authority/">Water Authority</a></td></tr>
+    <tr><td><a href="/public-bodies/meetings">Meetings</a></td></tr>
+    <tr><td><a href="/public-bodies/advisory-board/meetings">Meeting calendar</a></td></tr>
   </table>
 </body>
 </html>
@@ -23,6 +25,20 @@ const ABSOLUTE_INDEX_HTML = `
     <tr><td><a href="https://www.open-dc.gov/public-bodies/advisory-board/">Advisory Board (AB)</a></td></tr>
     <tr><td><a href="https://www.open-dc.gov/public-bodies/planning-commission">Planning Commission</a></td></tr>
     <tr><td><a href="https://www.open-dc.gov/public-bodies/water-authority/">Water Authority</a></td></tr>
+    <tr><td><a href="https://www.open-dc.gov/public-bodies/meetings">Meetings</a></td></tr>
+    <tr><td><a href="https://www.open-dc.gov/public-bodies/advisory-board/meetings">Meeting calendar</a></td></tr>
+  </table>
+</body>
+</html>
+`;
+
+const DUPLICATE_NAME_INDEX_HTML = `
+<html>
+<body>
+  <table>
+    <tr><td><a href="/public-bodies/adult-career-pathways-task-force/">Adult Career Pathways Task Force</a></td></tr>
+    <tr><td><a href="/public-bodies/adult-career-pathways-task-force-2/">Adult Career Pathways Task Force</a></td></tr>
+    <tr><td><a href="/public-bodies/meetings">Meetings</a></td></tr>
   </table>
 </body>
 </html>
@@ -132,6 +148,30 @@ Deno.test("OpenDCPublicBodiesReader collects index links from absolute URLs", as
   assertEquals(result.records[2].key, "water-authority");
 });
 
+Deno.test("OpenDCPublicBodiesReader keeps duplicate names across distinct slugs", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async () => new Response(DUPLICATE_NAME_INDEX_HTML, { status: 200 }),
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+  });
+
+  assertEquals(result.records.length, 2);
+  assertEquals(result.records[0].payload.name, "Adult Career Pathways Task Force");
+  assertEquals(result.records[1].payload.name, "Adult Career Pathways Task Force");
+  assertEquals(result.records[0].key, "adult-career-pathways-task-force");
+  assertEquals(result.records[1].key, "adult-career-pathways-task-force-2");
+});
+
 Deno.test("OpenDCPublicBodiesReader fetches and parses detail pages", async () => {
   const detailMap = new Map<string, string>([
     ["https://www.open-dc.gov/public-bodies/advisory-board", DETAIL_ADVISORY_BOARD],
@@ -185,6 +225,57 @@ Deno.test("OpenDCPublicBodiesReader fetches and parses detail pages", async () =
   assertEquals(water.payload.name, "Water Authority");
   assertEquals(water.payload.governingAgency, "N/A");
   assertEquals(water.payload.administeringAgency, "Executive Office of the Mayor");
+});
+
+Deno.test("OpenDCPublicBodiesReader parses view-based enabling statute links without meetings noise", async () => {
+  const viewBasedDetail = `
+    <html>
+    <body>
+      <div class="views-field views-field-field-statute-mayors-order">
+        <span class="field-content"><a href="https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2024-034">Mayor's Order 2024-034</a></span>
+      </div>
+      <div class="view view-meetings-calendar">
+        <a href="/public-bodies/adult-career-pathways-task-force/meetings">Meeting calendar</a>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const index =
+    `<a href="/public-bodies/adult-career-pathways-task-force/">Adult Career Pathways Task Force</a>`;
+
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("adult-career-pathways-task-force")) {
+        return new Response(viewBasedDetail, { status: 200 });
+      }
+      return new Response(index, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records.length, 1);
+  const record = result.records[0];
+  assertEquals(record.payload.enablingStatute, "Mayor's Order 2024-034");
+  assertEquals(
+    record.payload.enablingStatuteUrl,
+    "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2024-034",
+  );
+  const payloadKeys = Object.keys(record.payload as Record<string, unknown>);
+  assertEquals(payloadKeys.includes("meetingLinks"), false);
+  assertEquals(payloadKeys.includes("meetings"), false);
 });
 
 Deno.test("OpenDCPublicBodiesReader excludes contact, members, meetings data", async () => {

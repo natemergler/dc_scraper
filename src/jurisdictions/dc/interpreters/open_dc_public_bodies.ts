@@ -68,7 +68,7 @@ function detectKindFromName(name: string): string {
   if (lower.includes("authority")) {
     return "authority";
   }
-  if (lower.includes("task force")) {
+  if (/\btask(?:[- ]?force)\b/.test(lower)) {
     return "task_force";
   }
   if (lower.includes("council")) {
@@ -186,6 +186,22 @@ export function interpretOpenDCPublicBodies(
   const entryFragments: EntryFragment[] = [];
   const relationFragments: RelationFragment[] = [];
   const findings: Finding[] = [];
+  const parsedRecords: Array<{
+    record: ReaderResultRecord;
+    name: string;
+    slug: string;
+    detailUrl: string;
+    enablingStatute?: string;
+    enablingStatuteUrl?: string;
+    governingAgency?: string;
+    governingAgencyAcronym?: string;
+    administeringAgency?: string;
+    fromSupplementalIndex: boolean;
+    detected: string;
+    provisionalId: string;
+    normalizedName: string;
+  }> = [];
+  const normalizedNameToSlugs = new Map<string, Set<string>>();
 
   for (const record of records) {
     if (!record || typeof record !== "object") {
@@ -215,7 +231,9 @@ export function interpretOpenDCPublicBodies(
     const enablingStatute = asString(sourceRecord.enablingStatute);
     const enablingStatuteUrl = asString(sourceRecord.enablingStatuteUrl);
     const governingAgency = asString(sourceRecord.governingAgency);
+    const governingAgencyAcronym = asString(sourceRecord.governingAgencyAcronym);
     const administeringAgency = asString(sourceRecord.administeringAgency);
+    const fromSupplementalIndex = sourceRecord.fromSupplementalIndex === true;
 
     if (!name || !slug || !detailUrl) {
       findings.push({
@@ -229,112 +247,160 @@ export function interpretOpenDCPublicBodies(
 
     const detected = detectKindFromName(name);
     const provisionalId = makeProvisionalId(detected, slug);
+    const normalizedName = normalizeAgencyLookupKey(name);
+    parsedRecords.push({
+      record,
+      name,
+      slug,
+      detailUrl,
+      enablingStatute: enablingStatute ?? undefined,
+      enablingStatuteUrl: enablingStatuteUrl ?? undefined,
+      governingAgency: governingAgency ?? undefined,
+      governingAgencyAcronym: governingAgencyAcronym ?? undefined,
+      administeringAgency: administeringAgency ?? undefined,
+      fromSupplementalIndex,
+      detected,
+      provisionalId,
+      normalizedName,
+    });
 
+    let slugSet = normalizedNameToSlugs.get(normalizedName);
+    if (!slugSet) {
+      slugSet = new Set<string>();
+      normalizedNameToSlugs.set(normalizedName, slugSet);
+    }
+    slugSet.add(slug);
+  }
+
+  for (const parsed of parsedRecords) {
     const standardKinds = new Set(["board", "commission", "authority"]);
-    if (!standardKinds.has(detected)) {
+    if (!standardKinds.has(parsed.detected)) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_unclassified_body",
-        message: `Public body "${name}" identified as "${detected}"; classified as dc.agency`,
-        citation: cite(sourceKind, record.key),
+        message:
+          `Public body "${parsed.name}" identified as "${parsed.detected}"; classified as dc.agency`,
+        citation: cite(sourceKind, parsed.record.key),
       });
     }
 
-    const citations = [cite(sourceKind, record.key)];
+    const duplicateSlugs = normalizedNameToSlugs.get(parsed.normalizedName);
+    if (duplicateSlugs && duplicateSlugs.size > 1) {
+      findings.push({
+        kind: "info",
+        code: "dc.interpreter.opendc_likely_duplicate_public_body",
+        message:
+          `Public body "${parsed.name}" appears under multiple Open DC slugs after normalization: ${
+            [...duplicateSlugs].sort().join(", ")
+          }`,
+        citation: cite(sourceKind, parsed.record.key),
+      });
+    }
 
-    const legalLocators = enablingStatute
-      ? parseLegalCitationLocators({ LEGAL_REFERENCE: enablingStatute })
+    const citations = [cite(sourceKind, parsed.record.key)];
+
+    const legalLocators = parsed.enablingStatute
+      ? parseLegalCitationLocators({ LEGAL_REFERENCE: parsed.enablingStatute })
       : [];
 
     for (const locator of legalLocators) {
-      citations.push(cite(sourceKind, record.key, { locator }));
+      citations.push(cite(sourceKind, parsed.record.key, { locator }));
     }
 
     const attributes: Record<string, unknown> = {
-      shortName: name,
-      sourceOpenDcSlug: slug,
-      sourceOpenDcUrl: detailUrl,
+      shortName: parsed.name,
+      sourceOpenDcSlug: parsed.slug,
+      sourceOpenDcUrl: parsed.detailUrl,
     };
 
-    if (enablingStatute) {
-      attributes.enablingStatute = enablingStatute;
+    if (parsed.enablingStatute) {
+      attributes.enablingStatute = parsed.enablingStatute;
     }
-    if (enablingStatuteUrl) {
-      attributes.enablingStatuteUrl = enablingStatuteUrl;
+    if (parsed.enablingStatuteUrl) {
+      attributes.enablingStatuteUrl = parsed.enablingStatuteUrl;
     }
 
     entryFragments.push({
       fragmentType: "entry",
       source: sourceKind,
-      sourceRecordId: record.key,
-      provisionalId,
-      family: entryFamilyForPublicBody(detected),
-      kind: entryKindForPublicBody(detected),
-      name,
+      sourceRecordId: parsed.record.key,
+      provisionalId: parsed.provisionalId,
+      family: entryFamilyForPublicBody(parsed.detected),
+      kind: entryKindForPublicBody(parsed.detected),
+      name: parsed.name,
       attributes,
       citations,
     });
 
     const governingResolution = resolveAgencyRelation(
-      governingAgency ?? "",
-      provisionalId,
+      parsed.governingAgency ?? "",
+      parsed.provisionalId,
       context,
     );
     if (governingResolution) {
       relationFragments.push({
         fragmentType: "relation",
         source: sourceKind,
-        sourceRecordId: record.key,
-        from: provisionalId,
+        sourceRecordId: parsed.record.key,
+        from: parsed.provisionalId,
         relationKind: governsRelationKind,
         to: governingResolution.resolvedId,
-        citations: [cite(sourceKind, record.key)],
+        citations: [cite(sourceKind, parsed.record.key)],
       });
-    } else if (governingAgency) {
-      const finding = getAgencyRelationFinding(governingAgency, provisionalId, context);
+    } else if (parsed.governingAgency) {
+      const finding = getAgencyRelationFinding(
+        parsed.governingAgency,
+        parsed.provisionalId,
+        context,
+      );
       if (finding) {
         findings.push({
           kind: "info",
           code: finding.code,
           message: finding.message,
-          citation: cite(sourceKind, record.key, { locator: "governingAgency" }),
+          citation: cite(sourceKind, parsed.record.key, { locator: "governingAgency" }),
         });
       }
     }
 
     const administeringResolution = resolveAgencyRelation(
-      administeringAgency ?? "",
-      provisionalId,
+      parsed.administeringAgency ?? "",
+      parsed.provisionalId,
       context,
     );
     if (administeringResolution) {
       relationFragments.push({
         fragmentType: "relation",
         source: sourceKind,
-        sourceRecordId: record.key,
-        from: provisionalId,
+        sourceRecordId: parsed.record.key,
+        from: parsed.provisionalId,
         relationKind: governsRelationKind,
         to: administeringResolution.resolvedId,
-        citations: [cite(sourceKind, record.key)],
+        citations: [cite(sourceKind, parsed.record.key)],
       });
-    } else if (administeringAgency) {
-      const finding = getAgencyRelationFinding(administeringAgency, provisionalId, context);
+    } else if (parsed.administeringAgency) {
+      const finding = getAgencyRelationFinding(
+        parsed.administeringAgency,
+        parsed.provisionalId,
+        context,
+      );
       if (finding) {
         findings.push({
           kind: "info",
           code: finding.code,
           message: finding.message,
-          citation: cite(sourceKind, record.key, { locator: "administeringAgency" }),
+          citation: cite(sourceKind, parsed.record.key, { locator: "administeringAgency" }),
         });
       }
     }
 
-    if (enablingStatute && legalLocators.length === 0) {
+    if (parsed.enablingStatute && legalLocators.length === 0) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_unparsed",
-        message: `Could not parse legal citation from enabling statute: "${enablingStatute}"`,
-        citation: cite(sourceKind, record.key, { locator: "enablingStatute" }),
+        message:
+          `Could not parse legal citation from enabling statute: "${parsed.enablingStatute}"`,
+        citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
       });
     }
   }

@@ -153,24 +153,32 @@ Deno.test("open_dc.public_bodies interprets committee as dc.agency with finding"
   assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
-Deno.test("open_dc.public_bodies interprets task force as dc.agency with finding", () => {
-  const output = interpretOpenDCPublicBodies([{
-    source: openDCPublicBodiesSource.id,
-    snapshotKey: "page-0",
-    key: "climate-task-force",
-    payload: {
-      name: "Climate Task Force",
-      slug: "climate-task-force",
-      detailUrl: "https://www.open-dc.gov/public-bodies/climate-task-force/",
-    },
-  }]);
+Deno.test("open_dc.public_bodies interprets task-force variants as dc.agency with finding", () => {
+  for (
+    const [name, slug] of [
+      ["Climate Task-Force", "climate-task-force"],
+      ["Climate Taskforce", "climate-taskforce"],
+    ] as const
+  ) {
+    const output = interpretOpenDCPublicBodies([{
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-0",
+      key: slug,
+      payload: {
+        name,
+        slug,
+        detailUrl: `https://www.open-dc.gov/public-bodies/${slug}/`,
+      },
+    }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.provisionalId, "dc.agency:climate-task-force");
-  assertEquals(entryFragment.kind, "dc.agency");
-  assertEquals(output.findings.length, 1);
-  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
+    assertEquals(output.entryFragments.length, 1);
+    const [entryFragment] = output.entryFragments;
+    assertEquals(entryFragment.provisionalId, `dc.agency:${slug}`);
+    assertEquals(entryFragment.kind, "dc.agency");
+    assertEquals(output.findings.length, 1);
+    assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
+    assertEquals(output.findings[0].message.includes('"task_force"'), true);
+  }
 });
 
 Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", () => {
@@ -344,6 +352,44 @@ Deno.test("open_dc.public_bodies creates finding for unresolvable agency label",
     (f) => f.code === "dc.interpreter.opendc_governing_agency_unresolved",
   );
   assertEquals(unresolvedFinding !== undefined, true);
+});
+
+Deno.test("open_dc.public_bodies reports likely duplicate bodies when normalized names collide across slugs", () => {
+  const output = interpretOpenDCPublicBodies([
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-0",
+      key: "adult-career-pathways-task-force",
+      payload: {
+        name: "Adult Career Pathways Task Force",
+        slug: "adult-career-pathways-task-force",
+        detailUrl: "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force/",
+      },
+    },
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-1",
+      key: "adult-career-pathways-task-force-2",
+      payload: {
+        name: "Adult Career Pathways Task Force",
+        slug: "adult-career-pathways-task-force-2",
+        detailUrl: "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force-2/",
+      },
+    },
+  ]);
+
+  assertEquals(output.entryFragments.length, 2);
+  const duplicateFindings = output.findings.filter(
+    (finding) => finding.code === "dc.interpreter.opendc_likely_duplicate_public_body",
+  );
+  assertEquals(duplicateFindings.length, 2);
+  assertEquals(
+    duplicateFindings.every((finding) =>
+      finding.message.includes("adult-career-pathways-task-force") &&
+      finding.message.includes("adult-career-pathways-task-force-2")
+    ),
+    true,
+  );
 });
 
 Deno.test("open_dc.public_bodies parses legal citations from enabling statute", () => {
