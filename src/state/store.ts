@@ -120,10 +120,21 @@ export async function loadCommittedState(
 }
 
 const citationCompare = (left: CitationValue, right: CitationValue): number => {
-  const leftSource = "source" in left ? `${left.source}:${left.sourceRecordId}` : "uncited";
-  const rightSource = "source" in right ? `${right.source}:${right.sourceRecordId}` : "uncited";
-  return leftSource.localeCompare(rightSource);
+  return citationIdentity(left).localeCompare(citationIdentity(right));
 };
+
+function citationIdentity(citation: CitationValue): string {
+  if ("source" in citation) {
+    return [
+      "source",
+      citation.source,
+      citation.sourceRecordId,
+      citation.locator ?? "",
+      citation.url ?? "",
+    ].join(":");
+  }
+  return `uncited:${citation.reason ?? ""}`;
+}
 
 const sortCitations = (citations: CitationValue[] = []): CitationValue[] => {
   return [...citations].sort(citationCompare);
