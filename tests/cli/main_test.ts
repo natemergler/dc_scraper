@@ -2654,6 +2654,138 @@ Deno.test("CLI flow with dccourts.structure produces courts and division part_of
   }
 });
 
+Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-release-" });
+
+  const legalHtml = `
+  <html>
+    <body>
+      <a href="https://code.dccouncil.gov/">District of Columbia Official Code</a>
+      <a href="https://dcregs.dc.gov/">DC Register / DCMR</a>
+      <a href="https://mayor.dc.gov/page/mayors-orders">Mayor's Orders</a>
+      <a href="https://dc.gov/page/laws-regulations-and-courts">Laws, Regulations and Courts</a>
+      <a href="https://mayor.dc.gov/">Mayor</a>
+      <a href="/page/services">Services</a>
+      <a href="https://dcregs.dc.gov/Common/DCMR/ChapterList.aspx?subtitleId=1">DCMR Title List</a>
+    </body>
+  </html>
+  `;
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    if (key !== "https://dc.gov/page/laws-regulations-and-courts") {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(legalHtml, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "legal.entrypoints",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(
+      stateEntries.includes("dc.legal_source:district-of-columbia-official-code.json"),
+      true,
+    );
+    assertEquals(stateEntries.includes("dc.legal_source:dc-register-dcmr.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:mayors-orders.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:laws-regulations-and-courts.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:dcmr-title-list.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:mayor.json"), false);
+
+    const codeEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.legal_source:district-of-columbia-official-code.json"),
+      ),
+    ) as {
+      family: string;
+      kind: string;
+      relations: Record<string, unknown>;
+    };
+    assertEquals(codeEntry.family, "authority");
+    assertEquals(codeEntry.kind, "dc.legal_source");
+    assertEquals(codeEntry.relations, {});
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 5);
+    assertEquals(countRows(db, "state_relations"), 0);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 5);
+    assertEquals(manifest.counts.relations, 0);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("District of Columbia Official Code"), true);
+    assertEquals(entriesCsv.includes("DC Register / DCMR"), true);
+    assertEquals(entriesCsv.includes("Mayor's Orders"), true);
+    assertEquals(entriesCsv.includes("Laws, Regulations and Courts"), true);
+    assertEquals(entriesCsv.includes("DCMR Title List"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {

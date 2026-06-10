@@ -11,6 +11,7 @@ import { dcCourtSystemKind } from "./kinds/court_system.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
 import { dcOfficeKind } from "./kinds/office.ts";
+import { dcLegalSourceKind } from "./kinds/legal_source.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import {
   dcAffiliatedWithRelation,
@@ -34,6 +35,7 @@ import { dccouncilMembersBinding } from "./sources/dccouncil_members.ts";
 import { openDCPublicBodiesBinding } from "./sources/open_dc_public_bodies.ts";
 import { begaStructureBinding } from "./sources/bega_structure.ts";
 import { dccourtsStructureBinding } from "./sources/dccourts_structure.ts";
+import { legalEntrypointsBinding } from "./sources/legal_entrypoints.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 
@@ -71,6 +73,7 @@ dcKindRegistry.register(dcCourtDivisionKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
 dcKindRegistry.register(dcOfficeKind);
+dcKindRegistry.register(dcLegalSourceKind);
 dcKindRegistry.register(dcSmdKind);
 dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
@@ -96,6 +99,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     openDCPublicBodiesBinding,
     begaStructureBinding,
     dccourtsStructureBinding,
+    legalEntrypointsBinding,
   ],
   revisions: [],
 };
