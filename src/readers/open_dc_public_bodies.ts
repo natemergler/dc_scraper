@@ -239,7 +239,11 @@ function parseDetailPage(html: string): {
   function setField(fieldName: string, value: { text: string; url?: string }) {
     const normalized = resolveFieldAlias(normalizeFieldName(fieldName));
     if (!fields[normalized]) {
-      fields[normalized] = value;
+      const sanitizedUrl = value.url ? sanitizeSourceUrl(value.url) : undefined;
+      fields[normalized] = {
+        text: value.text,
+        ...(sanitizedUrl ? { url: sanitizedUrl } : {}),
+      };
     }
   }
 
@@ -302,6 +306,34 @@ function parseDetailPage(html: string): {
 
 function normalizeFieldName(name: string): string {
   return name.toLowerCase().replace(WHITESPACE_RE, " ").trim();
+}
+
+function sanitizeSourceUrl(url: string): string | undefined {
+  const decoded = decodeRepeatedly(url).toLowerCase().replace(/\\/g, "/");
+  if (
+    decoded.includes("file:///") ||
+    decoded.includes("/users/") ||
+    /^[a-z]:\//.test(decoded)
+  ) {
+    return undefined;
+  }
+  return url;
+}
+
+function decodeRepeatedly(value: string): string {
+  let current = value;
+  for (let i = 0; i < 3; i += 1) {
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current) {
+        return decoded;
+      }
+      current = decoded;
+    } catch {
+      return current;
+    }
+  }
+  return current;
 }
 
 function resolveOpenDcUrl(href: string): string | null {

@@ -278,6 +278,52 @@ Deno.test("OpenDCPublicBodiesReader parses view-based enabling statute links wit
   assertEquals(payloadKeys.includes("meetings"), false);
 });
 
+Deno.test("OpenDCPublicBodiesReader suppresses local file enabling statute URLs", async () => {
+  const detail = `
+    <html>
+    <body>
+      <div class="views-field views-field-field-statute-mayors-order">
+        <span class="field-content"><a href="/file%253A///C%253A/Users/tracie.hughes/Documents/Downloads/53207.pdf">Mayor's Order 2014-232</a></span>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const index =
+    `<a href="/public-bodies/adult-career-pathways-task-force/">Adult Career Pathways Task Force</a>`;
+
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("adult-career-pathways-task-force")) {
+        return new Response(detail, { status: 200 });
+      }
+      return new Response(index, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records.length, 1);
+  const record = result.records[0];
+  assertEquals(record.payload.enablingStatute, "Mayor's Order 2014-232");
+  assertEquals(record.payload.enablingStatuteUrl, undefined);
+
+  const serializedPayload = JSON.stringify(record.payload);
+  assertEquals(serializedPayload.includes("Users"), false);
+  assertEquals(serializedPayload.includes("file%253A"), false);
+});
+
 Deno.test("OpenDCPublicBodiesReader excludes contact, members, meetings data", async () => {
   const source: OpenDCPublicBodiesSource = {
     id: "open_dc.public_bodies",
