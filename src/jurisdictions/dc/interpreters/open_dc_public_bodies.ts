@@ -132,7 +132,8 @@ function resolveAgencyRelation(
   if (context?.agencyLookup) {
     const resolvedId = context.agencyLookup.get(normalized);
     if (resolvedId) {
-      return resolvedId === subjectProvisionalId ? undefined : { resolvedId };
+      const fullId = resolvedId.includes(":") ? resolvedId : `dc.agency:${resolvedId}`;
+      return fullId === subjectProvisionalId ? undefined : { resolvedId: fullId };
     }
   }
 
@@ -150,10 +151,18 @@ function getAgencyRelationFinding(
 
   if (context?.agencyLookup) {
     const resolvedId = context.agencyLookup.get(normalized);
-    if (resolvedId === subjectProvisionalId) {
+    if (resolvedId) {
+      const fullId = resolvedId.includes(":") ? resolvedId : `dc.agency:${resolvedId}`;
+      if (fullId === subjectProvisionalId) {
+        return {
+          code: "dc.interpreter.opendc_governing_agency_self_reference",
+          message: `Public body "${name}" has governing agency "${name}" that resolves to self`,
+        };
+      }
       return {
-        code: "dc.interpreter.opendc_governing_agency_self_reference",
-        message: `Public body "${name}" has governing agency "${name}" that resolves to self`,
+        code: "dc.interpreter.opendc_governing_agency_unresolved",
+        message:
+          `Public body "${name}" has governing agency "${name}" that does not resolve to a known agency in lookup`,
       };
     }
     return {
@@ -221,12 +230,12 @@ export function interpretOpenDCPublicBodies(
     const detected = detectKindFromName(name);
     const provisionalId = makeProvisionalId(detected, slug);
 
-    if (detected === "public_body") {
+    const standardKinds = new Set(["board", "commission", "authority"]);
+    if (!standardKinds.has(detected)) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_unclassified_body",
-        message:
-          `Public body "${name}" does not match any known kind pattern; classified as dc.agency`,
+        message: `Public body "${name}" identified as "${detected}"; classified as dc.agency`,
         citation: cite(sourceKind, record.key),
       });
     }

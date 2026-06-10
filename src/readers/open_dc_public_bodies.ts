@@ -37,6 +37,11 @@ const DETAIL_FIELD_RE = /<h3[^>]*>\s*([^<]+)\s*<\/h3>\s*<p[^>]*>(.*?)<\/p>/gs;
 const DETAIL_FIELD_WITH_LINK_RE =
   /<h3[^>]*>\s*([^<]+)\s*<\/h3>\s*<p[^>]*><a\s+href="([^"]+)"[^>]*>(.*?)<\/a><\/p>/gs;
 
+const DRUPAL_FIELD_WITH_LINK_RE =
+  /<div class="field-label">\s*([^<]+?):?(?:&nbsp;)?\s*<\/div>\s*<div class="field-items">\s*<div class="field-item[^"]*">\s*<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>\s*<\/div>/gs;
+const DRUPAL_FIELD_RE =
+  /<div class="field-label">\s*([^<]+?):?(?:&nbsp;)?\s*<\/div>\s*<div class="field-items">\s*<div class="field-item[^"]*">(.*?)<\/div>/gs;
+
 export class OpenDCPublicBodiesReader implements Reader<OpenDCPublicBodiesSource> {
   private readonly fetcher: (input: string) => Promise<Response>;
 
@@ -206,6 +211,16 @@ function extractSlugFromUrl(url: string): string | null {
   }
 }
 
+const FIELD_ALIASES: Record<string, string> = {
+  "enabling statute / mayoral order": "enabling statute or mayoral order",
+  "governing agency / agency acronym": "governing agency or agency acronym",
+  "administering agency / agency acronym": "administering agency",
+};
+
+function resolveFieldAlias(normalized: string): string {
+  return FIELD_ALIASES[normalized] ?? normalized;
+}
+
 function parseDetailPage(html: string): {
   enablingStatute?: string;
   enablingStatuteUrl?: string;
@@ -215,21 +230,45 @@ function parseDetailPage(html: string): {
 } {
   const fields: Record<string, { text: string; url?: string }> = {};
 
-  for (const match of html.matchAll(DETAIL_FIELD_WITH_LINK_RE)) {
+  function setField(fieldName: string, value: { text: string; url?: string }) {
+    const normalized = resolveFieldAlias(normalizeFieldName(fieldName));
+    if (!fields[normalized]) {
+      fields[normalized] = value;
+    }
+  }
+
+  for (const match of html.matchAll(DRUPAL_FIELD_WITH_LINK_RE)) {
     const fieldName = decodeHtml(stripTags(match[1]).trim());
     const url = match[2];
     const fieldValue = decodeHtml(stripTags(match[3]).trim());
-    fields[normalizeFieldName(fieldName)] = { text: fieldValue, url };
+    setField(fieldName, { text: fieldValue, url });
   }
 
-  for (const match of html.matchAll(DETAIL_FIELD_RE)) {
+  for (const match of html.matchAll(DRUPAL_FIELD_RE)) {
     const fieldName = decodeHtml(stripTags(match[1]).trim());
-    const normalized = normalizeFieldName(fieldName);
+    const normalized = resolveFieldAlias(normalizeFieldName(fieldName));
     if (fields[normalized]) {
       continue;
     }
     const fieldValue = decodeHtml(stripTags(match[2]).trim());
-    fields[normalized] = { text: fieldValue };
+    setField(fieldName, { text: fieldValue });
+  }
+
+  for (const match of html.matchAll(DETAIL_FIELD_WITH_LINK_RE)) {
+    const fieldName = decodeHtml(stripTags(match[1]).trim());
+    const url = match[2];
+    const fieldValue = decodeHtml(stripTags(match[3]).trim());
+    setField(fieldName, { text: fieldValue, url });
+  }
+
+  for (const match of html.matchAll(DETAIL_FIELD_RE)) {
+    const fieldName = decodeHtml(stripTags(match[1]).trim());
+    const normalized = resolveFieldAlias(normalizeFieldName(fieldName));
+    if (fields[normalized]) {
+      continue;
+    }
+    const fieldValue = decodeHtml(stripTags(match[2]).trim());
+    setField(fieldName, { text: fieldValue });
   }
 
   return {
@@ -237,7 +276,7 @@ function parseDetailPage(html: string): {
     enablingStatuteUrl: fields["enabling statute or mayoral order"]?.url,
     governingAgency: extractAgencyName(fields["governing agency or agency acronym"]?.text),
     governingAgencyAcronym: extractAcronym(fields["governing agency or agency acronym"]?.text),
-    administeringAgency: fields["administering agency"]?.text,
+    administeringAgency: extractAgencyName(fields["administering agency"]?.text),
   };
 }
 

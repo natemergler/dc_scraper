@@ -133,7 +133,7 @@ Deno.test("open_dc.public_bodies interprets authority entry with non-relationshi
   assertEquals(output.relationFragments.length, 0);
 });
 
-Deno.test("open_dc.public_bodies interprets committee as dc.agency", () => {
+Deno.test("open_dc.public_bodies interprets committee as dc.agency with finding", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -149,9 +149,11 @@ Deno.test("open_dc.public_bodies interprets committee as dc.agency", () => {
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.agency:advisory-committee");
   assertEquals(entryFragment.kind, "dc.agency");
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
-Deno.test("open_dc.public_bodies interprets task force as dc.agency", () => {
+Deno.test("open_dc.public_bodies interprets task force as dc.agency with finding", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -167,9 +169,11 @@ Deno.test("open_dc.public_bodies interprets task force as dc.agency", () => {
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.agency:climate-task-force");
   assertEquals(entryFragment.kind, "dc.agency");
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
-Deno.test("open_dc.public_bodies interprets council as dc.agency", () => {
+Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -185,9 +189,11 @@ Deno.test("open_dc.public_bodies interprets council as dc.agency", () => {
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.agency:arts-council");
   assertEquals(entryFragment.kind, "dc.agency");
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
-Deno.test("open_dc.public_bodies interprets office as dc.agency", () => {
+Deno.test("open_dc.public_bodies interprets office as dc.agency with finding", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -203,9 +209,11 @@ Deno.test("open_dc.public_bodies interprets office as dc.agency", () => {
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.agency:some-office");
   assertEquals(entryFragment.kind, "dc.agency");
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
-Deno.test("open_dc.public_bodies interprets agency-like entry as dc.agency", () => {
+Deno.test("open_dc.public_bodies interprets agency-like entry as dc.agency with finding", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-3",
@@ -221,6 +229,8 @@ Deno.test("open_dc.public_bodies interprets agency-like entry as dc.agency", () 
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.agency:some-agency");
   assertEquals(entryFragment.kind, "dc.agency");
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
 });
 
 Deno.test("open_dc.public_bodies reports finding for unclassified body name", () => {
