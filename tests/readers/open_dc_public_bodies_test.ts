@@ -69,7 +69,7 @@ const DETAIL_PLANNING_COMMISSION = `
 <body>
   <h1>Planning Commission</h1>
   <h3>Enabling Statute or Mayoral Order</h3>
-  <p>D.C. Code § 1-200</p>
+  <p>D.C. Code &sect; 1-200</p>
   <h3>Governing Agency or Agency Acronym</h3>
   <p>Office of Planning (OP)</p>
   <h3>Administering Agency</h3>

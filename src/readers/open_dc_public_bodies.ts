@@ -397,6 +397,7 @@ function decodeHtml(value: string): string {
   return value
     .replace(/&#8217;|&#039;/g, "'")
     .replace(/&#038;|&amp;/g, "&")
+    .replace(/&#167;|&sect;/g, "§")
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .replace(/&#8220;|&#8221;/g, '"')
