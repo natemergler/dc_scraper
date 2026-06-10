@@ -2072,6 +2072,253 @@ Deno.test("CLI task tolerates task separator before help", async () => {
   assertEquals(stdout.includes("Usage: dc"), true);
 });
 
+Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entries and relations", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-opendc-flow-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-opendc-flow-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-opendc-flow-release-" });
+
+  const openDcIndex = `
+    <a href="/public-bodies/advisory-board/">Advisory Board (AB)</a>
+    <a href="/public-bodies/planning-commission">Planning Commission</a>
+    <a href="/public-bodies/water-authority/">Water Authority</a>
+    <a href="/public-bodies/climate-task-force/">Climate Task Force</a>
+    <a href="/public-bodies/board-accountancy/">Board of Accountancy</a>
+  `;
+
+  const detailMap = new Map<string, string>([
+    [
+      "advisory-board",
+      `<html><body>
+        <h3>Enabling Statute or Mayoral Order</h3>
+        <p><a href="https://code.dccouncil.gov/us/dc/council/code/sections/1-123">D.C. Law 10-50</a></p>
+        <h3>Governing Agency or Agency Acronym</h3>
+        <p>Department of Public Works (DPW)</p>
+        <h3>Administering Agency</h3>
+        <p>Office of the Mayor</p>
+      </body></html>`,
+    ],
+    [
+      "planning-commission",
+      `<html><body>
+        <h3>Enabling Statute or Mayoral Order</h3>
+        <p>D.C. Code § 1-200</p>
+        <h3>Governing Agency or Agency Acronym</h3>
+        <p>Office of Planning (OP)</p>
+        <h3>Administering Agency</h3>
+        <p>Office of Planning</p>
+      </body></html>`,
+    ],
+    [
+      "water-authority",
+      `<html><body>
+        <h3>Governing Agency or Agency Acronym</h3>
+        <p>N/A</p>
+        <h3>Administering Agency</h3>
+        <p>Executive Office of the Mayor</p>
+      </body></html>`,
+    ],
+    [
+      "climate-task-force",
+      `<html><body>
+        <h3>Enabling Statute or Mayoral Order</h3>
+        <p>Mayor's Order 2021-007</p>
+        <h3>Governing Agency or Agency Acronym</h3>
+        <p>DOEE</p>
+      </body></html>`,
+    ],
+    [
+      "board-accountancy",
+      `<html><body>
+        <h1 class="page-title">Board of Accountancy</h1>
+        <div class="field field-name-field-statute-mayors-order field-type-link-field field-label-inline clearfix">
+          <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+          <div class="field-items"><div class="field-item even"><a href="https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06">D.C. Official Code § 47-2853.06(b)(1)</a></div></div>
+        </div>
+        <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+          <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+          <div class="field-items"><div class="field-item even">DLCP</div></div>
+        </div>
+        <div class="view view-meetings-calendar"><a href="/public-bodies/board-accountancy/meetings">Calendar</a></div>
+      </body></html>`,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request, _init?: RequestInit) => {
+    const urlStr = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    if (urlStr.includes("maps2.dcgis.dc.gov")) {
+      const url = new URL(urlStr);
+      const key = url.searchParams.get("resultOffset") ?? "0";
+      if (key === "0") {
+        return new Response(
+          JSON.stringify({
+            features: [
+              {
+                attributes: {
+                  OBJECTID: 1,
+                  AGENCY_ID: "dpw",
+                  AGENCY_NAME: "Department of Public Works",
+                  SHORT_NAME: "DPW",
+                },
+              },
+            ],
+            exceededTransferLimit: false,
+            objectIdFieldName: "OBJECTID",
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+      return new Response("missing fixture", { status: 404 });
+    }
+    if (urlStr.includes("open-dc.gov")) {
+      if (urlStr.includes("/public-bodies/")) {
+        for (const [slug, html] of detailMap) {
+          if (urlStr.includes(slug)) {
+            return new Response(html, {
+              status: 200,
+              headers: { "content-type": "text/html" },
+            });
+          }
+        }
+      }
+      return new Response(openDcIndex, {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }
+    return new Response("missing fixture", { status: 404 });
+  }) as typeof globalThis.fetch;
+  const restoreFetch = () => {
+    globalThis.fetch = originalFetch;
+  };
+
+  try {
+    const collectAgencies = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.agencies",
+      "--limit",
+      "1",
+    ]);
+    assertEquals(collectAgencies, 0);
+
+    const collectOpenDc = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "open_dc.public_bodies",
+      "--limit",
+      "5",
+    ]);
+    assertEquals(collectOpenDc, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntries.includes("dc.board:advisory-board.json"), true);
+    assertEquals(stateEntries.includes("dc.commission:planning-commission.json"), true);
+    assertEquals(stateEntries.includes("dc.authority:water-authority.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), true);
+    assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:dpw.json"), true);
+
+    const advisoryEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.board:advisory-board.json")),
+    ) as {
+      relations: Record<string, Array<{ to: string }>>;
+    };
+    assertEquals(
+      advisoryEntry.relations["dc.relation:governs"]?.[0]?.to,
+      "dc.agency:dpw",
+    );
+
+    const waterAuthorityEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.authority:water-authority.json")),
+    ) as {
+      relations: Record<string, Array<{ to: string }>>;
+    };
+    assertEquals(
+      waterAuthorityEntry.relations["dc.relation:governs"],
+      undefined,
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 6);
+    assertEquals(countRows(db, "state_relations"), 1);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 6);
+    assertEquals(manifest.counts.relations, 1);
+    assertEquals(manifest.counts.relationKinds["dc.relation:governs"], 1);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("Advisory Board"), true);
+    assertEquals(entriesCsv.includes("Planning Commission"), true);
+    assertEquals(entriesCsv.includes("Water Authority"), true);
+    assertEquals(entriesCsv.includes("Climate Task Force"), true);
+    assertEquals(entriesCsv.includes("Board of Accountancy"), true);
+    assertEquals(entriesCsv.includes("Department of Public Works"), true);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:governs"), true);
+    assertEquals(relationsCsv.includes("dc.board:advisory-board"), true);
+    assertEquals(relationsCsv.includes("dc.agency:dpw"), true);
+  } finally {
+    restoreFetch();
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {
