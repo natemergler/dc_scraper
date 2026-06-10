@@ -5,6 +5,9 @@ import { dcBoardKind } from "./kinds/board.ts";
 import { dcCommissionKind } from "./kinds/commission.ts";
 import { dcAuthorityKind } from "./kinds/authority.ts";
 import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
+import { dcCourtKind } from "./kinds/court.ts";
+import { dcCourtDivisionKind } from "./kinds/court_division.ts";
+import { dcCourtSystemKind } from "./kinds/court_system.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
 import { dcOfficeKind } from "./kinds/office.ts";
@@ -30,6 +33,7 @@ import { dccouncilCommitteesBinding } from "./sources/dccouncil_committees.ts";
 import { dccouncilMembersBinding } from "./sources/dccouncil_members.ts";
 import { openDCPublicBodiesBinding } from "./sources/open_dc_public_bodies.ts";
 import { begaStructureBinding } from "./sources/bega_structure.ts";
+import { dccourtsStructureBinding } from "./sources/dccourts_structure.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 
@@ -61,6 +65,9 @@ dcKindRegistry.register(dcBoardKind);
 dcKindRegistry.register(dcCommissionKind);
 dcKindRegistry.register(dcAuthorityKind);
 dcKindRegistry.register(dcAncCommissionerSeatKind);
+dcKindRegistry.register(dcCourtSystemKind);
+dcKindRegistry.register(dcCourtKind);
+dcKindRegistry.register(dcCourtDivisionKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
 dcKindRegistry.register(dcOfficeKind);
@@ -88,6 +95,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dccouncilCommitteesBinding,
     openDCPublicBodiesBinding,
     begaStructureBinding,
+    dccourtsStructureBinding,
   ],
   revisions: [],
 };

@@ -19,6 +19,7 @@ import { DCCouncilmembersReader } from "../readers/dccouncil_councilmembers.ts";
 import { DCCouncilCommitteePagesReader } from "../readers/dccouncil_committee_pages.ts";
 import { OpenDCPublicBodiesReader } from "../readers/open_dc_public_bodies.ts";
 import { BegaStructureReader } from "../readers/bega_structure.ts";
+import { DCCourtsStructureReader } from "../readers/dccourts_structure.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
@@ -148,6 +149,15 @@ async function collectSourceRecords(
     return await reader.collect({
       workspace: { root: workspaceRoot },
       source: source as Parameters<BegaStructureReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "dccourts.structure") {
+    const reader = new DCCourtsStructureReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<DCCourtsStructureReader["collect"]>[0]["source"],
       limit,
     });
   }
