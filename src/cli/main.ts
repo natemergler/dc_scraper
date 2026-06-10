@@ -18,6 +18,7 @@ import { ArcGISTableReader } from "../readers/arcgis_table.ts";
 import { DCCouncilmembersReader } from "../readers/dccouncil_councilmembers.ts";
 import { DCCouncilCommitteePagesReader } from "../readers/dccouncil_committee_pages.ts";
 import { OpenDCPublicBodiesReader } from "../readers/open_dc_public_bodies.ts";
+import { BegaStructureReader } from "../readers/bega_structure.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
@@ -138,6 +139,15 @@ async function collectSourceRecords(
     return await reader.collect({
       workspace: { root: workspaceRoot },
       source: source as Parameters<OpenDCPublicBodiesReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "bega.structure") {
+    const reader = new BegaStructureReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<BegaStructureReader["collect"]>[0]["source"],
       limit,
     });
   }

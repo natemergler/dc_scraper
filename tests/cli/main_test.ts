@@ -2321,6 +2321,169 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
   }
 });
 
+Deno.test("CLI flow with bega.structure produces offices and part_of relations", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-release-" });
+
+  const responses = new Map<string, string>([
+    [
+      "https://bega.dc.gov/node/61616/",
+      `
+      <html>
+        <head><title>About BEGA | bega</title></head>
+        <body>
+          <h1 class="page-title">About BEGA</h1>
+          <p>The Board of Ethics and Government Accountability (BEGA) is an independent agency.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://bega.dc.gov/page/office-government-ethics",
+      `
+      <html>
+        <head><title>Office of Government Ethics | bega</title></head>
+        <body>
+          <h1 id="page-title">Office of Government Ethics</h1>
+          <p>The Office of Government Ethics (OGE) administers the Code of Conduct.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://www.open-dc.gov/office-open-government",
+      `
+      <html>
+        <head><title>Office of Open Government | Open DC</title></head>
+        <body>
+          <h1>Office of Open Government</h1>
+          <p>The Office of Open Government (OOG) ensures open meetings compliance.</p>
+        </body>
+      </html>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const body = responses.get(key);
+    if (!body) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(body, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "bega.structure",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(
+      stateEntries.includes("dc.agency:board-of-ethics-and-government-accountability.json"),
+      true,
+    );
+    assertEquals(stateEntries.includes("dc.office:office-of-government-ethics.json"), true);
+    assertEquals(stateEntries.includes("dc.office:office-of-open-government.json"), true);
+
+    const ogeEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.office:office-of-government-ethics.json"),
+      ),
+    ) as {
+      kind: string;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(ogeEntry.kind, "dc.office");
+    assertEquals(
+      ogeEntry.relations["dc.relation:part_of"][0]?.to,
+      "dc.agency:board-of-ethics-and-government-accountability",
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 3);
+    assertEquals(countRows(db, "state_relations"), 2);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 3);
+    assertEquals(manifest.counts.relations, 2);
+    assertEquals(manifest.counts.relationKinds["dc.relation:part_of"], 2);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("Board of Ethics and Government Accountability"), true);
+    assertEquals(entriesCsv.includes("Office of Government Ethics"), true);
+    assertEquals(entriesCsv.includes("Office of Open Government"), true);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:part_of"), true);
+    assertEquals(relationsCsv.includes("dc.office:office-of-government-ethics"), true);
+    assertEquals(
+      relationsCsv.includes("dc.agency:board-of-ethics-and-government-accountability"),
+      true,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {

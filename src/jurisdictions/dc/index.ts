@@ -7,6 +7,7 @@ import { dcAuthorityKind } from "./kinds/authority.ts";
 import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
+import { dcOfficeKind } from "./kinds/office.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import {
   dcAffiliatedWithRelation,
@@ -14,6 +15,7 @@ import {
   dcContainsRelation,
   dcGovernsRelation,
   dcMemberOfRelation,
+  dcPartOfRelation,
   dcReportsToRelation,
   dcRepresentsRelation,
 } from "./kinds/relation.ts";
@@ -27,6 +29,7 @@ import { dcgisSmdsBinding } from "./sources/dcgis_smds.ts";
 import { dccouncilCommitteesBinding } from "./sources/dccouncil_committees.ts";
 import { dccouncilMembersBinding } from "./sources/dccouncil_members.ts";
 import { openDCPublicBodiesBinding } from "./sources/open_dc_public_bodies.ts";
+import { begaStructureBinding } from "./sources/bega_structure.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 
@@ -60,12 +63,14 @@ dcKindRegistry.register(dcAuthorityKind);
 dcKindRegistry.register(dcAncCommissionerSeatKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
+dcKindRegistry.register(dcOfficeKind);
 dcKindRegistry.register(dcSmdKind);
 dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
 dcKindRegistry.registerRelation(dcMemberOfRelation);
+dcKindRegistry.registerRelation(dcPartOfRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
 dcKindRegistry.registerRelation(dcRepresentsRelation);
 
@@ -82,6 +87,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dccouncilMembersBinding,
     dccouncilCommitteesBinding,
     openDCPublicBodiesBinding,
+    begaStructureBinding,
   ],
   revisions: [],
 };
