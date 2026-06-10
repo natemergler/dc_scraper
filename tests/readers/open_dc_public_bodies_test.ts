@@ -324,6 +324,56 @@ Deno.test("OpenDCPublicBodiesReader suppresses local file enabling statute URLs"
   assertEquals(serializedPayload.includes("file%253A"), false);
 });
 
+Deno.test("OpenDCPublicBodiesReader suppresses meeting-title enabling statute values", async () => {
+  const detail = `
+    <html>
+    <body>
+      <h1 class="page-title">Mayor's Office of Policy and Innovation</h1>
+      <div class="field field-name-field-statute-mayors-order field-type-link-field field-label-inline clearfix">
+        <div class="field-label">Enabling Statute / Mayoral Order:&nbsp;</div>
+        <div class="field-items"><div class="field-item even">Mayor's Office of Policy and Innovation (MOPI) Advisory Board Meeting #1</div></div>
+      </div>
+      <div class="field field-name-field-governing-agency-acronym field-type-taxonomy-term-reference field-label-inline clearfix">
+        <div class="field-label">Governing Agency / Agency Acronym:&nbsp;</div>
+        <div class="field-items"><div class="field-item even">MOPI</div></div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const index =
+    `<a href="/public-bodies/mayors-office-policy-and-innovation/">Mayor's Office of Policy and Innovation</a>`;
+
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("mayors-office-policy-and-innovation")) {
+        return new Response(detail, { status: 200 });
+      }
+      return new Response(index, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records.length, 1);
+  const record = result.records[0];
+  assertEquals(record.payload.name, "Mayor's Office of Policy and Innovation");
+  assertEquals(record.payload.enablingStatute, undefined);
+  assertEquals(record.payload.enablingStatuteUrl, undefined);
+  assertEquals(record.payload.governingAgency, "MOPI");
+});
+
 Deno.test("OpenDCPublicBodiesReader excludes contact, members, meetings data", async () => {
   const source: OpenDCPublicBodiesSource = {
     id: "open_dc.public_bodies",

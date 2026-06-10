@@ -295,9 +295,12 @@ function parseDetailPage(html: string): {
     setField(fieldName, { text: fieldValue });
   }
 
+  const enablingStatuteField = fields["enabling statute or mayoral order"];
+  const enablingStatute = sanitizeEnablingStatuteText(enablingStatuteField?.text);
+
   return {
-    enablingStatute: fields["enabling statute or mayoral order"]?.text,
-    enablingStatuteUrl: fields["enabling statute or mayoral order"]?.url,
+    enablingStatute,
+    enablingStatuteUrl: enablingStatute ? enablingStatuteField?.url : undefined,
     governingAgency: extractAgencyName(fields["governing agency or agency acronym"]?.text),
     governingAgencyAcronym: extractAcronym(fields["governing agency or agency acronym"]?.text),
     administeringAgency: extractAgencyName(fields["administering agency"]?.text),
@@ -318,6 +321,16 @@ function sanitizeSourceUrl(url: string): string | undefined {
     return undefined;
   }
   return url;
+}
+
+function sanitizeEnablingStatuteText(text?: string): string | undefined {
+  if (!text) {
+    return undefined;
+  }
+  if (/\b(?:meeting|agenda)\s*#?\d+\b/i.test(text)) {
+    return undefined;
+  }
+  return text;
 }
 
 function decodeRepeatedly(value: string): string {
