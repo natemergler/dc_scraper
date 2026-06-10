@@ -33,6 +33,11 @@ const PUBLIC_BODY_LINK_RE = /<a[^>]*href="([^"]*\/public-bodies\/[^"#?]+)"[^>]*>
 const TAG_RE = /<[^>]+>/g;
 const WHITESPACE_RE = /\s+/g;
 
+const VIEW_STATUTE_WITH_LINK_RE =
+  /<div class="views-field[^"]*views-field-field-statute-mayors-order[^"]*"[^>]*>\s*<span class="field-content"><a\s+href="([^"]+)"[^>]*>(.*?)<\/a><\/span>\s*<\/div>/gs;
+const VIEW_STATUTE_RE =
+  /<div class="views-field[^"]*views-field-field-statute-mayors-order[^"]*"[^>]*>\s*<span class="field-content">(.*?)<\/span>\s*<\/div>/gs;
+
 const DETAIL_FIELD_RE = /<h3[^>]*>\s*([^<]+)\s*<\/h3>\s*<p[^>]*>(.*?)<\/p>/gs;
 const DETAIL_FIELD_WITH_LINK_RE =
   /<h3[^>]*>\s*([^<]+)\s*<\/h3>\s*<p[^>]*><a\s+href="([^"]+)"[^>]*>(.*?)<\/a><\/p>/gs;
@@ -186,10 +191,11 @@ function extractPublicBodyLinks(
 
   for (const match of html.matchAll(PUBLIC_BODY_LINK_RE)) {
     const rawHref = match[1];
+    const detailUrl = resolveOpenDcUrl(rawHref);
+    if (!detailUrl || !isPublicBodyDetailUrl(detailUrl)) {
+      continue;
+    }
     const text = decodeHtml(stripTags(match[2]).trim());
-    const detailUrl = rawHref.startsWith("http")
-      ? rawHref.replace(/\/+$/, "")
-      : `https://www.open-dc.gov${rawHref}`.replace(/\/+$/, "");
     const slug = extractSlugFromUrl(detailUrl);
     if (!slug || seen.has(slug)) {
       continue;
@@ -237,6 +243,20 @@ function parseDetailPage(html: string): {
     }
   }
 
+  for (const match of html.matchAll(VIEW_STATUTE_WITH_LINK_RE)) {
+    const fieldValue = decodeHtml(stripTags(match[2]).trim());
+    setField("Enabling Statute / Mayoral Order", { text: fieldValue, url: match[1] });
+  }
+
+  for (const match of html.matchAll(VIEW_STATUTE_RE)) {
+    const normalized = resolveFieldAlias(normalizeFieldName("Enabling Statute / Mayoral Order"));
+    if (fields[normalized]) {
+      continue;
+    }
+    const fieldValue = decodeHtml(stripTags(match[1]).trim());
+    setField("Enabling Statute / Mayoral Order", { text: fieldValue });
+  }
+
   for (const match of html.matchAll(DRUPAL_FIELD_WITH_LINK_RE)) {
     const fieldName = decodeHtml(stripTags(match[1]).trim());
     const url = match[2];
@@ -282,6 +302,24 @@ function parseDetailPage(html: string): {
 
 function normalizeFieldName(name: string): string {
   return name.toLowerCase().replace(WHITESPACE_RE, " ").trim();
+}
+
+function resolveOpenDcUrl(href: string): string | null {
+  try {
+    return new URL(href, "https://www.open-dc.gov").toString().replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
+function isPublicBodyDetailUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const segments = parsed.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+    return segments.length === 2 && segments[0] === "public-bodies" && segments[1] !== "meetings";
+  } catch {
+    return false;
+  }
 }
 
 function extractAgencyName(text?: string): string | undefined {

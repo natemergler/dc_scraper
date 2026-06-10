@@ -2083,6 +2083,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     <a href="/public-bodies/water-authority/">Water Authority</a>
     <a href="/public-bodies/climate-task-force/">Climate Task Force</a>
     <a href="/public-bodies/board-accountancy/">Board of Accountancy</a>
+    <a href="/public-bodies/meetings">Meetings</a>
   `;
 
   const detailMap = new Map<string, string>([
@@ -2237,6 +2238,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), true);
     assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
     assertEquals(stateEntries.includes("dc.agency:dpw.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:meetings.json"), false);
 
     const advisoryEntry = JSON.parse(
       await Deno.readTextFile(join(stateRoot, "entries", "dc.board:advisory-board.json")),
