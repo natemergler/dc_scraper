@@ -5,6 +5,7 @@ import { dcgisAncsSourceId } from "./sources/dcgis_ancs.ts";
 import { dcgisAuthoritiesSourceId } from "./sources/dcgis_authorities.ts";
 import { dcgisBoardsSourceId } from "./sources/dcgis_boards.ts";
 import { dcgisCommissionsSourceId } from "./sources/dcgis_commissions.ts";
+import { dcgisCouncilsSourceId } from "./sources/dcgis_councils.ts";
 import { dcgisSmdsSourceId } from "./sources/dcgis_smds.ts";
 import { dccouncilCommitteesSourceId } from "./sources/dccouncil_committees.ts";
 import { dccouncilMembersSourceId } from "./sources/dccouncil_members.ts";
@@ -19,6 +20,7 @@ const promotedKindsBySource = new Map<string, Set<string>>([
   [dcgisAuthoritiesSourceId, new Set(["dc.authority"])],
   [dcgisBoardsSourceId, new Set(["dc.board"])],
   [dcgisCommissionsSourceId, new Set(["dc.commission"])],
+  [dcgisCouncilsSourceId, new Set(["dc.council"])],
   [dcgisSmdsSourceId, new Set(["dc.smd", "dc.anc_commissioner_seat"])],
   [dccouncilCommitteesSourceId, new Set(["dc.committee", "dc.councilmember"])],
   [dccouncilMembersSourceId, new Set(["dc.councilmember"])],

@@ -3,6 +3,7 @@ import { dcAncKind } from "./kinds/anc.ts";
 import { dcAgencyKind } from "./kinds/agency.ts";
 import { dcBoardKind } from "./kinds/board.ts";
 import { dcCommissionKind } from "./kinds/commission.ts";
+import { dcCouncilKind } from "./kinds/council.ts";
 import { dcAuthorityKind } from "./kinds/authority.ts";
 import { dcAncCommissionerSeatKind } from "./kinds/anc_commissioner_seat.ts";
 import { dcCourtKind } from "./kinds/court.ts";
@@ -27,6 +28,7 @@ import { interpretDcgisAgencies } from "./interpreters/dcgis_agencies.ts";
 import { dcgisAgenciesBinding } from "./sources/dcgis_agencies.ts";
 import { dcgisCommissionsBinding } from "./sources/dcgis_commissions.ts";
 import { dcgisBoardsBinding } from "./sources/dcgis_boards.ts";
+import { dcgisCouncilsBinding } from "./sources/dcgis_councils.ts";
 import { dcgisAuthoritiesBinding } from "./sources/dcgis_authorities.ts";
 import { dcgisAncsBinding } from "./sources/dcgis_ancs.ts";
 import { dcgisSmdsBinding } from "./sources/dcgis_smds.ts";
@@ -68,6 +70,7 @@ dcKindRegistry.register(dcAncKind);
 dcKindRegistry.register(dcAgencyKind);
 dcKindRegistry.register(dcBoardKind);
 dcKindRegistry.register(dcCommissionKind);
+dcKindRegistry.register(dcCouncilKind);
 dcKindRegistry.register(dcAuthorityKind);
 dcKindRegistry.register(dcAncCommissionerSeatKind);
 dcKindRegistry.register(dcCourtSystemKind);
@@ -96,6 +99,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dcgisAgenciesBinding,
     dcgisBoardsBinding,
     dcgisCommissionsBinding,
+    dcgisCouncilsBinding,
     dcgisAuthoritiesBinding,
     dcgisSmdsBinding,
     dccouncilMembersBinding,

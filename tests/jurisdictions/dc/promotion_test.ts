@@ -58,6 +58,14 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
         name: "Authority One",
         attributes: { shortName: "AU1", sourceAuthorityId: "au-1" },
       }),
+      entryFragment({
+        source: "dcgis.councils",
+        sourceRecordId: "council-1",
+        provisionalId: "dc.council:co-1",
+        kind: "dc.council",
+        name: "Council One",
+        attributes: { shortName: "CO1", sourceCouncilId: "co-1" },
+      }),
     ],
   });
 
@@ -65,6 +73,7 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
   assertEquals(result.state?.entries.has("dc.board:b-1"), true);
   assertEquals(result.state?.entries.has("dc.commission:c-1"), true);
   assertEquals(result.state?.entries.has("dc.authority:au-1"), true);
+  assertEquals(result.state?.entries.has("dc.council:co-1"), true);
 });
 
 Deno.test("DC promotion policy keeps bad Open DC examples out of canonical state", () => {
