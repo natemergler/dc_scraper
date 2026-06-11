@@ -29,7 +29,66 @@ Deno.test("loadRevisions reads valid JSON revision overlays", async () => {
     assertEquals(revisions[0].id, "r2");
     assertEquals(revisions[0].targetKind, "entry");
     assertEquals(revisions[0].targetId, "dc.agency:a-1");
+    assertEquals(revisions[0].rationale, undefined);
     assertEquals(revisions[0].patch.name, "Overridden Agency");
+  } finally {
+    await Deno.remove(revisionRoot, { recursive: true });
+  }
+});
+
+Deno.test("loadRevisions reads revision rationale and evidence", async () => {
+  const revisionRoot = await Deno.makeTempDir({ prefix: "civic-ledger-revisions-load-evidence-" });
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "suppress-shadow.json"),
+    JSON.stringify({
+      id: "suppress-shadow",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.board:shadow",
+      rationale: "Duplicate source shadow reviewed against official source records.",
+      evidence: [{ source: "dcgis.boards", sourceRecordId: "29" }],
+      patch: { suppress: true },
+    }),
+  );
+
+  try {
+    const revisions = await loadRevisions(revisionRoot);
+
+    assertEquals(revisions.length, 1);
+    assertEquals(
+      revisions[0].rationale,
+      "Duplicate source shadow reviewed against official source records.",
+    );
+    assertEquals(revisions[0].evidence, [{ source: "dcgis.boards", sourceRecordId: "29" }]);
+    assertEquals(revisions[0].patch.suppress, true);
+  } finally {
+    await Deno.remove(revisionRoot, { recursive: true });
+  }
+});
+
+Deno.test("loadRevisions requires rationale for suppress revisions", async () => {
+  const revisionRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-revisions-load-suppress-bad-",
+  });
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "suppress-without-rationale.json"),
+    JSON.stringify({
+      id: "suppress-bad",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.board:shadow",
+      patch: { suppress: true },
+    }),
+  );
+
+  try {
+    await assertRejects(
+      () => loadRevisions(revisionRoot),
+      Error,
+      "suppress revisions require rationale",
+    );
   } finally {
     await Deno.remove(revisionRoot, { recursive: true });
   }

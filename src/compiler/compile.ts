@@ -275,6 +275,19 @@ function applyRevisions(
     }
 
     if (revision.targetKind === "entry") {
+      if (revision.patch.suppress === true) {
+        suppressEntry(outputState, revision.targetId);
+        findings.push({
+          kind: "info",
+          code: "compiler.revision.entry_suppressed",
+          message: `revision ${revision.id} suppressed entry ${revision.targetId}${
+            revision.rationale ? `: ${revision.rationale}` : ""
+          }`,
+          citation: revision.evidence?.[0],
+        });
+        continue;
+      }
+
       const patched = applyEntryPatch(entry, revision.patch, findings);
       outputState.entries.set(revision.targetId, patched);
 
@@ -329,6 +342,21 @@ function applyRevisions(
   }
 
   return outputState;
+}
+
+function suppressEntry(state: LedgerState, targetId: string): void {
+  state.entries.delete(targetId);
+
+  for (const entry of state.entries.values()) {
+    for (const [relationKind, relations] of Object.entries(entry.relations)) {
+      const filtered = relations.filter((relation) => relation.to !== targetId);
+      if (filtered.length === 0) {
+        delete entry.relations[relationKind];
+      } else {
+        entry.relations[relationKind] = filtered;
+      }
+    }
+  }
 }
 
 function applyRelationPatch(
