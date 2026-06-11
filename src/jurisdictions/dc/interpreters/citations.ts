@@ -11,17 +11,28 @@ const LEGAL_TEXT_FIELDS = new Set<string>([
   "LAW",
 ]);
 
-const D_C_CODE = /D\.?\s*C\.?\s*Code\s*§?\s*[0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
-const D_C_OFFICIAL_CODE =
-  /D\.?\s*C\.?\s*Official\s+Code\s*§?\s*[0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
-const D_C_MUNICIPAL_REGS =
-  /D\.?\s*C\.?\s*Municipal\s+Regulations\s*§?\s*[0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
+const SECTION_CHARS = String.raw`[0-9A-Za-z.\-\u2013\u2014]`;
+
+const D_C_CODE = new RegExp(
+  String.raw`D\.?\s*C\.?\s*Code\s*(?:§|Sections?)?\s*[0-9]${SECTION_CHARS}*(?:\([^)]+\))*`,
+  "gi",
+);
+const D_C_OFFICIAL_CODE = new RegExp(
+  String
+    .raw`D\.?\s*C\.?\s*Official\s+Code\s*(?:§|Sections?)?\s*[0-9]${SECTION_CHARS}*(?:\([^)]+\))*`,
+  "gi",
+);
+const D_C_MUNICIPAL_REGS = new RegExp(
+  String
+    .raw`D\.?\s*C\.?\s*Municipal\s+Regulations\s*(?:§|Sections?)?\s*[0-9]${SECTION_CHARS}*(?:\([^)]+\))*`,
+  "gi",
+);
 const D_C_SECTION_LIST =
-  /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*§{2}\s*[0-9][0-9A-Za-z.\-\s,()]+/gi;
+  /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*§{2}\s*[0-9][0-9A-Za-z.\-\u2013\u2014\s,()]+/gi;
 const D_C_NO_SECTION_LIST =
   /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*(?!§)\s*[0-9][^!?]*/gi;
 const D_C_SINGLE_RANGE =
-  /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*§?\s*[0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*(?:\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)/gi;
+  /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*(?:§|Sections?)?\s*[0-9][0-9A-Za-z.\-\u2013\u2014]+(?:\([^)]+\))*(?:\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9][0-9A-Za-z.\-\u2013\u2014]+(?:\([^)]+\))*)/gi;
 const CFR_PATTERN = /\b\d+\s*CFR\s*§?\s*[0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*(?!\()/gi;
 const CFR_SINGLE_RANGE =
   /\b\d+\s*CFR\s*§?\s*[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\b/gi;
@@ -59,6 +70,7 @@ function extractFromPattern(text: string, pattern: RegExp): string[] {
     const normalizedMatch = match
       .replace(/\s+/g, " ")
       .trim()
+      .replace(/(?<=[0-9])[\u2013\u2014](?=[0-9])/g, "-")
       .replace(/[.,;:]+$/g, "");
     if (normalizedMatch.length > 0) {
       results.push(normalizedMatch);
@@ -144,7 +156,7 @@ function normalizeSingleCitation(locator: string): string[] {
   }
 
   const dcRangeMatch = locator.match(
-    /^(D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations))\s*([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)\s+(?:to|through)\s+([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)$/i,
+    /^(D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations))\s*(?:§|Sections?)?\s*([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)\s+(?:to|through)\s+([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)$/i,
   );
   if (dcRangeMatch && dcRangeMatch[1] && dcRangeMatch[2] && dcRangeMatch[3]) {
     const prefix = dcRangeMatch[1].replace(/\s+/g, " ").trim();
@@ -160,7 +172,7 @@ function normalizeSingleCitation(locator: string): string[] {
   }
 
   const dcMatch = locator.match(
-    /^(D\.\s*C\.\s*(?:Official\s+Code|Code|Municipal\s+Regulations))\s*([0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*)$/i,
+    /^(D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations))\s*(?:§|Sections?)?\s*([0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*)$/i,
   );
   if (dcMatch) {
     return [`${dcMatch[1].replace(/\s+/g, " ").trim()} § ${dcMatch[2].trim()}`];

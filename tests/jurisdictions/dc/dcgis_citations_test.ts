@@ -142,7 +142,7 @@ Deno.test("dc legal citation parser preserves nested subsections and shorthand",
 Deno.test("dc legal citation parser supports no-section-sign forms", () => {
   const payload = {
     STATUTE: "42 U.S.C. 1983 and 42 U.S.C. 1984; 33 U.S. Code § 1267; 16 CFR 1002 and 5 CFR §1000",
-    LEGAL_BASIS: "D.C. Code 7-200.1",
+    LEGAL_BASIS: "D.C. Code 7-200.1; DC Code Section 7-671.02",
   };
 
   assertEquals(
@@ -154,8 +154,17 @@ Deno.test("dc legal citation parser supports no-section-sign forms", () => {
       "42 U.S.C. § 1984",
       "5 CFR §1000",
       "D.C. Code § 7-200.1",
+      "DC Code § 7-671.02",
     ],
   );
+});
+
+Deno.test("dc legal citation parser preserves en-dash section numbers", () => {
+  const payload = {
+    LEGAL_REFERENCE: "DC Code § 1–621.5",
+  };
+
+  assertEquals(parseLegalCitationLocators(payload), ["DC Code § 1-621.5"]);
 });
 
 Deno.test("dc legal citation parser expands no-section-sign ranges", () => {
