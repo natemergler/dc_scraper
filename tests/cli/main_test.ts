@@ -657,6 +657,76 @@ Deno.test("state commands generate index check committed state", async () => {
   }
 });
 
+Deno.test("reconcile candidates reports review packets from committed state", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-reconcile-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-reconcile-state-" });
+  const restoreFetch = mockArcGISFetch(
+    new Map([
+      [
+        "0",
+        {
+          features: [
+            {
+              attributes: {
+                OBJECTID: 1,
+                AGENCY_ID: "a-1",
+                AGENCY_NAME: "Shared Agency",
+                SHORT_NAME: "SA1",
+              },
+            },
+            {
+              attributes: {
+                OBJECTID: 2,
+                AGENCY_ID: "a-2",
+                AGENCY_NAME: "Shared Agency",
+                SHORT_NAME: "SA2",
+              },
+            },
+          ],
+          exceededTransferLimit: false,
+          objectIdFieldName: "OBJECTID",
+        },
+      ],
+    ]),
+  );
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.agencies",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const reconcileCode = await runCli([
+      "--state-root",
+      stateRoot,
+      "--limit",
+      "1",
+      "reconcile",
+      "candidates",
+    ]);
+    assertEquals(reconcileCode, 0);
+  } finally {
+    restoreFetch();
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("state generation applies revision overlays from ledger revisions", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-revision-" });
   const projectRoot = await Deno.makeTempDir({

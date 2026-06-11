@@ -28,6 +28,7 @@ import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
+import { findReconciliationCandidates } from "../reconciliation/candidates.ts";
 
 import { type EntryFragment, type Finding, type RelationFragment } from "../core/types.ts";
 import {
@@ -311,6 +312,13 @@ async function runExport(
   }
 }
 
+async function runReconcileCandidates(stateRoot: string, limit?: number): Promise<number> {
+  const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  const report = findReconciliationCandidates(loaded.state, { limit });
+  console.log(JSON.stringify(report, null, 2));
+  return 0;
+}
+
 function compileFromWorkspace(
   workspace: Workspace,
 ): WorkspaceCompilation {
@@ -417,6 +425,20 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
         await runExport(cliOptions.workspace, cliOptions.stateRoot, cliOptions.releaseRoot),
       );
     });
+
+  const reconcile = new Command<CliOptions>()
+    .description("Reconciliation review commands.")
+    .action(() => {
+      throw new Error("reconcile requires `candidates`");
+    });
+
+  reconcile.command("candidates", "Emit reconciliation candidate review packets as JSON.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runReconcileCandidates(cliOptions.stateRoot, cliOptions.limit));
+    });
+
+  root.command("reconcile", reconcile);
 
   return root;
 }
