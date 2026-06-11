@@ -44,6 +44,17 @@ const DUPLICATE_NAME_INDEX_HTML = `
 </html>
 `;
 
+const RECESS_NOISE_INDEX_HTML = `
+<html>
+<body>
+  <table>
+    <tr><td><a href="/public-bodies/april-board-accountancy-recess/">April Board of Accountancy - (RECESS)</a></td></tr>
+    <tr><td><a href="/public-bodies/board-accountancy/">Board of Accountancy</a></td></tr>
+  </table>
+</body>
+</html>
+`;
+
 const DETAIL_ADVISORY_BOARD = `
 <html>
 <body>
@@ -170,6 +181,32 @@ Deno.test("OpenDCPublicBodiesReader keeps duplicate names across distinct slugs"
   assertEquals(result.records[1].payload.name, "Adult Career Pathways Task Force");
   assertEquals(result.records[0].key, "adult-career-pathways-task-force");
   assertEquals(result.records[1].key, "adult-career-pathways-task-force-2");
+});
+
+Deno.test("OpenDCPublicBodiesReader skips recess index noise", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url === source.indexUrl) {
+        return new Response(RECESS_NOISE_INDEX_HTML, { status: 200 });
+      }
+      return new Response(DETAIL_ADVISORY_BOARD, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+  });
+
+  assertEquals(result.records.length, 1);
+  assertEquals(result.records[0].key, "board-accountancy");
 });
 
 Deno.test("OpenDCPublicBodiesReader fetches and parses detail pages", async () => {

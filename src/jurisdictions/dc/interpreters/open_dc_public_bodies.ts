@@ -6,7 +6,11 @@ import {
   type RelationFragment,
 } from "../../../core/types.ts";
 import { parseLegalCitationLocators, parseLegalCitationLocatorsFromUrl } from "./citations.ts";
-import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
+import {
+  type DcInterpreterContext,
+  normalizeAgencyLookupKey,
+  publicBodyLookupKey,
+} from "./context.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
 import { dcCouncilKind } from "../kinds/council.ts";
@@ -117,6 +121,30 @@ function entryFamilyForPublicBody(detected: string): string {
 function makeProvisionalId(detected: string, slug: string): string {
   const prefix = entryKindForPublicBody(detected);
   return `${prefix}:${slug}`;
+}
+
+function resolvePublicBodyProvisionalId(
+  detected: string,
+  name: string,
+  slug: string,
+  context?: DcInterpreterContext,
+): { provisionalId: string; shadowedSourceRecordId?: string } {
+  const provisionalId = makeProvisionalId(detected, slug);
+  const standardKinds = new Set(["board", "commission", "authority", "council"]);
+  if (!standardKinds.has(detected)) {
+    return { provisionalId };
+  }
+
+  const kind = entryKindForPublicBody(detected);
+  const trusted = context?.publicBodyLookup?.get(publicBodyLookupKey(kind, name));
+  if (!trusted) {
+    return { provisionalId };
+  }
+
+  return {
+    provisionalId: trusted.provisionalId,
+    shadowedSourceRecordId: trusted.sourceRecordId,
+  };
 }
 
 function isNonRelationshipLabel(label: string): boolean {
@@ -253,8 +281,19 @@ export function interpretOpenDCPublicBodies(
     }
 
     const detected = detectKindFromName(name);
-    const provisionalId = makeProvisionalId(detected, slug);
+    const resolvedPublicBody = resolvePublicBodyProvisionalId(detected, name, slug, context);
+    const provisionalId = resolvedPublicBody.provisionalId;
     const normalizedName = normalizeAgencyLookupKey(name);
+    if (resolvedPublicBody.shadowedSourceRecordId) {
+      findings.push({
+        kind: "info",
+        code: "dc.interpreter.opendc_public_body_source_shadow_merged",
+        message: `Open DC public body "${name}" matched trusted ${
+          entryKindForPublicBody(detected)
+        } source record ${resolvedPublicBody.shadowedSourceRecordId}; using canonical id ${provisionalId}`,
+        citation: cite(sourceKind, record.key),
+      });
+    }
     parsedRecords.push({
       record,
       name,

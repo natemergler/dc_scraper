@@ -510,6 +510,68 @@ Deno.test("compile applies relation revisions to override outgoing relations", (
   });
 });
 
+Deno.test("compile merges duplicate relation endpoints with combined citations", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+  registry.registerRelation(defineRelationKind({ kind: "dc.relation:governs" }));
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    promotionPolicy: promoteAllFragmentsPolicy,
+    fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      provisionalId: "dc.agency:a-1",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency One",
+      attributes: { shortName: "A1", sourceAgencyId: "a-1" },
+      citations: [cite("dcgis.agencies", "row-1")],
+    }, {
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-2",
+      provisionalId: "dc.agency:a-2",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency Two",
+      attributes: { shortName: "A2", sourceAgencyId: "a-2" },
+      citations: [cite("dcgis.agencies", "row-2")],
+    }, {
+      fragmentType: "relation",
+      source: "dcgis.boards",
+      sourceRecordId: "board-1",
+      from: "dc.agency:a-1",
+      relationKind: "dc.relation:governs",
+      to: "dc.agency:a-2",
+      citations: [cite("dcgis.boards", "board-1")],
+    }, {
+      fragmentType: "relation",
+      source: "open_dc.public_bodies",
+      sourceRecordId: "board-one",
+      from: "dc.agency:a-1",
+      relationKind: "dc.relation:governs",
+      to: "dc.agency:a-2",
+      citations: [cite("open_dc.public_bodies", "board-one")],
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(result.state?.entries.get("dc.agency:a-1")?.relations, {
+    "dc.relation:governs": [{
+      kind: "dc.relation:governs",
+      to: "dc.agency:a-2",
+      citations: [
+        cite("dcgis.boards", "board-1"),
+        cite("open_dc.public_bodies", "board-one"),
+      ],
+    }],
+  });
+});
+
 Deno.test("compile applies suppress revisions and removes inbound relations", () => {
   const registry = new KindRegistry();
   registry.register(dcAgencyKind);

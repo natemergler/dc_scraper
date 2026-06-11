@@ -315,23 +315,26 @@ function buildStateFromEntries(
 }
 
 function dedupeRelations(relations: MutableRelations[string]): MutableRelations[string] {
-  const seen = new Set<string>();
-  const deduped: MutableRelations[string] = [];
+  const byEndpoint = new Map<string, MutableRelationShape>();
 
   for (const relation of relations) {
-    const key = `${relation.kind}|${relation.to}|${
-      JSON.stringify(sortUniqueCitations(relation.citations ?? []))
-    }`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push({
+    const key = `${relation.kind}|${relation.to}`;
+    const existing = byEndpoint.get(key);
+    if (existing) {
+      existing.citations = sortUniqueCitations([
+        ...(existing.citations ?? []),
+        ...(relation.citations ?? []),
+      ]);
+      continue;
+    }
+    byEndpoint.set(key, {
       kind: relation.kind,
       to: relation.to,
       citations: sortUniqueCitations(relation.citations ?? []),
     });
   }
 
-  return deduped.sort((left, right) => {
+  return [...byEndpoint.values()].sort((left, right) => {
     if (left.kind === right.kind) return left.to.localeCompare(right.to);
     return left.kind.localeCompare(right.kind);
   });

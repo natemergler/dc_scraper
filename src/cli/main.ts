@@ -34,6 +34,7 @@ import { type EntryFragment, type Finding, type RelationFragment } from "../core
 import {
   type DcInterpreterContext,
   normalizeAgencyLookupKey,
+  publicBodyLookupKey,
 } from "../jurisdictions/dc/interpreters/context.ts";
 
 type CliOptions = {
@@ -362,6 +363,34 @@ function compileFromWorkspace(
           ) {
             interpreterContext.agencyLookup.set(normalizedShortName, agencyId);
           }
+        }
+      }
+    }
+
+    if (
+      sourceBinding.source.id === "dcgis.boards" ||
+      sourceBinding.source.id === "dcgis.commissions" ||
+      sourceBinding.source.id === "dcgis.councils" ||
+      sourceBinding.source.id === "dcgis.authorities"
+    ) {
+      for (const entryFragment of interpreted.entryFragments) {
+        if (
+          entryFragment.kind !== "dc.board" &&
+          entryFragment.kind !== "dc.commission" &&
+          entryFragment.kind !== "dc.council" &&
+          entryFragment.kind !== "dc.authority"
+        ) {
+          continue;
+        }
+        if (!interpreterContext.publicBodyLookup) {
+          interpreterContext.publicBodyLookup = new Map();
+        }
+        const lookupKey = publicBodyLookupKey(entryFragment.kind, entryFragment.name);
+        if (!interpreterContext.publicBodyLookup.has(lookupKey)) {
+          interpreterContext.publicBodyLookup.set(lookupKey, {
+            provisionalId: entryFragment.provisionalId,
+            sourceRecordId: entryFragment.sourceRecordId,
+          });
         }
       }
     }

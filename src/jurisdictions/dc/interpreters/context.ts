@@ -1,6 +1,11 @@
 export interface DcInterpreterContext {
   agencyLookup?: Map<string, string>;
+  publicBodyLookup?: Map<string, { provisionalId: string; sourceRecordId: string }>;
   councilmemberLookup?: Map<string, { provisionalId: string; sourceRecordId: string }>;
+}
+
+export function publicBodyLookupKey(kind: string, name: string): string {
+  return `${kind}:${normalizeAgencyLookupKey(name)}`;
 }
 
 export function fileSafeLedgerId(input: string): string {

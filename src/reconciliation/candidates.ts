@@ -15,7 +15,16 @@ export interface ReconciliationCandidatePacket {
   id: string;
   reason: "same_normalized_name" | "shared_url" | "shared_legal_locator";
   matchKey: string;
+  severity: "high" | "medium" | "low";
+  confidence: "high" | "medium" | "low";
+  reviewCategory:
+    | "kind_conflict"
+    | "source_shadow"
+    | "same_source_duplicate"
+    | "relation_endpoint_review"
+    | "locator_or_url_overlap";
   risks: string[];
+  sourceFamilies: string[];
   entries: ReconciliationCandidateEntry[];
 }
 
@@ -48,7 +57,7 @@ export function findReconciliationCandidates(
     ...groupsForEntryKey(state, "same_normalized_name", (entry) => normalizeName(entry.name)),
     ...groupsForEntryKey(state, "shared_url", (entry) => collectUrls(entry)),
     ...groupsForEntryKey(state, "shared_legal_locator", (entry) => collectLegalLocators(entry)),
-  ];
+  ].filter((group) => !isDetectorNoise(group));
 
   const candidates = groups
     .map((group) => toPacket(group))
@@ -96,11 +105,16 @@ function groupsForEntryKey(
 
 function toPacket(group: CandidateGroup): ReconciliationCandidatePacket {
   const packetId = `${group.reason}:${stableKey(group.matchKey)}`;
+  const risks = collectRisks(group.entries);
   return {
     id: packetId,
     reason: group.reason,
     matchKey: group.matchKey,
-    risks: collectRisks(group.entries),
+    severity: classifySeverity(group.reason, risks),
+    confidence: classifyConfidence(group.reason, risks),
+    reviewCategory: classifyReviewCategory(group.reason, risks),
+    risks,
+    sourceFamilies: collectSourceFamilies(group.entries),
     entries: group.entries.map(toCandidateEntry),
   };
 }
@@ -160,6 +174,84 @@ function collectRisks(entries: Entry[]): string[] {
   }
 
   return [...risks].sort();
+}
+
+function collectSourceFamilies(entries: Entry[]): string[] {
+  const sourceFamilies = new Set<string>();
+  for (const entry of entries) {
+    for (const source of collectSources(entry)) {
+      const family = source.includes(".") ? source.split(".")[0] : source;
+      sourceFamilies.add(family);
+    }
+  }
+  return [...sourceFamilies].sort();
+}
+
+function classifySeverity(
+  reason: CandidateReason,
+  risks: string[],
+): ReconciliationCandidatePacket["severity"] {
+  if (risks.includes("kind_conflict") || risks.includes("family_conflict")) {
+    return "high";
+  }
+  if (risks.includes("cross_source_shadow") && risks.includes("relation_review_needed")) {
+    return "high";
+  }
+  if (reason === "shared_legal_locator" || risks.includes("cross_source_shadow")) {
+    return "medium";
+  }
+  return "low";
+}
+
+function classifyConfidence(
+  reason: CandidateReason,
+  risks: string[],
+): ReconciliationCandidatePacket["confidence"] {
+  if (reason === "same_normalized_name" || reason === "shared_legal_locator") {
+    return "high";
+  }
+  if (risks.includes("same_source_duplicate")) {
+    return "medium";
+  }
+  return "low";
+}
+
+function classifyReviewCategory(
+  reason: CandidateReason,
+  risks: string[],
+): ReconciliationCandidatePacket["reviewCategory"] {
+  if (risks.includes("kind_conflict") || risks.includes("family_conflict")) {
+    return "kind_conflict";
+  }
+  if (risks.includes("cross_source_shadow")) {
+    return "source_shadow";
+  }
+  if (risks.includes("same_source_duplicate")) {
+    return "same_source_duplicate";
+  }
+  if (risks.includes("relation_review_needed")) {
+    return "relation_endpoint_review";
+  }
+  if (reason === "shared_url" || reason === "shared_legal_locator") {
+    return "locator_or_url_overlap";
+  }
+  return "source_shadow";
+}
+
+function isDetectorNoise(group: CandidateGroup): boolean {
+  if (group.reason !== "shared_url") {
+    return false;
+  }
+  const families = new Set(group.entries.map((entry) => entry.family));
+  const kinds = new Set(group.entries.map((entry) => entry.kind));
+  const sourceFamilies = new Set(group.entries.flatMap(collectSources));
+
+  if (sourceFamilies.size === 1 && kinds.size === 1 && group.entries.length > 2) {
+    return true;
+  }
+
+  return families.size === 1 && families.has("area") && kinds.size === 1 &&
+    sourceFamilies.size === 1;
 }
 
 function normalizeName(name: string): string | null {

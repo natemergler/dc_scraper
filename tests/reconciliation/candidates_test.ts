@@ -46,7 +46,11 @@ Deno.test("findReconciliationCandidates reports same-name source shadows with ri
   assertEquals(report.candidateCount, 1);
   assertEquals(report.candidates[0].reason, "same_normalized_name");
   assertEquals(report.candidates[0].matchKey, "food policy council");
+  assertEquals(report.candidates[0].severity, "medium");
+  assertEquals(report.candidates[0].confidence, "high");
+  assertEquals(report.candidates[0].reviewCategory, "source_shadow");
   assertEquals(report.candidates[0].risks, ["cross_source_shadow"]);
+  assertEquals(report.candidates[0].sourceFamilies, ["dcgis", "open_dc"]);
   assertEquals(report.candidates[0].entries.map((candidate) => candidate.id), [
     "dc.council:19",
     "dc.council:food-policy-council",
@@ -127,4 +131,66 @@ Deno.test("findReconciliationCandidates labels same-source duplicate risk", () =
   );
 
   assertEquals(report.candidates[0].risks, ["same_source_duplicate"]);
+  assertEquals(report.candidates[0].severity, "low");
+  assertEquals(report.candidates[0].confidence, "high");
+  assertEquals(report.candidates[0].reviewCategory, "same_source_duplicate");
+});
+
+Deno.test("findReconciliationCandidates filters shared area URL noise", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.smd:8E01",
+        family: "area",
+        kind: "dc.smd",
+        name: "SMD 8E01",
+        attributes: { webUrl: "https://example-anc.dc.gov" },
+        citations: [cite("dcgis.smds", "8E01")],
+      }),
+      entry({
+        id: "dc.smd:8E02",
+        family: "area",
+        kind: "dc.smd",
+        name: "SMD 8E02",
+        attributes: { webUrl: "https://example-anc.dc.gov/" },
+        citations: [cite("dcgis.smds", "8E02")],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(report.candidateCount, 0);
+  assertEquals(report.candidates, []);
+});
+
+Deno.test("findReconciliationCandidates filters common source-page URL noise", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.office:a",
+        kind: "dc.office",
+        name: "Office A",
+        attributes: { sourcePageUrl: "https://mayor.dc.gov/org-chart" },
+        citations: [cite("mayor.executive_structure", "a")],
+      }),
+      entry({
+        id: "dc.office:b",
+        kind: "dc.office",
+        name: "Office B",
+        attributes: { sourcePageUrl: "https://mayor.dc.gov/org-chart" },
+        citations: [cite("mayor.executive_structure", "b")],
+      }),
+      entry({
+        id: "dc.office:c",
+        kind: "dc.office",
+        name: "Office C",
+        attributes: { sourcePageUrl: "https://mayor.dc.gov/org-chart" },
+        citations: [cite("mayor.executive_structure", "c")],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(report.candidateCount, 0);
+  assertEquals(report.candidates, []);
 });
