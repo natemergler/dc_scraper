@@ -89,6 +89,8 @@ export interface Revision {
   source: string;
   targetKind: "entry" | "relation";
   targetId: string;
+  rationale?: string;
+  evidence?: CitationValue[];
   patch: Record<string, unknown>;
 }
 

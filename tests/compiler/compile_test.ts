@@ -510,6 +510,64 @@ Deno.test("compile applies relation revisions to override outgoing relations", (
   });
 });
 
+Deno.test("compile applies suppress revisions and removes inbound relations", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+  registry.registerRelation(defineRelationKind({ kind: "dc.relation:reports_to" }));
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      provisionalId: "dc.agency:a-1",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency One",
+      attributes: { shortName: "A1", sourceAgencyId: "a-1" },
+      citations: [cite("dcgis.agencies", "row-1")],
+    }, {
+      fragmentType: "entry",
+      source: "open_dc.public_bodies",
+      sourceRecordId: "shadow",
+      provisionalId: "dc.agency:shadow",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency One",
+      attributes: { shortName: "Agency One" },
+      citations: [cite("open_dc.public_bodies", "shadow")],
+    }, {
+      fragmentType: "relation",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      from: "dc.agency:a-1",
+      relationKind: "dc.relation:reports_to",
+      to: "dc.agency:shadow",
+      citations: [cite("dcgis.agencies", "row-1")],
+    }],
+    revisions: [{
+      id: "suppress-shadow",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.agency:shadow",
+      rationale: "Reviewed duplicate source shadow.",
+      evidence: [cite("open_dc.public_bodies", "shadow")],
+      patch: { suppress: true },
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(result.state?.entries.has("dc.agency:shadow"), false);
+  assertEquals(result.state?.entries.get("dc.agency:a-1")?.relations, {});
+  assertEquals(
+    result.findings.some((finding) => finding.code === "compiler.revision.entry_suppressed"),
+    true,
+  );
+});
+
 Deno.test("compile dedupes legacy and canonical relation facets", () => {
   const registry = new KindRegistry();
   registry.register(dcAgencyKind);
