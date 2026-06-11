@@ -33,6 +33,8 @@ const D_C_NO_SECTION_LIST =
   /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*(?!§)\s*[0-9][^!?]*/gi;
 const D_C_SINGLE_RANGE =
   /D\.?\s*C\.?\s*(?:Official\s+Code|Code|Municipal\s+Regulations)\s*(?:§|Sections?)?\s*[0-9][0-9A-Za-z.\-\u2013\u2014]+(?:\([^)]+\))*(?:\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9][0-9A-Za-z.\-\u2013\u2014]+(?:\([^)]+\))*)/gi;
+const D_C_LAW = /D\.?\s*C\.?\s*Law\s+\d+-\d+/gi;
+const D_C_ACT = /D\.?\s*C\.?\s*Act\s+\d+-\d+/gi;
 const CFR_PATTERN = /\b\d+\s*CFR\s*§?\s*[0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*(?!\()/gi;
 const CFR_SINGLE_RANGE =
   /\b\d+\s*CFR\s*§?\s*[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\b/gi;
@@ -113,15 +115,34 @@ function expandCitationRange(locator: string): string[] {
   return [locator];
 }
 
+function expandShorthandRangeEnd(startSection: string, endSection: string): string {
+  const start = startSection.trim();
+  const end = endSection.trim();
+  if (end.includes("-")) {
+    return end;
+  }
+
+  const titleMatch = start.match(/^([0-9]+)-[0-9A-Za-z.]+/);
+  if (!titleMatch?.[1]) {
+    return end;
+  }
+
+  return `${titleMatch[1]}-${end}`;
+}
+
 function expandDCCitationRange(locator: string): string[] | null {
   const spacedRangeMatch = locator.match(
     /^(D\.\s*C\.\s*(?:Official\s+Code|Code|Municipal\s+Regulations))\s*([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)\s*(?:[\u2013\u2014]|-(?=\s+)|\s+(?:to|through)\s+)\s*([0-9][0-9A-Za-z.\-]+(?:\([^)]+\))*)$/i,
   );
   if (spacedRangeMatch && spacedRangeMatch[2] && spacedRangeMatch[3]) {
     const prefix = spacedRangeMatch[1].replace(/\s+/g, " ").trim();
+    const endSection = expandShorthandRangeEnd(
+      spacedRangeMatch[2],
+      spacedRangeMatch[3],
+    );
     return [
       `${prefix} § ${spacedRangeMatch[2].trim()}`,
-      `${prefix} § ${spacedRangeMatch[3].trim()}`,
+      `${prefix} § ${endSection}`,
     ];
   }
 
@@ -145,6 +166,16 @@ function expandDCCitationRange(locator: string): string[] | null {
 }
 
 function normalizeSingleCitation(locator: string): string[] {
+  const dcLawMatch = locator.match(/^D\.?\s*C\.?\s*Law\s+(\d+-\d+)$/i);
+  if (dcLawMatch) {
+    return [`D.C. Law ${dcLawMatch[1]}`];
+  }
+
+  const dcActMatch = locator.match(/^D\.?\s*C\.?\s*Act\s+(\d+-\d+)$/i);
+  if (dcActMatch) {
+    return [`D.C. Act ${dcActMatch[1]}`];
+  }
+
   const mayorOrderMatch = locator.match(
     /^Mayor(?:'|’)?s\s+Order\s+(\d{4}-\d{1,4})$/i,
   );
@@ -168,9 +199,10 @@ function normalizeSingleCitation(locator: string): string[] {
   );
   if (dcRangeMatch && dcRangeMatch[1] && dcRangeMatch[2] && dcRangeMatch[3]) {
     const prefix = dcRangeMatch[1].replace(/\s+/g, " ").trim();
+    const endSection = expandShorthandRangeEnd(dcRangeMatch[2], dcRangeMatch[3]);
     return [
       `${prefix} § ${dcRangeMatch[2].trim()}`,
-      `${prefix} § ${dcRangeMatch[3].trim()}`,
+      `${prefix} § ${endSection}`,
     ];
   }
 
@@ -231,8 +263,9 @@ function parseCitationSectionListPieces(
     );
     if (dashRangeMatch && dashRangeMatch[1] && dashRangeMatch[2]) {
       sections.push(formatSection(dashRangeMatch[1].trim()));
-      sections.push(formatSection(dashRangeMatch[2].trim()));
-      lastBaseSection = dashRangeMatch[2].trim();
+      const endSection = expandShorthandRangeEnd(dashRangeMatch[1], dashRangeMatch[2]);
+      sections.push(formatSection(endSection));
+      lastBaseSection = endSection;
       continue;
     }
 
@@ -241,8 +274,9 @@ function parseCitationSectionListPieces(
     );
     if (toRangeMatch && toRangeMatch[1] && toRangeMatch[2]) {
       sections.push(formatSection(toRangeMatch[1].trim()));
-      sections.push(formatSection(toRangeMatch[2].trim()));
-      lastBaseSection = toRangeMatch[2].trim();
+      const endSection = expandShorthandRangeEnd(toRangeMatch[1], toRangeMatch[2]);
+      sections.push(formatSection(endSection));
+      lastBaseSection = endSection;
       continue;
     }
 
@@ -251,8 +285,12 @@ function parseCitationSectionListPieces(
     );
     if (throughRangeMatch && throughRangeMatch[1] && throughRangeMatch[2]) {
       sections.push(formatSection(throughRangeMatch[1].trim()));
-      sections.push(formatSection(throughRangeMatch[2].trim()));
-      lastBaseSection = throughRangeMatch[2].trim();
+      const endSection = expandShorthandRangeEnd(
+        throughRangeMatch[1],
+        throughRangeMatch[2],
+      );
+      sections.push(formatSection(endSection));
+      lastBaseSection = endSection;
       continue;
     }
 
@@ -435,6 +473,8 @@ export function parseLegalCitationLocators(payload: Record<string, unknown>): st
       ...extractFromPattern(text, D_C_OFFICIAL_CODE),
       ...extractFromPattern(text, D_C_CODE),
       ...extractFromPattern(text, D_C_MUNICIPAL_REGS),
+      ...extractFromPattern(text, D_C_LAW),
+      ...extractFromPattern(text, D_C_ACT),
       ...extractFromPattern(text, CFR_SINGLE_RANGE),
       ...extractFromPattern(text, USC_SINGLE_RANGE),
       ...extractFromPattern(text, CFR_PATTERN),
@@ -453,6 +493,32 @@ export function parseLegalCitationLocators(payload: Record<string, unknown>): st
     }
   }
   return uniqueSorted(locators);
+}
+
+export function parseLegalCitationLocatorsFromUrl(rawUrl: string): string[] {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return [];
+  }
+
+  if (!/^code\.dccouncil\.(?:gov|us)$/i.test(url.hostname)) {
+    return [];
+  }
+
+  const sectionMatch = url.pathname.match(/\/code\/sections\/([^/]+)/i);
+  if (sectionMatch?.[1]) {
+    const section = decodeURIComponent(sectionMatch[1]).replace(/\.html$/i, "");
+    return [`D.C. Code § ${section}`];
+  }
+
+  const lawMatch = url.pathname.match(/\/laws\/(\d+-\d+)/i);
+  if (lawMatch?.[1]) {
+    return [`D.C. Law ${lawMatch[1]}`];
+  }
+
+  return [];
 }
 
 export function collectRecordCitations(

@@ -40,8 +40,7 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
 
   assertEquals(output.entryFragments.length, 1);
   assertEquals(output.relationFragments.length, 1);
-  assertEquals(output.findings.length, 1);
-  assertEquals(output.findings[0].code, "dc.interpreter.opendc_enabling_statute_unparsed");
+  assertEquals(output.findings.length, 0);
 
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.fragmentType, "entry");
@@ -52,6 +51,11 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
   assertEquals(entryFragment.name, "Advisory Board");
   assertEquals(entryFragment.attributes.shortName, "Advisory Board");
   assertEquals(entryFragment.attributes.sourceOpenDcSlug, "advisory-board");
+  assertEquals(entryFragment.citations, [
+    cite(openDCPublicBodiesSource.id, "advisory-board"),
+    cite(openDCPublicBodiesSource.id, "advisory-board", { locator: "D.C. Code § 1-123" }),
+    cite(openDCPublicBodiesSource.id, "advisory-board", { locator: "D.C. Law 10-50" }),
+  ]);
 
   const relations = output.relationFragments;
   const governingRelation = relations.find(
@@ -459,12 +463,39 @@ Deno.test("open_dc.public_bodies preserves mayoral order authority text as evide
   assertEquals(unparsedFinding, undefined);
 });
 
+Deno.test("open_dc.public_bodies derives Code locator citations from official Code URLs", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "major-crash-review-task-force",
+    payload: {
+      name: "Major Crash Review Task Force",
+      slug: "major-crash-review-task-force",
+      detailUrl: "https://www.open-dc.gov/public-bodies/major-crash-review-task-force/",
+      enablingStatute: "§ 50–1831. Major Crash Review Task Force",
+      enablingStatuteUrl: "https://code.dccouncil.us/dc/council/code/sections/50-1831.html",
+    },
+  }]);
+
+  assertEquals(output.entryFragments.length, 1);
+  assertEquals(output.entryFragments[0].citations, [
+    cite(openDCPublicBodiesSource.id, "major-crash-review-task-force"),
+    cite(openDCPublicBodiesSource.id, "major-crash-review-task-force", {
+      locator: "D.C. Code § 50-1831",
+    }),
+  ]);
+  assertEquals(
+    output.findings.some((f) => f.code === "dc.interpreter.opendc_enabling_statute_unparsed"),
+    false,
+  );
+});
+
 Deno.test("open_dc.public_bodies source binding links interpreter", () => {
   assertEquals(openDCPublicBodiesBinding.source.id, openDCPublicBodiesSource.id);
   assertEquals(openDCPublicBodiesBinding.interpret, interpretOpenDCPublicBodies);
 });
 
-Deno.test("open_dc.public_bodies deduplicates citations with legal refs", () => {
+Deno.test("open_dc.public_bodies combines text and URL legal refs", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -480,5 +511,9 @@ Deno.test("open_dc.public_bodies deduplicates citations with legal refs", () => 
 
   assertEquals(output.entryFragments.length, 1);
   const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.citations.length, 1);
+  assertEquals(entryFragment.citations, [
+    cite(openDCPublicBodiesSource.id, "statute-board"),
+    cite(openDCPublicBodiesSource.id, "statute-board", { locator: "D.C. Code § 1-123" }),
+    cite(openDCPublicBodiesSource.id, "statute-board", { locator: "D.C. Law 10-50" }),
+  ]);
 });

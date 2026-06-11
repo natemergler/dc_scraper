@@ -5,7 +5,7 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { parseLegalCitationLocators } from "./citations.ts";
+import { parseLegalCitationLocators, parseLegalCitationLocatorsFromUrl } from "./citations.ts";
 import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
@@ -304,8 +304,12 @@ export function interpretOpenDCPublicBodies(
     const legalLocators = parsed.enablingStatute
       ? parseLegalCitationLocators({ LEGAL_REFERENCE: parsed.enablingStatute })
       : [];
+    const urlLegalLocators = parsed.enablingStatuteUrl
+      ? parseLegalCitationLocatorsFromUrl(parsed.enablingStatuteUrl)
+      : [];
+    const sourceLegalLocators = [...new Set([...legalLocators, ...urlLegalLocators])].sort();
 
-    for (const locator of legalLocators) {
+    for (const locator of sourceLegalLocators) {
       citations.push(cite(sourceKind, parsed.record.key, { locator }));
     }
 
@@ -398,7 +402,7 @@ export function interpretOpenDCPublicBodies(
       }
     }
 
-    if (parsed.enablingStatute && legalLocators.length === 0) {
+    if (parsed.enablingStatute && sourceLegalLocators.length === 0) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_unparsed",
