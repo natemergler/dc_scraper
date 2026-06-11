@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:dc-retirement-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "DC Retirement Board",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-711",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/1-711.html",
+    "shortName": "DC Retirement Board",
+    "sourceOpenDcSlug": "dc-retirement-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-retirement-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-retirement-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-retirement-board",
+      "locator": "DC Code § 1-711"
+    }
+  ],
+  "relations": {}
+}

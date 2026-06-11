@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:washington-metrorail-safety-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Washington Metrorail Safety Commission",
+  "attributes": {
+    "enablingStatute": "DC Code § 9–1109.11",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/titles/9/chapters/11/subchapters/V-A/index.html",
+    "shortName": "Washington Metrorail Safety Commission",
+    "sourceOpenDcSlug": "washington-metrorail-safety-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-metrorail-safety-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-metrorail-safety-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-metrorail-safety-commission",
+      "locator": "DC Code § 9-1109.11"
+    }
+  ],
+  "relations": {}
+}

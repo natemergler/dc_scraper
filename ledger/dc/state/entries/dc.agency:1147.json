@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1147",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Talent and Appointments",
+  "attributes": {
+    "shortName": "Mayor's Office of Talent and Appointments",
+    "sourceAgencyId": "1147"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "126"
+    }
+  ],
+  "relations": {}
+}

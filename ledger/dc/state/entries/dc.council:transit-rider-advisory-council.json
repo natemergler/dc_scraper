@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:transit-rider-advisory-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Transit Rider Advisory Council",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 50–2361.02",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/titles/50/chapters/23B/subchapters/I/index.html",
+    "shortName": "Transit Rider Advisory Council",
+    "sourceOpenDcSlug": "transit-rider-advisory-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/transit-rider-advisory-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "transit-rider-advisory-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "transit-rider-advisory-council",
+      "locator": "D.C. Code § 50-2361.02"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_source:district-of-columbia-official-code",
+  "family": "authority",
+  "kind": "dc.legal_source",
+  "name": "District of Columbia Official Code",
+  "attributes": {
+    "shortName": "District of Columbia Official Code",
+    "sourceIndexUrl": "https://dc.gov/page/laws-regulations-and-courts",
+    "sourceLegalEntrypointKey": "district-of-columbia-official-code",
+    "sourcePageUrl": "https://code.dccouncil.gov/",
+    "sourceSeeded": true
+  },
+  "citations": [
+    {
+      "source": "legal.entrypoints",
+      "sourceRecordId": "district-of-columbia-official-code",
+      "url": "https://code.dccouncil.gov/"
+    }
+  ],
+  "relations": {}
+}

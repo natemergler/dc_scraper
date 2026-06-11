@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1030",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Corrections",
+  "attributes": {
+    "shortName": "Department of Corrections",
+    "sourceAgencyId": "1030"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "37"
+    }
+  ],
+  "relations": {}
+}

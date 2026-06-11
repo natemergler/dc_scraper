@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1026",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Superior Court",
+  "attributes": {
+    "shortName": "Superior Court",
+    "sourceAgencyId": "1026"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "9"
+    }
+  ],
+  "relations": {}
+}

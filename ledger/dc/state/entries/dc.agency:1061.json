@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1061",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office on African Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office on African Affairs",
+    "sourceAgencyId": "1061"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "54"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,35 @@
+{
+  "id": "dc.board:85",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Contract Appeals Board (CAB)",
+  "attributes": {
+    "enablingStatute": "DC Code § 2-360.01",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-360.01.html",
+    "shortName": "Contract Appeals Board (CAB)",
+    "sourceBoardId": "85",
+    "sourceOpenDcSlug": "contract-appeals-board-cab",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/contract-appeals-board-cab"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "85"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "85",
+      "locator": "D.C. Code § 2-360.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "contract-appeals-board-cab"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "contract-appeals-board-cab",
+      "locator": "DC Code § 2-360.01"
+    }
+  ],
+  "relations": {}
+}

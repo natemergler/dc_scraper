@@ -1,0 +1,91 @@
+{
+  "id": "dc.anc:8A",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 8A",
+  "attributes": {
+    "gisId": "ANCPly_361",
+    "sourceAncId": "8A",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8a"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8A"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8A07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A07"
+          }
+        ]
+      }
+    ]
+  }
+}

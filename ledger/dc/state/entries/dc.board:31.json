@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:31",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Audiology and Speech-Language Pathology",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.18",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.18.html",
+    "shortName": "Board of Audiology and Speech-Language Pathology",
+    "sourceBoardId": "31",
+    "sourceOpenDcSlug": "board-audiology-and-speech-language-pathology",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-audiology-and-speech-language-pathology"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "31"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "31",
+      "locator": "D.C. Code § 3-1202.18"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-audiology-and-speech-language-pathology"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-audiology-and-speech-language-pathology",
+      "locator": "DC Code § 3-1202.18"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "31"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "31",
+            "locator": "D.C. Code § 3-1202.18"
+          }
+        ]
+      }
+    ]
+  }
+}

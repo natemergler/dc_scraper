@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:2C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2C03",
+  "attributes": {
+    "sourceAncId": "2C",
+    "sourceFirstName": "THOMAS",
+    "sourceLastName": "LEE",
+    "sourceRepresentativeName": "THOMAS S. LEE",
+    "sourceSmdId": "2C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2C03"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C03"
+          }
+        ]
+      }
+    ]
+  }
+}

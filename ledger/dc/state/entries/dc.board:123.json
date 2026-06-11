@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:123",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Sustainable Energy Utility Advisory Board (SEU Advisory Board)",
+  "attributes": {
+    "enablingStatute": "DC Code § 8-1774.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/8-1774.03.html",
+    "shortName": "Sustainable Energy Utility Advisory Board (SEU Advisory Board)",
+    "sourceBoardId": "123",
+    "sourceOpenDcSlug": "sustainable-energy-utility-advisory-board-seu-advisory-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/sustainable-energy-utility-advisory-board-seu-advisory-board"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "123"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "123",
+      "locator": "D.C. Code § 8-1774.03"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "sustainable-energy-utility-advisory-board-seu-advisory-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "sustainable-energy-utility-advisory-board-seu-advisory-board",
+      "locator": "DC Code § 8-1774.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "123"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "123",
+            "locator": "D.C. Code § 8-1774.03"
+          }
+        ]
+      }
+    ]
+  }
+}

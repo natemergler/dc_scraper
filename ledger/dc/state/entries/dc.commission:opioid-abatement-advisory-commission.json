@@ -1,0 +1,38 @@
+{
+  "id": "dc.commission:opioid-abatement-advisory-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Opioid Abatement Advisory Commission",
+  "attributes": {
+    "enablingStatute": "Opioid Litigation Proceeds Amendment Act of 2022",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-3212",
+    "shortName": "Opioid Abatement Advisory Commission",
+    "sourceOpenDcSlug": "opioid-abatement-advisory-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/opioid-abatement-advisory-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-abatement-advisory-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-abatement-advisory-commission",
+      "locator": "D.C. Code § 7-3212"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1028",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "opioid-abatement-advisory-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

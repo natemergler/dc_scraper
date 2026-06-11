@@ -1,0 +1,107 @@
+{
+  "id": "dc.anc:3C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3C",
+  "attributes": {
+    "gisId": "ANCPly_336",
+    "sourceAncId": "3C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3c",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3C08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C08"
+          }
+        ]
+      }
+    ]
+  }
+}

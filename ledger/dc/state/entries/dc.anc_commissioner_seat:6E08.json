@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:6E08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6E08",
+  "attributes": {
+    "sourceAncId": "6E",
+    "sourceFirstName": "DALE",
+    "sourceLastName": "PRINCE",
+    "sourceRepresentativeName": "DALE PRINCE",
+    "sourceSmdId": "6E08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6E08"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6E08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6E08"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:dc-children-and-youth-investment-trust-corporation-board-directors",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "DC Children and Youth Investment Trust Corporation Board of Directors",
+  "attributes": {
+    "enablingStatute": "DC Code § 13-38",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/13-38.html",
+    "shortName": "DC Children and Youth Investment Trust Corporation Board of Directors",
+    "sourceOpenDcSlug": "dc-children-and-youth-investment-trust-corporation-board-directors",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-children-and-youth-investment-trust-corporation-board-directors"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors",
+      "locator": "DC Code § 13-38"
+    }
+  ],
+  "relations": {}
+}

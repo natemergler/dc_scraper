@@ -1,0 +1,24 @@
+{
+  "id": "dc.commission:district-columbia-taxicab-commission-dctc",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "District of Columbia Taxicab Commission (DCTC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 50-304",
+    "shortName": "District of Columbia Taxicab Commission (DCTC)",
+    "sourceOpenDcSlug": "district-columbia-taxicab-commission-dctc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-taxicab-commission-dctc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-taxicab-commission-dctc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-taxicab-commission-dctc",
+      "locator": "DC Code § 50-304"
+    }
+  ],
+  "relations": {}
+}

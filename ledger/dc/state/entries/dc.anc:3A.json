@@ -1,0 +1,78 @@
+{
+  "id": "dc.anc:3A",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3A",
+  "attributes": {
+    "gisId": "ANCPly_334",
+    "representedNeighborhoods": "the McLean Gardens and part of the Cathedral Heights neighborhoods",
+    "sourceAncId": "3A",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3a",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3a"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3a"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3A01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3A03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3A05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A05"
+          }
+        ]
+      }
+    ]
+  }
+}

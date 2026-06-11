@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:dc-state-board-education",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "DC State Board of Education",
+  "attributes": {
+    "enablingStatute": "D.C. Code 38-2651",
+    "enablingStatuteUrl": "https://beta.code.dccouncil.us/dc/council/code/titles/38/chapters/26A/",
+    "shortName": "DC State Board of Education",
+    "sourceOpenDcSlug": "dc-state-board-education",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-state-board-education"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-state-board-education"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-state-board-education",
+      "locator": "D.C. Code § 38-2651"
+    }
+  ],
+  "relations": {}
+}

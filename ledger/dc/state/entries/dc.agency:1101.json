@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1101",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Public Employee Relations Board",
+  "attributes": {
+    "shortName": "Public Employee Relations Board",
+    "sourceAgencyId": "1101"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "86"
+    }
+  ],
+  "relations": {}
+}

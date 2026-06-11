@@ -1,0 +1,48 @@
+{
+  "id": "dc.board:101",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Housing Finance Agency Board of Directors",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 42-2702.02",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/42-2702.02.html",
+    "shortName": "Housing Finance Agency Board of Directors",
+    "sourceBoardId": "101",
+    "sourceOpenDcSlug": "housing-finance-agency-board-directors",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/housing-finance-agency-board-directors"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "101"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "101",
+      "locator": "D.C. Code § 42-2702.02"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-finance-agency-board-directors"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-finance-agency-board-directors",
+      "locator": "D.C. Code § 42-2702.02"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1017",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-finance-agency-board-directors"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:8D06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8D06",
+  "attributes": {
+    "sourceAncId": "8D",
+    "sourceFirstName": "ANNA",
+    "sourceLastName": "HAMILTON",
+    "sourceRepresentativeName": "ANNA HAMILTON",
+    "sourceSmdId": "8D06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8D06"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8D06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D06"
+          }
+        ]
+      }
+    ]
+  }
+}

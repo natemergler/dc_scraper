@@ -1,0 +1,53 @@
+{
+  "id": "dc.commission:70",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Fashion Arts and Events",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 3-651",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-651.html",
+    "shortName": "Commission on Fashion Arts and Events",
+    "sourceCommissionId": "70",
+    "sourceOpenDcSlug": "commission-fashion-arts-and-events",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-fashion-arts-and-events"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "70"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "70",
+      "locator": "D.C. Code § 3-651"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-fashion-arts-and-events"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-fashion-arts-and-events",
+      "locator": "D.C. Code § 3-651"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1092",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "70"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "70",
+            "locator": "D.C. Code § 3-651"
+          }
+        ]
+      }
+    ]
+  }
+}

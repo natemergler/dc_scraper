@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:green-building-advisory-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Green Building Advisory Council",
+  "attributes": {
+    "enablingStatute": "DC Code § 6–1451.09",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/titles/6/chapters/14A/",
+    "shortName": "Green Building Advisory Council",
+    "sourceOpenDcSlug": "green-building-advisory-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/green-building-advisory-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "green-building-advisory-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "green-building-advisory-council",
+      "locator": "DC Code § 6-1451.09"
+    }
+  ],
+  "relations": {}
+}

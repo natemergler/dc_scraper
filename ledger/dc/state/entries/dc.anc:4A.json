@@ -1,0 +1,91 @@
+{
+  "id": "dc.anc:4A",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 4A",
+  "attributes": {
+    "gisId": "ANCPly_340",
+    "sourceAncId": "4A",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4a"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "4A"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4A07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A07"
+          }
+        ]
+      }
+    ]
+  }
+}

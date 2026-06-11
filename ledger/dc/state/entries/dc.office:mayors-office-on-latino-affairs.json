@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:mayors-office-on-latino-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office on Latino Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office on Latino Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-on-latino-affairs",
+    "sourceOfficeKey": "mayors-office-on-latino-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-on-latino-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-latino-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

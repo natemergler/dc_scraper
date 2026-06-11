@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1069",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Cable Television, Film, Music and Entertainment",
+  "attributes": {
+    "shortName": "Office of Cable Television, Film, Music and Entertainment",
+    "sourceAgencyId": "1069"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "61"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-cable-television-film-music-and-entertainment",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

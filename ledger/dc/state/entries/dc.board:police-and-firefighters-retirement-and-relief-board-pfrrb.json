@@ -1,0 +1,38 @@
+{
+  "id": "dc.board:police-and-firefighters-retirement-and-relief-board-pfrrb",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police and Firefighters Retirement and Relief Board (PFRRB)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 5-722",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/5-722.html",
+    "shortName": "Police and Firefighters Retirement and Relief Board (PFRRB)",
+    "sourceOpenDcSlug": "police-and-firefighters-retirement-and-relief-board-pfrrb",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/police-and-firefighters-retirement-and-relief-board-pfrrb"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb",
+      "locator": "D.C. Code § 5-722"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1040",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb"
+          }
+        ]
+      }
+    ]
+  }
+}

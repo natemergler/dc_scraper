@@ -1,0 +1,34 @@
+{
+  "id": "dc.board:department-forensic-sciences-science-advisory-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Department of Forensic Sciences - Science Advisory Board",
+  "attributes": {
+    "enablingStatute": "D.C. Law 19-18, D.C. Official Code § 5-1501.11/Mayor's Order 2013-225",
+    "shortName": "Department of Forensic Sciences - Science Advisory Board",
+    "sourceOpenDcSlug": "department-forensic-sciences-science-advisory-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/department-forensic-sciences-science-advisory-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-forensic-sciences-science-advisory-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+      "locator": "D.C. Law 19-18"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+      "locator": "D.C. Official Code § 5-1501.11"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+      "locator": "Mayor's Order 2013-225"
+    }
+  ],
+  "relations": {}
+}

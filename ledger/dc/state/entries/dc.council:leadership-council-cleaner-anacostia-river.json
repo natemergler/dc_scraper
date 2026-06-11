@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:leadership-council-cleaner-anacostia-river",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Leadership Council for a Cleaner Anacostia River",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-171",
+    "enablingStatuteUrl": "https://www.dcregs.dc.gov/Common/NoticeDetail.aspx?NoticeId=N0054042",
+    "shortName": "Leadership Council for a Cleaner Anacostia River",
+    "sourceOpenDcSlug": "leadership-council-cleaner-anacostia-river",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/leadership-council-cleaner-anacostia-river"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "leadership-council-cleaner-anacostia-river"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "leadership-council-cleaner-anacostia-river",
+      "locator": "Mayor's Order 2015-171"
+    }
+  ],
+  "relations": {}
+}

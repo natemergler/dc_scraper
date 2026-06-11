@@ -1,0 +1,38 @@
+{
+  "id": "dc.council:behavioral-health-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Behavioral Health Council",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 7-1131.10",
+    "enablingStatuteUrl": "https://beta.code.dccouncil.us/dc/council/code/sections/7-1131.10.html",
+    "shortName": "Behavioral Health Council",
+    "sourceOpenDcSlug": "behavioral-health-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/behavioral-health-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "behavioral-health-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "behavioral-health-council",
+      "locator": "D.C. Code § 7-1131.10"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1028",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "behavioral-health-council"
+          }
+        ]
+      }
+    ]
+  }
+}

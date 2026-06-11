@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1036",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of General Services",
+  "attributes": {
+    "shortName": "Department of General Services",
+    "sourceAgencyId": "1036"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "27"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:internal-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-general-services",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

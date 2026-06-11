@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1073",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Employee Appeals",
+  "attributes": {
+    "shortName": "Office of Employee Appeals",
+    "sourceAgencyId": "1073"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "64"
+    }
+  ],
+  "relations": {}
+}

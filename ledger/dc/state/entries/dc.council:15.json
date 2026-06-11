@@ -1,0 +1,17 @@
+{
+  "id": "dc.council:15",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Green Buildings Advisory Council",
+  "attributes": {
+    "shortName": "Green Buildings Advisory Council",
+    "sourceCouncilId": "15"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "15"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,98 @@
+{
+  "id": "dc.anc:5B",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 5B",
+  "attributes": {
+    "gisId": "ANCPly_346",
+    "representedNeighborhoods": "the Brookland, University Heights, and Woodridge neighborhoods",
+    "sourceAncId": "5B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5b"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "5B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B07"
+          }
+        ]
+      }
+    ]
+  }
+}

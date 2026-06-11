@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:2B07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2B07",
+  "attributes": {
+    "sourceAncId": "2B",
+    "sourceFirstName": "LIBBY",
+    "sourceLastName": "FRANKLIN",
+    "sourceRepresentativeName": "LIBBY FRANKLIN",
+    "sourceSmdId": "2B07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2B07"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2B07"
+          }
+        ]
+      }
+    ]
+  }
+}

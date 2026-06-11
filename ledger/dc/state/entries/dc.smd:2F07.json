@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:2F07",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 2F07",
+  "attributes": {
+    "sourceAncId": "2F",
+    "sourceSmdId": "2F07",
+    "webUrl": "https://www.anc2f.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2F07"
+    }
+  ],
+  "relations": {}
+}

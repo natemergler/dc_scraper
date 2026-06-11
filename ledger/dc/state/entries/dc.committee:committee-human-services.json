@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-human-services",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Human Services",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-human-services",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-human-services/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    }
+  ],
+  "relations": {}
+}

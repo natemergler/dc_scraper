@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:humanities-council-washington-dc",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Humanities Council of Washington, D.C.",
+  "attributes": {
+    "enablingStatute": "D.C. Code §1993-200",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/1993-200.html",
+    "shortName": "Humanities Council of Washington, D.C.",
+    "sourceOpenDcSlug": "humanities-council-washington-dc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/humanities-council-washington-dc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "humanities-council-washington-dc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "humanities-council-washington-dc",
+      "locator": "D.C. Code §1993-200"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:2B08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2B08",
+  "attributes": {
+    "sourceAncId": "2B",
+    "sourceFirstName": "ZACHARY",
+    "sourceLastName": "ADAMS",
+    "sourceRepresentativeName": "ZACHARY ADAMS",
+    "sourceSmdId": "2B08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2B08"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2B08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2B08"
+          }
+        ]
+      }
+    ]
+  }
+}

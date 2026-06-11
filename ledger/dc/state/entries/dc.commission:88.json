@@ -1,0 +1,22 @@
+{
+  "id": "dc.commission:88",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "DC Tax Revision Commission",
+  "attributes": {
+    "shortName": "DC Tax Revision Commission",
+    "sourceCommissionId": "88"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "88"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "88",
+      "locator": "D.C. Code § 47-462"
+    }
+  ],
+  "relations": {}
+}

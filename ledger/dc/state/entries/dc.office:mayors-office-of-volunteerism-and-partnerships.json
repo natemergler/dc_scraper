@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:mayors-office-of-volunteerism-and-partnerships",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Volunteerism and Partnerships",
+  "attributes": {
+    "shortName": "Mayor's Office of Volunteerism and Partnerships",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-volunteerism-and-partnerships",
+    "sourceOfficeKey": "mayors-office-of-volunteerism-and-partnerships",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-volunteerism-and-partnerships",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-volunteerism-and-partnerships",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

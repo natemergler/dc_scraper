@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:sub-committee-on-local-business-development",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Sub-Committee on Local Business Development",
+  "attributes": {
+    "committeeType": "subcommittee",
+    "sourceCommitteeSlug": "sub-committee-on-local-business-development",
+    "sourceUrl": "https://dccouncil.gov/committees/sub-committee-on-local-business-development/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "sub-committee-on-local-business-development"
+    }
+  ],
+  "relations": {}
+}

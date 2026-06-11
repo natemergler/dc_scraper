@@ -1,0 +1,24 @@
+{
+  "id": "dc.commission:board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Board of Review for Anti-Deficiency Violations/Intergovernmental Judicial Commission",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2003-156",
+    "shortName": "Board of Review for Anti-Deficiency Violations/Intergovernmental Judicial Commission",
+    "sourceOpenDcSlug": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-review-anti-deficiency-violationsintergovernmental-judicial-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
+      "locator": "Mayor's Order 2003-156"
+    }
+  ],
+  "relations": {}
+}

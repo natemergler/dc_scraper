@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:opioid-fatality-review-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Opioid Fatality Review Board",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2019-026: Establishment – Opioid Fatality Review Board",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/NoticeDetail.aspx?noticeId=N0082955",
+    "shortName": "Opioid Fatality Review Board",
+    "sourceOpenDcSlug": "opioid-fatality-review-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/opioid-fatality-review-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-fatality-review-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-fatality-review-board",
+      "locator": "Mayor's Order 2019-026"
+    }
+  ],
+  "relations": {}
+}

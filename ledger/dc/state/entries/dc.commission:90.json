@@ -1,0 +1,35 @@
+{
+  "id": "dc.commission:90",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "District of Columbia Sentencing Commission",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-101",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-101.html",
+    "shortName": "District of Columbia Sentencing Commission",
+    "sourceCommissionId": "90",
+    "sourceOpenDcSlug": "district-columbia-sentencing-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-sentencing-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "90"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "90",
+      "locator": "D.C. Code § 3-101"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-sentencing-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-sentencing-commission",
+      "locator": "DC Code § 3-101"
+    }
+  ],
+  "relations": {}
+}

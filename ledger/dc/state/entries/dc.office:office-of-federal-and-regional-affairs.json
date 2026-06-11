@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:office-of-federal-and-regional-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Office of Federal and Regional Affairs",
+  "attributes": {
+    "shortName": "Office of Federal and Regional Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "office-of-federal-and-regional-affairs",
+    "sourceOfficeKey": "office-of-federal-and-regional-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-federal-and-regional-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:office-of-the-senior-advisor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-federal-and-regional-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:60",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Veterinary Medicine",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.21",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.21.html",
+    "shortName": "Board of Veterinary Medicine",
+    "sourceBoardId": "60",
+    "sourceOpenDcSlug": "board-veterinary-medicine",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-veterinary-medicine"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "60"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "60",
+      "locator": "D.C. Code § 3-1202.21"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-veterinary-medicine"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-veterinary-medicine",
+      "locator": "DC Code § 3-1202.21"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "60"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "60",
+            "locator": "D.C. Code § 3-1202.21"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1013",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Criminal Justice Coordinating Council",
+  "attributes": {
+    "shortName": "Criminal Justice Coordinating Council",
+    "sourceAgencyId": "1013"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "4"
+    }
+  ],
+  "relations": {}
+}

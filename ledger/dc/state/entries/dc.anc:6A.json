@@ -1,0 +1,98 @@
+{
+  "id": "dc.anc:6A",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 6A",
+  "attributes": {
+    "gisId": "ANCPly_351",
+    "representedNeighborhoods": "the Atlas District and part of the Capitol Hill neighborhoods",
+    "sourceAncId": "6A",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6a"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "6A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6a"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6A07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A07"
+          }
+        ]
+      }
+    ]
+  }
+}

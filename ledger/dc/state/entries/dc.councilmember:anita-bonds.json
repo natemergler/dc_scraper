@@ -1,0 +1,102 @@
+{
+  "id": "dc.councilmember:anita-bonds",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "At-Large Councilmember Anita Bonds",
+  "attributes": {
+    "sourceProfileSlug": "anita-bonds",
+    "sourceProfileUrl": "https://dccouncil.gov/council/anita-bonds/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-executive-administration-and-labor"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "housing"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "sub-committee-on-local-business-development"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "anita-bonds"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-on-executive-administration-and-labor",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-executive-administration-and-labor"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-executive-administration-and-labor",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-executive-administration-and-labor"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:housing",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "housing"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:sub-committee-on-local-business-development",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ]
+  }
+}

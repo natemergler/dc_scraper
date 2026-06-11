@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:51",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Podiatry",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.10",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.10.html",
+    "shortName": "Board of Podiatry",
+    "sourceBoardId": "51",
+    "sourceOpenDcSlug": "board-podiatry",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-podiatry"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "51"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "51",
+      "locator": "D.C. Code § 3-1202.10"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-podiatry"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-podiatry",
+      "locator": "DC Code § 3-1202.10"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "51"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "51",
+            "locator": "D.C. Code § 3-1202.10"
+          }
+        ]
+      }
+    ]
+  }
+}

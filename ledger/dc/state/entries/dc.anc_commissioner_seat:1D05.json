@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:1D05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1D05",
+  "attributes": {
+    "sourceAncId": "1D",
+    "sourceFirstName": "OMAR",
+    "sourceLastName": "PARBHOO",
+    "sourceRepresentativeName": "OMAR PARBHOO",
+    "sourceSmdId": "1D05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1D05"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D05"
+          }
+        ]
+      }
+    ]
+  }
+}

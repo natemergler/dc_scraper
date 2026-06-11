@@ -1,0 +1,38 @@
+{
+  "id": "dc.commission:district-waterways-advisory-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "District Waterways Advisory Commission",
+  "attributes": {
+    "enablingStatute": "Office of District Waterways Management Establishment Act of 2022",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/laws/24-336",
+    "shortName": "District Waterways Advisory Commission",
+    "sourceOpenDcSlug": "district-waterways-advisory-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-waterways-advisory-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-waterways-advisory-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-waterways-advisory-commission",
+      "locator": "D.C. Law 24-336"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-waterways-advisory-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

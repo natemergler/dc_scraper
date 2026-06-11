@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1177",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Gun Violence Prevention",
+  "attributes": {
+    "shortName": "Office of Gun Violence Prevention",
+    "sourceAgencyId": "1177"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "156"
+    }
+  ],
+  "relations": {}
+}

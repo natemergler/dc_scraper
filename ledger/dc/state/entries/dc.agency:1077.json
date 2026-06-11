@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1077",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Open Government",
+  "attributes": {
+    "shortName": "Office of Open Government",
+    "sourceAgencyId": "1077"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "70"
+    }
+  ],
+  "relations": {}
+}

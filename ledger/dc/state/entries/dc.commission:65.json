@@ -1,0 +1,53 @@
+{
+  "id": "dc.commission:65",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on African Affairs",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 2-1395",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1395.html",
+    "shortName": "Commission on African Affairs",
+    "sourceCommissionId": "65",
+    "sourceOpenDcSlug": "commission-african-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-african-affairs"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "65"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "65",
+      "locator": "D.C. Code § 2-1393"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-african-affairs"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-african-affairs",
+      "locator": "D.C. Code § 2-1395"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1061",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "65"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "65",
+            "locator": "D.C. Code § 2-1393"
+          }
+        ]
+      }
+    ]
+  }
+}

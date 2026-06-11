@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:3D07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3D07",
+  "attributes": {
+    "sourceAncId": "3D",
+    "sourceFirstName": "J.P.",
+    "sourceLastName": "SZYMKOWICZ",
+    "sourceRepresentativeName": "J. P. SZYMKOWICZ",
+    "sourceSmdId": "3D07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3D07"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D07"
+          }
+        ]
+      }
+    ]
+  }
+}

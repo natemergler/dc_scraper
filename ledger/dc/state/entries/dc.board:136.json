@@ -1,0 +1,17 @@
+{
+  "id": "dc.board:136",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Metropolitan Washington Council of Governments Board of Directors (COG)",
+  "attributes": {
+    "shortName": "Metropolitan Washington Council of Governments Board of Directors (COG)",
+    "sourceBoardId": "136"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "136"
+    }
+  ],
+  "relations": {}
+}

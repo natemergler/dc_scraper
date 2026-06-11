@@ -1,0 +1,108 @@
+{
+  "id": "dc.anc:7F",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 7F",
+  "attributes": {
+    "gisId": "ANCPly_360",
+    "representedNeighborhoods": "the Benning, Dupont Hill, and part of the Hill East neighborhoods",
+    "sourceAncId": "7F",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7f",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7f"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "7F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7f"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7F08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F08"
+          }
+        ]
+      }
+    ]
+  }
+}

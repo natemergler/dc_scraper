@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:2B06",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 2B06",
+  "attributes": {
+    "sourceAncId": "2B",
+    "sourceSmdId": "2B06",
+    "webUrl": "https://www.dupontcircleanc.net/wordpress/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2B06"
+    }
+  ],
+  "relations": {}
+}

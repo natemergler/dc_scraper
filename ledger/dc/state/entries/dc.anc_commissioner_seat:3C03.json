@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:3C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3C03",
+  "attributes": {
+    "sourceAncId": "3C",
+    "sourceFirstName": "JANELL",
+    "sourceLastName": "PAGATS",
+    "sourceRepresentativeName": "JANELL MARIE PAGATS",
+    "sourceSmdId": "3C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3C03"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C03"
+          }
+        ]
+      }
+    ]
+  }
+}
