@@ -24,6 +24,7 @@ import { BegaStructureReader } from "../readers/bega_structure.ts";
 import { DCCourtsStructureReader } from "../readers/dccourts_structure.ts";
 import { LegalEntrypointsReader } from "../readers/legal_entrypoints.ts";
 import { MayorExecutiveStructureReader } from "../readers/mayor_executive_structure.ts";
+import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
@@ -180,6 +181,15 @@ async function collectSourceRecords(
     return await reader.collect({
       workspace: { root: workspaceRoot },
       source: source as Parameters<MayorExecutiveStructureReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "oanc.profiles") {
+    const reader = new OancProfilesReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<OancProfilesReader["collect"]>[0]["source"],
       limit,
     });
   }

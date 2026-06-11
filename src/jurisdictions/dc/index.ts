@@ -39,6 +39,7 @@ import { begaStructureBinding } from "./sources/bega_structure.ts";
 import { dccourtsStructureBinding } from "./sources/dccourts_structure.ts";
 import { legalEntrypointsBinding } from "./sources/legal_entrypoints.ts";
 import { mayorExecutiveStructureBinding } from "./sources/mayor_executive_structure.ts";
+import { oancProfilesBinding } from "./sources/oanc_profiles.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 import type { PromotionPolicy } from "../../compiler/promotion.ts";
@@ -110,6 +111,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
     dccourtsStructureBinding,
     legalEntrypointsBinding,
     mayorExecutiveStructureBinding,
+    oancProfilesBinding,
   ],
   revisions: [],
 };

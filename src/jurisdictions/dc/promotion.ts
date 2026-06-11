@@ -10,6 +10,7 @@ import { dcgisSmdsSourceId } from "./sources/dcgis_smds.ts";
 import { dccouncilCommitteesSourceId } from "./sources/dccouncil_committees.ts";
 import { dccouncilMembersSourceId } from "./sources/dccouncil_members.ts";
 import { mayorExecutiveStructureSourceId } from "./sources/mayor_executive_structure.ts";
+import { oancProfilesSourceId } from "./sources/oanc_profiles.ts";
 import { openDCPublicBodiesSourceId } from "./sources/open_dc_public_bodies.ts";
 import { begaStructureSourceId } from "./sources/bega_structure.ts";
 import { dccourtsStructureSourceId } from "./sources/dccourts_structure.ts";
@@ -26,6 +27,7 @@ const promotedKindsBySource = new Map<string, Set<string>>([
   [dccouncilCommitteesSourceId, new Set(["dc.committee", "dc.councilmember"])],
   [dccouncilMembersSourceId, new Set(["dc.councilmember"])],
   [mayorExecutiveStructureSourceId, new Set(["dc.office"])],
+  [oancProfilesSourceId, new Set(["dc.anc"])],
   [begaStructureSourceId, new Set(["dc.agency", "dc.office"])],
   [dccourtsStructureSourceId, new Set(["dc.court_system", "dc.court", "dc.court_division"])],
   [legalEntrypointsSourceId, new Set(["dc.legal_source"])],

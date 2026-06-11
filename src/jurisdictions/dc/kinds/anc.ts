@@ -7,5 +7,7 @@ export const dcAncKind = defineEntryKind({
     sourceAncId: { required: false, type: "string" },
     webUrl: { required: false, type: "string" },
     gisId: { required: false, type: "string" },
+    sourceOancProfileUrl: { required: false, type: "string" },
+    representedNeighborhoods: { required: false, type: "string" },
   },
 });

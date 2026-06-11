@@ -3012,6 +3012,127 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
   }
 });
 
+Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fields", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-oanc-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-oanc-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-oanc-release-" });
+
+  const oancPages = new Map<string, string>([
+    [
+      "https://oanc.dc.gov/landing-page/ancs-ward",
+      `<html><body><a href="/anc-profile/anc-4e">ANC 4E</a></body></html>`,
+    ],
+    [
+      "https://oanc.dc.gov/anc-profile/anc-4e",
+      `
+      <html>
+        <body>
+          <h1>ANC 4E</h1>
+          <p>Email: 4e@example.com</p>
+          <p>Phone: (202) 727-9945</p>
+          <p>Advisory Neighborhood Commission 4E represents the Crestwood and 16th Street Heights neighborhoods.</p>
+          <p>Meeting Location: Virtual</p>
+          <a href="/financials">Financials</a>
+        </body>
+      </html>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const html = oancPages.get(key);
+    if (!html) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(html, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "oanc.profiles",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const ancEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc:4E.json")),
+    ) as {
+      attributes: Record<string, unknown>;
+    };
+    assertEquals(
+      ancEntry.attributes.sourceOancProfileUrl,
+      "https://oanc.dc.gov/anc-profile/anc-4e",
+    );
+    assertEquals(
+      ancEntry.attributes.representedNeighborhoods,
+      "the Crestwood and 16th Street Heights neighborhoods",
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("Crestwood and 16th Street Heights"), true);
+    assertEquals(entriesCsv.includes("4e@example.com"), false);
+    assertEquals(entriesCsv.includes("(202) 727-9945"), false);
+    assertEquals(entriesCsv.includes("Meeting Location"), false);
+    assertEquals(entriesCsv.includes("Financials"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {
