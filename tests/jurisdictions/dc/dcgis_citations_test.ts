@@ -167,6 +167,18 @@ Deno.test("dc legal citation parser preserves en-dash section numbers", () => {
   assertEquals(parseLegalCitationLocators(payload), ["DC Code § 1-621.5"]);
 });
 
+Deno.test("dc legal citation parser extracts explicit Mayor's Order locators", () => {
+  const payload = {
+    LEGAL_REFERENCE:
+      "Mayor’s Order 2024-034: Establishment; Mayor's Order 2009-225; amended by 2013-154; MO 2016-083",
+  };
+
+  assertEquals(parseLegalCitationLocators(payload), [
+    "Mayor's Order 2009-225",
+    "Mayor's Order 2024-034",
+  ]);
+});
+
 Deno.test("dc legal citation parser expands no-section-sign ranges", () => {
   const payload = {
     STATUTE: "42 U.S.C. 1983 to 1985 and 5 U.S.C. 1983-1984",

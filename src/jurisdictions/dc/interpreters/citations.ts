@@ -41,6 +41,7 @@ const CFR_SECTION_LIST = /\b\d+\s*CFR\s*§{2}\s*[0-9][0-9A-Za-z.\-\s,()]+/gi;
 const CFR_NO_SECTION_LIST = /\b\d+\s*CFR\s*(?!§)\s*[0-9][^!?]*/gi;
 const USC_PATTERN = /\b\d+\s*U\.?S\.?C\.?\s*§?\s*[0-9]+[0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
 const US_CODE_PATTERN = /\b\d+\s*U\.?S\.?\s*Code\s*§?\s*[0-9]+[0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
+const MAYORS_ORDER_PATTERN = /\bMayor(?:'|’)?s\s+Order\s+\d{4}-\d{1,4}\b/gi;
 const USC_SINGLE_RANGE =
   /\b\d+\s*U\.?S\.?C\.?\s*§?\s*[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\b/gi;
 const USC_SECTION_LIST = /\b\d+\s*U\.?S\.?C\.?\s*§{2}\s*[0-9][0-9A-Za-z.\-\s,()]+/gi;
@@ -144,6 +145,13 @@ function expandDCCitationRange(locator: string): string[] | null {
 }
 
 function normalizeSingleCitation(locator: string): string[] {
+  const mayorOrderMatch = locator.match(
+    /^Mayor(?:'|’)?s\s+Order\s+(\d{4}-\d{1,4})$/i,
+  );
+  if (mayorOrderMatch) {
+    return [`Mayor's Order ${mayorOrderMatch[1]}`];
+  }
+
   const usCodeMatch = locator.match(
     /^([0-9]+)\s*U\.?S\.?\s*Code\s*§?\s*([0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*)$/i,
   );
@@ -432,6 +440,7 @@ export function parseLegalCitationLocators(payload: Record<string, unknown>): st
       ...extractFromPattern(text, CFR_PATTERN),
       ...extractFromPattern(text, USC_PATTERN),
       ...extractFromPattern(text, US_CODE_PATTERN),
+      ...extractFromPattern(text, MAYORS_ORDER_PATTERN),
     ];
     for (const match of matches) {
       const normalizedLocators = normalizeSingleCitation(match);

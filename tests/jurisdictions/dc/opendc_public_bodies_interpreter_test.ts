@@ -419,7 +419,7 @@ Deno.test("open_dc.public_bodies parses legal citations from enabling statute", 
   );
 });
 
-Deno.test("open_dc.public_bodies preserves non-legal authority text as evidence and finding", () => {
+Deno.test("open_dc.public_bodies preserves mayoral order authority text as evidence and locator citation", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -443,15 +443,20 @@ Deno.test("open_dc.public_bodies preserves non-legal authority text as evidence 
     entryFragment.attributes.enablingStatuteUrl,
     "https://www.open-dc.gov/mayors-order-2020-123",
   );
+  assertEquals(
+    entryFragment.citations,
+    [
+      cite(openDCPublicBodiesSource.id, "board-with-order"),
+      cite(openDCPublicBodiesSource.id, "board-with-order", {
+        locator: "Mayor's Order 2020-123",
+      }),
+    ],
+  );
 
   const unparsedFinding = output.findings.find(
     (f) => f.code === "dc.interpreter.opendc_enabling_statute_unparsed",
   );
-  assertEquals(unparsedFinding !== undefined, true);
-  assertEquals(
-    unparsedFinding!.citation,
-    cite(openDCPublicBodiesSource.id, "board-with-order", { locator: "enablingStatute" }),
-  );
+  assertEquals(unparsedFinding, undefined);
 });
 
 Deno.test("open_dc.public_bodies source binding links interpreter", () => {
