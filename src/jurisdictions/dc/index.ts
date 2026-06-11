@@ -38,6 +38,8 @@ import { dccourtsStructureBinding } from "./sources/dccourts_structure.ts";
 import { legalEntrypointsBinding } from "./sources/legal_entrypoints.ts";
 import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
+import type { PromotionPolicy } from "../../compiler/promotion.ts";
+import { dcPromotionPolicy } from "./promotion.ts";
 
 export const dcJurisdiction = "dc";
 
@@ -57,6 +59,7 @@ export interface DcJurisdictionRuntime {
   jurisdiction: string;
   kinds: KindRegistry;
   sources: DcSourceBinding[];
+  promotionPolicy: PromotionPolicy;
   revisions: Revision[];
 }
 
@@ -87,6 +90,7 @@ dcKindRegistry.registerRelation(dcRepresentsRelation);
 export const dcRuntime: DcJurisdictionRuntime = {
   jurisdiction: dcJurisdiction,
   kinds: dcKindRegistry,
+  promotionPolicy: dcPromotionPolicy,
   sources: [
     dcgisAncsBinding,
     dcgisAgenciesBinding,

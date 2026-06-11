@@ -51,6 +51,10 @@ export interface Entry {
   relations: Record<string, BaseRelation[]>;
 }
 
+export type BaselineEntry = Entry;
+
+export type StateEntry = Entry;
+
 export interface EntryFragment {
   fragmentType: "entry";
   source: string;

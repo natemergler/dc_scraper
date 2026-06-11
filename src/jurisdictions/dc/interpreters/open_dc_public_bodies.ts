@@ -281,7 +281,7 @@ export function interpretOpenDCPublicBodies(
         kind: "info",
         code: "dc.interpreter.opendc_unclassified_body",
         message:
-          `Public body "${parsed.name}" identified as "${parsed.detected}"; classified as dc.agency`,
+          `Public body "${parsed.name}" identified as "${parsed.detected}"; requires promotion review`,
         citation: cite(sourceKind, parsed.record.key),
       });
     }

@@ -9,11 +9,13 @@ import {
 } from "../core/types.ts";
 import { KindRegistry } from "../core/kinds.ts";
 import { type Revision } from "../core/types.ts";
+import type { EntryPromotionDecision, PromotionPolicy } from "./promotion.ts";
 
 export interface CompileOptions {
   jurisdiction: string;
   fragments: Array<EntryFragment | RelationFragment>;
   kindRegistry: KindRegistry;
+  promotionPolicy: PromotionPolicy;
   findings?: Finding[];
   revisions?: Revision[];
   generatedAt?: string;
@@ -35,10 +37,6 @@ const conflictCode = {
   invalidRevisionPatch: "compiler.conflict.revision_invalid_state",
 } as const;
 
-const relationKindMigrations: Record<string, string> = {
-  "dc.relation:affiliated_with": "dc.relation:governs",
-} as const;
-
 type MutableRelationShape = {
   kind: string;
   to: string;
@@ -46,6 +44,8 @@ type MutableRelationShape = {
 };
 
 type MutableRelations = Record<string, Array<MutableRelationShape>>;
+
+type NonPromotedEntries = Map<string, EntryPromotionDecision>;
 
 const defaultTimestamp = () => new Date().toISOString();
 
@@ -60,7 +60,13 @@ export function compileFragments(input: CompileOptions): CompilerResult {
     fragment.fragmentType === "relation"
   ).sort(compareRelationFragments);
 
-  const provisionalEntries = mergeEntryFragments(entryFragments, conflicts);
+  const promotionResult = applyEntryPromotionPolicy(
+    entryFragments,
+    input.promotionPolicy,
+    findings,
+    conflicts,
+  );
+  const provisionalEntries = mergeEntryFragments(promotionResult.promotedFragments, conflicts);
   const baseState = buildStateFromEntries(
     input.jurisdiction,
     input.generatedAt ?? defaultTimestamp(),
@@ -68,6 +74,8 @@ export function compileFragments(input: CompileOptions): CompilerResult {
     relationFragments,
     findings,
     conflicts,
+    promotionResult.nonPromotedEntries,
+    input.promotionPolicy,
   );
 
   const stateWithRelations = validateAndSortState(baseState, input.kindRegistry, conflicts);
@@ -80,6 +88,7 @@ export function compileFragments(input: CompileOptions): CompilerResult {
     input.revisions ?? [],
     stateWithRelations,
     input.kindRegistry,
+    input.promotionPolicy,
     findings,
     conflicts,
   );
@@ -104,6 +113,59 @@ function finalize(result: CompilerResult): CompilerResult {
     findings: [...result.findings],
     conflicts: [...result.conflicts],
   };
+}
+
+function applyEntryPromotionPolicy(
+  entryFragments: EntryFragment[],
+  promotionPolicy: PromotionPolicy,
+  findings: Finding[],
+  conflicts: Finding[],
+): { promotedFragments: EntryFragment[]; nonPromotedEntries: NonPromotedEntries } {
+  const promotedFragments: EntryFragment[] = [];
+  const promotedIds = new Set<string>();
+  const nonPromotedEntries: NonPromotedEntries = new Map();
+
+  for (const fragment of entryFragments) {
+    const decision = promotionPolicy.decideEntryFragment(fragment);
+    if (decision.action === "promote" || decision.action === "promote_with_warning") {
+      promotedFragments.push(fragment);
+      promotedIds.add(fragment.provisionalId);
+
+      if (decision.action === "promote_with_warning") {
+        findings.push({
+          kind: "warn",
+          code: decision.code,
+          message: decision.message,
+          citation: decision.citation,
+        });
+      }
+      continue;
+    }
+
+    nonPromotedEntries.set(fragment.provisionalId, decision);
+    if (decision.action === "conflict") {
+      conflicts.push({
+        kind: "conflict",
+        code: decision.code,
+        message: decision.message,
+        citation: decision.citation,
+      });
+      continue;
+    }
+
+    findings.push({
+      kind: decision.action === "drop" ? "info" : "warn",
+      code: decision.code,
+      message: decision.message,
+      citation: decision.citation,
+    });
+  }
+
+  for (const promotedId of promotedIds) {
+    nonPromotedEntries.delete(promotedId);
+  }
+
+  return { promotedFragments, nonPromotedEntries };
 }
 
 function compareEntryFragments(left: EntryFragment, right: EntryFragment): number {
@@ -183,6 +245,8 @@ function buildStateFromEntries(
   relationFragments: RelationFragment[],
   findings: Finding[],
   conflicts: Finding[],
+  nonPromotedEntries: NonPromotedEntries,
+  promotionPolicy: PromotionPolicy,
 ): LedgerState {
   const state: LedgerState = {
     jurisdiction,
@@ -192,9 +256,23 @@ function buildStateFromEntries(
   };
 
   for (const relation of relationFragments) {
-    const relationKind = canonicalizeRelationKind(relation.relationKind, findings);
+    const relationKind = canonicalizeRelationKind(
+      relation.relationKind,
+      findings,
+      promotionPolicy,
+    );
     const sourceEntry = state.entries.get(relation.from);
     if (!sourceEntry) {
+      if (nonPromotedEntries.has(relation.from)) {
+        findings.push({
+          kind: "warn",
+          code: "compiler.relation_source_not_promoted",
+          message:
+            `relation source entry was not promoted into baseline: ${relation.from}; relation skipped`,
+          citation: relation.citations[0],
+        });
+        continue;
+      }
       conflicts.push({
         kind: "conflict",
         code: conflictCode.missingEntrySource,
@@ -204,6 +282,16 @@ function buildStateFromEntries(
     }
 
     if (!state.entries.has(relation.to)) {
+      if (nonPromotedEntries.has(relation.to)) {
+        findings.push({
+          kind: "warn",
+          code: "compiler.relation_target_not_promoted",
+          message:
+            `relation target entry was not promoted into baseline: ${relation.to}; relation skipped`,
+          citation: relation.citations[0],
+        });
+        continue;
+      }
       conflicts.push({
         kind: "conflict",
         code: conflictCode.missingEntryTarget,
@@ -253,6 +341,7 @@ function applyRevisions(
   revisions: Revision[],
   baseline: LedgerState,
   kindRegistry: KindRegistry,
+  promotionPolicy: PromotionPolicy,
   findings: Finding[],
   conflicts: Finding[],
 ): LedgerState {
@@ -275,7 +364,7 @@ function applyRevisions(
     }
 
     if (revision.targetKind === "entry") {
-      const patched = applyEntryPatch(entry, revision.patch, findings);
+      const patched = applyEntryPatch(entry, revision.patch, promotionPolicy, findings);
       outputState.entries.set(revision.targetId, patched);
 
       const result = kindRegistry.validateEntry(patched);
@@ -295,7 +384,7 @@ function applyRevisions(
     if (revision.targetKind === "relation") {
       let patched: Entry;
       try {
-        patched = applyRelationPatch(entry, revision.patch, revision.id, findings);
+        patched = applyRelationPatch(entry, revision.patch, revision.id, promotionPolicy, findings);
         outputState.entries.set(revision.targetId, patched);
       } catch (error) {
         conflicts.push({
@@ -335,6 +424,7 @@ function applyRelationPatch(
   entry: Entry,
   patch: Record<string, unknown>,
   revisionId: string,
+  promotionPolicy: PromotionPolicy,
   findings: Finding[],
 ): Entry {
   if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
@@ -373,7 +463,7 @@ function applyRelationPatch(
       );
     }
 
-    const canonicalKind = canonicalizeRelationKind(kind, findings);
+    const canonicalKind = canonicalizeRelationKind(kind, findings, promotionPolicy);
 
     const canonicalRelations = rawRelations
       .map((relation) => {
@@ -381,7 +471,11 @@ function applyRelationPatch(
         if (typeof candidate.kind !== "string" || typeof candidate.to !== "string") {
           return null;
         }
-        const relationKind = canonicalizeRelationKind(candidate.kind, findings);
+        const relationKind = canonicalizeRelationKind(
+          candidate.kind,
+          findings,
+          promotionPolicy,
+        );
         const citations = Array.isArray(candidate.citations)
           ? candidate.citations.filter(isCitationValue)
           : [];
@@ -413,6 +507,7 @@ function applyRelationPatch(
 function applyEntryPatch(
   entry: Entry,
   patch: Record<string, unknown>,
+  promotionPolicy: PromotionPolicy,
   findings: Finding[],
 ): Entry {
   const output: Entry = {
@@ -464,14 +559,18 @@ function applyEntryPatch(
     output.relations = {};
     for (const [kind, rawRelations] of Object.entries(patch.relations)) {
       if (!Array.isArray(rawRelations)) continue;
-      const canonicalKind = canonicalizeRelationKind(kind, findings);
+      const canonicalKind = canonicalizeRelationKind(kind, findings, promotionPolicy);
       const canonicalRelations = rawRelations
         .map((relation) => {
           const candidate = relation as { kind?: unknown; to?: unknown; citations?: unknown[] };
           if (typeof candidate.kind !== "string" || typeof candidate.to !== "string") {
             return null;
           }
-          const relationKind = canonicalizeRelationKind(candidate.kind, findings);
+          const relationKind = canonicalizeRelationKind(
+            candidate.kind,
+            findings,
+            promotionPolicy,
+          );
 
           const citations = Array.isArray(candidate.citations)
             ? candidate.citations.filter(isCitationValue)
@@ -508,15 +607,23 @@ function applyEntryPatch(
   return output;
 }
 
-function canonicalizeRelationKind(kind: string, findings: Finding[]): string {
-  const migrated = relationKindMigrations[kind];
-  if (!migrated || migrated === kind) return kind;
-  findings.push({
-    kind: "warn",
-    code: "compiler.relation_kind_deprecated",
-    message: `relation kind ${kind} was migrated to ${migrated} during compile`,
-  });
-  return migrated;
+function canonicalizeRelationKind(
+  kind: string,
+  findings: Finding[],
+  promotionPolicy: PromotionPolicy,
+): string {
+  const canonicalized = promotionPolicy.canonicalizeRelationKind?.(kind);
+  if (!canonicalized || canonicalized.kind === kind) return kind;
+  if (canonicalized.finding) {
+    findings.push(canonicalized.finding);
+  } else {
+    findings.push({
+      kind: "warn",
+      code: "compiler.relation_kind_canonicalized",
+      message: `relation kind ${kind} was canonicalized to ${canonicalized.kind} during compile`,
+    });
+  }
+  return canonicalized.kind;
 }
 
 function sortUniqueCitations(citations: CitationValue[]): CitationValue[] {

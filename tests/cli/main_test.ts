@@ -588,6 +588,8 @@ Deno.test("state commands generate index check committed state", async () => {
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
+    assertEquals(countRows(db, "fragments"), 2);
+    assertEquals(countRows(db, "baselines"), 1);
     assertEquals(countRows(db, "state_entries"), 2);
     assertEquals(countRows(db, "state_relations"), 0);
     closeWorkspace(db);
@@ -2235,7 +2237,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(stateEntries.includes("dc.board:advisory-board.json"), true);
     assertEquals(stateEntries.includes("dc.commission:planning-commission.json"), true);
     assertEquals(stateEntries.includes("dc.authority:water-authority.json"), true);
-    assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), false);
     assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
     assertEquals(stateEntries.includes("dc.agency:dpw.json"), true);
     assertEquals(stateEntries.includes("dc.agency:meetings.json"), false);
@@ -2272,8 +2274,21 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "state_entries"), 6);
+    assertEquals(countRows(db, "fragments"), 7);
+    assertEquals(countRows(db, "baselines"), 1);
+    assertEquals(countRows(db, "state_entries"), 5);
     assertEquals(countRows(db, "state_relations"), 1);
+    const baselineRow = db.db.prepare(
+      "SELECT payload FROM baselines ORDER BY id DESC LIMIT 1",
+    ).get() as { payload: string } | undefined;
+    const baseline = JSON.parse(baselineRow?.payload ?? "{}") as {
+      entries?: Record<string, unknown>;
+    };
+    assertEquals(Object.hasOwn(baseline.entries ?? {}, "dc.agency:climate-task-force"), false);
+    const promotionFinding = db.db.prepare(
+      "SELECT payload FROM findings WHERE source = ?",
+    ).get(["dc.promotion.opendc_public_body_review_required"]) as { payload: string } | undefined;
+    assertEquals(Boolean(promotionFinding), true);
     closeWorkspace(db);
 
     const checkCode = await runCli([
@@ -2297,7 +2312,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 6);
+    assertEquals(manifest.counts.entries, 5);
     assertEquals(manifest.counts.relations, 1);
     assertEquals(manifest.counts.relationKinds["dc.relation:governs"], 1);
 
@@ -2305,7 +2320,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(entriesCsv.includes("Advisory Board"), true);
     assertEquals(entriesCsv.includes("Planning Commission"), true);
     assertEquals(entriesCsv.includes("Water Authority"), true);
-    assertEquals(entriesCsv.includes("Climate Task Force"), true);
+    assertEquals(entriesCsv.includes("Climate Task Force"), false);
     assertEquals(entriesCsv.includes("Board of Accountancy"), true);
     assertEquals(entriesCsv.includes("Department of Public Works"), true);
 

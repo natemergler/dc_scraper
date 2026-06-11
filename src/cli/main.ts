@@ -9,7 +9,9 @@ import {
   initWorkspace,
   loadRecords,
   openWorkspace,
+  saveBaseline,
   saveFinding,
+  saveFragments,
   saveRecords,
   saveSnapshot,
   type Workspace,
@@ -183,13 +185,31 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     const revisionRoot = join(stateRoot, "..", "revisions");
     const revisions = await loadRevisions(revisionRoot);
     const workspaceCompilation = compileFromWorkspace(workspace);
+    workspace.db.run("DELETE FROM fragments");
+    saveFragments(
+      workspace,
+      workspaceCompilation.fragments.map((fragment) => ({
+        source: fragment.source,
+        sourceRecordId: fragment.sourceRecordId,
+        payload: fragment,
+      })),
+    );
+
     const result = compileFragments({
       jurisdiction: dcRuntime.jurisdiction,
       fragments: workspaceCompilation.fragments,
       kindRegistry: dcRuntime.kinds,
+      promotionPolicy: dcRuntime.promotionPolicy,
       findings: workspaceCompilation.findings,
       revisions: [...dcRuntime.revisions, ...revisions],
       generatedAt: new Date().toISOString(),
+    });
+
+    workspace.db.run("DELETE FROM baselines");
+    saveBaseline(workspace, {
+      jurisdiction: dcRuntime.jurisdiction,
+      source: "compiler.baseline",
+      payload: result.baseline,
     });
 
     workspace.db.run("DELETE FROM findings");
