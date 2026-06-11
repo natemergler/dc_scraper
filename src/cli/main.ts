@@ -21,6 +21,7 @@ import { OpenDCPublicBodiesReader } from "../readers/open_dc_public_bodies.ts";
 import { BegaStructureReader } from "../readers/bega_structure.ts";
 import { DCCourtsStructureReader } from "../readers/dccourts_structure.ts";
 import { LegalEntrypointsReader } from "../readers/legal_entrypoints.ts";
+import { MayorExecutiveStructureReader } from "../readers/mayor_executive_structure.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
@@ -168,6 +169,15 @@ async function collectSourceRecords(
     return await reader.collect({
       workspace: { root: workspaceRoot },
       source: source as Parameters<LegalEntrypointsReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "mayor.executive_structure") {
+    const reader = new MayorExecutiveStructureReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<MayorExecutiveStructureReader["collect"]>[0]["source"],
       limit,
     });
   }
