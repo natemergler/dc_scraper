@@ -113,6 +113,21 @@ function parseRevisionPayload(path: string, payload: unknown): Revision {
     }
   }
 
+  const review = (patch as Record<string, unknown>).review;
+  if (review !== undefined) {
+    if (targetKind !== "entry") {
+      throw new Error(
+        `invalid revision payload in ${path}: review revisions must target entries`,
+      );
+    }
+    if (typeof rationale !== "string" || rationale.trim().length === 0) {
+      throw new Error(
+        `invalid revision payload in ${path}: review revisions require rationale`,
+      );
+    }
+    validateReviewPatch(path, review);
+  }
+
   return {
     id,
     source,
@@ -122,4 +137,70 @@ function parseRevisionPayload(path: string, payload: unknown): Revision {
     ...(parsedEvidence ? { evidence: parsedEvidence } : {}),
     patch: patch as Record<string, unknown>,
   };
+}
+
+function validateReviewPatch(path: string, value: unknown): void {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`invalid revision payload in ${path}: review must be an object`);
+  }
+
+  const review = value as Record<string, unknown>;
+  const decision = review.decision;
+  if (
+    decision !== "preserve_distinct" &&
+    decision !== "alias" &&
+    decision !== "source_shadow"
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: review.decision must be preserve_distinct, alias, or source_shadow`,
+    );
+  }
+
+  if (review.relatedEntryIds !== undefined) {
+    validateStringArray(path, "review.relatedEntryIds", review.relatedEntryIds);
+  }
+  if (review.aliasNames !== undefined) {
+    validateStringArray(path, "review.aliasNames", review.aliasNames);
+  }
+  if (
+    review.canonicalEntryId !== undefined &&
+    (typeof review.canonicalEntryId !== "string" || review.canonicalEntryId.trim().length === 0)
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: review.canonicalEntryId must be a non-empty string`,
+    );
+  }
+
+  if (decision === "preserve_distinct" && !hasNonEmptyStringArray(review.relatedEntryIds)) {
+    throw new Error(
+      `invalid revision payload in ${path}: preserve_distinct review requires relatedEntryIds`,
+    );
+  }
+  if (decision === "alias" && !hasNonEmptyStringArray(review.aliasNames)) {
+    throw new Error(
+      `invalid revision payload in ${path}: alias review requires aliasNames`,
+    );
+  }
+  if (
+    decision === "source_shadow" &&
+    (typeof review.canonicalEntryId !== "string" || review.canonicalEntryId.trim().length === 0)
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: source_shadow review requires canonicalEntryId`,
+    );
+  }
+}
+
+function validateStringArray(path: string, field: string, value: unknown): void {
+  if (!Array.isArray(value) || !hasNonEmptyStringArray(value)) {
+    throw new Error(
+      `invalid revision payload in ${path}: ${field} must be a non-empty string array`,
+    );
+  }
+}
+
+function hasNonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => typeof item === "string" && item.trim().length > 0);
 }

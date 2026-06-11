@@ -898,6 +898,106 @@ Deno.test("state generation applies suppress revisions from ledger revisions", a
   }
 });
 
+Deno.test("state generation persists review revisions from ledger revisions", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-review-revision-" });
+  const projectRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-state-review-revision-project-",
+  });
+  const stateRoot = join(projectRoot, "state");
+  const revisionRoot = join(projectRoot, "revisions");
+  await Deno.mkdir(stateRoot, { recursive: true });
+  await Deno.mkdir(revisionRoot, { recursive: true });
+
+  const response = {
+    features: [
+      {
+        attributes: {
+          OBJECTID: 1,
+          AGENCY_ID: "a-1",
+          AGENCY_NAME: "Agency One",
+          SHORT_NAME: "A1",
+        },
+      },
+      {
+        attributes: {
+          OBJECTID: 2,
+          AGENCY_ID: "a-2",
+          AGENCY_NAME: "Agency One",
+          SHORT_NAME: "A2",
+        },
+      },
+    ],
+    exceededTransferLimit: false,
+    objectIdFieldName: "OBJECTID",
+  };
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "preserve-distinct.json"),
+    JSON.stringify({
+      id: "preserve-distinct",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.agency:a-1",
+      rationale: "Reviewed duplicate-looking names and preserved them as distinct.",
+      evidence: [{ source: "dcgis.agencies", sourceRecordId: "1" }],
+      patch: {
+        review: {
+          decision: "preserve_distinct",
+          relatedEntryIds: ["dc.agency:a-2"],
+        },
+      },
+    }),
+  );
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.agencies",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const agencyOne = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-1.json")),
+    ) as { attributes: { revisionReviews?: unknown[] } };
+    const agencyTwoExists = await exists(join(stateRoot, "entries", "dc.agency:a-2.json"));
+    assertEquals(agencyTwoExists, true);
+    assertEquals(agencyOne.attributes.revisionReviews, [{
+      decision: "preserve_distinct",
+      evidence: [{ source: "dcgis.agencies", sourceRecordId: "1" }],
+      rationale: "Reviewed duplicate-looking names and preserved them as distinct.",
+      relatedEntryIds: ["dc.agency:a-2"],
+      revisionId: "preserve-distinct",
+      source: "operator",
+    }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(projectRoot, { recursive: true });
+  }
+});
+
 Deno.test("state generation fails when revision payload is invalid", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-revision-invalid-" });
   const projectRoot = await Deno.makeTempDir({

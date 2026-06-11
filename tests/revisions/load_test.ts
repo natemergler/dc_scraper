@@ -67,6 +67,76 @@ Deno.test("loadRevisions reads revision rationale and evidence", async () => {
   }
 });
 
+Deno.test("loadRevisions reads audited review decisions", async () => {
+  const revisionRoot = await Deno.makeTempDir({ prefix: "civic-ledger-revisions-load-review-" });
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "preserve-distinct.json"),
+    JSON.stringify({
+      id: "preserve-distinct",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.board:one",
+      rationale: "Official sources use similar names but describe distinct bodies.",
+      evidence: [{ source: "dcgis.boards", sourceRecordId: "1" }],
+      patch: {
+        review: {
+          decision: "preserve_distinct",
+          relatedEntryIds: ["dc.board:two"],
+        },
+      },
+    }),
+  );
+
+  try {
+    const revisions = await loadRevisions(revisionRoot);
+
+    assertEquals(revisions.length, 1);
+    assertEquals(
+      revisions[0].rationale,
+      "Official sources use similar names but describe distinct bodies.",
+    );
+    assertEquals(revisions[0].patch.review, {
+      decision: "preserve_distinct",
+      relatedEntryIds: ["dc.board:two"],
+    });
+  } finally {
+    await Deno.remove(revisionRoot, { recursive: true });
+  }
+});
+
+Deno.test("loadRevisions requires rationale for review revisions", async () => {
+  const revisionRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-revisions-load-review-bad-",
+  });
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "review-without-rationale.json"),
+    JSON.stringify({
+      id: "review-bad",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.board:one",
+      patch: {
+        review: {
+          decision: "preserve_distinct",
+          relatedEntryIds: ["dc.board:two"],
+        },
+      },
+    }),
+  );
+
+  try {
+    await assertRejects(
+      () => loadRevisions(revisionRoot),
+      Error,
+      "review revisions require rationale",
+    );
+  } finally {
+    await Deno.remove(revisionRoot, { recursive: true });
+  }
+});
+
 Deno.test("loadRevisions requires rationale for suppress revisions", async () => {
   const revisionRoot = await Deno.makeTempDir({
     prefix: "civic-ledger-revisions-load-suppress-bad-",

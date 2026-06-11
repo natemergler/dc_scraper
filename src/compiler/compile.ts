@@ -377,7 +377,17 @@ function applyRevisions(
         continue;
       }
 
-      const patched = applyEntryPatch(entry, revision.patch, promotionPolicy, findings);
+      let patched: Entry;
+      try {
+        patched = applyEntryPatch(entry, revision, promotionPolicy, findings);
+      } catch (error) {
+        conflicts.push({
+          kind: "conflict",
+          code: conflictCode.invalidRevisionPatch,
+          message: error instanceof Error ? error.message : "invalid entry revision",
+        });
+        continue;
+      }
       outputState.entries.set(revision.targetId, patched);
 
       const result = kindRegistry.validateEntry(patched);
@@ -534,10 +544,11 @@ function applyRelationPatch(
 
 function applyEntryPatch(
   entry: Entry,
-  patch: Record<string, unknown>,
+  revision: Revision,
   promotionPolicy: PromotionPolicy,
   findings: Finding[],
 ): Entry {
+  const patch = revision.patch;
   const output: Entry = {
     id: entry.id,
     family: entry.family,
@@ -581,6 +592,29 @@ function applyEntryPatch(
       });
     }
     output.citations = sortUniqueCitations(normalized as CitationValue[]);
+  }
+
+  if (patch.review !== undefined) {
+    const review = buildRevisionReview(revision);
+    const existingReviews = Array.isArray(output.attributes.revisionReviews)
+      ? output.attributes.revisionReviews.filter((value) =>
+        value && typeof value === "object" && !Array.isArray(value)
+      )
+      : [];
+    output.attributes.revisionReviews = [...existingReviews, review].sort((left, right) => {
+      const leftId = typeof left.revisionId === "string" ? left.revisionId : "";
+      const rightId = typeof right.revisionId === "string" ? right.revisionId : "";
+      return leftId.localeCompare(rightId);
+    });
+    findings.push({
+      kind: "info",
+      code: "compiler.revision.review_recorded",
+      message:
+        `revision ${revision.id} recorded ${review.decision} review for ${revision.targetId}${
+          revision.rationale ? `: ${revision.rationale}` : ""
+        }`,
+      citation: revision.evidence?.[0],
+    });
   }
 
   if (patch.relations && typeof patch.relations === "object" && !Array.isArray(patch.relations)) {
@@ -633,6 +667,87 @@ function applyEntryPatch(
   output.attributes = sortObjectKeys(output.attributes);
   output.relations = sortRelationMap(output.relations);
   return output;
+}
+
+function buildRevisionReview(revision: Revision): Record<string, unknown> {
+  const rawReview = revision.patch.review;
+  if (!rawReview || typeof rawReview !== "object" || Array.isArray(rawReview)) {
+    throw new Error(`invalid entry revision ${revision.id}: review must be an object`);
+  }
+
+  const review = rawReview as Record<string, unknown>;
+  const decision = review.decision;
+  if (
+    decision !== "preserve_distinct" &&
+    decision !== "alias" &&
+    decision !== "source_shadow"
+  ) {
+    throw new Error(
+      `invalid entry revision ${revision.id}: review.decision must be preserve_distinct, alias, or source_shadow`,
+    );
+  }
+
+  const output: Record<string, unknown> = {
+    revisionId: revision.id,
+    source: revision.source,
+    decision,
+  };
+  if (typeof revision.rationale !== "string" || revision.rationale.trim().length === 0) {
+    throw new Error(`invalid entry revision ${revision.id}: review revisions require rationale`);
+  }
+  output.rationale = revision.rationale;
+  if (revision.evidence) {
+    output.evidence = revision.evidence;
+  }
+  if (review.relatedEntryIds !== undefined) {
+    output.relatedEntryIds = requireStringArray(
+      revision.id,
+      "review.relatedEntryIds",
+      review.relatedEntryIds,
+    );
+  }
+  if (review.aliasNames !== undefined) {
+    output.aliasNames = requireStringArray(revision.id, "review.aliasNames", review.aliasNames);
+  }
+  if (review.canonicalEntryId !== undefined) {
+    if (
+      typeof review.canonicalEntryId !== "string" || review.canonicalEntryId.trim().length === 0
+    ) {
+      throw new Error(
+        `invalid entry revision ${revision.id}: review.canonicalEntryId must be a non-empty string`,
+      );
+    }
+    output.canonicalEntryId = review.canonicalEntryId;
+  }
+
+  if (decision === "preserve_distinct" && !Array.isArray(output.relatedEntryIds)) {
+    throw new Error(
+      `invalid entry revision ${revision.id}: preserve_distinct review requires relatedEntryIds`,
+    );
+  }
+  if (decision === "alias" && !Array.isArray(output.aliasNames)) {
+    throw new Error(`invalid entry revision ${revision.id}: alias review requires aliasNames`);
+  }
+  if (decision === "source_shadow" && typeof output.canonicalEntryId !== "string") {
+    throw new Error(
+      `invalid entry revision ${revision.id}: source_shadow review requires canonicalEntryId`,
+    );
+  }
+
+  return sortObjectKeys(output);
+}
+
+function requireStringArray(revisionId: string, field: string, value: unknown): string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    !value.every((item) => typeof item === "string" && item.trim().length > 0)
+  ) {
+    throw new Error(
+      `invalid entry revision ${revisionId}: ${field} must be a non-empty string array`,
+    );
+  }
+  return [...value].sort((left, right) => left.localeCompare(right));
 }
 
 function canonicalizeRelationKind(
