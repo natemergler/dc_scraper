@@ -1,0 +1,30 @@
+{
+  "id": "dc.anc_commissioner_seat:4B10",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4B10",
+  "attributes": {
+    "sourceAncId": "4B",
+    "sourceSmdId": "4B10"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4B10"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4B10",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4B10"
+          }
+        ]
+      }
+    ]
+  }
+}

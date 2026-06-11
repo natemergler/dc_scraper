@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:concealed-pistol-licensing-review-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Concealed Pistol Licensing Review Board",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 7–2509.08",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/7-2509.08.html",
+    "shortName": "Concealed Pistol Licensing Review Board",
+    "sourceOpenDcSlug": "concealed-pistol-licensing-review-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/concealed-pistol-licensing-review-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "concealed-pistol-licensing-review-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "concealed-pistol-licensing-review-board",
+      "locator": "D.C. Code § 7-2509.08"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "concealed-pistol-licensing-review-board",
+      "locator": "D.C. Official Code § 7-2509.08"
+    }
+  ],
+  "relations": {}
+}

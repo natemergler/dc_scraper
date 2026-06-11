@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:1C04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1C04",
+  "attributes": {
+    "sourceAncId": "1C",
+    "sourceFirstName": "DIAMOND",
+    "sourceLastName": "MARIE-ELISE",
+    "sourceRepresentativeName": "MARIE-ELISE DIAMOND",
+    "sourceSmdId": "1C04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1C04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1C04"
+          }
+        ]
+      }
+    ]
+  }
+}

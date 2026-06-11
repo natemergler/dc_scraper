@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_source:mayors-orders",
+  "family": "authority",
+  "kind": "dc.legal_source",
+  "name": "Mayor's Orders",
+  "attributes": {
+    "shortName": "Mayor's Orders",
+    "sourceIndexUrl": "https://dc.gov/page/laws-regulations-and-courts",
+    "sourceLegalEntrypointKey": "mayors-orders",
+    "sourcePageUrl": "https://mayor.dc.gov/page/mayors-orders",
+    "sourceSeeded": true
+  },
+  "citations": [
+    {
+      "source": "legal.entrypoints",
+      "sourceRecordId": "mayors-orders",
+      "url": "https://mayor.dc.gov/page/mayors-orders"
+    }
+  ],
+  "relations": {}
+}

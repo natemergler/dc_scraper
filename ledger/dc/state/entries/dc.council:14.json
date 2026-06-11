@@ -1,0 +1,17 @@
+{
+  "id": "dc.council:14",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Gas Station Advisory Council",
+  "attributes": {
+    "shortName": "Gas Station Advisory Council",
+    "sourceCouncilId": "14"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "14"
+    }
+  ],
+  "relations": {}
+}

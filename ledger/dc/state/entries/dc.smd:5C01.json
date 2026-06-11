@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:5C01",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 5C01",
+  "attributes": {
+    "sourceAncId": "5C",
+    "sourceSmdId": "5C01",
+    "webUrl": "https://www.anc-5c.com/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5C01"
+    }
+  ],
+  "relations": {}
+}

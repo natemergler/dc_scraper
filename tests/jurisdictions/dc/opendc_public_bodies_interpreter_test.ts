@@ -14,6 +14,15 @@ const agencyLookup = new Map<string, string>([
 ]);
 
 const contextWithAgencyLookup: DcInterpreterContext = { agencyLookup };
+const contextWithPublicBodyLookup: DcInterpreterContext = {
+  agencyLookup,
+  publicBodyLookup: new Map([
+    ["dc.board:advisory board", {
+      provisionalId: "dc.board:132",
+      sourceRecordId: "132",
+    }],
+  ]),
+};
 
 Deno.test("open_dc.public_bodies source ID is exactly open_dc.public_bodies", () => {
   assertEquals(openDCPublicBodiesSourceId, "open_dc.public_bodies");
@@ -65,6 +74,30 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
   assertEquals(governingRelation?.relationKind, "dc.relation:governs");
 
   assertEquals(relations.length, 1);
+});
+
+Deno.test("open_dc.public_bodies merges exact trusted public-body source shadows", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "advisory-board",
+    payload: {
+      name: "Advisory Board",
+      slug: "advisory-board",
+      detailUrl: "https://www.open-dc.gov/public-bodies/advisory-board/",
+      governingAgency: "Department of Public Works",
+    },
+  }], contextWithPublicBodyLookup);
+
+  assertEquals(output.entryFragments.length, 1);
+  assertEquals(output.entryFragments[0].provisionalId, "dc.board:132");
+  assertEquals(output.relationFragments[0].from, "dc.board:132");
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_public_body_source_shadow_merged"
+    ),
+    true,
+  );
 });
 
 Deno.test("open_dc.public_bodies does not create relation without agency lookup", () => {
@@ -185,7 +218,7 @@ Deno.test("open_dc.public_bodies interprets task-force variants as dc.agency wit
   }
 });
 
-Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", () => {
+Deno.test("open_dc.public_bodies interprets council as dc.council", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -199,10 +232,9 @@ Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", 
 
   assertEquals(output.entryFragments.length, 1);
   const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.provisionalId, "dc.agency:arts-council");
-  assertEquals(entryFragment.kind, "dc.agency");
-  assertEquals(output.findings.length, 1);
-  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
+  assertEquals(entryFragment.provisionalId, "dc.council:arts-council");
+  assertEquals(entryFragment.kind, "dc.council");
+  assertEquals(output.findings, []);
 });
 
 Deno.test("open_dc.public_bodies interprets office as dc.agency with finding", () => {

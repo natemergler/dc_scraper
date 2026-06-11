@@ -1,0 +1,53 @@
+{
+  "id": "dc.commission:64",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission for Women",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-702",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-702.html",
+    "shortName": "Commission for Women",
+    "sourceCommissionId": "64",
+    "sourceOpenDcSlug": "commission-women",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-women"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "64"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "64",
+      "locator": "D.C. Code § 3-702"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-women"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-women",
+      "locator": "DC Code § 3-702"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1064",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "64"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "64",
+            "locator": "D.C. Code § 3-702"
+          }
+        ]
+      }
+    ]
+  }
+}

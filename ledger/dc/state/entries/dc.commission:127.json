@@ -1,0 +1,23 @@
+{
+  "id": "dc.commission:127",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Washington DC Regional Planning Commission on Health and HIV",
+  "attributes": {
+    "shortName": "Washington DC Regional Planning Commission on Health and HIV",
+    "sourceCommissionId": "127",
+    "sourceOpenDcSlug": "washington-dc-regional-planning-commission-health-and-hiv",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-dc-regional-planning-commission-health-and-hiv"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "127"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-dc-regional-planning-commission-health-and-hiv"
+    }
+  ],
+  "relations": {}
+}

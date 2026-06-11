@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:6C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6C03",
+  "attributes": {
+    "sourceAncId": "6C",
+    "sourceFirstName": "JAY",
+    "sourceLastName": "ADELSTEIN",
+    "sourceRepresentativeName": "JAY ADELSTEIN",
+    "sourceSmdId": "6C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6C03"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C03"
+          }
+        ]
+      }
+    ]
+  }
+}

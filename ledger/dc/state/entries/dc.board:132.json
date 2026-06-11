@@ -1,0 +1,62 @@
+{
+  "id": "dc.board:132",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Advisory Board on Veterans Affairs for the District of Columbia",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2001-92 Amended 2002-142",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/49-1004.html",
+    "shortName": "Advisory Board on Veterans Affairs for the District of Columbia",
+    "sourceBoardId": "132",
+    "sourceOpenDcSlug": "advisory-board-veterans-affairs-district-columbia",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-board-veterans-affairs-district-columbia"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "132"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "132",
+      "locator": "Mayor's Order 2001-92"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+      "locator": "D.C. Code § 49-1004"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+      "locator": "Mayor's Order 2001-92"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1060",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132",
+            "locator": "Mayor's Order 2001-92"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "advisory-board-veterans-affairs-district-columbia"
+          }
+        ]
+      }
+    ]
+  }
+}

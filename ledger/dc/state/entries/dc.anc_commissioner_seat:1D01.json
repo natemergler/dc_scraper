@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:1D01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1D01",
+  "attributes": {
+    "sourceAncId": "1D",
+    "sourceFirstName": "JAY",
+    "sourceLastName": "FALK",
+    "sourceRepresentativeName": "JAY FALK",
+    "sourceSmdId": "1D01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1D01"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D01"
+          }
+        ]
+      }
+    ]
+  }
+}

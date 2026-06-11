@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-on-executive-administration-and-labor",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Executive Administration and Labor",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-on-executive-administration-and-labor",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-on-executive-administration-and-labor/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-executive-administration-and-labor"
+    }
+  ],
+  "relations": {}
+}

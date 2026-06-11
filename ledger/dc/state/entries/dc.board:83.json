@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:83",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Concealed Pistol Licensing Review Board (CPLRB)",
+  "attributes": {
+    "shortName": "Concealed Pistol Licensing Review Board (CPLRB)",
+    "sourceBoardId": "83"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "83"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "83",
+      "locator": "D.C. Code § 7-2509.08"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1174",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "83"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "83",
+            "locator": "D.C. Code § 7-2509.08"
+          }
+        ]
+      }
+    ]
+  }
+}

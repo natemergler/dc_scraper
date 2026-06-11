@@ -1,0 +1,90 @@
+{
+  "id": "dc.councilmember:at-large-councilmember-doni-crawford",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "At-Large Councilmember Doni Crawford",
+  "attributes": {
+    "sourceProfileSlug": "at-large-councilmember-doni-crawford",
+    "sourceProfileUrl": "https://dccouncil.gov/council/at-large-councilmember-doni-crawford/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-executive-administration-and-labor"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-youth-affairs"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-transportation-environment"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "at-large-councilmember-doni-crawford"
+    }
+  ],
+  "relations": {
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-executive-administration-and-labor",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-executive-administration-and-labor"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-youth-affairs",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-youth-affairs"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-transportation-environment",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ]
+  }
+}

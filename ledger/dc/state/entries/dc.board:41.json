@@ -1,0 +1,35 @@
+{
+  "id": "dc.board:41",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Library Trustees",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 39-104",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/39-104.html",
+    "shortName": "Board of Library Trustees",
+    "sourceBoardId": "41",
+    "sourceOpenDcSlug": "board-library-trustees",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-library-trustees"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "41"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "41",
+      "locator": "D.C. Code § 39-104"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-library-trustees"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-library-trustees",
+      "locator": "D.C. Code § 39-104"
+    }
+  ],
+  "relations": {}
+}

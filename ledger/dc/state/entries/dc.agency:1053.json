@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1053",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Fire and Emergency Medical Services",
+  "attributes": {
+    "shortName": "Fire and Emergency Medical Services",
+    "sourceAgencyId": "1053"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "48"
+    }
+  ],
+  "relations": {}
+}

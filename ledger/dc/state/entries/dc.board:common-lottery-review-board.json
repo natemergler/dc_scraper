@@ -1,0 +1,18 @@
+{
+  "id": "dc.board:common-lottery-review-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Common Lottery Review Board",
+  "attributes": {
+    "shortName": "Common Lottery Review Board",
+    "sourceOpenDcSlug": "common-lottery-review-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/common-lottery-review-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "common-lottery-review-board"
+    }
+  ],
+  "relations": {}
+}

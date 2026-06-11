@@ -1,0 +1,26 @@
+{
+  "id": "2026-06-11-eom-agency-office-review",
+  "source": "audited_revision",
+  "targetKind": "entry",
+  "targetId": "dc.office:executive-office-of-the-mayor",
+  "rationale": "Preserve the Mayor-source office facet separately from the DCGIS agency facet for this state snapshot. DCGIS classifies EOM as an agency/budget source row, while the Mayor organizational-chart source contributes an executive hierarchy office node; merging or suppressing either facet would be a broader canonical identity decision.",
+  "evidence": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "executive-office-of-the-mayor",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "45"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:1052"
+      ]
+    }
+  }
+}

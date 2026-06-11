@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:3C04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3C04",
+  "attributes": {
+    "sourceAncId": "3C",
+    "sourceFirstName": "ERIN",
+    "sourceLastName": "BEARD",
+    "sourceRepresentativeName": "ERIN BEARD",
+    "sourceSmdId": "3C04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3C04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C04"
+          }
+        ]
+      }
+    ]
+  }
+}

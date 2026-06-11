@@ -1,0 +1,108 @@
+{
+  "id": "dc.anc:3E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3E",
+  "attributes": {
+    "gisId": "ANCPly_338",
+    "representedNeighborhoods": "the American University Park, Tenleytown, and Friendship Heights neighborhoods",
+    "sourceAncId": "3E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3e",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3E08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E08"
+          }
+        ]
+      }
+    ]
+  }
+}

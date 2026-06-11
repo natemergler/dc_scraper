@@ -1,0 +1,30 @@
+{
+  "id": "dc.council:tipped-workers-coordinating-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Tipped Workers Coordinating Council",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 32-1009.02",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/32-1009.02.html#:~:text=Tipped%20Workers%20Coordinating%20Council.,-(a)%20There%20is&amp;text=(b)%20The%20Coordinating%20Council%20shall,theft%20and%20unfair%20labor%20practices.",
+    "shortName": "Tipped Workers Coordinating Council",
+    "sourceOpenDcSlug": "tipped-workers-coordinating-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/tipped-workers-coordinating-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tipped-workers-coordinating-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tipped-workers-coordinating-council",
+      "locator": "D.C. Code § 32-1009.02"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tipped-workers-coordinating-council",
+      "locator": "D.C. Official Code § 32-1009.02"
+    }
+  ],
+  "relations": {}
+}

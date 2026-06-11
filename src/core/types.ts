@@ -51,6 +51,10 @@ export interface Entry {
   relations: Record<string, BaseRelation[]>;
 }
 
+export type BaselineEntry = Entry;
+
+export type StateEntry = Entry;
+
 export interface EntryFragment {
   fragmentType: "entry";
   source: string;
@@ -85,6 +89,8 @@ export interface Revision {
   source: string;
   targetKind: "entry" | "relation";
   targetId: string;
+  rationale?: string;
+  evidence?: CitationValue[];
   patch: Record<string, unknown>;
 }
 

@@ -123,12 +123,40 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       workspace,
       jurisdiction: "dc",
       releaseRoot,
+      sourceCatalog: [
+        {
+          source: "gazette",
+          sourceType: "fixture.gazette",
+          family: "legal",
+          scope: "Gazette fixture scope.",
+          contributes: "Entry citations.",
+          excludes: "Contacts.",
+        },
+        {
+          source: "registry",
+          sourceType: "fixture.registry",
+          family: "registry",
+          scope: "Registry fixture scope.",
+          contributes: "Entries and relation citations.",
+          excludes: "Unreviewed duplicates.",
+        },
+        {
+          source: "blocked.source",
+          sourceType: "fixture.blocked",
+          family: "blocked",
+          scope: "Known source not present in this workspace.",
+          contributes: "No current state entries.",
+          excludes: "Live-only records.",
+          notes: "Fixture for not_collected coverage rows.",
+        },
+      ],
     });
 
     assertEquals(result.entryCount, 4);
     assertEquals(result.relationCount, 4);
     assertEquals(result.citationCount, 7);
     assertEquals(result.sourceCount, 2);
+    assertEquals(result.sourceCoverageCount, 3);
     assertEquals(result.boardAffiliationCount, 1);
     assertEquals(result.commissionAffiliationCount, 1);
     assertEquals(result.authorityAffiliationCount, 1);
@@ -138,6 +166,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       "relations.csv",
       "citations.csv",
       "sources.csv",
+      "source_coverage.csv",
       "dc_board_affiliations.csv",
       "dc_commission_affiliations.csv",
       "dc_authority_affiliations.csv",
@@ -166,6 +195,11 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     );
     assertEquals((manifest.counts as Record<string, unknown>).citations, 7);
     assertEquals((manifest.counts as Record<string, unknown>).sources, 2);
+    assertEquals((manifest.counts as Record<string, unknown>).sourceCoverage, 3);
+    assertEquals(
+      (manifest.outputs as Record<string, unknown>).sourceCoverageCsv,
+      "source_coverage.csv",
+    );
 
     const entriesRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "entries.csv")));
     const entriesById = new Map(entriesRows.slice(1).map((row) => [row[0], row]));
@@ -189,6 +223,27 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     const sourceRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "sources.csv")));
     assertEquals(sourceRows[1][0], "gazette");
     assertEquals(sourceRows[2][0], "registry");
+
+    const sourceCoverageRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "source_coverage.csv")),
+    );
+    assertEquals(sourceCoverageRows[0], [
+      "source",
+      "source_type",
+      "family",
+      "collection_status",
+      "snapshot_count",
+      "record_count",
+      "citation_count",
+      "scope",
+      "contributes",
+      "excludes",
+      "notes",
+    ]);
+    const sourceCoverageBySource = new Map(sourceCoverageRows.slice(1).map((row) => [row[0], row]));
+    assertEquals(sourceCoverageBySource.get("blocked.source")?.[3], "not_collected");
+    assertEquals(sourceCoverageBySource.get("gazette")?.[3], "collected_empty");
+    assertEquals(sourceCoverageBySource.get("registry")?.[6], "3");
 
     const citationRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "citations.csv")));
     assertEquals(citationRows.length, 8);
@@ -218,6 +273,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       assertEquals(countRows(ledgerDb, "relations"), 4);
       assertEquals(countRows(ledgerDb, "citations"), 7);
       assertEquals(countRows(ledgerDb, "sources"), 2);
+      assertEquals(countRows(ledgerDb, "source_coverage"), 3);
     } finally {
       ledgerDb.close();
     }
@@ -285,6 +341,7 @@ Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async 
     assertEquals(result.relationCount, 1);
     assertEquals(result.citationCount, 0);
     assertEquals(result.sourceCount, 1);
+    assertEquals(result.sourceCoverageCount, 1);
     assertEquals(result.boardAffiliationCount, 0);
     assertEquals(result.commissionAffiliationCount, 0);
     assertEquals(result.authorityAffiliationCount, 0);
@@ -298,10 +355,18 @@ Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async 
     assertEquals(sourceRows[1][0], "registry");
     assertEquals(sourceRows[1][2], "0");
 
+    const sourceCoverageRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "source_coverage.csv")),
+    );
+    assertEquals(sourceCoverageRows.length, 2);
+    assertEquals(sourceCoverageRows[1][0], "registry");
+    assertEquals(sourceCoverageRows[1][3], "collected_empty");
+
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
       assertEquals(countRows(ledgerDb, "citations"), 0);
       assertEquals(countRows(ledgerDb, "sources"), 1);
+      assertEquals(countRows(ledgerDb, "source_coverage"), 1);
     } finally {
       ledgerDb.close();
     }

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:3F05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3F05",
+  "attributes": {
+    "sourceAncId": "3F",
+    "sourceFirstName": "ADRIAN",
+    "sourceLastName": "IGLESIAS",
+    "sourceRepresentativeName": "ADRIAN JESUS IGLESIAS",
+    "sourceSmdId": "3F05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3F05"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3F05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F05"
+          }
+        ]
+      }
+    ]
+  }
+}

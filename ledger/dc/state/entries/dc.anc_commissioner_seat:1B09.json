@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:1B09",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1B09",
+  "attributes": {
+    "sourceAncId": "1B",
+    "sourceFirstName": "STEPHEN",
+    "sourceLastName": "HANRAHAN",
+    "sourceRepresentativeName": "STEPHEN HANRAHAN",
+    "sourceSmdId": "1B09"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1B09"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1B09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1B09"
+          }
+        ]
+      }
+    ]
+  }
+}

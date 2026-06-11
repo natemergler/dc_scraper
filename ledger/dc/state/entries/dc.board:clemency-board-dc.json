@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:clemency-board-dc",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Clemency Board DC",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 24-481.03",
+    "enablingStatuteUrl": "https://clemency.dc.gov/",
+    "shortName": "Clemency Board DC",
+    "sourceOpenDcSlug": "clemency-board-dc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/clemency-board-dc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "clemency-board-dc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "clemency-board-dc",
+      "locator": "D.C. Code § 24-481.03"
+    }
+  ],
+  "relations": {}
+}

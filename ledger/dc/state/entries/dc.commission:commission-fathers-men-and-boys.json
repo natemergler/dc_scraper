@@ -1,0 +1,30 @@
+{
+  "id": "dc.commission:commission-fathers-men-and-boys",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Fathers, Men and Boys",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 3–731",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/3-731.html",
+    "shortName": "Commission on Fathers, Men and Boys",
+    "sourceOpenDcSlug": "commission-fathers-men-and-boys",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-fathers-men-and-boys"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-fathers-men-and-boys"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-fathers-men-and-boys",
+      "locator": "D.C. Code § 3-731"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-fathers-men-and-boys",
+      "locator": "D.C. Official Code § 3-731"
+    }
+  ],
+  "relations": {}
+}

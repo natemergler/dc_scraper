@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1155",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Neighborhood Safety and Engagement",
+  "attributes": {
+    "shortName": "Office of Neighborhood Safety and Engagement",
+    "sourceAgencyId": "1155"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "134"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-neighborhood-safety-and-engagement",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

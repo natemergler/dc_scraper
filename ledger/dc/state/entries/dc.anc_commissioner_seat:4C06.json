@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:4C06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4C06",
+  "attributes": {
+    "sourceAncId": "4C",
+    "sourceFirstName": "CHRISTEN",
+    "sourceLastName": "HAYES",
+    "sourceRepresentativeName": "CHRISTEN BOAS HAYES",
+    "sourceSmdId": "4C06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4C06"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C06"
+          }
+        ]
+      }
+    ]
+  }
+}

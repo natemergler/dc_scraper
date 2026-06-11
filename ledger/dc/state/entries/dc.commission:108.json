@@ -1,0 +1,35 @@
+{
+  "id": "dc.commission:108",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "National Capital Planning Commission (NCPC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 2-1002",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1002.html",
+    "shortName": "National Capital Planning Commission (NCPC)",
+    "sourceCommissionId": "108",
+    "sourceOpenDcSlug": "national-capital-planning-commission-ncpc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/national-capital-planning-commission-ncpc"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "108"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "108",
+      "locator": "D.C. Code § 2-1002"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "national-capital-planning-commission-ncpc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "national-capital-planning-commission-ncpc",
+      "locator": "DC Code § 2-1002"
+    }
+  ],
+  "relations": {}
+}

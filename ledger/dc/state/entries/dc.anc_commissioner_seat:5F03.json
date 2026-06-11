@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:5F03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5F03",
+  "attributes": {
+    "sourceAncId": "5F",
+    "sourceFirstName": "PATRICIA",
+    "sourceLastName": "WILLIAMS",
+    "sourceRepresentativeName": "PATRICIA WILLIAMS",
+    "sourceSmdId": "5F03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5F03"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5F03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5F03"
+          }
+        ]
+      }
+    ]
+  }
+}

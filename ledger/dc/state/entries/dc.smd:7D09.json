@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:7D09",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 7D09",
+  "attributes": {
+    "sourceAncId": "7D",
+    "sourceSmdId": "7D09",
+    "webUrl": "https://7d0761.wixsite.com/anc7d-1"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7D09"
+    }
+  ],
+  "relations": {}
+}

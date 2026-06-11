@@ -1,0 +1,17 @@
+{
+  "id": "dc.council:22",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "DC Developmental Disabilities Council",
+  "attributes": {
+    "shortName": "Developmental Disabilities Council",
+    "sourceCouncilId": "22"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "22"
+    }
+  ],
+  "relations": {}
+}

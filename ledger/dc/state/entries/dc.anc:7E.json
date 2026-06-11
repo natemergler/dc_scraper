@@ -1,0 +1,98 @@
+{
+  "id": "dc.anc:7E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 7E",
+  "attributes": {
+    "gisId": "ANCPly_359",
+    "representedNeighborhoods": "the Benning Ridge and Marshall Heights neighborhoods",
+    "sourceAncId": "7E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "7E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7E07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E07"
+          }
+        ]
+      }
+    ]
+  }
+}

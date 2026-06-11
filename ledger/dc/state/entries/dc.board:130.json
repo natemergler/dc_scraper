@@ -1,0 +1,35 @@
+{
+  "id": "dc.board:130",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Water and Sewer Authority Board of Directors (WASA)",
+  "attributes": {
+    "enablingStatute": "DC Code § 34-2202.04",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/34-2202.04.html",
+    "shortName": "Water and Sewer Authority Board of Directors (WASA)",
+    "sourceBoardId": "130",
+    "sourceOpenDcSlug": "water-and-sewer-authority-board-directors-wasa",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/water-and-sewer-authority-board-directors-wasa"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "130"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "130",
+      "locator": "D.C. Code § 34-2202.02"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "water-and-sewer-authority-board-directors-wasa"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "water-and-sewer-authority-board-directors-wasa",
+      "locator": "DC Code § 34-2202.04"
+    }
+  ],
+  "relations": {}
+}

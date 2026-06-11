@@ -1,0 +1,42 @@
+{
+  "id": "dc.council:8",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Statewide Independent Living Council (SILC)",
+  "attributes": {
+    "enablingStatute": "1993-148; amended by 2001-79 and 2012-154",
+    "enablingStatuteUrl": "https://www.open-dc.gov/Mayors_Order_2012-154",
+    "shortName": "Statewide Independent Living Council (SILC)",
+    "sourceCouncilId": "8",
+    "sourceOpenDcSlug": "statewide-independent-living-council-silc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/statewide-independent-living-council-silc"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "8"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "statewide-independent-living-council-silc"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1031",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "8"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "statewide-independent-living-council-silc"
+          }
+        ]
+      }
+    ]
+  }
+}

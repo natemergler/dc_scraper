@@ -1,0 +1,18 @@
+{
+  "id": "dc.board:alcoholic-beverage-control-board-abc-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Alcoholic Beverage and Cannabis Board (ABC Board)",
+  "attributes": {
+    "shortName": "Alcoholic Beverage and Cannabis Board (ABC Board)",
+    "sourceOpenDcSlug": "alcoholic-beverage-control-board-abc-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/alcoholic-beverage-control-board-abc-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-control-board-abc-board"
+    }
+  ],
+  "relations": {}
+}

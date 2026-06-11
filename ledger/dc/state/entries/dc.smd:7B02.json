@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:7B02",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 7B02",
+  "attributes": {
+    "sourceAncId": "7B",
+    "sourceSmdId": "7B02",
+    "webUrl": "http://anc7b.com/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7B02"
+    }
+  ],
+  "relations": {}
+}

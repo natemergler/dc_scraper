@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1057",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Lesbian Gay Bisexual Transgender and Questioning Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office of Lesbian Gay Bisexual Transgender and Questioning Affairs",
+    "sourceAgencyId": "1057"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "51"
+    }
+  ],
+  "relations": {}
+}

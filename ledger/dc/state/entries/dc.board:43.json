@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:43",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Marriage and Family Therapy",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.17",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.17.html",
+    "shortName": "Board of Marriage and Family Therapy",
+    "sourceBoardId": "43",
+    "sourceOpenDcSlug": "board-marriage-and-family-therapy",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-marriage-and-family-therapy"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "43"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "43",
+      "locator": "D.C. Code § 3-1202.17"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-marriage-and-family-therapy"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-marriage-and-family-therapy",
+      "locator": "DC Code § 3-1202.17"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "43"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "43",
+            "locator": "D.C. Code § 3-1202.17"
+          }
+        ]
+      }
+    ]
+  }
+}

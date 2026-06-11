@@ -11,6 +11,7 @@ export interface ExportResult {
   relationCount: number;
   citationCount: number;
   sourceCount: number;
+  sourceCoverageCount: number;
   boardAffiliationCount: number;
   commissionAffiliationCount: number;
   authorityAffiliationCount: number;
@@ -36,10 +37,21 @@ interface SourceStats {
   citations: number;
 }
 
+export interface SourceCoverageCatalogItem {
+  source: string;
+  sourceType: string;
+  family: string;
+  scope: string;
+  contributes: string;
+  excludes: string;
+  notes?: string;
+}
+
 export interface ExportReleaseOptions {
   workspace: Workspace;
   jurisdiction: string;
   releaseRoot: string;
+  sourceCatalog?: SourceCoverageCatalogItem[];
 }
 
 export async function exportReleaseArtifacts(
@@ -180,6 +192,10 @@ export async function exportReleaseArtifacts(
   const snapshotRows = workspace.db.prepare(
     "SELECT source, COUNT(*) AS count FROM snapshots GROUP BY source ORDER BY source ASC",
   ).all() as Array<{ source: string; count: number }>;
+  const recordRows = workspace.db.prepare(
+    "SELECT source, COUNT(*) AS count FROM records GROUP BY source ORDER BY source ASC",
+  ).all() as Array<{ source: string; count: number }>;
+  const recordCountBySource = new Map(recordRows.map((row) => [row.source, row.count]));
 
   const sourceCount = new Map<string, SourceStats>();
   for (const snapshot of snapshotRows) {
@@ -213,6 +229,12 @@ export async function exportReleaseArtifacts(
       String(stats.snapshotRecords),
       String(stats.citations),
     ]);
+
+  const sourceCoverageRows = buildSourceCoverageRows({
+    catalog: options.sourceCatalog ?? [],
+    sourceRows,
+    recordCountBySource,
+  });
 
   const exportedAt = new Date().toISOString();
 
@@ -314,6 +336,20 @@ export async function exportReleaseArtifacts(
     "citation_count",
   ], sourceRows);
 
+  await writeCsv(join(releaseRoot, "source_coverage.csv"), [
+    "source",
+    "source_type",
+    "family",
+    "collection_status",
+    "snapshot_count",
+    "record_count",
+    "citation_count",
+    "scope",
+    "contributes",
+    "excludes",
+    "notes",
+  ], sourceCoverageRows);
+
   const manifestPath = join(releaseRoot, "manifest.json");
   const manifest = {
     schemaVersion: 1,
@@ -324,6 +360,7 @@ export async function exportReleaseArtifacts(
       relationsCsv: "relations.csv",
       citationsCsv: "citations.csv",
       sourcesCsv: "sources.csv",
+      sourceCoverageCsv: "source_coverage.csv",
       boardAffiliationsCsv: "dc_board_affiliations.csv",
       commissionAffiliationsCsv: "dc_commission_affiliations.csv",
       authorityAffiliationsCsv: "dc_authority_affiliations.csv",
@@ -338,6 +375,7 @@ export async function exportReleaseArtifacts(
       ),
       citations: citationsOut.length,
       sources: sourceRows.length,
+      sourceCoverage: sourceCoverageRows.length,
       boardAffiliations: boardAffiliationsOut.length,
       commissionAffiliations: commissionAffiliationsOut.length,
       authorityAffiliations: authorityAffiliationsOut.length,
@@ -362,6 +400,7 @@ export async function exportReleaseArtifacts(
       "- relations.csv",
       "- citations.csv",
       "- sources.csv",
+      "- source_coverage.csv",
       "- dc_board_affiliations.csv",
       "- dc_commission_affiliations.csv",
       "- dc_authority_affiliations.csv",
@@ -418,6 +457,20 @@ export async function exportReleaseArtifacts(
         snapshot_records INTEGER NOT NULL DEFAULT 0,
         citation_count INTEGER NOT NULL DEFAULT 0
       );
+
+      CREATE TABLE source_coverage (
+        source TEXT PRIMARY KEY,
+        source_type TEXT NOT NULL,
+        family TEXT NOT NULL,
+        collection_status TEXT NOT NULL,
+        snapshot_count INTEGER NOT NULL DEFAULT 0,
+        record_count INTEGER NOT NULL DEFAULT 0,
+        citation_count INTEGER NOT NULL DEFAULT 0,
+        scope TEXT NOT NULL,
+        contributes TEXT NOT NULL,
+        excludes TEXT NOT NULL,
+        notes TEXT NOT NULL
+      );
     `);
 
     const insertEntry = ledgerDb.prepare(
@@ -459,6 +512,25 @@ export async function exportReleaseArtifacts(
     for (const source of sourceRows) {
       insertSource.run(source[0], Number.parseInt(source[1], 10), Number.parseInt(source[2], 10));
     }
+
+    const insertSourceCoverage = ledgerDb.prepare(
+      "INSERT INTO source_coverage (source, source_type, family, collection_status, snapshot_count, record_count, citation_count, scope, contributes, excludes, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const source of sourceCoverageRows) {
+      insertSourceCoverage.run(
+        source[0],
+        source[1],
+        source[2],
+        source[3],
+        Number.parseInt(source[4], 10),
+        Number.parseInt(source[5], 10),
+        Number.parseInt(source[6], 10),
+        source[7],
+        source[8],
+        source[9],
+        source[10],
+      );
+    }
   } finally {
     ledgerDb.close();
   }
@@ -469,11 +541,60 @@ export async function exportReleaseArtifacts(
     relationCount: relationsOut.length,
     citationCount: citationsOut.length,
     sourceCount: sourceRows.length,
+    sourceCoverageCount: sourceCoverageRows.length,
     boardAffiliationCount: boardAffiliationsOut.length,
     commissionAffiliationCount: commissionAffiliationsOut.length,
     authorityAffiliationCount: authorityAffiliationsOut.length,
     ledgerSqlitePath: ledgerPath,
   };
+}
+
+function buildSourceCoverageRows(input: {
+  catalog: SourceCoverageCatalogItem[];
+  sourceRows: string[][];
+  recordCountBySource: Map<string, number>;
+}): string[][] {
+  const sourceStats = new Map(
+    input.sourceRows.map((row) => [
+      row[0],
+      {
+        snapshotCount: Number.parseInt(row[1], 10),
+        citationCount: Number.parseInt(row[2], 10),
+      },
+    ]),
+  );
+  const catalogBySource = new Map(input.catalog.map((item) => [item.source, item]));
+  const sources = new Set<string>([
+    ...input.catalog.map((item) => item.source),
+    ...input.sourceRows.map((row) => row[0]),
+  ]);
+
+  return [...sources].sort((left, right) => left.localeCompare(right)).map((source) => {
+    const catalogItem = catalogBySource.get(source);
+    const stats = sourceStats.get(source);
+    const snapshotCount = stats?.snapshotCount ?? 0;
+    const recordCount = input.recordCountBySource.get(source) ?? 0;
+    const citationCount = stats?.citationCount ?? 0;
+    const collectionStatus = snapshotCount === 0
+      ? "not_collected"
+      : recordCount === 0
+      ? "collected_empty"
+      : "collected";
+
+    return [
+      source,
+      catalogItem?.sourceType ?? "",
+      catalogItem?.family ?? "",
+      collectionStatus,
+      String(snapshotCount),
+      String(recordCount),
+      String(citationCount),
+      catalogItem?.scope ?? "",
+      catalogItem?.contributes ?? "",
+      catalogItem?.excludes ?? "",
+      catalogItem?.notes ?? "",
+    ];
+  });
 }
 
 function toExportCitationRow(input: {

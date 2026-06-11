@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1092",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Deputy Mayor for Planning and Economic Development",
+  "attributes": {
+    "shortName": "Office of the Deputy Mayor for Planning and Economic Development",
+    "sourceAgencyId": "1092"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "35"
+    }
+  ],
+  "relations": {}
+}

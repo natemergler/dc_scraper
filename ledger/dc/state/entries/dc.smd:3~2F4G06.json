@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:3~2F4G06",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 3/4G06",
+  "attributes": {
+    "sourceAncId": "3/4G",
+    "sourceSmdId": "3/4G06",
+    "webUrl": "https://anc3g.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3/4G06"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:8E05",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 8E05",
+  "attributes": {
+    "sourceAncId": "8E",
+    "sourceSmdId": "8E05",
+    "webUrl": "https://www.facebook.com/groups/anc8e/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8E05"
+    }
+  ],
+  "relations": {}
+}

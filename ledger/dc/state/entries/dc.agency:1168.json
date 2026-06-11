@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1168",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Community Relations and Services",
+  "attributes": {
+    "shortName": "Mayor's Office of Community Relations and Services",
+    "sourceAgencyId": "1168"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "147"
+    }
+  ],
+  "relations": {}
+}

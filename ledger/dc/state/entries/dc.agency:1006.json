@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1006",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Child and Family Services Agency",
+  "attributes": {
+    "shortName": "Child and Family Services Agency",
+    "sourceAgencyId": "1006"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "3"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "child-and-family-services-agency",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

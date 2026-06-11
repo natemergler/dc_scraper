@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1028",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Behavioral Health",
+  "attributes": {
+    "shortName": "Department of Behavioral Health",
+    "sourceAgencyId": "1028"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "5"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-behavioral-health",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

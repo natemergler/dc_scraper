@@ -1,0 +1,35 @@
+{
+  "id": "dc.council:7",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "State Early Childhood Development Coordinating Council (SECDC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 38-271.07",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/38-271.07.html",
+    "shortName": "State Early Childhood Development Coordinating Council (SECDC)",
+    "sourceCouncilId": "7",
+    "sourceOpenDcSlug": "state-early-childhood-development-coordinating-council-secdc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/state-early-childhood-development-coordinating-council-secdc"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "7"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "7",
+      "locator": "D.C. Code § 38-271.07"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc",
+      "locator": "DC Code § 38-271.07"
+    }
+  ],
+  "relations": {}
+}

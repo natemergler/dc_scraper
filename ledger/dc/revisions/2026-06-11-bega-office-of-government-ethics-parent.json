@@ -1,0 +1,39 @@
+{
+  "id": "2026-06-11-bega-office-of-government-ethics-parent",
+  "source": "audited_revision",
+  "targetKind": "relation",
+  "targetId": "dc.office:office-of-government-ethics",
+  "rationale": "Retarget BEGA structure office hierarchy to the canonical DCGIS BEGA agency before suppressing the duplicate BEGA structure agency shadow.",
+  "evidence": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "office-of-government-ethics",
+      "url": "https://bega.dc.gov/page/office-government-ethics"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "118"
+    }
+  ],
+  "patch": {
+    "relations": {
+      "dc.relation:part_of": [
+        {
+          "kind": "dc.relation:part_of",
+          "to": "dc.agency:1138",
+          "citations": [
+            {
+              "source": "bega.structure",
+              "sourceRecordId": "office-of-government-ethics",
+              "url": "https://bega.dc.gov/page/office-government-ethics"
+            },
+            {
+              "source": "dcgis.agencies",
+              "sourceRecordId": "118"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

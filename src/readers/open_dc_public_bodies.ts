@@ -200,6 +200,9 @@ function extractPublicBodyLinks(
     if (!slug || seen.has(slug)) {
       continue;
     }
+    if (isNonBodyIndexLink(text)) {
+      continue;
+    }
     seen.add(slug);
     bodies.push({ name: text, slug, detailUrl });
   }
@@ -215,6 +218,10 @@ function extractSlugFromUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function isNonBodyIndexLink(name: string): boolean {
+  return /\(\s*recess\s*\)/i.test(name);
 }
 
 const FIELD_ALIASES: Record<string, string> = {

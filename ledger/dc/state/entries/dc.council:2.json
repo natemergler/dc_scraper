@@ -1,0 +1,41 @@
+{
+  "id": "dc.council:2",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Interagency Coordinating Council (ICC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 20012-49",
+    "shortName": "Interagency Coordinating Council (ICC)",
+    "sourceCouncilId": "2",
+    "sourceOpenDcSlug": "interagency-coordinating-council-icc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/interagency-coordinating-council-icc"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "2"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "interagency-coordinating-council-icc"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "2"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "interagency-coordinating-council-icc"
+          }
+        ]
+      }
+    ]
+  }
+}

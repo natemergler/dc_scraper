@@ -1,0 +1,58 @@
+{
+  "id": "dc.board:32",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Barber and Cosmetology",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-2853.06(c)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)",
+    "shortName": "Board of Barber and Cosmetology",
+    "sourceBoardId": "32",
+    "sourceOpenDcSlug": "board-barber-and-cosmetology",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-barber-and-cosmetology"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "32"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "32",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology",
+      "locator": "D.C. Code § 47-2853.06(c)"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "32"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "32",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      }
+    ]
+  }
+}

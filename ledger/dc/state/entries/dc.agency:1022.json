@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1022",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Public Library",
+  "attributes": {
+    "shortName": "Public Library",
+    "sourceAgencyId": "1022"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "17"
+    }
+  ],
+  "relations": {}
+}

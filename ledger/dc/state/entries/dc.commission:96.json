@@ -1,0 +1,57 @@
+{
+  "id": "dc.commission:96",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Healthy Youth and Schools Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38-827.01",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/38-827.01.html",
+    "shortName": "Healthy Youth and Schools Commission",
+    "sourceCommissionId": "96",
+    "sourceOpenDcSlug": "healthy-youth-and-schools-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/healthy-youth-and-schools-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "96"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "96",
+      "locator": "D.C. Code § 38-827.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "healthy-youth-and-schools-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "healthy-youth-and-schools-commission",
+      "locator": "D.C. Code § 38-827.01"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "96"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "96",
+            "locator": "D.C. Code § 38-827.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "healthy-youth-and-schools-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

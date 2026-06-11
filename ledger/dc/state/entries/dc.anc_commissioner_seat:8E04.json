@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:8E04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8E04",
+  "attributes": {
+    "sourceAncId": "8E",
+    "sourceFirstName": "VERONICA",
+    "sourceLastName": "ADAMS",
+    "sourceRepresentativeName": "VERONICA ADAMS",
+    "sourceSmdId": "8E04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8E04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8E04"
+          }
+        ]
+      }
+    ]
+  }
+}

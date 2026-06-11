@@ -1,0 +1,24 @@
+{
+  "id": "dc.commission:commission-commemorate-and-recognize-honorable-marion-s-barry-jr",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission to Commemorate and Recognize the Honorable Marion S. Barry, Jr.",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-081",
+    "shortName": "Commission to Commemorate and Recognize the Honorable Marion S. Barry, Jr.",
+    "sourceOpenDcSlug": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-commemorate-and-recognize-honorable-marion-s-barry-jr"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr",
+      "locator": "Mayor's Order 2015-081"
+    }
+  ],
+  "relations": {}
+}

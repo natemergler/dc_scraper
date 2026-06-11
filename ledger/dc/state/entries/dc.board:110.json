@@ -1,0 +1,36 @@
+{
+  "id": "dc.board:110",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Notaries Public Board of Review",
+  "attributes": {
+    "shortName": "Notaries Public Board of Review",
+    "sourceBoardId": "110",
+    "sourceOpenDcSlug": "notaries-public-board-review",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/notaries-public-board-review"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "110"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "notaries-public-board-review"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1095",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "110"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -9,7 +9,9 @@ import {
   initWorkspace,
   loadRecords,
   openWorkspace,
+  saveBaseline,
   saveFinding,
+  saveFragments,
   saveRecords,
   saveSnapshot,
   type Workspace,
@@ -21,14 +23,18 @@ import { OpenDCPublicBodiesReader } from "../readers/open_dc_public_bodies.ts";
 import { BegaStructureReader } from "../readers/bega_structure.ts";
 import { DCCourtsStructureReader } from "../readers/dccourts_structure.ts";
 import { LegalEntrypointsReader } from "../readers/legal_entrypoints.ts";
+import { MayorExecutiveStructureReader } from "../readers/mayor_executive_structure.ts";
+import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
+import { findReconciliationCandidates } from "../reconciliation/candidates.ts";
 
 import { type EntryFragment, type Finding, type RelationFragment } from "../core/types.ts";
 import {
   type DcInterpreterContext,
   normalizeAgencyLookupKey,
+  publicBodyLookupKey,
 } from "../jurisdictions/dc/interpreters/context.ts";
 
 type CliOptions = {
@@ -172,6 +178,24 @@ async function collectSourceRecords(
     });
   }
 
+  if (source.type === "mayor.executive_structure") {
+    const reader = new MayorExecutiveStructureReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<MayorExecutiveStructureReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
+  if (source.type === "oanc.profiles") {
+    const reader = new OancProfilesReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<OancProfilesReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
   throw new Error(`unsupported source type: ${source.type}`);
 }
 
@@ -183,13 +207,31 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     const revisionRoot = join(stateRoot, "..", "revisions");
     const revisions = await loadRevisions(revisionRoot);
     const workspaceCompilation = compileFromWorkspace(workspace);
+    workspace.db.run("DELETE FROM fragments");
+    saveFragments(
+      workspace,
+      workspaceCompilation.fragments.map((fragment) => ({
+        source: fragment.source,
+        sourceRecordId: fragment.sourceRecordId,
+        payload: fragment,
+      })),
+    );
+
     const result = compileFragments({
       jurisdiction: dcRuntime.jurisdiction,
       fragments: workspaceCompilation.fragments,
       kindRegistry: dcRuntime.kinds,
+      promotionPolicy: dcRuntime.promotionPolicy,
       findings: workspaceCompilation.findings,
       revisions: [...dcRuntime.revisions, ...revisions],
       generatedAt: new Date().toISOString(),
+    });
+
+    workspace.db.run("DELETE FROM baselines");
+    saveBaseline(workspace, {
+      jurisdiction: dcRuntime.jurisdiction,
+      source: "compiler.baseline",
+      payload: result.baseline,
     });
 
     workspace.db.run("DELETE FROM findings");
@@ -261,6 +303,7 @@ async function runExport(
       workspace,
       jurisdiction: dcRuntime.jurisdiction,
       releaseRoot,
+      sourceCatalog: dcRuntime.sourceCoverage,
     });
     console.log(
       `exported ${result.entryCount} entries, ${result.relationCount} relations to ${result.releaseRoot}`,
@@ -269,6 +312,13 @@ async function runExport(
   } finally {
     closeWorkspace(workspace);
   }
+}
+
+async function runReconcileCandidates(stateRoot: string, limit?: number): Promise<number> {
+  const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  const report = findReconciliationCandidates(loaded.state, { limit });
+  console.log(JSON.stringify(report, null, 2));
+  return 0;
 }
 
 function compileFromWorkspace(
@@ -313,6 +363,34 @@ function compileFromWorkspace(
           ) {
             interpreterContext.agencyLookup.set(normalizedShortName, agencyId);
           }
+        }
+      }
+    }
+
+    if (
+      sourceBinding.source.id === "dcgis.boards" ||
+      sourceBinding.source.id === "dcgis.commissions" ||
+      sourceBinding.source.id === "dcgis.councils" ||
+      sourceBinding.source.id === "dcgis.authorities"
+    ) {
+      for (const entryFragment of interpreted.entryFragments) {
+        if (
+          entryFragment.kind !== "dc.board" &&
+          entryFragment.kind !== "dc.commission" &&
+          entryFragment.kind !== "dc.council" &&
+          entryFragment.kind !== "dc.authority"
+        ) {
+          continue;
+        }
+        if (!interpreterContext.publicBodyLookup) {
+          interpreterContext.publicBodyLookup = new Map();
+        }
+        const lookupKey = publicBodyLookupKey(entryFragment.kind, entryFragment.name);
+        if (!interpreterContext.publicBodyLookup.has(lookupKey)) {
+          interpreterContext.publicBodyLookup.set(lookupKey, {
+            provisionalId: entryFragment.provisionalId,
+            sourceRecordId: entryFragment.sourceRecordId,
+          });
         }
       }
     }
@@ -377,6 +455,20 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
         await runExport(cliOptions.workspace, cliOptions.stateRoot, cliOptions.releaseRoot),
       );
     });
+
+  const reconcile = new Command<CliOptions>()
+    .description("Reconciliation review commands.")
+    .action(() => {
+      throw new Error("reconcile requires `candidates`");
+    });
+
+  reconcile.command("candidates", "Emit reconciliation candidate review packets as JSON.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runReconcileCandidates(cliOptions.stateRoot, cliOptions.limit));
+    });
+
+  root.command("reconcile", reconcile);
 
   return root;
 }

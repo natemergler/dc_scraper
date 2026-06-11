@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1139",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Board of Elections",
+  "attributes": {
+    "shortName": "Board of Elections",
+    "sourceAgencyId": "1139"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "119"
+    }
+  ],
+  "relations": {}
+}

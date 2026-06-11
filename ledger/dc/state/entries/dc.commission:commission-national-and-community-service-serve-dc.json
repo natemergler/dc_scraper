@@ -1,0 +1,24 @@
+{
+  "id": "dc.commission:commission-national-and-community-service-serve-dc",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission for National and Community Service (Serve DC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2013-171",
+    "shortName": "Commission for National and Community Service (Serve DC)",
+    "sourceOpenDcSlug": "commission-national-and-community-service-serve-dc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-national-and-community-service-serve-dc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-national-and-community-service-serve-dc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-national-and-community-service-serve-dc",
+      "locator": "Mayor's Order 2013-171"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,57 @@
+{
+  "id": "dc.commission:73",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Human Rights",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 2-1404.01",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1404.01.html",
+    "shortName": "Commission on Human Rights",
+    "sourceCommissionId": "73",
+    "sourceOpenDcSlug": "commission-human-rights",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-human-rights"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "73"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "73",
+      "locator": "D.C. Code § 2-1404.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-human-rights"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-human-rights",
+      "locator": "D.C. Code § 2-1404.01"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1075",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "73"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "73",
+            "locator": "D.C. Code § 2-1404.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-human-rights"
+          }
+        ]
+      }
+    ]
+  }
+}

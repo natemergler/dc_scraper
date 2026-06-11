@@ -1,0 +1,30 @@
+{
+  "id": "dc.commission:tax-revision-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Tax Revision Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 47–462(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-462",
+    "shortName": "Tax Revision Commission",
+    "sourceOpenDcSlug": "tax-revision-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/tax-revision-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tax-revision-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tax-revision-commission",
+      "locator": "D.C. Code § 47-462"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tax-revision-commission",
+      "locator": "D.C. Official Code § 47-462(a)"
+    }
+  ],
+  "relations": {}
+}

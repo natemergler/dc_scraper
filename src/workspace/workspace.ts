@@ -227,6 +227,7 @@ export function saveBaseline(workspace: Workspace, baseline: BaselineInput): voi
     jurisdiction: baseline.jurisdiction,
     generatedAt: baseline.payload.generatedAt,
     entries: Object.fromEntries(baseline.payload.entries),
+    findings: baseline.payload.findings,
   });
   workspace.db.run(
     `INSERT INTO baselines (jurisdiction, source, payload)

@@ -1,0 +1,35 @@
+{
+  "id": "dc.commission:76",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Out of School Time Grants and Youth Outcomes",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 2-1555.05(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/2-1555.05.html",
+    "shortName": "Commission on Out of School Time Grants and Youth Outcomes",
+    "sourceCommissionId": "76",
+    "sourceOpenDcSlug": "commission-out-school-time-grants-and-youth-outcomes",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-out-school-time-grants-and-youth-outcomes"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "76"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
+      "locator": "D.C. Code § 2-1555.05"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
+      "locator": "D.C. Official Code § 2-1555.05(a)"
+    }
+  ],
+  "relations": {}
+}

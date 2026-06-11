@@ -1,6 +1,6 @@
 import { join } from "@std/path";
 
-import { type Revision } from "../core/types.ts";
+import { type CitationValue, isCitationValue, type Revision } from "../core/types.ts";
 
 export async function loadRevisions(revisionRoot: string): Promise<Revision[]> {
   const revisions: Revision[] = [];
@@ -77,11 +77,130 @@ function parseRevisionPayload(path: string, payload: unknown): Revision {
     throw new Error(`invalid revision payload in ${path}: patch must be an object`);
   }
 
+  const rationale = candidate.rationale;
+  if (rationale !== undefined && (typeof rationale !== "string" || rationale.trim().length === 0)) {
+    throw new Error(
+      `invalid revision payload in ${path}: rationale must be a non-empty string when present`,
+    );
+  }
+
+  const evidence = candidate.evidence;
+  let parsedEvidence: CitationValue[] | undefined;
+  if (evidence !== undefined) {
+    if (!Array.isArray(evidence)) {
+      throw new Error(
+        `invalid revision payload in ${path}: evidence must be an array when present`,
+      );
+    }
+    parsedEvidence = evidence.filter((value): value is CitationValue => isCitationValue(value));
+    if (parsedEvidence.length !== evidence.length) {
+      throw new Error(
+        `invalid revision payload in ${path}: evidence must contain only citation values`,
+      );
+    }
+  }
+
+  if ((patch as Record<string, unknown>).suppress === true) {
+    if (targetKind !== "entry") {
+      throw new Error(
+        `invalid revision payload in ${path}: suppress revisions must target entries`,
+      );
+    }
+    if (typeof rationale !== "string" || rationale.trim().length === 0) {
+      throw new Error(
+        `invalid revision payload in ${path}: suppress revisions require rationale`,
+      );
+    }
+  }
+
+  const review = (patch as Record<string, unknown>).review;
+  if (review !== undefined) {
+    if (targetKind !== "entry") {
+      throw new Error(
+        `invalid revision payload in ${path}: review revisions must target entries`,
+      );
+    }
+    if (typeof rationale !== "string" || rationale.trim().length === 0) {
+      throw new Error(
+        `invalid revision payload in ${path}: review revisions require rationale`,
+      );
+    }
+    validateReviewPatch(path, review);
+  }
+
   return {
     id,
     source,
     targetKind,
     targetId,
+    ...(typeof rationale === "string" ? { rationale } : {}),
+    ...(parsedEvidence ? { evidence: parsedEvidence } : {}),
     patch: patch as Record<string, unknown>,
   };
+}
+
+function validateReviewPatch(path: string, value: unknown): void {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`invalid revision payload in ${path}: review must be an object`);
+  }
+
+  const review = value as Record<string, unknown>;
+  const decision = review.decision;
+  if (
+    decision !== "preserve_distinct" &&
+    decision !== "alias" &&
+    decision !== "source_shadow"
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: review.decision must be preserve_distinct, alias, or source_shadow`,
+    );
+  }
+
+  if (review.relatedEntryIds !== undefined) {
+    validateStringArray(path, "review.relatedEntryIds", review.relatedEntryIds);
+  }
+  if (review.aliasNames !== undefined) {
+    validateStringArray(path, "review.aliasNames", review.aliasNames);
+  }
+  if (
+    review.canonicalEntryId !== undefined &&
+    (typeof review.canonicalEntryId !== "string" || review.canonicalEntryId.trim().length === 0)
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: review.canonicalEntryId must be a non-empty string`,
+    );
+  }
+
+  if (decision === "preserve_distinct" && !hasNonEmptyStringArray(review.relatedEntryIds)) {
+    throw new Error(
+      `invalid revision payload in ${path}: preserve_distinct review requires relatedEntryIds`,
+    );
+  }
+  if (decision === "alias" && !hasNonEmptyStringArray(review.aliasNames)) {
+    throw new Error(
+      `invalid revision payload in ${path}: alias review requires aliasNames`,
+    );
+  }
+  if (
+    decision === "source_shadow" &&
+    (typeof review.canonicalEntryId !== "string" || review.canonicalEntryId.trim().length === 0)
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: source_shadow review requires canonicalEntryId`,
+    );
+  }
+}
+
+function validateStringArray(path: string, field: string, value: unknown): void {
+  if (!Array.isArray(value) || !hasNonEmptyStringArray(value)) {
+    throw new Error(
+      `invalid revision payload in ${path}: ${field} must be a non-empty string array`,
+    );
+  }
+}
+
+function hasNonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => typeof item === "string" && item.trim().length > 0);
 }

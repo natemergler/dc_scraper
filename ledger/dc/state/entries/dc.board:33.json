@@ -1,0 +1,53 @@
+{
+  "id": "dc.board:33",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Chiropractic",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.16",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.16.html",
+    "shortName": "Board of Chiropractic",
+    "sourceBoardId": "33",
+    "sourceOpenDcSlug": "board-chiropractic",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-chiropractic"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "33"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "33",
+      "locator": "D.C. Code § 3-1202.16"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-chiropractic"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-chiropractic",
+      "locator": "DC Code § 3-1202.16"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "33"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "33",
+            "locator": "D.C. Code § 3-1202.16"
+          }
+        ]
+      }
+    ]
+  }
+}

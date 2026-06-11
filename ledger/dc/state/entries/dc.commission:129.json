@@ -1,0 +1,24 @@
+{
+  "id": "dc.commission:129",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Washington Metropolitan Area Transit Commission (WMATC)",
+  "attributes": {
+    "enablingStatute": "Public Law 89-794",
+    "shortName": "Washington Metropolitan Area Transit Commission (WMATC)",
+    "sourceCommissionId": "129",
+    "sourceOpenDcSlug": "washington-metropolitan-area-transit-commission-wmatc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-metropolitan-area-transit-commission-wmatc"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "129"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-metropolitan-area-transit-commission-wmatc"
+    }
+  ],
+  "relations": {}
+}
