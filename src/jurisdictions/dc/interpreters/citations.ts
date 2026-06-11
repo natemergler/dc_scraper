@@ -6,6 +6,7 @@ const LEGAL_TEXT_FIELDS = new Set<string>([
   "STATUTE",
   "LEGAL_CITATION",
   "LEGAL_REFERENCE",
+  "AUTHORIZING_ORDER_LAW",
   "ENACTMENT",
   "CITATION",
   "LAW",

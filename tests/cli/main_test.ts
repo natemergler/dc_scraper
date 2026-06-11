@@ -179,6 +179,54 @@ Deno.test("collect command supports dcgis.commissions source", async () => {
   }
 });
 
+Deno.test("collect command supports dcgis.councils source", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-collect-councils-" });
+  const restoreFetch = mockArcGISFetch(
+    new Map([
+      [
+        "0",
+        {
+          features: [
+            {
+              attributes: {
+                OBJECTID: 21,
+                ENTITY_ID: "co-1",
+                NAME: "Food Policy Council",
+                SHORT_NAME: "FPC",
+                AGENCY_ID: "a-1",
+              },
+            },
+          ],
+          exceededTransferLimit: false,
+          objectIdFieldName: "OBJECTID",
+        },
+      ],
+    ]),
+  );
+
+  try {
+    const exitCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.councils",
+      "--limit",
+      "1",
+    ]);
+
+    assertEquals(exitCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "snapshots"), 1);
+    assertEquals(countRows(db, "records"), 1);
+    closeWorkspace(db);
+  } finally {
+    restoreFetch();
+    await Deno.remove(workspace, { recursive: true });
+  }
+});
+
 Deno.test("collect command supports dcgis.authorities source", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-collect-authorities-" });
   const restoreFetch = mockArcGISFetch(
@@ -925,7 +973,7 @@ Deno.test("state generation can compile agency and board sources together", asyn
   }
 });
 
-Deno.test("state generation can compile agency, board, and commission sources together", async () => {
+Deno.test("state generation can compile agency, board, commission, and council sources together", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-multi-3-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-multi-3-output-" });
   const responses = [
@@ -966,6 +1014,21 @@ Deno.test("state generation can compile agency, board, and commission sources to
             COMMISSION_ID: "c-1",
             COMMISSION_NAME: "City Commission",
             SHORT_NAME: "CC",
+            AGENCY_ID: "a-1",
+          },
+        },
+      ],
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+    {
+      features: [
+        {
+          attributes: {
+            OBJECTID: 210,
+            ENTITY_ID: "co-1",
+            NAME: "Food Policy Council",
+            SHORT_NAME: "FPC",
             AGENCY_ID: "a-1",
           },
         },
@@ -1022,6 +1085,16 @@ Deno.test("state generation can compile agency, board, and commission sources to
     ]);
     assertEquals(commissionCode, 0);
 
+    const councilCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.councils",
+      "--limit",
+      "1",
+    ]);
+    assertEquals(councilCode, 0);
+
     const generateCode = await runCli([
       "--workspace",
       workspace,
@@ -1036,6 +1109,7 @@ Deno.test("state generation can compile agency, board, and commission sources to
     assertEquals(stateEntries.includes("dc.agency:a-1.json"), true);
     assertEquals(stateEntries.includes("dc.board:b-1.json"), true);
     assertEquals(stateEntries.includes("dc.commission:c-1.json"), true);
+    assertEquals(stateEntries.includes("dc.council:co-1.json"), true);
   } finally {
     restoreFetch();
     await Deno.remove(workspace, { recursive: true });

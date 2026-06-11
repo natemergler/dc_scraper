@@ -9,6 +9,7 @@ import { parseLegalCitationLocators, parseLegalCitationLocatorsFromUrl } from ".
 import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
+import { dcCouncilKind } from "../kinds/council.ts";
 import { dcAuthorityKind } from "../kinds/authority.ts";
 import { dcAgencyKind } from "../kinds/agency.ts";
 
@@ -91,6 +92,8 @@ function entryKindForPublicBody(detected: string): string {
       return dcCommissionKind.kind;
     case "authority":
       return dcAuthorityKind.kind;
+    case "council":
+      return dcCouncilKind.kind;
     default:
       return dcAgencyKind.kind;
   }
@@ -104,6 +107,8 @@ function entryFamilyForPublicBody(detected: string): string {
       return dcCommissionKind.family;
     case "authority":
       return dcAuthorityKind.family;
+    case "council":
+      return dcCouncilKind.family;
     default:
       return dcAgencyKind.family;
   }
@@ -275,7 +280,7 @@ export function interpretOpenDCPublicBodies(
   }
 
   for (const parsed of parsedRecords) {
-    const standardKinds = new Set(["board", "commission", "authority"]);
+    const standardKinds = new Set(["board", "commission", "authority", "council"]);
     if (!standardKinds.has(parsed.detected)) {
       findings.push({
         kind: "info",

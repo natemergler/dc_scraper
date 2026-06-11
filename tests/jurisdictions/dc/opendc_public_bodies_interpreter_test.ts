@@ -185,7 +185,7 @@ Deno.test("open_dc.public_bodies interprets task-force variants as dc.agency wit
   }
 });
 
-Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", () => {
+Deno.test("open_dc.public_bodies interprets council as dc.council", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
     snapshotKey: "page-0",
@@ -199,10 +199,9 @@ Deno.test("open_dc.public_bodies interprets council as dc.agency with finding", 
 
   assertEquals(output.entryFragments.length, 1);
   const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.provisionalId, "dc.agency:arts-council");
-  assertEquals(entryFragment.kind, "dc.agency");
-  assertEquals(output.findings.length, 1);
-  assertEquals(output.findings[0].code, "dc.interpreter.opendc_unclassified_body");
+  assertEquals(entryFragment.provisionalId, "dc.council:arts-council");
+  assertEquals(entryFragment.kind, "dc.council");
+  assertEquals(output.findings, []);
 });
 
 Deno.test("open_dc.public_bodies interprets office as dc.agency with finding", () => {
