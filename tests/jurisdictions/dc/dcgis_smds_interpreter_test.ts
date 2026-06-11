@@ -89,9 +89,9 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(normalSeatEntry.attributes.sourceRepresentativeName, "Jane Doe");
   assertEquals(normalSeatEntry.attributes.sourceFirstName, "Jane");
   assertEquals(normalSeatEntry.attributes.sourceLastName, "Doe");
-  assertEquals(normalSeatEntry.attributes.officeEmail, "jane@example.com");
   assertEquals(normalSeatEntry.citations, [cite(dcgisSmdsSource.id, "1A01")]);
   assertEquals(Object.hasOwn(normalSeatEntry.attributes, "email"), false);
+  assertEquals(Object.hasOwn(normalSeatEntry.attributes, "officeEmail"), false);
   assertEquals(Object.hasOwn(normalSeatEntry.attributes, "repName"), false);
 
   assertEquals(slashSmdEntry.fragmentType, "entry");
@@ -123,9 +123,9 @@ Deno.test("dcgis.smds records become SMD and commissioner seat entries", () => {
   assertEquals(slashSeatEntry.attributes.sourceRepresentativeName, "John Smith");
   assertEquals(slashSeatEntry.attributes.sourceFirstName, "John");
   assertEquals(slashSeatEntry.attributes.sourceLastName, "Smith");
-  assertEquals(slashSeatEntry.attributes.officeEmail, "john@example.com");
   assertEquals(slashSeatEntry.citations, [cite(dcgisSmdsSource.id, "3/4G01")]);
   assertEquals(Object.hasOwn(slashSeatEntry.attributes, "email"), false);
+  assertEquals(Object.hasOwn(slashSeatEntry.attributes, "officeEmail"), false);
   assertEquals(Object.hasOwn(slashSeatEntry.attributes, "repName"), false);
 
   assertEquals(normalContainsRelation.fragmentType, "relation");
@@ -221,7 +221,7 @@ Deno.test("dcgis.smds skips commissioner provenance when representative fields a
   assertEquals(output.findings.length, 1);
   assertEquals(output.findings[0].code, "dc.interpreter.smd_representative_missing");
   assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
-  assertEquals(output.entryFragments[1].attributes.officeEmail, "seat@example.com");
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "officeEmail"), false);
   assertEquals(
     Object.hasOwn(output.entryFragments[1].attributes, "sourceRepresentativeName"),
     false,
@@ -283,7 +283,7 @@ Deno.test("dcgis.smds skips commissioner provenance when seat is vacant", () => 
   );
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceFirstName"), false);
   assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "sourceLastName"), false);
-  assertEquals(output.entryFragments[1].attributes.officeEmail, "4d02@anc.dc.gov");
+  assertEquals(Object.hasOwn(output.entryFragments[1].attributes, "officeEmail"), false);
 });
 
 Deno.test("dcgis.smds reports warning when SMD id is missing", () => {

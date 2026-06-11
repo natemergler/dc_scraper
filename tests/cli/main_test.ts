@@ -1205,7 +1205,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(seatSlashEntry.attributes.sourceRepresentativeName, "John Smith");
     assertEquals(seatSlashEntry.attributes.sourceFirstName, "John");
     assertEquals(seatSlashEntry.attributes.sourceLastName, "Smith");
-    assertEquals(seatSlashEntry.attributes.officeEmail, "john@example.com");
+    assertEquals(Object.hasOwn(seatSlashEntry.attributes, "officeEmail"), false);
     assertEquals(seatSlashEntry.relations["dc.relation:represents"][0]?.to, "dc.smd:3~2F4G01");
     assertEquals(Object.hasOwn(seatSlashEntry.relations, "dc.relation:holds"), false);
 
@@ -1259,8 +1259,8 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(entriesCsv.includes("dc.anc_commissioner_seat:3~2F4G01"), true);
     assertEquals(entriesCsv.includes("Jane Doe"), true);
     assertEquals(entriesCsv.includes("John Smith"), true);
-    assertEquals(entriesCsv.includes("jane@example.com"), true);
-    assertEquals(entriesCsv.includes("john@example.com"), true);
+    assertEquals(entriesCsv.includes("jane@example.com"), false);
+    assertEquals(entriesCsv.includes("john@example.com"), false);
     assertEquals(entriesCsv.includes("dc.person:anc_commissioner_3~2F4G01"), false);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));

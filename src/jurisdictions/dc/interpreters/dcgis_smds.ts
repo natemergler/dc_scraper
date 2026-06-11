@@ -23,7 +23,6 @@ export interface DcGisSmdPayload {
   FIRST_NAME?: unknown;
   LAST_NAME?: unknown;
   WEB_URL?: unknown;
-  EMAIL?: unknown;
 }
 
 const dcSmdKind = "dc.smd" as const;
@@ -131,7 +130,6 @@ export function interpretDcgisSmds(
 
     const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
     const ancId = parseAncId(sourceRecord);
-    const officeEmail = asString(sourceRecord.EMAIL);
     const representativeName = parseRepresentativeName(sourceRecord);
     const firstName = parseFirstName(sourceRecord);
     const lastName = parseLastName(sourceRecord);
@@ -165,9 +163,6 @@ export function interpretDcgisSmds(
     };
     if (ancId) {
       seatAttributes.sourceAncId = ancId;
-    }
-    if (officeEmail) {
-      seatAttributes.officeEmail = officeEmail;
     }
     if (representativeName && !isVacantRepresentativeName(representativeName)) {
       seatAttributes.sourceRepresentativeName = representativeName;
