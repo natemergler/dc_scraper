@@ -282,6 +282,7 @@ async function runExport(
       workspace,
       jurisdiction: dcRuntime.jurisdiction,
       releaseRoot,
+      sourceCatalog: dcRuntime.sourceCoverage,
     });
     console.log(
       `exported ${result.entryCount} entries, ${result.relationCount} relations to ${result.releaseRoot}`,
