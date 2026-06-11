@@ -12,7 +12,7 @@ const HTML_BY_URL = new Map<string, string>([
     <html>
       <head><title>Organizational Charts | mayor</title></head>
       <body>
-        <h1>Organizational Charts for Agencies and Offices Under the Mayor's Authority</h1>
+        <h1>Organizational Charts for Agencies and Offices Under the Mayor&#039;s Authority</h1>
         <p>Contact: private@example.com</p>
       </body>
     </html>

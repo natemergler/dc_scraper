@@ -144,7 +144,7 @@ function decodeHtml(value: string): string {
   return value
     .replace(/&amp;/g, "&")
     .replace(/&nbsp;/g, " ")
-    .replace(/&#39;/g, "'")
+    .replace(/&#8217;|&#039;|&#39;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
