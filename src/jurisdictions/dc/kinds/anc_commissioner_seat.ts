@@ -9,6 +9,5 @@ export const dcAncCommissionerSeatKind = defineEntryKind({
     sourceRepresentativeName: { required: false, type: "string" },
     sourceFirstName: { required: false, type: "string" },
     sourceLastName: { required: false, type: "string" },
-    officeEmail: { required: false, type: "string" },
   },
 });
