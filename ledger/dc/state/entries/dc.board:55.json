@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:55",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Real Estate Appraisers",
+  "attributes": {
+    "shortName": "Board of Real Estate Appraisers",
+    "sourceBoardId": "55"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "55"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "55",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

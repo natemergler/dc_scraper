@@ -1,0 +1,20 @@
+{
+  "id": "dc.agency:board-of-ethics-and-government-accountability",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Board of Ethics and Government Accountability",
+  "attributes": {
+    "shortName": "Board of Ethics and Government Accountability",
+    "sourceBegaStructureKey": "board-of-ethics-and-government-accountability",
+    "sourcePageTitle": "About BEGA | bega",
+    "sourcePageUrl": "https://bega.dc.gov/node/61616/"
+  },
+  "citations": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "board-of-ethics-and-government-accountability",
+      "url": "https://bega.dc.gov/node/61616/"
+    }
+  ],
+  "relations": {}
+}

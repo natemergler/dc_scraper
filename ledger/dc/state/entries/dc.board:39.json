@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:39",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Funeral Directors",
+  "attributes": {
+    "shortName": "Board of Funeral Directors",
+    "sourceBoardId": "39"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "39"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "39",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

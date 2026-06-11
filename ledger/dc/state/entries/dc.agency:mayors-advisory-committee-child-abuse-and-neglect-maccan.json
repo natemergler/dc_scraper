@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:mayors-advisory-committee-child-abuse-and-neglect-maccan",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2012-164",
+    "enablingStatuteUrl": "https://www.open-dc.gov/sites/default/files/MO%202012-164.pdf",
+    "shortName": "Mayor's Advisory Committee on Child Abuse and Neglect (MACCAN)",
+    "sourceOpenDcSlug": "mayors-advisory-committee-child-abuse-and-neglect-maccan",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-advisory-committee-child-abuse-and-neglect-maccan"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-advisory-committee-child-abuse-and-neglect-maccan"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-advisory-committee-child-abuse-and-neglect-maccan",
+      "locator": "Mayor's Order 2012-164"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1006",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "mayors-advisory-committee-child-abuse-and-neglect-maccan"
+          }
+        ]
+      }
+    ]
+  }
+}

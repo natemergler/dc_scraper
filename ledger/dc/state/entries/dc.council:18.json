@@ -1,0 +1,22 @@
+{
+  "id": "dc.council:18",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Multimodal Accessibility Advisory Council",
+  "attributes": {
+    "shortName": "Multimodal Accessibility Advisory Council",
+    "sourceCouncilId": "18"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "18"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "18",
+      "locator": "D.C. Code § 50-2361.31"
+    }
+  ],
+  "relations": {}
+}

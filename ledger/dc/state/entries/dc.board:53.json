@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:53",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Professional Engineering",
+  "attributes": {
+    "shortName": "Board of Professional Engineering",
+    "sourceBoardId": "53"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "53"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "53",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

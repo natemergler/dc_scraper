@@ -1,0 +1,40 @@
+{
+  "id": "dc.commission:77",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Persons with Disabilities",
+  "attributes": {
+    "shortName": "Commission on Persons with Disabilities",
+    "sourceCommissionId": "77"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "77"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "77",
+      "locator": "Mayor's Order 2009-165"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1072",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "77"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "77",
+            "locator": "Mayor's Order 2009-165"
+          }
+        ]
+      }
+    ]
+  }
+}

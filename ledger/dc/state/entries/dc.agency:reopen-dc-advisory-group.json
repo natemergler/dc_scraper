@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:reopen-dc-advisory-group",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "ReOpen DC Advisory Group",
+  "attributes": {
+    "shortName": "ReOpen DC Advisory Group",
+    "sourceOpenDcSlug": "reopen-dc-advisory-group",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/reopen-dc-advisory-group"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "reopen-dc-advisory-group"
+    }
+  ],
+  "relations": {}
+}

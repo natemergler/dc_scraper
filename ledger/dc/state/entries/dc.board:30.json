@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:30",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Architecture, Interior Design, and Landscape Architecture",
+  "attributes": {
+    "shortName": "Board of Architecture, Interior Design, and Landscape Architecture",
+    "sourceBoardId": "30"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "30"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "30",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

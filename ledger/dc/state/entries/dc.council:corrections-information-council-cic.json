@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:corrections-information-council-cic",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Corrections Information Council (CIC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 24-101.01",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/24-101a.html",
+    "shortName": "Corrections Information Council (CIC)",
+    "sourceOpenDcSlug": "corrections-information-council-cic",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/corrections-information-council-cic"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "corrections-information-council-cic"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "corrections-information-council-cic",
+      "locator": "D.C. Code § 24-101.01"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:streetlight-advisory-panel",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Streetlight Advisory Panel",
+  "attributes": {
+    "shortName": "Streetlight Advisory Panel",
+    "sourceOpenDcSlug": "streetlight-advisory-panel",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/streetlight-advisory-panel"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "streetlight-advisory-panel"
+    }
+  ],
+  "relations": {}
+}

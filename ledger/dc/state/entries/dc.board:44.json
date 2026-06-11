@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:44",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Massage Therapy",
+  "attributes": {
+    "shortName": "Board of Massage Therapy",
+    "sourceBoardId": "44"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "44"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "44",
+      "locator": "D.C. Code § 3-1202.15"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "44"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "44",
+            "locator": "D.C. Code § 3-1202.15"
+          }
+        ]
+      }
+    ]
+  }
+}

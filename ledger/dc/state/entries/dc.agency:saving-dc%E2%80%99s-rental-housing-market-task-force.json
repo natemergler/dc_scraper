@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:saving-dc%E2%80%99s-rental-housing-market-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Saving DC’s Rental Housing Market Task Force",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2020-129",
+    "enablingStatuteUrl": "https://dhcd.dc.gov/sites/default/files/dc/sites/dhcd/page_content/attachments/2020129%20Establishment%20%20Saving%20DCs%20Rental%20Housing%20Market%20Strike%20Force%20%281%29_0.pdf",
+    "shortName": "Saving DC’s Rental Housing Market Task Force",
+    "sourceOpenDcSlug": "saving-dc%E2%80%99s-rental-housing-market-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/saving-dc%E2%80%99s-rental-housing-market-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "saving-dc%E2%80%99s-rental-housing-market-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "saving-dc%E2%80%99s-rental-housing-market-task-force",
+      "locator": "Mayor's Order 2020-129"
+    }
+  ],
+  "relations": {}
+}

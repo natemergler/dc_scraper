@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:112",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police Complaints Board",
+  "attributes": {
+    "shortName": "Police Complaints Board",
+    "sourceBoardId": "112"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "112"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "112",
+      "locator": "D.C. Code § 5-1104"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-community-use-public-space",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Community Use of Public Space",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2018-002",
+    "enablingStatuteUrl": "https://www.open-dc.gov/sites/default/files/EnablingStatute/Advisory_Group_on_Community_Use_of_Public_Space.pdf",
+    "shortName": "Advisory Committee on Community Use of Public Space",
+    "sourceOpenDcSlug": "advisory-committee-community-use-public-space",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-community-use-public-space"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-community-use-public-space"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-community-use-public-space",
+      "locator": "Mayor's Order 2018-002"
+    }
+  ],
+  "relations": {}
+}

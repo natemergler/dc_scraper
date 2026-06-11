@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:committee-metabolic-disorders",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Committee on Metabolic Disorders",
+  "attributes": {
+    "enablingStatute": "DC Code § 7-835",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/7-835.html",
+    "shortName": "Committee on Metabolic Disorders",
+    "sourceOpenDcSlug": "committee-metabolic-disorders",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/committee-metabolic-disorders"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "committee-metabolic-disorders"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "committee-metabolic-disorders",
+      "locator": "DC Code § 7-835"
+    }
+  ],
+  "relations": {}
+}

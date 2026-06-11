@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:113",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police Officers Standards and Training Board (POST)",
+  "attributes": {
+    "shortName": "Police Officers Standards and Training Board (POST)",
+    "sourceBoardId": "113"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "113"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "113",
+      "locator": "D.C. Code § 5-107.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1067",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "113"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "113",
+            "locator": "D.C. Code § 5-107.03"
+          }
+        ]
+      }
+    ]
+  }
+}

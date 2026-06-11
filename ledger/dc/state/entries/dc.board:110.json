@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:110",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Notaries Public Board of Review",
+  "attributes": {
+    "shortName": "Notaries Public Board of Review",
+    "sourceBoardId": "110"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "110"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1095",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "110"
+          }
+        ]
+      }
+    ]
+  }
+}

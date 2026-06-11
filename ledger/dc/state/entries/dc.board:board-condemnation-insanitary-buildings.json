@@ -1,0 +1,38 @@
+{
+  "id": "dc.board:board-condemnation-insanitary-buildings",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board for the Condemnation of Insanitary Buildings",
+  "attributes": {
+    "enablingStatute": "D. C. Code § 6-902",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-902.html",
+    "shortName": "Board for the Condemnation of Insanitary Buildings",
+    "sourceOpenDcSlug": "board-condemnation-insanitary-buildings",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-condemnation-insanitary-buildings"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-condemnation-insanitary-buildings"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-condemnation-insanitary-buildings",
+      "locator": "D. C. Code § 6-902"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1181",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-condemnation-insanitary-buildings"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:comprehensive-homicide-elimination-strategy-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Comprehensive Homicide Elimination Strategy Task Force",
+  "attributes": {
+    "enablingStatute": "D.C. § 22–4251",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/22-4251.html",
+    "shortName": "Comprehensive Homicide Elimination Strategy Task Force",
+    "sourceOpenDcSlug": "comprehensive-homicide-elimination-strategy-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/comprehensive-homicide-elimination-strategy-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "comprehensive-homicide-elimination-strategy-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "comprehensive-homicide-elimination-strategy-task-force",
+      "locator": "D.C. Code § 22-4251"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1155",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "comprehensive-homicide-elimination-strategy-task-force"
+          }
+        ]
+      }
+    ]
+  }
+}

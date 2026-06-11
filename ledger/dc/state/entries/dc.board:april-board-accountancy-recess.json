@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:april-board-accountancy-recess",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "April Board of Accountancy - (RECESS)",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 47-2853.06(b)(1)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)",
+    "shortName": "April Board of Accountancy - (RECESS)",
+    "sourceOpenDcSlug": "april-board-accountancy-recess",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/april-board-accountancy-recess"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "april-board-accountancy-recess"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "april-board-accountancy-recess",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "april-board-accountancy-recess",
+      "locator": "D.C. Official Code § 47-2853.06(b)(1)"
+    }
+  ],
+  "relations": {}
+}

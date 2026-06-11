@@ -1,0 +1,38 @@
+{
+  "id": "dc.board:historic-preservation-review-board-hprb",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Historic Preservation Review Board (HPRB)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 6-1103",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-1103.html",
+    "shortName": "Historic Preservation Review Board (HPRB)",
+    "sourceOpenDcSlug": "historic-preservation-review-board-hprb",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/historic-preservation-review-board-hprb"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "historic-preservation-review-board-hprb"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "historic-preservation-review-board-hprb",
+      "locator": "D.C. Code § 6-1103"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1079",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "historic-preservation-review-board-hprb"
+          }
+        ]
+      }
+    ]
+  }
+}

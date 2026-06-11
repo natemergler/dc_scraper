@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:multimodal-accessibility-advisory-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Multimodal Accessibility Advisory Council",
+  "attributes": {
+    "enablingStatute": "DC Code § 50–2361.31",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/titles/50/chapters/23B/subchapters/II/index.html",
+    "shortName": "Multimodal Accessibility Advisory Council",
+    "sourceOpenDcSlug": "multimodal-accessibility-advisory-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/multimodal-accessibility-advisory-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "multimodal-accessibility-advisory-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "multimodal-accessibility-advisory-council",
+      "locator": "DC Code § 50-2361.31"
+    }
+  ],
+  "relations": {}
+}

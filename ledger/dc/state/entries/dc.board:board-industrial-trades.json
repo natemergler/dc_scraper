@@ -1,0 +1,43 @@
+{
+  "id": "dc.board:board-industrial-trades",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Industrial Trades",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 47-2853.06(d)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06#(d)",
+    "shortName": "Board of Industrial Trades",
+    "sourceOpenDcSlug": "board-industrial-trades",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-industrial-trades"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-industrial-trades"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-industrial-trades",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-industrial-trades",
+      "locator": "D.C. Official Code § 47-2853.06(d)"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1180",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-industrial-trades"
+          }
+        ]
+      }
+    ]
+  }
+}

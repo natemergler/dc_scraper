@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-office-administrative-hearings-oah",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee to the Office of Administrative Hearings (OAH)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 2-1831.17",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1831.17.html",
+    "shortName": "Advisory Committee to the Office of Administrative Hearings (OAH)",
+    "sourceOpenDcSlug": "advisory-committee-office-administrative-hearings-oah",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-office-administrative-hearings-oah"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-administrative-hearings-oah"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-administrative-hearings-oah",
+      "locator": "D.C. Code § 2-1831.17"
+    }
+  ],
+  "relations": {}
+}

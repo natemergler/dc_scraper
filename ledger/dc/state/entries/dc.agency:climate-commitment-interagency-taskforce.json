@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:climate-commitment-interagency-taskforce",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Climate Commitment Interagency Taskforce",
+  "attributes": {
+    "enablingStatute": "Climate Commitment Amendment Act of 2022",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/laws/24-176",
+    "shortName": "Climate Commitment Interagency Taskforce",
+    "sourceOpenDcSlug": "climate-commitment-interagency-taskforce",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/climate-commitment-interagency-taskforce"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "climate-commitment-interagency-taskforce"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "climate-commitment-interagency-taskforce",
+      "locator": "D.C. Law 24-176"
+    }
+  ],
+  "relations": {}
+}

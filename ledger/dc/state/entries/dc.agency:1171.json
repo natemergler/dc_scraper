@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1171",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of the Clean City",
+  "attributes": {
+    "shortName": "Mayor's Office of the Clean City",
+    "sourceAgencyId": "1171"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "150"
+    }
+  ],
+  "relations": {}
+}

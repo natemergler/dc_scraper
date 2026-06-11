@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:uniform-law-commission-ulc",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Uniform Law Commission (ULC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1431",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1431.html",
+    "shortName": "Uniform Law Commission (ULC)",
+    "sourceOpenDcSlug": "uniform-law-commission-ulc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/uniform-law-commission-ulc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "uniform-law-commission-ulc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "uniform-law-commission-ulc",
+      "locator": "DC Code § 3-1431"
+    }
+  ],
+  "relations": {}
+}

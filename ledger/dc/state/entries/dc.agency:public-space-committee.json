@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:public-space-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Public Space Committee",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-114",
+    "enablingStatuteUrl": "https://www.open-dc.gov/sites/default/files/Mayor%27s%20Order%202009-114.pdf",
+    "shortName": "Public Space Committee",
+    "sourceOpenDcSlug": "public-space-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-space-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-space-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-space-committee",
+      "locator": "Mayor's Order 2009-114"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1048",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-space-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

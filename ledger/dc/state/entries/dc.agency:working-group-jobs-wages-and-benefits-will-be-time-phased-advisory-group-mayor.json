@@ -1,0 +1,19 @@
+{
+  "id": "dc.agency:working-group-jobs-wages-and-benefits-will-be-time-phased-advisory-group-mayor",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Working group on jobs, wages and benefits will be a time phased advisory group to the Mayor",
+  "attributes": {
+    "enablingStatute": "MO 2016-083",
+    "shortName": "Working group on jobs, wages and benefits will be a time phased advisory group to the Mayor",
+    "sourceOpenDcSlug": "working-group-jobs-wages-and-benefits-will-be-time-phased-advisory-group-mayor",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/working-group-jobs-wages-and-benefits-will-be-time-phased-advisory-group-mayor"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "working-group-jobs-wages-and-benefits-will-be-time-phased-advisory-group-mayor"
+    }
+  ],
+  "relations": {}
+}

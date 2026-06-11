@@ -1,0 +1,38 @@
+{
+  "id": "dc.board:police-officers-standards-and-training-board-post",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police Officers Standards and Training Board (POST)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 5-107.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/5-107.03.html",
+    "shortName": "Police Officers Standards and Training Board (POST)",
+    "sourceOpenDcSlug": "police-officers-standards-and-training-board-post",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/police-officers-standards-and-training-board-post"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-officers-standards-and-training-board-post"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-officers-standards-and-training-board-post",
+      "locator": "D.C. Code § 5-107.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1080",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-officers-standards-and-training-board-post"
+          }
+        ]
+      }
+    ]
+  }
+}

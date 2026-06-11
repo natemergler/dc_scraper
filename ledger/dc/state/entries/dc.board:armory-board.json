@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:armory-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Armory Board",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-302",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-302.html",
+    "shortName": "Armory Board",
+    "sourceOpenDcSlug": "armory-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/armory-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "armory-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "armory-board",
+      "locator": "DC Code § 3-302"
+    }
+  ],
+  "relations": {}
+}

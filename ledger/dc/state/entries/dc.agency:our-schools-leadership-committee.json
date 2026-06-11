@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:our-schools-leadership-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Our Schools Leadership Committee",
+  "attributes": {
+    "shortName": "Our Schools Leadership Committee",
+    "sourceOpenDcSlug": "our-schools-leadership-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/our-schools-leadership-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "our-schools-leadership-committee"
+    }
+  ],
+  "relations": {}
+}

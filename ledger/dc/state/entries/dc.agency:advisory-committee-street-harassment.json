@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:advisory-committee-street-harassment",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Street Harassment",
+  "attributes": {
+    "shortName": "Advisory Committee on Street Harassment",
+    "sourceOpenDcSlug": "advisory-committee-street-harassment",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-street-harassment"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-street-harassment"
+    }
+  ],
+  "relations": {}
+}

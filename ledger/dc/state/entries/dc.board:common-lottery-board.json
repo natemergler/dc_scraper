@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:common-lottery-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Common Lottery Board",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38–194",
+    "enablingStatuteUrl": "https://beta.code.dccouncil.us/dc/council/code/sections/38-194.html",
+    "shortName": "Common Lottery Board",
+    "sourceOpenDcSlug": "common-lottery-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/common-lottery-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "common-lottery-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "common-lottery-board",
+      "locator": "D.C. Code § 38-194"
+    }
+  ],
+  "relations": {}
+}

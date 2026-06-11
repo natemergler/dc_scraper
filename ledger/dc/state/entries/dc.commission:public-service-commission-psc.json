@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:public-service-commission-psc",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Public Service Commission (PSC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-204.93",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/1-204.93.html",
+    "shortName": "Public Service Commission (PSC)",
+    "sourceOpenDcSlug": "public-service-commission-psc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-service-commission-psc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-service-commission-psc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-service-commission-psc",
+      "locator": "DC Code § 1-204.93"
+    }
+  ],
+  "relations": {}
+}

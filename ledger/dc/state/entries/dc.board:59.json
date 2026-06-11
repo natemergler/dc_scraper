@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:59",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Trustees of the University of the District of Columbia (UDC)",
+  "attributes": {
+    "shortName": "Board of Trustees of the University of the District of Columbia (UDC)",
+    "sourceBoardId": "59"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "59"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "59",
+      "locator": "D.C. Code § 38-1202.06"
+    }
+  ],
+  "relations": {}
+}

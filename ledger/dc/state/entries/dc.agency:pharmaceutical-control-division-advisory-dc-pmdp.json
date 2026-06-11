@@ -1,0 +1,30 @@
+{
+  "id": "dc.agency:pharmaceutical-control-division-advisory-dc-pmdp",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Pharmaceutical Control Division Advisory (DC PMDP)",
+  "attributes": {
+    "enablingStatute": "DC Code §48-853.02",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/48-853.02",
+    "shortName": "Pharmaceutical Control Division Advisory (DC PMDP)",
+    "sourceOpenDcSlug": "pharmaceutical-control-division-advisory-dc-pmdp",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/pharmaceutical-control-division-advisory-dc-pmdp"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "pharmaceutical-control-division-advisory-dc-pmdp"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "pharmaceutical-control-division-advisory-dc-pmdp",
+      "locator": "D.C. Code § 48-853.02"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "pharmaceutical-control-division-advisory-dc-pmdp",
+      "locator": "DC Code §48-853.02"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,37 @@
+{
+  "id": "dc.board:construction-codes-coordinating-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Construction Codes Coordinating Board",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-22",
+    "shortName": "Construction Codes Coordinating Board",
+    "sourceOpenDcSlug": "construction-codes-coordinating-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/construction-codes-coordinating-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "construction-codes-coordinating-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "construction-codes-coordinating-board",
+      "locator": "Mayor's Order 2009-22"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1181",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "construction-codes-coordinating-board"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "id": "dc.anc:3~2F4G",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3/4G",
+  "attributes": {
+    "gisId": "ANCPly_333",
+    "sourceAncId": "3/4G",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3/4g"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3/4G"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3~2F4G07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G07"
+          }
+        ]
+      }
+    ]
+  }
+}

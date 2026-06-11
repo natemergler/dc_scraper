@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:washington-dc-convention-and-tourism-corporation-destination-dc",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+  "attributes": {
+    "shortName": "Washington D.C. Convention and Tourism Corporation (Destination DC)",
+    "sourceOpenDcSlug": "washington-dc-convention-and-tourism-corporation-destination-dc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-dc-convention-and-tourism-corporation-destination-dc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-dc-convention-and-tourism-corporation-destination-dc"
+    }
+  ],
+  "relations": {}
+}

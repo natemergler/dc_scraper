@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:mayors-office-on-fathers-men-and-boys",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office on Fathers, Men, and Boys",
+  "attributes": {
+    "shortName": "Mayor's Office on Fathers, Men, and Boys",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-on-fathers-men-and-boys",
+    "sourceOfficeKey": "mayors-office-on-fathers-men-and-boys",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-on-fathers-men-and-boys",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-fathers-men-and-boys",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

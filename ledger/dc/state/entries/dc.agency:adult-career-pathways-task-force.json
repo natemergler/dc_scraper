@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:adult-career-pathways-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Adult Career Pathways Task Force",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2014-232",
+    "shortName": "Adult Career Pathways Task Force",
+    "sourceOpenDcSlug": "adult-career-pathways-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/adult-career-pathways-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "adult-career-pathways-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "adult-career-pathways-task-force",
+      "locator": "Mayor's Order 2014-232"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1032",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "adult-career-pathways-task-force"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1142",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Public Charter School Board",
+  "attributes": {
+    "shortName": "DC Public Charter School Board",
+    "sourceAgencyId": "1142"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "122"
+    }
+  ],
+  "relations": {}
+}

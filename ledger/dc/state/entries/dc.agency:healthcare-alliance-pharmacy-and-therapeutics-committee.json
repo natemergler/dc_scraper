@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:healthcare-alliance-pharmacy-and-therapeutics-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Healthcare Alliance Pharmacy and Therapeutics Committee",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-210",
+    "shortName": "Healthcare Alliance Pharmacy and Therapeutics Committee",
+    "sourceOpenDcSlug": "healthcare-alliance-pharmacy-and-therapeutics-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/healthcare-alliance-pharmacy-and-therapeutics-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "healthcare-alliance-pharmacy-and-therapeutics-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "healthcare-alliance-pharmacy-and-therapeutics-committee",
+      "locator": "Mayor's Order 2015-210"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1038",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "healthcare-alliance-pharmacy-and-therapeutics-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

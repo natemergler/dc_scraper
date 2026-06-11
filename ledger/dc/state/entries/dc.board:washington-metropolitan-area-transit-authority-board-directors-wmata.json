@@ -1,0 +1,19 @@
+{
+  "id": "dc.board:washington-metropolitan-area-transit-authority-board-directors-wmata",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Washington Metropolitan Area Transit Authority Board of Directors (WMATA)",
+  "attributes": {
+    "enablingStatute": "Public Law 89-774",
+    "shortName": "Washington Metropolitan Area Transit Authority Board of Directors (WMATA)",
+    "sourceOpenDcSlug": "washington-metropolitan-area-transit-authority-board-directors-wmata",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-metropolitan-area-transit-authority-board-directors-wmata"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-metropolitan-area-transit-authority-board-directors-wmata"
+    }
+  ],
+  "relations": {}
+}

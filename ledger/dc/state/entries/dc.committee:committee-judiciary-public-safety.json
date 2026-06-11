@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-judiciary-public-safety",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on the Judiciary and Public Safety",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-judiciary-public-safety",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-judiciary-public-safety/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    }
+  ],
+  "relations": {}
+}

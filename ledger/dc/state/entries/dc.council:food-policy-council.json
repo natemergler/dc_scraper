@@ -1,0 +1,38 @@
+{
+  "id": "dc.council:food-policy-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Food Policy Council",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 48-314.05",
+    "enablingStatuteUrl": "http://www.dcfoodpolicy.org",
+    "shortName": "Food Policy Council",
+    "sourceOpenDcSlug": "food-policy-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/food-policy-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "food-policy-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "food-policy-council",
+      "locator": "D.C. Official Code § 48-314.05"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1079",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "food-policy-council"
+          }
+        ]
+      }
+    ]
+  }
+}

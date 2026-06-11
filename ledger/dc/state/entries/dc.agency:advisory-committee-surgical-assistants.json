@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-surgical-assistants",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Surgical Assistants",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Surgical Assistants",
+    "sourceOpenDcSlug": "advisory-committee-surgical-assistants",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-surgical-assistants"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-surgical-assistants"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-surgical-assistants",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

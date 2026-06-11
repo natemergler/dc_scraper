@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-office-caribbean-community-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee to the Office on Caribbean Community Affairs",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2023-058",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&amp;OrderNumber=2023-058",
+    "shortName": "Advisory Committee to the Office on Caribbean Community Affairs",
+    "sourceOpenDcSlug": "advisory-committee-office-caribbean-community-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-office-caribbean-community-affairs"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-caribbean-community-affairs"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-caribbean-community-affairs",
+      "locator": "Mayor's Order 2023-058"
+    }
+  ],
+  "relations": {}
+}

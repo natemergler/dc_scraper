@@ -1,0 +1,37 @@
+{
+  "id": "dc.board:health-information-exchange-policy-board-hie",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Health Information Exchange Policy Board (HIE)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2012-24",
+    "shortName": "Health Information Exchange Policy Board (HIE)",
+    "sourceOpenDcSlug": "health-information-exchange-policy-board-hie",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/health-information-exchange-policy-board-hie"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-information-exchange-policy-board-hie"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-information-exchange-policy-board-hie",
+      "locator": "Mayor's Order 2012-24"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1038",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "health-information-exchange-policy-board-hie"
+          }
+        ]
+      }
+    ]
+  }
+}

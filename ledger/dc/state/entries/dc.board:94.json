@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:94",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Health Benefit Exchange Authority Executive Board (HBX)",
+  "attributes": {
+    "shortName": "Health Benefit Exchange Authority Executive Board (HBX)",
+    "sourceBoardId": "94"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "94"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "94",
+      "locator": "D.C. Code § 31-3171.02"
+    }
+  ],
+  "relations": {}
+}

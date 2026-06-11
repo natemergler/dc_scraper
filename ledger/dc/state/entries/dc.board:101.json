@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:101",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Housing Finance Agency Board of Directors",
+  "attributes": {
+    "shortName": "Housing Finance Agency Board of Directors",
+    "sourceBoardId": "101"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "101"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "101",
+      "locator": "D.C. Code § 42-2702.02"
+    }
+  ],
+  "relations": {}
+}

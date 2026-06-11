@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-mayor%E2%80%99s-office-deaf-deafblind-and-hard-hearing-moddhh",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee to the Mayor’s Office of Deaf, DeafBlind, and Hard of Hearing (MODDHH)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2024-034: Establishment — Advisory Committee to the Office of Deaf, DeafBlind, and Hard of Hearing",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/NoticeDetail.aspx?NoticeId=N135138",
+    "shortName": "Advisory Committee to the Mayor’s Office of Deaf, DeafBlind, and Hard of Hearing (MODDHH)",
+    "sourceOpenDcSlug": "advisory-committee-mayor%E2%80%99s-office-deaf-deafblind-and-hard-hearing-moddhh",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-mayor%E2%80%99s-office-deaf-deafblind-and-hard-hearing-moddhh"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-mayor%E2%80%99s-office-deaf-deafblind-and-hard-hearing-moddhh"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-mayor%E2%80%99s-office-deaf-deafblind-and-hard-hearing-moddhh",
+      "locator": "Mayor's Order 2024-034"
+    }
+  ],
+  "relations": {}
+}

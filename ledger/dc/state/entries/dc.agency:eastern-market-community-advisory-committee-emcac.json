@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:eastern-market-community-advisory-committee-emcac",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Eastern Market Community Advisory Committee (EMCAC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 37-111",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/37-111.html",
+    "shortName": "Eastern Market Community Advisory Committee (EMCAC)",
+    "sourceOpenDcSlug": "eastern-market-community-advisory-committee-emcac",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/eastern-market-community-advisory-committee-emcac"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "eastern-market-community-advisory-committee-emcac"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "eastern-market-community-advisory-committee-emcac",
+      "locator": "D.C. Code § 37-111"
+    }
+  ],
+  "relations": {}
+}

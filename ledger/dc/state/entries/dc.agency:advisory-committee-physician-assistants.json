@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-physician-assistants",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Physician Assistants",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Physician Assistants",
+    "sourceOpenDcSlug": "advisory-committee-physician-assistants",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-physician-assistants"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-physician-assistants"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-physician-assistants",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

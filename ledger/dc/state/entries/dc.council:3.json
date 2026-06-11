@@ -1,0 +1,22 @@
+{
+  "id": "dc.council:3",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Mayor's Interfaith Council (MIC)",
+  "attributes": {
+    "shortName": "Mayor's Interfaith Council (MIC)",
+    "sourceCouncilId": "3"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "3"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "3",
+      "locator": "Mayor's Order 2011-110"
+    }
+  ],
+  "relations": {}
+}

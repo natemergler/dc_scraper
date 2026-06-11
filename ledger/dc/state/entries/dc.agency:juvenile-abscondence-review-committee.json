@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:juvenile-abscondence-review-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Juvenile Abscondence Review Committee",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 16-2333.02",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/16-2333.02.html",
+    "shortName": "Juvenile Abscondence Review Committee",
+    "sourceOpenDcSlug": "juvenile-abscondence-review-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/juvenile-abscondence-review-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "juvenile-abscondence-review-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "juvenile-abscondence-review-committee",
+      "locator": "D.C. Code § 16-2333.02"
+    }
+  ],
+  "relations": {}
+}

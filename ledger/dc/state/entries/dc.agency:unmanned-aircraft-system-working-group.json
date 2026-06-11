@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:unmanned-aircraft-system-working-group",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Unmanned Aircraft System Working Group",
+  "attributes": {
+    "shortName": "Unmanned Aircraft System Working Group",
+    "sourceOpenDcSlug": "unmanned-aircraft-system-working-group",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/unmanned-aircraft-system-working-group"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "unmanned-aircraft-system-working-group"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,40 @@
+{
+  "id": "dc.commission:72",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Health Equity",
+  "attributes": {
+    "shortName": "Commission on Health Equity",
+    "sourceCommissionId": "72"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "72"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "72",
+      "locator": "D.C. Code § 7-756.01"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "72"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "72",
+            "locator": "D.C. Code § 7-756.01"
+          }
+        ]
+      }
+    ]
+  }
+}

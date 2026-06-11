@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-on-health",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Health",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-on-health",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-on-health/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-health"
+    }
+  ],
+  "relations": {}
+}

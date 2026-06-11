@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1046",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Small and Local Business Development",
+  "attributes": {
+    "shortName": "Department of Small and Local Business Development",
+    "sourceAgencyId": "1046"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "43"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-small-and-local-business-development",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

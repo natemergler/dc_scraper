@@ -1,0 +1,40 @@
+{
+  "id": "dc.commission:135",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Interstate Commission on the Potomac River Basin (ICPRB)",
+  "attributes": {
+    "shortName": "Interstate Commission on the Potomac River Basin (ICPRB)",
+    "sourceCommissionId": "135"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "135"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "135",
+      "locator": "D.C. Code § 8-1601"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "135"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "135",
+            "locator": "D.C. Code § 8-1601"
+          }
+        ]
+      }
+    ]
+  }
+}

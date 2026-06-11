@@ -1,0 +1,30 @@
+{
+  "id": "dc.agency:citizen-review-panel-child-abuse-and-neglect",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Citizen Review Panel for Child Abuse and Neglect",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 4-1303.51(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/4-1303.51.html",
+    "shortName": "Citizen Review Panel for Child Abuse and Neglect",
+    "sourceOpenDcSlug": "citizen-review-panel-child-abuse-and-neglect",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/citizen-review-panel-child-abuse-and-neglect"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "citizen-review-panel-child-abuse-and-neglect"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "citizen-review-panel-child-abuse-and-neglect",
+      "locator": "D.C. Code § 4-1303.51"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "citizen-review-panel-child-abuse-and-neglect",
+      "locator": "D.C. Official Code § 4-1303.51(a)"
+    }
+  ],
+  "relations": {}
+}

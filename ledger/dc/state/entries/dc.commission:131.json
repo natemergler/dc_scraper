@@ -1,0 +1,22 @@
+{
+  "id": "dc.commission:131",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Zoning Commission",
+  "attributes": {
+    "shortName": "Zoning Commission",
+    "sourceCommissionId": "131"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "131"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "131",
+      "locator": "D.C. Code § 6-621.01"
+    }
+  ],
+  "relations": {}
+}

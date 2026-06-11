@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:district-columbia-housing-preservation-strike-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "District of Columbia Housing Preservation Strike Force",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-158",
+    "shortName": "District of Columbia Housing Preservation Strike Force",
+    "sourceOpenDcSlug": "district-columbia-housing-preservation-strike-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-housing-preservation-strike-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-housing-preservation-strike-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-housing-preservation-strike-force",
+      "locator": "Mayor's Order 2015-158"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1039",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-columbia-housing-preservation-strike-force"
+          }
+        ]
+      }
+    ]
+  }
+}

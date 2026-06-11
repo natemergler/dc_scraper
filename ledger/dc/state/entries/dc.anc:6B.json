@@ -1,0 +1,118 @@
+{
+  "id": "dc.anc:6B",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 6B",
+  "attributes": {
+    "gisId": "ANCPly_352",
+    "representedNeighborhoods": "the Capitol Hill and Barney Circle neighborhoods",
+    "sourceAncId": "6B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6b"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "6B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B08"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6B09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B09"
+          }
+        ]
+      }
+    ]
+  }
+}

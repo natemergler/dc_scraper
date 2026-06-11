@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:age-friendly-dc-2023-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Age Friendly DC in 2023 Task Force",
+  "attributes": {
+    "shortName": "Age Friendly DC in 2023 Task Force",
+    "sourceOpenDcSlug": "age-friendly-dc-2023-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/age-friendly-dc-2023-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "age-friendly-dc-2023-task-force"
+    }
+  ],
+  "relations": {}
+}

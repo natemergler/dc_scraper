@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:mayors-office-community-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Community Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office of Community Affairs",
+    "sourceOpenDcSlug": "mayors-office-community-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-office-community-affairs"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-office-community-affairs"
+    }
+  ],
+  "relations": {}
+}

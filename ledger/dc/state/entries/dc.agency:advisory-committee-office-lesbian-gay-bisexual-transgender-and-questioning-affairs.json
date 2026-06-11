@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:advisory-committee-office-lesbian-gay-bisexual-transgender-and-questioning-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee to the Office of Lesbian, Gay, Bisexual, Transgender, and Questioning Affairs (LGBTQ)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2013-159 Amended 2015-262",
+    "shortName": "Advisory Committee to the Office of Lesbian, Gay, Bisexual, Transgender, and Questioning Affairs (LGBTQ)",
+    "sourceOpenDcSlug": "advisory-committee-office-lesbian-gay-bisexual-transgender-and-questioning-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-office-lesbian-gay-bisexual-transgender-and-questioning-affairs"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-lesbian-gay-bisexual-transgender-and-questioning-affairs"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-office-lesbian-gay-bisexual-transgender-and-questioning-affairs",
+      "locator": "Mayor's Order 2013-159"
+    }
+  ],
+  "relations": {}
+}

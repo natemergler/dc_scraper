@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:mayors-office-of-community-relations-and-services",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Community Relations and Services",
+  "attributes": {
+    "shortName": "Mayor's Office of Community Relations and Services",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-community-relations-and-services",
+    "sourceOfficeKey": "mayors-office-of-community-relations-and-services",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-community-relations-and-services",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:executive-office-of-the-mayor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-community-relations-and-services",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

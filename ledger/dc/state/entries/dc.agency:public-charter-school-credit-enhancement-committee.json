@@ -1,0 +1,32 @@
+{
+  "id": "dc.agency:public-charter-school-credit-enhancement-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Public Charter School Credit Enhancement Committee",
+  "attributes": {
+    "enablingStatute": "CDCR 26A-2600",
+    "shortName": "Public Charter School Credit Enhancement Committee",
+    "sourceOpenDcSlug": "public-charter-school-credit-enhancement-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-charter-school-credit-enhancement-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-charter-school-credit-enhancement-committee"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-charter-school-credit-enhancement-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

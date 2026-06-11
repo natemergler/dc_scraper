@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:82",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Common Lottery Board",
+  "attributes": {
+    "shortName": "Common Lottery Board",
+    "sourceBoardId": "82"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "82"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "82",
+      "locator": "D.C. Code § 38-194"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "82"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "82",
+            "locator": "D.C. Code § 38-194"
+          }
+        ]
+      }
+    ]
+  }
+}

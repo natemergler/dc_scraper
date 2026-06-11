@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:mayors-office-policy-and-innovation",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Policy and Innovation",
+  "attributes": {
+    "shortName": "Mayor's Office of Policy and Innovation",
+    "sourceOpenDcSlug": "mayors-office-policy-and-innovation",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-office-policy-and-innovation"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-office-policy-and-innovation"
+    }
+  ],
+  "relations": {}
+}

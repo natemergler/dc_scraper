@@ -1,0 +1,27 @@
+{
+  "id": "dc.board:134",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Public Defender Service Board of Trustees",
+  "attributes": {
+    "shortName": "Public Defender Service Board of Trustees",
+    "sourceBoardId": "134"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "134"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "134",
+      "locator": "D.C. Code § 2-1601"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "134",
+      "locator": "D.C. Code § 2-1608"
+    }
+  ],
+  "relations": {}
+}

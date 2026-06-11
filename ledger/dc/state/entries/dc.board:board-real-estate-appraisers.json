@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:board-real-estate-appraisers",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Real Estate Appraisers",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47–2853.06(g)",
+    "enablingStatuteUrl": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(g)",
+    "shortName": "Board of Real Estate Appraisers",
+    "sourceOpenDcSlug": "board-real-estate-appraisers",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-real-estate-appraisers"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-real-estate-appraisers"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-real-estate-appraisers",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-real-estate-appraisers",
+      "locator": "D.C. Code § 47-2853.06(g)"
+    }
+  ],
+  "relations": {}
+}

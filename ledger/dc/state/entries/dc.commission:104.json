@@ -1,0 +1,30 @@
+{
+  "id": "dc.commission:104",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Lactation Commission",
+  "attributes": {
+    "shortName": "Lactation Commission",
+    "sourceCommissionId": "104"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "104"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "104"
+          }
+        ]
+      }
+    ]
+  }
+}

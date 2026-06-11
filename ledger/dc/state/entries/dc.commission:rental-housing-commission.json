@@ -1,0 +1,38 @@
+{
+  "id": "dc.commission:rental-housing-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Rental Housing Commission",
+  "attributes": {
+    "enablingStatute": "DC Code § 42-3502.02",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/42-3502.02.html",
+    "shortName": "Rental Housing Commission",
+    "sourceOpenDcSlug": "rental-housing-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/rental-housing-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "rental-housing-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "rental-housing-commission",
+      "locator": "DC Code § 42-3502.02"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1039",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "rental-housing-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

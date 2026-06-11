@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:juvenile-justice-advisory-group-jjag",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Juvenile Justice Advisory Group (JJAG)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-13",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/NoticeDetail.aspx?noticeId=N0003323",
+    "shortName": "Juvenile Justice Advisory Group (JJAG)",
+    "sourceOpenDcSlug": "juvenile-justice-advisory-group-jjag",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/juvenile-justice-advisory-group-jjag"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "juvenile-justice-advisory-group-jjag"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "juvenile-justice-advisory-group-jjag",
+      "locator": "Mayor's Order 2009-13"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1100",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "juvenile-justice-advisory-group-jjag"
+          }
+        ]
+      }
+    ]
+  }
+}

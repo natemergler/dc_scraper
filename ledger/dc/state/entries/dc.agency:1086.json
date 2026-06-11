@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:1086",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Chief Technology Officer",
+  "attributes": {
+    "shortName": "Office of the Chief Technology Officer",
+    "sourceAgencyId": "1086"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "62"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:internal-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-chief-technology-officer",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

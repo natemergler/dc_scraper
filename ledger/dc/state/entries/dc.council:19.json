@@ -1,0 +1,40 @@
+{
+  "id": "dc.council:19",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Food Policy Council",
+  "attributes": {
+    "shortName": "Food Policy Council",
+    "sourceCouncilId": "19"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "19"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "19",
+      "locator": "D.C. Code § 48-312"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1079",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "19"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "19",
+            "locator": "D.C. Code § 48-312"
+          }
+        ]
+      }
+    ]
+  }
+}

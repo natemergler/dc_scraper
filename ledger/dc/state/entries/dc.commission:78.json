@@ -1,0 +1,40 @@
+{
+  "id": "dc.commission:78",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Re-Entry and Returning Citizen Affairs",
+  "attributes": {
+    "shortName": "Commission on Re-Entry and Returning Citizen Affairs",
+    "sourceCommissionId": "78"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "78"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "78",
+      "locator": "D.C. Code § 24-1303"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1066",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "78"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "78",
+            "locator": "D.C. Code § 24-1303"
+          }
+        ]
+      }
+    ]
+  }
+}

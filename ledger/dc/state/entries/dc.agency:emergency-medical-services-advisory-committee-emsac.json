@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:emergency-medical-services-advisory-committee-emsac",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Emergency Medical Services Advisory Committee (EMSAC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 7-2341.22",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/7-2341.22.html",
+    "shortName": "Emergency Medical Services Advisory Committee (EMSAC)",
+    "sourceOpenDcSlug": "emergency-medical-services-advisory-committee-emsac",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/emergency-medical-services-advisory-committee-emsac"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "emergency-medical-services-advisory-committee-emsac"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "emergency-medical-services-advisory-committee-emsac",
+      "locator": "D.C. Code § 7-2341.22"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1053",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "emergency-medical-services-advisory-committee-emsac"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:5C04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5C04",
+  "attributes": {
+    "sourceAncId": "5C",
+    "sourceFirstName": "SHAWN",
+    "sourceLastName": "NELSON",
+    "sourceRepresentativeName": "SHAWN NELSON",
+    "sourceSmdId": "5C04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5C04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C04"
+          }
+        ]
+      }
+    ]
+  }
+}

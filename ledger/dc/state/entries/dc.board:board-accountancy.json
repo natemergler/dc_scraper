@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:board-accountancy",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Accountancy",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 47-2853.06(b)(1)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)",
+    "shortName": "Board of Accountancy",
+    "sourceOpenDcSlug": "board-accountancy",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-accountancy"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-accountancy"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-accountancy",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-accountancy",
+      "locator": "D.C. Official Code § 47-2853.06(b)(1)"
+    }
+  ],
+  "relations": {}
+}

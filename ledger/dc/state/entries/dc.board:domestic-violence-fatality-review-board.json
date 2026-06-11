@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:domestic-violence-fatality-review-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Domestic Violence Fatality Review Board",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 16-1052",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/16-1052.html",
+    "shortName": "Domestic Violence Fatality Review Board",
+    "sourceOpenDcSlug": "domestic-violence-fatality-review-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/domestic-violence-fatality-review-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "domestic-violence-fatality-review-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "domestic-violence-fatality-review-board",
+      "locator": "D.C. Code § 16-1052"
+    }
+  ],
+  "relations": {}
+}

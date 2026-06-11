@@ -1,0 +1,20 @@
+{
+  "id": "dc.agency:alice-deal-middle-school-lsat",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Alice Deal Middle School LSAT",
+  "attributes": {
+    "enablingStatute": "DCPS LSAT Guidelines",
+    "enablingStatuteUrl": "https://dcps.dc.gov/publication/local-school-advisory-team-guidelines",
+    "shortName": "Alice Deal Middle School LSAT",
+    "sourceOpenDcSlug": "alice-deal-middle-school-lsat",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/alice-deal-middle-school-lsat"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alice-deal-middle-school-lsat"
+    }
+  ],
+  "relations": {}
+}

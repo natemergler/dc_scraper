@@ -1,0 +1,22 @@
+{
+  "id": "dc.commission:124",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Uniform Law Commission (ULC)",
+  "attributes": {
+    "shortName": "Uniform Law Commission (ULC)",
+    "sourceCommissionId": "124"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "124"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "124",
+      "locator": "D.C. Code § 3-1431"
+    }
+  ],
+  "relations": {}
+}

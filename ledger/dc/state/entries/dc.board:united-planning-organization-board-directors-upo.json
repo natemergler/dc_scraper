@@ -1,0 +1,19 @@
+{
+  "id": "dc.board:united-planning-organization-board-directors-upo",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "United Planning Organization Board of Directors (UPO)",
+  "attributes": {
+    "enablingStatute": "Organizational ByLaws",
+    "shortName": "United Planning Organization Board of Directors (UPO)",
+    "sourceOpenDcSlug": "united-planning-organization-board-directors-upo",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/united-planning-organization-board-directors-upo"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "united-planning-organization-board-directors-upo"
+    }
+  ],
+  "relations": {}
+}

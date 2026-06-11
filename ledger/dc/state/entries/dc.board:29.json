@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:29",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Accountancy",
+  "attributes": {
+    "shortName": "Board of Accountancy",
+    "sourceBoardId": "29"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "29"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "29",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

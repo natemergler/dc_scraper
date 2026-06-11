@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:114",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Procurement Accountability Review Board (PARB)",
+  "attributes": {
+    "shortName": "Procurement Accountability Review Board (PARB)",
+    "sourceBoardId": "114"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "114"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "114",
+      "locator": "Mayor's Order 2015-165"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1071",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "114"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "114",
+            "locator": "Mayor's Order 2015-165"
+          }
+        ]
+      }
+    ]
+  }
+}

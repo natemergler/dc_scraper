@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:district-columbia-commemorative-works-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "District of Columbia Commemorative Works Committee",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 9-204.12",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/9-204.12.html",
+    "shortName": "District of Columbia Commemorative Works Committee",
+    "sourceOpenDcSlug": "district-columbia-commemorative-works-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-commemorative-works-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-commemorative-works-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-commemorative-works-committee",
+      "locator": "D.C. Code § 9-204.12"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1079",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-columbia-commemorative-works-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

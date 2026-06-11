@@ -1,0 +1,37 @@
+{
+  "id": "dc.council:state-rehabilitation-council-src",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "State Rehabilitation Council (SRC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2001-173",
+    "shortName": "State Rehabilitation Council (SRC)",
+    "sourceOpenDcSlug": "state-rehabilitation-council-src",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/state-rehabilitation-council-src"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-rehabilitation-council-src"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-rehabilitation-council-src",
+      "locator": "Mayor's Order 2001-173"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1041",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-rehabilitation-council-src"
+          }
+        ]
+      }
+    ]
+  }
+}

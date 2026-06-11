@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:board-elections",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Elections",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-1001.03",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/titles/1/chapters/10",
+    "shortName": "Board of Elections",
+    "sourceOpenDcSlug": "board-elections",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-elections"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-elections"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-elections",
+      "locator": "DC Code § 1-1001.03"
+    }
+  ],
+  "relations": {}
+}

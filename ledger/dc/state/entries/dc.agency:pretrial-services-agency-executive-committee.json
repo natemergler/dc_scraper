@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:pretrial-services-agency-executive-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Pretrial Services Agency Executive Committee",
+  "attributes": {
+    "enablingStatute": "DC Code § 23-1304.",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/23-1304.html",
+    "shortName": "Pretrial Services Agency Executive Committee",
+    "sourceOpenDcSlug": "pretrial-services-agency-executive-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/pretrial-services-agency-executive-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "pretrial-services-agency-executive-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "pretrial-services-agency-executive-committee",
+      "locator": "DC Code § 23-1304"
+    }
+  ],
+  "relations": {}
+}

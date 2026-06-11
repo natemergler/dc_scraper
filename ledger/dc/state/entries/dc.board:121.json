@@ -1,0 +1,60 @@
+{
+  "id": "dc.board:121",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Science Advisory Board",
+  "attributes": {
+    "shortName": "Science Advisory Board",
+    "sourceBoardId": "121"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "121"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "121",
+      "locator": "D.C. Law 19-18"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "121",
+      "locator": "D.C. Official Code § 5-1501.11"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "121",
+      "locator": "Mayor's Order 2013-225"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1034",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "D.C. Law 19-18"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "D.C. Official Code § 5-1501.11"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "Mayor's Order 2013-225"
+          }
+        ]
+      }
+    ]
+  }
+}

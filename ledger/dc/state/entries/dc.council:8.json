@@ -1,0 +1,30 @@
+{
+  "id": "dc.council:8",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Statewide Independent Living Council (SILC)",
+  "attributes": {
+    "shortName": "Statewide Independent Living Council (SILC)",
+    "sourceCouncilId": "8"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "8"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1031",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "8"
+          }
+        ]
+      }
+    ]
+  }
+}

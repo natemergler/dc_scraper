@@ -1,0 +1,22 @@
+{
+  "id": "dc.council:7",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "State Early Childhood Development Coordinating Council (SECDC)",
+  "attributes": {
+    "shortName": "State Early Childhood Development Coordinating Council (SECDC)",
+    "sourceCouncilId": "7"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "7"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "7",
+      "locator": "D.C. Code § 38-271.07"
+    }
+  ],
+  "relations": {}
+}

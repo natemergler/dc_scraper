@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:26",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Alcoholic Beverage and Cannabis Administration",
+  "attributes": {
+    "shortName": "Alcoholic Beverage and Cannabis Administration",
+    "sourceBoardId": "26"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26",
+      "locator": "D.C. Code § 25-201"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1001",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "26"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "26",
+            "locator": "D.C. Code § 25-201"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "dc.council:financial-literacy-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Financial Literacy Council",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38-731.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/38-731.03.html",
+    "shortName": "Financial Literacy Council",
+    "sourceOpenDcSlug": "financial-literacy-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/financial-literacy-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "financial-literacy-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "financial-literacy-council",
+      "locator": "D.C. Code § 38-731.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1042",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "financial-literacy-council"
+          }
+        ]
+      }
+    ]
+  }
+}

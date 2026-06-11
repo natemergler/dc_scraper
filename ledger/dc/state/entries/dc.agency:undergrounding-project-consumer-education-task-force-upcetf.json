@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:undergrounding-project-consumer-education-task-force-upcetf",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Undergrounding Project Consumer Education Task Force (UPCETF)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-162",
+    "shortName": "Undergrounding Project Consumer Education Task Force (UPCETF)",
+    "sourceOpenDcSlug": "undergrounding-project-consumer-education-task-force-upcetf",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/undergrounding-project-consumer-education-task-force-upcetf"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "undergrounding-project-consumer-education-task-force-upcetf"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "undergrounding-project-consumer-education-task-force-upcetf",
+      "locator": "Mayor's Order 2015-162"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1048",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "undergrounding-project-consumer-education-task-force-upcetf"
+          }
+        ]
+      }
+    ]
+  }
+}

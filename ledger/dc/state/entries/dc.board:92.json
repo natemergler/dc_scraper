@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:92",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Domestic Violence Fatality Review Board",
+  "attributes": {
+    "shortName": "Domestic Violence Fatality Review Board",
+    "sourceBoardId": "92"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "92"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "92",
+      "locator": "D.C. Code § 16-1052"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1100",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "92"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "92",
+            "locator": "D.C. Code § 16-1052"
+          }
+        ]
+      }
+    ]
+  }
+}

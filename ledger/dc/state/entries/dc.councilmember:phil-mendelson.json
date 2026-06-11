@@ -1,0 +1,46 @@
+{
+  "id": "dc.councilmember:phil-mendelson",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Chairman Phil Mendelson",
+  "attributes": {
+    "sourceProfileSlug": "phil-mendelson",
+    "sourceProfileUrl": "https://dccouncil.gov/council/phil-mendelson/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "phil-mendelson"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:health-benefit-exchange-authority-executive-board-hbx",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Health Benefit Exchange Authority Executive Board (HBX)",
+  "attributes": {
+    "enablingStatute": "DC Code § 31-3171.02.",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/31-3171.02.html",
+    "shortName": "Health Benefit Exchange Authority Executive Board (HBX)",
+    "sourceOpenDcSlug": "health-benefit-exchange-authority-executive-board-hbx",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/health-benefit-exchange-authority-executive-board-hbx"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-benefit-exchange-authority-executive-board-hbx"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-benefit-exchange-authority-executive-board-hbx",
+      "locator": "DC Code § 31-3171.02"
+    }
+  ],
+  "relations": {}
+}

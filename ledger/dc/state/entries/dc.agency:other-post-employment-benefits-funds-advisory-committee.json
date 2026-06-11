@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:other-post-employment-benefits-funds-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Other Post-Employment Benefits Funds Advisory Committee",
+  "attributes": {
+    "enablingStatute": "DC Code § 1–621.5",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/titles/1/chapters/6/subchapters/XXI-A/index.html",
+    "shortName": "Other Post-Employment Benefits Funds Advisory Committee",
+    "sourceOpenDcSlug": "other-post-employment-benefits-funds-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/other-post-employment-benefits-funds-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "other-post-employment-benefits-funds-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "other-post-employment-benefits-funds-advisory-committee",
+      "locator": "DC Code § 1-621.5"
+    }
+  ],
+  "relations": {}
+}

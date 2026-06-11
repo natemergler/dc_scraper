@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:developmental-disabilities-fatality-review-committee-dd-frc",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Developmental Disabilities Fatality Review Committee (DD FRC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-225; amended by 2013-154",
+    "shortName": "Developmental Disabilities Fatality Review Committee (DD FRC)",
+    "sourceOpenDcSlug": "developmental-disabilities-fatality-review-committee-dd-frc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/developmental-disabilities-fatality-review-committee-dd-frc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "developmental-disabilities-fatality-review-committee-dd-frc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "developmental-disabilities-fatality-review-committee-dd-frc",
+      "locator": "Mayor's Order 2009-225"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1085",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "developmental-disabilities-fatality-review-committee-dd-frc"
+          }
+        ]
+      }
+    ]
+  }
+}

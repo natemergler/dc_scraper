@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:27",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Armory Board",
+  "attributes": {
+    "shortName": "Armory Board",
+    "sourceBoardId": "27"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "27"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "27",
+      "locator": "D.C. Code § 3-302"
+    }
+  ],
+  "relations": {}
+}

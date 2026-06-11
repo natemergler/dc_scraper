@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:marijuana-private-club-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Marijuana Private Club Task Force",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2016-032",
+    "shortName": "Marijuana Private Club Task Force",
+    "sourceOpenDcSlug": "marijuana-private-club-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/marijuana-private-club-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "marijuana-private-club-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "marijuana-private-club-task-force",
+      "locator": "Mayor's Order 2016-032"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:board-social-work",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Social Work",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.12",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.12.html",
+    "shortName": "Board of Social Work",
+    "sourceOpenDcSlug": "board-social-work",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-social-work"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-social-work"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-social-work",
+      "locator": "DC Code § 3-1202.12"
+    }
+  ],
+  "relations": {}
+}

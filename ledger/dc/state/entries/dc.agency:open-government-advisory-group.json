@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:open-government-advisory-group",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Open Government Advisory Group",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2016-094",
+    "enablingStatuteUrl": "http://ogag.dc.gov/sites/default/files/dc/sites/ogag/publication/attachments/2016-094%20Establishment%20%C2%AD%20Open%20Government%20Advisory%20Group.pdf",
+    "shortName": "Open Government Advisory Group",
+    "sourceOpenDcSlug": "open-government-advisory-group",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/open-government-advisory-group"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "open-government-advisory-group"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "open-government-advisory-group",
+      "locator": "Mayor's Order 2016-094"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1086",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "open-government-advisory-group"
+          }
+        ]
+      }
+    ]
+  }
+}

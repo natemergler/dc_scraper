@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-trauma-technologists",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Trauma Technologists",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Trauma Technologists",
+    "sourceOpenDcSlug": "advisory-committee-trauma-technologists",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-trauma-technologists"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-trauma-technologists"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-trauma-technologists",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

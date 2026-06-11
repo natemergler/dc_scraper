@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:chesapeake-bay-program-local-government-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Chesapeake Bay Program Local Government Advisory Committee",
+  "attributes": {
+    "enablingStatute": "33 U.S. Code § 1267",
+    "enablingStatuteUrl": "https://www.law.cornell.edu/uscode/text/33/1267",
+    "shortName": "Chesapeake Bay Program Local Government Advisory Committee",
+    "sourceOpenDcSlug": "chesapeake-bay-program-local-government-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/chesapeake-bay-program-local-government-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "chesapeake-bay-program-local-government-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "chesapeake-bay-program-local-government-advisory-committee",
+      "locator": "33 U.S.C. § 1267"
+    }
+  ],
+  "relations": {}
+}

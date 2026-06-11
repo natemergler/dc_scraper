@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:interagency-working-group-autonomous-vehicles",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Interagency Working Group on Autonomous Vehicles",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2018-018",
+    "shortName": "Interagency Working Group on Autonomous Vehicles",
+    "sourceOpenDcSlug": "interagency-working-group-autonomous-vehicles",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/interagency-working-group-autonomous-vehicles"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "interagency-working-group-autonomous-vehicles"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "interagency-working-group-autonomous-vehicles",
+      "locator": "Mayor's Order 2018-018"
+    }
+  ],
+  "relations": {}
+}

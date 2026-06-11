@@ -1,0 +1,22 @@
+{
+  "id": "dc.commission:100",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Housing Authority Board of Commissioners",
+  "attributes": {
+    "shortName": "Housing Authority Board of Commissioners",
+    "sourceCommissionId": "100"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "100"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "100",
+      "locator": "D.C. Code § 6-211"
+    }
+  ],
+  "relations": {}
+}

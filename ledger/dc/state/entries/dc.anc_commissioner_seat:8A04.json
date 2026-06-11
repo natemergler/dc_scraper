@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:8A04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8A04",
+  "attributes": {
+    "sourceAncId": "8A",
+    "sourceFirstName": "FRIA",
+    "sourceLastName": "MOORE",
+    "sourceRepresentativeName": "FRIA MOORE",
+    "sourceSmdId": "8A04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8A04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8A04"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "dc.council:9",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Interagency Council on Homelessness (ICH)",
+  "attributes": {
+    "shortName": "Interagency Council on Homelessness (ICH)",
+    "sourceCouncilId": "9"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "9"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "9",
+      "locator": "D.C. Code § 4-752.01"
+    }
+  ],
+  "relations": {}
+}

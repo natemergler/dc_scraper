@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:housing",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Housing",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "housing",
+    "sourceUrl": "https://dccouncil.gov/committees/housing/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "housing"
+    }
+  ],
+  "relations": {}
+}

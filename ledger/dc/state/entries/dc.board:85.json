@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:85",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Contract Appeals Board (CAB)",
+  "attributes": {
+    "shortName": "Contract Appeals Board (CAB)",
+    "sourceBoardId": "85"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "85"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "85",
+      "locator": "D.C. Code § 2-360.01"
+    }
+  ],
+  "relations": {}
+}

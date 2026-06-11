@@ -1,0 +1,36 @@
+{
+  "id": "dc.office:mayors-office-of-nightlife-and-culture",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Nightlife and Culture",
+  "attributes": {
+    "shortName": "Mayor's Office of Nightlife and Culture",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-nightlife-and-culture",
+    "sourceOfficeKey": "mayors-office-of-nightlife-and-culture",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-nightlife-and-culture",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-nightlife-and-culture",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

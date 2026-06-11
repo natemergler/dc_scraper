@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:98",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Historic Preservation Review Board (HPRB)",
+  "attributes": {
+    "shortName": "Historic Preservation Review Board (HPRB)",
+    "sourceBoardId": "98"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "98"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "98",
+      "locator": "D.C. Code § 6-1103"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1079",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "98"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "98",
+            "locator": "D.C. Code § 6-1103"
+          }
+        ]
+      }
+    ]
+  }
+}

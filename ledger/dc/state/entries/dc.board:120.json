@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:120",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Saint Elizabeths East Redevelopment Initiative Advisory Board",
+  "attributes": {
+    "shortName": "Saint Elizabeths East Redevelopment Initiative Advisory Board",
+    "sourceBoardId": "120"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "120"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "120",
+      "locator": "Mayor's Order 2016-134"
+    }
+  ],
+  "relations": {}
+}

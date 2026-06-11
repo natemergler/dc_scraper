@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:4E05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4E05",
+  "attributes": {
+    "sourceAncId": "4E",
+    "sourceFirstName": "CAMSIE",
+    "sourceLastName": "MCADAMS",
+    "sourceRepresentativeName": "CAMSIE MCADAMS",
+    "sourceSmdId": "4E05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4E05"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E05"
+          }
+        ]
+      }
+    ]
+  }
+}

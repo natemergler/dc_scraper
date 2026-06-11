@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:61",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Zoning Adjustment (BZA)",
+  "attributes": {
+    "shortName": "Board of Zoning Adjustment",
+    "sourceBoardId": "61"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "61"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "61",
+      "locator": "D.C. Code § 6-641.07"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1019",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "61"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "61",
+            "locator": "D.C. Code § 6-641.07"
+          }
+        ]
+      }
+    ]
+  }
+}

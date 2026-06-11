@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:major-crash-review-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Major Crash Review Task Force",
+  "attributes": {
+    "enablingStatute": "§ 50–1831. Major Crash Review Task Force",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/50-1831.html",
+    "shortName": "Major Crash Review Task Force",
+    "sourceOpenDcSlug": "major-crash-review-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/major-crash-review-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "major-crash-review-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "major-crash-review-task-force",
+      "locator": "D.C. Code § 50-1831"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1048",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "major-crash-review-task-force"
+          }
+        ]
+      }
+    ]
+  }
+}

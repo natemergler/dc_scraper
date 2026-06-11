@@ -1,0 +1,20 @@
+{
+  "id": "dc.agency:school-without-walls-francis-stevens",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "School without Walls at Francis Stevens",
+  "attributes": {
+    "enablingStatute": "DCPS LSAT Guidelines",
+    "enablingStatuteUrl": "https://dcps.dc.gov/publication/local-school-advisory-team-guidelines",
+    "shortName": "School without Walls at Francis Stevens",
+    "sourceOpenDcSlug": "school-without-walls-francis-stevens",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/school-without-walls-francis-stevens"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "school-without-walls-francis-stevens"
+    }
+  ],
+  "relations": {}
+}

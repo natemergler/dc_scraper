@@ -1,0 +1,18 @@
+{
+  "id": "dc.commission:dc-america-250-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "DC America 250 Commission",
+  "attributes": {
+    "shortName": "DC America 250 Commission",
+    "sourceOpenDcSlug": "dc-america-250-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-america-250-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-america-250-commission"
+    }
+  ],
+  "relations": {}
+}

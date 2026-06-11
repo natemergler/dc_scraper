@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:kennedy-street-nw-economic-development-and-small-business-revitalization-advisory",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Kennedy Street NW Economic Development and Small Business Revitalization Advisory Committee",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 2–1210.61",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/2-1210.61.html",
+    "shortName": "Kennedy Street NW Economic Development and Small Business Revitalization Advisory Committee",
+    "sourceOpenDcSlug": "kennedy-street-nw-economic-development-and-small-business-revitalization-advisory",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/kennedy-street-nw-economic-development-and-small-business-revitalization-advisory"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "kennedy-street-nw-economic-development-and-small-business-revitalization-advisory"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "kennedy-street-nw-economic-development-and-small-business-revitalization-advisory",
+      "locator": "D.C. Code § 2-1210.61"
+    }
+  ],
+  "relations": {}
+}

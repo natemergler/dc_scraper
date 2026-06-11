@@ -1,0 +1,98 @@
+{
+  "id": "dc.anc:6C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 6C",
+  "attributes": {
+    "gisId": "ANCPly_353",
+    "representedNeighborhoods": "the Near Northeast and Stanton Park neighborhoods",
+    "sourceAncId": "6C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "6C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C07"
+          }
+        ]
+      }
+    ]
+  }
+}

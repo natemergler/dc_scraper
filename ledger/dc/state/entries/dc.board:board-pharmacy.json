@@ -1,0 +1,18 @@
+{
+  "id": "dc.board:board-pharmacy",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Pharmacy",
+  "attributes": {
+    "shortName": "Board of Pharmacy",
+    "sourceOpenDcSlug": "board-pharmacy",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-pharmacy"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-pharmacy"
+    }
+  ],
+  "relations": {}
+}

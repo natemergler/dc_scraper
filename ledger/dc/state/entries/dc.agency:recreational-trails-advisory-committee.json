@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:recreational-trails-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Recreational Trails Advisory Committee",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2007-208",
+    "shortName": "Recreational Trails Advisory Committee",
+    "sourceOpenDcSlug": "recreational-trails-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/recreational-trails-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "recreational-trails-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "recreational-trails-advisory-committee",
+      "locator": "Mayor's Order 2007-208"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1048",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "recreational-trails-advisory-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

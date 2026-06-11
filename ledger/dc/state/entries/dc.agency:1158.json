@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1158",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Captive Insurance Agency",
+  "attributes": {
+    "shortName": "Captive Insurance Agency",
+    "sourceAgencyId": "1158"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "137"
+    }
+  ],
+  "relations": {}
+}

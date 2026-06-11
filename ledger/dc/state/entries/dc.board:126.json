@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:126",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Washington Convention and Sports Authority Board of Directors (Events DC)",
+  "attributes": {
+    "shortName": "Washington Convention and Sports Authority Board of Directors (Events DC)",
+    "sourceBoardId": "126"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "126"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "126",
+      "locator": "D.C. Code § 10-1202.05"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:107",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+  "attributes": {
+    "shortName": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    "sourceBoardId": "107"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "107"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "107",
+      "locator": "D.C. Code § 9-1006"
+    }
+  ],
+  "relations": {}
+}

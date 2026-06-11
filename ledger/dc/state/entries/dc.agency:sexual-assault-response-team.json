@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:sexual-assault-response-team",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Sexual Assault Response Team",
+  "attributes": {
+    "shortName": "Sexual Assault Response Team",
+    "sourceOpenDcSlug": "sexual-assault-response-team",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/sexual-assault-response-team"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "sexual-assault-response-team"
+    }
+  ],
+  "relations": {}
+}

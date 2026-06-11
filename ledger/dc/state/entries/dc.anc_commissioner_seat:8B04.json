@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:8B04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8B04",
+  "attributes": {
+    "sourceAncId": "8B",
+    "sourceFirstName": "KIMBERLY",
+    "sourceLastName": "LITTLE",
+    "sourceRepresentativeName": "KIMBERLY LITTLE",
+    "sourceSmdId": "8B04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8B04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B04"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1088",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the DC Auditor",
+  "attributes": {
+    "shortName": "Office of the DC Auditor",
+    "sourceAgencyId": "1088"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "6"
+    }
+  ],
+  "relations": {}
+}

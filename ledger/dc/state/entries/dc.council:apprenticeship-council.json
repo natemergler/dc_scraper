@@ -1,0 +1,38 @@
+{
+  "id": "dc.council:apprenticeship-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Apprenticeship Council",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 32-1402",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/32-1402.html",
+    "shortName": "Apprenticeship Council",
+    "sourceOpenDcSlug": "apprenticeship-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/apprenticeship-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "apprenticeship-council"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "apprenticeship-council",
+      "locator": "D.C. Code § 32-1402"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1032",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "apprenticeship-council"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-polysomnography",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Polysomnography",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Polysomnography",
+    "sourceOpenDcSlug": "advisory-committee-polysomnography",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-polysomnography"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-polysomnography"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-polysomnography",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

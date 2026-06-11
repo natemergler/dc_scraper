@@ -1,0 +1,24 @@
+{
+  "id": "dc.council:mayors-interfaith-council-mic",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Mayor's Interfaith Council (MIC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2011-110",
+    "shortName": "Mayor's Interfaith Council (MIC)",
+    "sourceOpenDcSlug": "mayors-interfaith-council-mic",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-interfaith-council-mic"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-interfaith-council-mic"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-interfaith-council-mic",
+      "locator": "Mayor's Order 2011-110"
+    }
+  ],
+  "relations": {}
+}

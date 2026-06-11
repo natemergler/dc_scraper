@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-clinical-laboratory-practitioners",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Clinical Laboratory Practitioners",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 3–1202.08",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/3-1202.08.html",
+    "shortName": "Advisory Committee on Clinical Laboratory Practitioners",
+    "sourceOpenDcSlug": "advisory-committee-clinical-laboratory-practitioners",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-clinical-laboratory-practitioners"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-clinical-laboratory-practitioners"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-clinical-laboratory-practitioners",
+      "locator": "D.C. Code § 3-1202.08"
+    }
+  ],
+  "relations": {}
+}

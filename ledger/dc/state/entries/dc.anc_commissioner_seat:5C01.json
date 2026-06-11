@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:5C01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5C01",
+  "attributes": {
+    "sourceAncId": "5C",
+    "sourceFirstName": "KONYKA",
+    "sourceLastName": "DUNSON",
+    "sourceRepresentativeName": "KONYKA DUNSON",
+    "sourceSmdId": "5C01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5C01"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C01"
+          }
+        ]
+      }
+    ]
+  }
+}

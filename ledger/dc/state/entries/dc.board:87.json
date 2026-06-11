@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:87",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "DC Public Charter School Board",
+  "attributes": {
+    "shortName": "DC Public Charter School Board",
+    "sourceBoardId": "87"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "87"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "87",
+      "locator": "D.C. Code § 38-1802.14"
+    }
+  ],
+  "relations": {}
+}

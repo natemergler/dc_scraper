@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-anesthesiologist-assistants",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Anesthesiologist Assistants",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Anesthesiologist Assistants",
+    "sourceOpenDcSlug": "advisory-committee-anesthesiologist-assistants",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-anesthesiologist-assistants"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-anesthesiologist-assistants"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-anesthesiologist-assistants",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

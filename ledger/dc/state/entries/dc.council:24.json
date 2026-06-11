@@ -1,0 +1,22 @@
+{
+  "id": "dc.council:24",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Corrections Information Council (CIC)",
+  "attributes": {
+    "shortName": "Corrections Information Council (CIC)",
+    "sourceCouncilId": "24"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "24"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "24",
+      "locator": "D.C. Code § 24-101.01"
+    }
+  ],
+  "relations": {}
+}

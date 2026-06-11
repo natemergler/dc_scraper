@@ -1,0 +1,43 @@
+{
+  "id": "dc.commission:real-estate-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Real Estate Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-2853.06(h)",
+    "enablingStatuteUrl": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(h)",
+    "shortName": "Real Estate Commission",
+    "sourceOpenDcSlug": "real-estate-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/real-estate-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "real-estate-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "real-estate-commission",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "real-estate-commission",
+      "locator": "D.C. Code § 47-2853.06(h)"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1180",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-estate-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "dc.council:district-columbia-educational-opportunity-military-children-state-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "District of Columbia Educational Opportunity for Military Children State Council",
+  "attributes": {
+    "shortName": "District of Columbia Educational Opportunity for Military Children State Council",
+    "sourceOpenDcSlug": "district-columbia-educational-opportunity-military-children-state-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-educational-opportunity-military-children-state-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-educational-opportunity-military-children-state-council"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1089",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-columbia-educational-opportunity-military-children-state-council"
+          }
+        ]
+      }
+    ]
+  }
+}

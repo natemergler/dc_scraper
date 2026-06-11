@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:6E08",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 6E08",
+  "attributes": {
+    "sourceAncId": "6E",
+    "sourceSmdId": "6E08",
+    "webUrl": "http://anc6e.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6E08"
+    }
+  ],
+  "relations": {}
+}

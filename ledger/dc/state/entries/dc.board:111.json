@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:111",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Not-for-Profit Hospital Corporation Board of Directors (known as UMC, United Medical Center)",
+  "attributes": {
+    "shortName": "Not-for-Profit Hospital Corporation Board of Directors (known as UMC, United Medical Center)",
+    "sourceBoardId": "111"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "111"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "111",
+      "locator": "D.C. Code § 44-951.02"
+    }
+  ],
+  "relations": {}
+}

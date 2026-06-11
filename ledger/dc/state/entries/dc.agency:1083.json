@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1083",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Attorney General",
+  "attributes": {
+    "shortName": "Office of the Attorney General",
+    "sourceAgencyId": "1083"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "55"
+    }
+  ],
+  "relations": {}
+}

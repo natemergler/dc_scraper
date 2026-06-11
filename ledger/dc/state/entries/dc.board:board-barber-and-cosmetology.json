@@ -1,0 +1,30 @@
+{
+  "id": "dc.board:board-barber-and-cosmetology",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Barber and Cosmetology",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-2853.06(c)",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)",
+    "shortName": "Board of Barber and Cosmetology",
+    "sourceOpenDcSlug": "board-barber-and-cosmetology",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-barber-and-cosmetology"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-barber-and-cosmetology",
+      "locator": "D.C. Code § 47-2853.06(c)"
+    }
+  ],
+  "relations": {}
+}

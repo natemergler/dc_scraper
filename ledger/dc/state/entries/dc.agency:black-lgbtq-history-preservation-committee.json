@@ -1,0 +1,30 @@
+{
+  "id": "dc.agency:black-lgbtq-history-preservation-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Black LGBTQ+ History Preservation Committee",
+  "attributes": {
+    "enablingStatute": "D.C.Official Code § 2-1382",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/laws/25-176",
+    "shortName": "Black LGBTQ+ History Preservation Committee",
+    "sourceOpenDcSlug": "black-lgbtq-history-preservation-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/black-lgbtq-history-preservation-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "black-lgbtq-history-preservation-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "black-lgbtq-history-preservation-committee",
+      "locator": "D.C. Law 25-176"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "black-lgbtq-history-preservation-committee",
+      "locator": "D.C.Official Code § 2-1382"
+    }
+  ],
+  "relations": {}
+}

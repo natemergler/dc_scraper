@@ -1,0 +1,30 @@
+{
+  "id": "dc.agency:office-affordable-housing-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office to Affordable Housing Task Force",
+  "attributes": {
+    "enablingStatute": "DC Code § 22-103",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/laws/22-103.html",
+    "shortName": "Office to Affordable Housing Task Force",
+    "sourceOpenDcSlug": "office-affordable-housing-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/office-affordable-housing-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "office-affordable-housing-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "office-affordable-housing-task-force",
+      "locator": "D.C. Law 22-103"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "office-affordable-housing-task-force",
+      "locator": "DC Code § 22-103"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:board-professional-counseling",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Professional Counseling",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.13",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.13.html",
+    "shortName": "Board of Professional Counseling",
+    "sourceOpenDcSlug": "board-professional-counseling",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-professional-counseling"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-professional-counseling"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-professional-counseling",
+      "locator": "DC Code § 3-1202.13"
+    }
+  ],
+  "relations": {}
+}

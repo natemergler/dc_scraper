@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:84",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Construction Codes Coordinating Board",
+  "attributes": {
+    "shortName": "Construction Codes Coordinating Board",
+    "sourceBoardId": "84"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "84"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "84",
+      "locator": "Mayor's Order 2009-22"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1181",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "84"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "84",
+            "locator": "Mayor's Order 2009-22"
+          }
+        ]
+      }
+    ]
+  }
+}

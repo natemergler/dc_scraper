@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:45",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Medicine",
+  "attributes": {
+    "shortName": "Board of Medicine",
+    "sourceBoardId": "45"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "45"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "45",
+      "locator": "D.C. Code § 3-1202.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "45"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "45",
+            "locator": "D.C. Code § 3-1202.03"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:7B05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7B05",
+  "attributes": {
+    "sourceAncId": "7B",
+    "sourceFirstName": "ELIZABETH",
+    "sourceLastName": "REDDICK",
+    "sourceRepresentativeName": "ELIZABETH REDDICK",
+    "sourceSmdId": "7B05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7B05"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B05"
+          }
+        ]
+      }
+    ]
+  }
+}

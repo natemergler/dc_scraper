@@ -1,0 +1,40 @@
+{
+  "id": "dc.council:1",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "District of Columbia Educational Opportunity for Military Children State Council",
+  "attributes": {
+    "shortName": "District of Columbia Educational Opportunity for Military Children State Council",
+    "sourceCouncilId": "1"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "1"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "1",
+      "locator": "D.C. Code § 49-1101.20"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1089",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "1"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "1",
+            "locator": "D.C. Code § 49-1101.20"
+          }
+        ]
+      }
+    ]
+  }
+}

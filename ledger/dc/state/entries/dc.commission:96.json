@@ -1,0 +1,40 @@
+{
+  "id": "dc.commission:96",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Healthy Youth and Schools Commission",
+  "attributes": {
+    "shortName": "Healthy Youth and Schools Commission",
+    "sourceCommissionId": "96"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "96"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "96",
+      "locator": "D.C. Code § 38-827.01"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "96"
+          },
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "96",
+            "locator": "D.C. Code § 38-827.01"
+          }
+        ]
+      }
+    ]
+  }
+}

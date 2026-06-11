@@ -1,0 +1,17 @@
+{
+  "id": "dc.commission:76",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Out of School Time Grants and Youth Outcomes",
+  "attributes": {
+    "shortName": "Commission on Out of School Time Grants and Youth Outcomes",
+    "sourceCommissionId": "76"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "76"
+    }
+  ],
+  "relations": {}
+}

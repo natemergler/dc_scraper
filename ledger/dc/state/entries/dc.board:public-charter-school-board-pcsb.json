@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:public-charter-school-board-pcsb",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Public Charter School Board (PCSB)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38-1802.14",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/38-1802.14.html",
+    "shortName": "Public Charter School Board (PCSB)",
+    "sourceOpenDcSlug": "public-charter-school-board-pcsb",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-charter-school-board-pcsb"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-charter-school-board-pcsb"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-charter-school-board-pcsb",
+      "locator": "D.C. Code § 38-1802.14"
+    }
+  ],
+  "relations": {}
+}

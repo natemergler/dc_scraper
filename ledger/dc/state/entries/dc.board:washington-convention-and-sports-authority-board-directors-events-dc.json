@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:washington-convention-and-sports-authority-board-directors-events-dc",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Washington Convention and Sports Authority Board of Directors (Events DC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 10-1202.05",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/10-1202.05.html",
+    "shortName": "Washington Convention and Sports Authority Board of Directors (Events DC)",
+    "sourceOpenDcSlug": "washington-convention-and-sports-authority-board-directors-events-dc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/washington-convention-and-sports-authority-board-directors-events-dc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-convention-and-sports-authority-board-directors-events-dc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-convention-and-sports-authority-board-directors-events-dc",
+      "locator": "DC Code § 10-1202.05"
+    }
+  ],
+  "relations": {}
+}

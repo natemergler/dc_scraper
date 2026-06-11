@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:judicial-nomination-commission-jnc",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Judicial Nomination Commission (JNC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-204.34",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/1-204.34.html",
+    "shortName": "Judicial Nomination Commission (JNC)",
+    "sourceOpenDcSlug": "judicial-nomination-commission-jnc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/judicial-nomination-commission-jnc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "judicial-nomination-commission-jnc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "judicial-nomination-commission-jnc",
+      "locator": "DC Code § 1-204.34"
+    }
+  ],
+  "relations": {}
+}

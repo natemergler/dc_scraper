@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:child-fatality-review-committee-cfrc",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Child Fatality Review Committee (CFRC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 4-1371.03.",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/4-1371.03.html",
+    "shortName": "Child Fatality Review Committee (CFRC)",
+    "sourceOpenDcSlug": "child-fatality-review-committee-cfrc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/child-fatality-review-committee-cfrc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "child-fatality-review-committee-cfrc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "child-fatality-review-committee-cfrc",
+      "locator": "DC Code § 4-1371.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1006",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "child-fatality-review-committee-cfrc"
+          }
+        ]
+      }
+    ]
+  }
+}

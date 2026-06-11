@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:4A01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4A01",
+  "attributes": {
+    "sourceAncId": "4A",
+    "sourceFirstName": "PAULA",
+    "sourceLastName": "EDWARDS",
+    "sourceRepresentativeName": "PAULA Y. EDWARDS",
+    "sourceSmdId": "4A01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4A01"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4A01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4A01"
+          }
+        ]
+      }
+    ]
+  }
+}

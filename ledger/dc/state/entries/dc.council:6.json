@@ -1,0 +1,40 @@
+{
+  "id": "dc.council:6",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "State Rehabilitation Council (SRC)",
+  "attributes": {
+    "shortName": "State Rehabilitation Council (SRC)",
+    "sourceCouncilId": "6"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "6"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "6",
+      "locator": "Mayor's Order 2001-173"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1031",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "6"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "6",
+            "locator": "Mayor's Order 2001-173"
+          }
+        ]
+      }
+    ]
+  }
+}

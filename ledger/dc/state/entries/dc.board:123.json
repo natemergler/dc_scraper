@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:123",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Sustainable Energy Utility Advisory Board (SEU Advisory Board)",
+  "attributes": {
+    "shortName": "Sustainable Energy Utility Advisory Board (SEU Advisory Board)",
+    "sourceBoardId": "123"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "123"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "123",
+      "locator": "D.C. Code § 8-1774.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "123"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "123",
+            "locator": "D.C. Code § 8-1774.03"
+          }
+        ]
+      }
+    ]
+  }
+}

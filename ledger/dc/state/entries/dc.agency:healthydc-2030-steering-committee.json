@@ -1,0 +1,33 @@
+{
+  "id": "dc.agency:healthydc-2030-steering-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "HealthyDC 2030 Steering Committee",
+  "attributes": {
+    "enablingStatute": "dchealth.dc.gov/page/healthydc-2030-steering-committee",
+    "enablingStatuteUrl": "https://dchealth.dc.gov/page/healthydc-2030-steering-committee",
+    "shortName": "HealthyDC 2030 Steering Committee",
+    "sourceOpenDcSlug": "healthydc-2030-steering-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/healthydc-2030-steering-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "healthydc-2030-steering-committee"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1037",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "healthydc-2030-steering-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

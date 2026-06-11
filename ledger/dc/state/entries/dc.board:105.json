@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:105",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Lottery and Charitable Games Control Board",
+  "attributes": {
+    "shortName": "Lottery and Charitable Games Control Board",
+    "sourceBoardId": "105"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "105"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "105",
+      "locator": "D.C. Code § 3-1301"
+    }
+  ],
+  "relations": {}
+}

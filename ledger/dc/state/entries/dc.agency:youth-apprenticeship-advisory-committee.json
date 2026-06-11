@@ -1,0 +1,30 @@
+{
+  "id": "dc.agency:youth-apprenticeship-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Youth Apprenticeship Advisory Committee",
+  "attributes": {
+    "enablingStatute": "DC Code § 32–1406",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/32-1406.html",
+    "shortName": "Youth Apprenticeship Advisory Committee",
+    "sourceOpenDcSlug": "youth-apprenticeship-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/youth-apprenticeship-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "youth-apprenticeship-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "youth-apprenticeship-advisory-committee",
+      "locator": "D.C. Code § 32-1406"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "youth-apprenticeship-advisory-committee",
+      "locator": "DC Code § 32-1406"
+    }
+  ],
+  "relations": {}
+}

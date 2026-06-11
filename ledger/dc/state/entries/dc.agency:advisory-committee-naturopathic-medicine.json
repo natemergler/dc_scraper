@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:advisory-committee-naturopathic-medicine",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Advisory Committee on Naturopathic Medicine",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.03",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "shortName": "Advisory Committee on Naturopathic Medicine",
+    "sourceOpenDcSlug": "advisory-committee-naturopathic-medicine",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/advisory-committee-naturopathic-medicine"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-naturopathic-medicine"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-committee-naturopathic-medicine",
+      "locator": "DC Code § 3-1202.03"
+    }
+  ],
+  "relations": {}
+}

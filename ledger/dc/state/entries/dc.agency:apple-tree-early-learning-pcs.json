@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:apple-tree-early-learning-pcs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Apple Tree Early Learning PCS",
+  "attributes": {
+    "shortName": "Apple Tree Early Learning PCS",
+    "sourceOpenDcSlug": "apple-tree-early-learning-pcs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/apple-tree-early-learning-pcs"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "apple-tree-early-learning-pcs"
+    }
+  ],
+  "relations": {}
+}

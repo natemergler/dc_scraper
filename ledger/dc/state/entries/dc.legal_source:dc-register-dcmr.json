@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_source:dc-register-dcmr",
+  "family": "authority",
+  "kind": "dc.legal_source",
+  "name": "DC Register / DCMR",
+  "attributes": {
+    "shortName": "DC Register / DCMR",
+    "sourceIndexUrl": "https://dc.gov/page/laws-regulations-and-courts",
+    "sourceLegalEntrypointKey": "dc-register-dcmr",
+    "sourcePageUrl": "https://dcregs.dc.gov/",
+    "sourceSeeded": true
+  },
+  "citations": [
+    {
+      "source": "legal.entrypoints",
+      "sourceRecordId": "dc-register-dcmr",
+      "url": "https://dcregs.dc.gov/"
+    }
+  ],
+  "relations": {}
+}

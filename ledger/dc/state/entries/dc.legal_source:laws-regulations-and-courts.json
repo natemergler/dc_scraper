@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_source:laws-regulations-and-courts",
+  "family": "authority",
+  "kind": "dc.legal_source",
+  "name": "Laws, Regulations and Courts",
+  "attributes": {
+    "shortName": "Laws, Regulations and Courts",
+    "sourceIndexUrl": "https://dc.gov/page/laws-regulations-and-courts",
+    "sourceLegalEntrypointKey": "laws-regulations-and-courts",
+    "sourcePageUrl": "https://dc.gov/page/laws-regulations-and-courts",
+    "sourceSeeded": true
+  },
+  "citations": [
+    {
+      "source": "legal.entrypoints",
+      "sourceRecordId": "laws-regulations-and-courts",
+      "url": "https://dc.gov/page/laws-regulations-and-courts"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:40",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Industrial Trades",
+  "attributes": {
+    "shortName": "Board of Industrial Trades",
+    "sourceBoardId": "40"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "40"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "40",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

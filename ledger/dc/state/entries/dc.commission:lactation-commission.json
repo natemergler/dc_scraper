@@ -1,0 +1,18 @@
+{
+  "id": "dc.commission:lactation-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Lactation Commission",
+  "attributes": {
+    "shortName": "Lactation Commission",
+    "sourceOpenDcSlug": "lactation-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/lactation-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "lactation-commission"
+    }
+  ],
+  "relations": {}
+}

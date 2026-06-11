@@ -1,0 +1,38 @@
+{
+  "id": "dc.commission:commission-arts-and-humanities",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on the Arts and Humanities",
+  "attributes": {
+    "enablingStatute": "DC Code § 39-201 et seq",
+    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/titles/39/chapters/2/",
+    "shortName": "Commission on the Arts and Humanities",
+    "sourceOpenDcSlug": "commission-arts-and-humanities",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-arts-and-humanities"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-arts-and-humanities"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-arts-and-humanities",
+      "locator": "DC Code § 39-201"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1140",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities"
+          }
+        ]
+      }
+    ]
+  }
+}

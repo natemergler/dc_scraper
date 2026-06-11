@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:93",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Green Finance Authority Board",
+  "attributes": {
+    "shortName": "Green Finance Authority Board",
+    "sourceBoardId": "93"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "93"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "93",
+      "locator": "D.C. Law 22-155"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "93"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "93",
+            "locator": "D.C. Law 22-155"
+          }
+        ]
+      }
+    ]
+  }
+}

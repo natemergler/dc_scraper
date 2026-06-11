@@ -1,0 +1,18 @@
+{
+  "id": "dc.agency:cross-sector-collaboration-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Cross-Sector Collaboration Task Force",
+  "attributes": {
+    "shortName": "Cross-Sector Collaboration Task Force",
+    "sourceOpenDcSlug": "cross-sector-collaboration-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/cross-sector-collaboration-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "cross-sector-collaboration-task-force"
+    }
+  ],
+  "relations": {}
+}

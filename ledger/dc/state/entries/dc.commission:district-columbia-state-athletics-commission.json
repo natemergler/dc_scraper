@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:district-columbia-state-athletics-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "District of Columbia State Athletics Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38–2661.11",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/titles/38/chapters/26A-i/subchapters/II/index.html",
+    "shortName": "District of Columbia State Athletics Commission",
+    "sourceOpenDcSlug": "district-columbia-state-athletics-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-state-athletics-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-state-athletics-commission"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-state-athletics-commission",
+      "locator": "D.C. Code § 38-2661.11"
+    }
+  ],
+  "relations": {}
+}

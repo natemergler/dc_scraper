@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:89",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "District of Columbia Retirement Board",
+  "attributes": {
+    "shortName": "District of Columbia Retirement Board",
+    "sourceBoardId": "89"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "89"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "89",
+      "locator": "D.C. Code § 1-711"
+    }
+  ],
+  "relations": {}
+}

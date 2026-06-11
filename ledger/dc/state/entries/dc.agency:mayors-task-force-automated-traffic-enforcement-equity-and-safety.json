@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:mayors-task-force-automated-traffic-enforcement-equity-and-safety",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Task Force on Automated Traffic Enforcement Equity and Safety",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2023-046",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/DCR/Issues/IssueCategoryList.aspx?DownloadFile=%7B9613A16E-EC53-4DC6-85E4-531F44993CA0%7D",
+    "shortName": "Mayor's Task Force on Automated Traffic Enforcement Equity and Safety",
+    "sourceOpenDcSlug": "mayors-task-force-automated-traffic-enforcement-equity-and-safety",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-task-force-automated-traffic-enforcement-equity-and-safety"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-task-force-automated-traffic-enforcement-equity-and-safety"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-task-force-automated-traffic-enforcement-equity-and-safety",
+      "locator": "Mayor's Order 2023-046"
+    }
+  ],
+  "relations": {}
+}

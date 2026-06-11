@@ -1,0 +1,25 @@
+{
+  "id": "dc.commission:commission-re-entry-and-returning-citizen-affairs",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Re-Entry and Returning Citizen Affairs",
+  "attributes": {
+    "enablingStatute": "D. C. Code § 24-1303",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/24-1303.html",
+    "shortName": "Commission on Re-Entry and Returning Citizen Affairs",
+    "sourceOpenDcSlug": "commission-re-entry-and-returning-citizen-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-re-entry-and-returning-citizen-affairs"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs",
+      "locator": "D. C. Code § 24-1303"
+    }
+  ],
+  "relations": {}
+}

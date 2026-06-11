@@ -1,0 +1,25 @@
+{
+  "id": "dc.council:condominium-association-advisory-council-caac",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Condominium Association Advisory Council (CAAC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 42–1903.08a",
+    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/42-1903.08a.html",
+    "shortName": "Condominium Association Advisory Council (CAAC)",
+    "sourceOpenDcSlug": "condominium-association-advisory-council-caac",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/condominium-association-advisory-council-caac"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "condominium-association-advisory-council-caac"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "condominium-association-advisory-council-caac",
+      "locator": "D.C. Code § 42-1903.08a"
+    }
+  ],
+  "relations": {}
+}

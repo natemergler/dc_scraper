@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1068",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Administrative Hearings",
+  "attributes": {
+    "shortName": "Office of Administrative Hearings",
+    "sourceAgencyId": "1068"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "56"
+    }
+  ],
+  "relations": {}
+}

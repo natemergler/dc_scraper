@@ -1,0 +1,19 @@
+{
+  "id": "dc.agency:executive-office-mayor",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Executive Office of the Mayor",
+  "attributes": {
+    "enablingStatute": "EOM",
+    "shortName": "Executive Office of the Mayor",
+    "sourceOpenDcSlug": "executive-office-mayor",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/executive-office-mayor"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "executive-office-mayor"
+    }
+  ],
+  "relations": {}
+}

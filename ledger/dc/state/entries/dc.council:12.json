@@ -1,0 +1,40 @@
+{
+  "id": "dc.council:12",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Financial Literacy Council",
+  "attributes": {
+    "shortName": "Financial Literacy Council",
+    "sourceCouncilId": "12"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "12"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "12",
+      "locator": "D.C. Code § 38-731.03"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1042",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "12"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "12",
+            "locator": "D.C. Code § 38-731.03"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:office-employee-appeals-oea",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Employee Appeals (OEA)",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-606.01",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/1-606.01.html",
+    "shortName": "Office of Employee Appeals (OEA)",
+    "sourceOpenDcSlug": "office-employee-appeals-oea",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/office-employee-appeals-oea"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "office-employee-appeals-oea"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "office-employee-appeals-oea",
+      "locator": "DC Code § 1-606.01"
+    }
+  ],
+  "relations": {}
+}

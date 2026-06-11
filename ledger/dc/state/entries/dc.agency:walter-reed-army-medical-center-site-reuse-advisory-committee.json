@@ -1,0 +1,25 @@
+{
+  "id": "dc.agency:walter-reed-army-medical-center-site-reuse-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Walter Reed Army Medical Center Site Reuse Advisory Committee",
+  "attributes": {
+    "enablingStatute": "DC Code § 10-1906",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/10-1906.html",
+    "shortName": "Walter Reed Army Medical Center Site Reuse Advisory Committee",
+    "sourceOpenDcSlug": "walter-reed-army-medical-center-site-reuse-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/walter-reed-army-medical-center-site-reuse-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "walter-reed-army-medical-center-site-reuse-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "walter-reed-army-medical-center-site-reuse-advisory-committee",
+      "locator": "DC Code § 10-1906"
+    }
+  ],
+  "relations": {}
+}

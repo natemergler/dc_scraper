@@ -1,0 +1,17 @@
+{
+  "id": "dc.board:125",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "United Planning Organization Board of Directors (UPO)",
+  "attributes": {
+    "shortName": "United Planning Organization Board of Directors (UPO)",
+    "sourceBoardId": "125"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "125"
+    }
+  ],
+  "relations": {}
+}

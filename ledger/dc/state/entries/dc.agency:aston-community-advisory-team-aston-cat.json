@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:aston-community-advisory-team-aston-cat",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Aston Community Advisory Team (Aston CAT)",
+  "attributes": {
+    "shortName": "Aston Community Advisory Team (Aston CAT)",
+    "sourceOpenDcSlug": "aston-community-advisory-team-aston-cat",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/aston-community-advisory-team-aston-cat"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "aston-community-advisory-team-aston-cat"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1041",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "aston-community-advisory-team-aston-cat"
+          }
+        ]
+      }
+    ]
+  }
+}

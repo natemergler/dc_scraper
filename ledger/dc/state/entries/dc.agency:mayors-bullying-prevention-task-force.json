@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:mayors-bullying-prevention-task-force",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Bullying Prevention Task Force",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2012-150",
+    "shortName": "Mayor's Bullying Prevention Task Force",
+    "sourceOpenDcSlug": "mayors-bullying-prevention-task-force",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-bullying-prevention-task-force"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-bullying-prevention-task-force"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-bullying-prevention-task-force",
+      "locator": "Mayor's Order 2012-150"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1075",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "mayors-bullying-prevention-task-force"
+          }
+        ]
+      }
+    ]
+  }
+}

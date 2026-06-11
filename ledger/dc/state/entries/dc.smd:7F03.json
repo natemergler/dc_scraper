@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:7F03",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 7F03",
+  "attributes": {
+    "sourceAncId": "7F",
+    "sourceSmdId": "7F03",
+    "webUrl": "https://anc7f.com/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7F03"
+    }
+  ],
+  "relations": {}
+}

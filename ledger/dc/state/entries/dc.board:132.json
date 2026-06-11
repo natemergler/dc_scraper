@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:132",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Advisory Board on Veterans Affairs for the District of Columbia",
+  "attributes": {
+    "shortName": "Advisory Board on Veterans Affairs",
+    "sourceBoardId": "132"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "132"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "132",
+      "locator": "Mayor's Order 2001-92"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1060",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132",
+            "locator": "Mayor's Order 2001-92"
+          }
+        ]
+      }
+    ]
+  }
+}

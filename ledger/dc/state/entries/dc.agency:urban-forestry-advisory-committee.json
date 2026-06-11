@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:urban-forestry-advisory-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Urban Forestry Advisory Committee",
+  "attributes": {
+    "enablingStatute": "2015-260; D.C. Act 21-386",
+    "enablingStatuteUrl": "http://doee.dc.gov/ufac",
+    "shortName": "Urban Forestry Advisory Committee",
+    "sourceOpenDcSlug": "urban-forestry-advisory-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/urban-forestry-advisory-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "urban-forestry-advisory-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "urban-forestry-advisory-committee",
+      "locator": "D.C. Act 21-386"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1033",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "urban-forestry-advisory-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

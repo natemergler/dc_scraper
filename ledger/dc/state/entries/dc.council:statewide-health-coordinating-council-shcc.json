@@ -1,0 +1,38 @@
+{
+  "id": "dc.council:statewide-health-coordinating-council-shcc",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Statewide Health Coordinating Council (SHCC)",
+  "attributes": {
+    "enablingStatute": "DC Code 44-403",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/44-403.html",
+    "shortName": "Statewide Health Coordinating Council (SHCC)",
+    "sourceOpenDcSlug": "statewide-health-coordinating-council-shcc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/statewide-health-coordinating-council-shcc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "statewide-health-coordinating-council-shcc"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "statewide-health-coordinating-council-shcc",
+      "locator": "DC Code § 44-403"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1028",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "statewide-health-coordinating-council-shcc"
+          }
+        ]
+      }
+    ]
+  }
+}

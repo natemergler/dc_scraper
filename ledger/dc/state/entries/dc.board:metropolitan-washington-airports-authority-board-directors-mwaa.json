@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:metropolitan-washington-airports-authority-board-directors-mwaa",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+  "attributes": {
+    "enablingStatute": "DC Code § 9-1006",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/9-1006.html",
+    "shortName": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    "sourceOpenDcSlug": "metropolitan-washington-airports-authority-board-directors-mwaa",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/metropolitan-washington-airports-authority-board-directors-mwaa"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa",
+      "locator": "DC Code § 9-1006"
+    }
+  ],
+  "relations": {}
+}

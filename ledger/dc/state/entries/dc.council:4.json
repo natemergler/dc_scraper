@@ -1,0 +1,40 @@
+{
+  "id": "dc.council:4",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Developmental Disabilities State Planning Council (DD Council)",
+  "attributes": {
+    "shortName": "Developmental Disabilities State Planning Council (DD Council)",
+    "sourceCouncilId": "4"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "4"
+    },
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "4",
+      "locator": "Mayor's Order 2009-165"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1072",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "4"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "4",
+            "locator": "Mayor's Order 2009-165"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:board-massage-therapy",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Massage Therapy",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.15",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.15.html",
+    "shortName": "Board of Massage Therapy",
+    "sourceOpenDcSlug": "board-massage-therapy",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-massage-therapy"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-massage-therapy"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-massage-therapy",
+      "locator": "DC Code § 3-1202.15"
+    }
+  ],
+  "relations": {}
+}

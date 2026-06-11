@@ -1,0 +1,38 @@
+{
+  "id": "dc.commission:housing-authority-board-commissioners",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Housing Authority Board of Commissioners",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 6-211",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-211.html",
+    "shortName": "Housing Authority Board of Commissioners",
+    "sourceOpenDcSlug": "housing-authority-board-commissioners",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/housing-authority-board-commissioners"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-authority-board-commissioners"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-authority-board-commissioners",
+      "locator": "D.C. Code § 6-211"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1017",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-authority-board-commissioners"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:uniform-student-funding-formula-task-force-working-group",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Uniform Per-Student Funding Formula Task-force Working Group",
+  "attributes": {
+    "enablingStatute": "DC Code § 38-2911(c)",
+    "shortName": "Uniform Per-Student Funding Formula Task-force Working Group",
+    "sourceOpenDcSlug": "uniform-student-funding-formula-task-force-working-group",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/uniform-student-funding-formula-task-force-working-group"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "uniform-student-funding-formula-task-force-working-group"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "uniform-student-funding-formula-task-force-working-group",
+      "locator": "DC Code § 38-2911(c)"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "uniform-student-funding-formula-task-force-working-group"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.board:board-optometry",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Optometry",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.07",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.07.html",
+    "shortName": "Board of Optometry",
+    "sourceOpenDcSlug": "board-optometry",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-optometry"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-optometry"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-optometry",
+      "locator": "DC Code § 3-1202.07"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,30 @@
+{
+  "id": "dc.council:2",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Interagency Coordinating Council (ICC)",
+  "attributes": {
+    "shortName": "Interagency Coordinating Council (ICC)",
+    "sourceCouncilId": "2"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "2"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1097",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "2"
+          }
+        ]
+      }
+    ]
+  }
+}

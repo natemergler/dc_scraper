@@ -1,0 +1,17 @@
+{
+  "id": "dc.board:128",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Washington Metropolitan Area Transit Authority Board of Directors (WMATA)",
+  "attributes": {
+    "shortName": "Washington Metropolitan Area Transit Authority Board of Directors (WMATA)",
+    "sourceBoardId": "128"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "128"
+    }
+  ],
+  "relations": {}
+}

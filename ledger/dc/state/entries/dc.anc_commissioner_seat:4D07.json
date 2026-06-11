@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:4D07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4D07",
+  "attributes": {
+    "sourceAncId": "4D",
+    "sourceFirstName": "KAYLA",
+    "sourceLastName": "BAKER",
+    "sourceRepresentativeName": "KAYLA D. BAKER",
+    "sourceSmdId": "4D07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4D07"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4D07"
+          }
+        ]
+      }
+    ]
+  }
+}

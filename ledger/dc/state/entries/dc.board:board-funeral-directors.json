@@ -1,0 +1,43 @@
+{
+  "id": "dc.board:board-funeral-directors",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Funeral Directors",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47–2853.06(f)",
+    "enablingStatuteUrl": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(f)",
+    "shortName": "Board of Funeral Directors",
+    "sourceOpenDcSlug": "board-funeral-directors",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-funeral-directors"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-funeral-directors"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-funeral-directors",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-funeral-directors",
+      "locator": "D.C. Code § 47-2853.06(f)"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1180",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-funeral-directors"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "dc.board:alcoholic-beverage-and-cannabis-board-abc-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Alcoholic Beverage and Cannabis Board (ABC Board)",
+  "attributes": {
+    "enablingStatute": "DC Code § 25-201",
+    "enablingStatuteUrl": "http://dccode.org/simple/sections/25-201.html",
+    "shortName": "Alcoholic Beverage and Cannabis Board (ABC Board)",
+    "sourceOpenDcSlug": "alcoholic-beverage-and-cannabis-board-abc-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/alcoholic-beverage-and-cannabis-board-abc-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board",
+      "locator": "DC Code § 25-201"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1001",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:1059",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Religious Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office of Religious Affairs",
+    "sourceAgencyId": "1059"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "75"
+    }
+  ],
+  "relations": {}
+}

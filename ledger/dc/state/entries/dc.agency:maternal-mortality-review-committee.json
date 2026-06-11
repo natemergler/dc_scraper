@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:maternal-mortality-review-committee",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Maternal Mortality Review Committee",
+  "attributes": {
+    "enablingStatute": "DC Code Section 7-671.02",
+    "enablingStatuteUrl": "https://ocme.dc.gov/page/committees-under-ocme-supervision",
+    "shortName": "Maternal Mortality Review Committee",
+    "sourceOpenDcSlug": "maternal-mortality-review-committee",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/maternal-mortality-review-committee"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "maternal-mortality-review-committee"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "maternal-mortality-review-committee",
+      "locator": "DC Code § 7-671.02"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1085",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "maternal-mortality-review-committee"
+          }
+        ]
+      }
+    ]
+  }
+}

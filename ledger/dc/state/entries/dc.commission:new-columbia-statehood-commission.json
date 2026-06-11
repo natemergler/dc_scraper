@@ -1,0 +1,18 @@
+{
+  "id": "dc.commission:new-columbia-statehood-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "New Columbia Statehood Commission",
+  "attributes": {
+    "shortName": "New Columbia Statehood Commission",
+    "sourceOpenDcSlug": "new-columbia-statehood-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/new-columbia-statehood-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "new-columbia-statehood-commission"
+    }
+  ],
+  "relations": {}
+}

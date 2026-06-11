@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:28",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board for the Condemnation of Insanitary Buildings",
+  "attributes": {
+    "shortName": "Board for the Condemnation of Insanitary Buildings",
+    "sourceBoardId": "28"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "28"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "28",
+      "locator": "D.C. Code § 6-902"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1181",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "28"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "28",
+            "locator": "D.C. Code § 6-902"
+          }
+        ]
+      }
+    ]
+  }
+}

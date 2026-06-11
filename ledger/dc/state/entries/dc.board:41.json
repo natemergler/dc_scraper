@@ -1,0 +1,22 @@
+{
+  "id": "dc.board:41",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Library Trustees",
+  "attributes": {
+    "shortName": "Board of Library Trustees",
+    "sourceBoardId": "41"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "41"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "41",
+      "locator": "D.C. Code § 39-104"
+    }
+  ],
+  "relations": {}
+}

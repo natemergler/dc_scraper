@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:5F01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5F01",
+  "attributes": {
+    "sourceAncId": "5F",
+    "sourceFirstName": "NICOLE",
+    "sourceLastName": "JONES",
+    "sourceRepresentativeName": "NICOLE G. JONES",
+    "sourceSmdId": "5F01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5F01"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5F01"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "dc.agency:department-hire-vehicles",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of For-Hire Vehicles",
+  "attributes": {
+    "enablingStatute": "DC Code § 50-301.10a",
+    "shortName": "Department of For-Hire Vehicles",
+    "sourceOpenDcSlug": "department-hire-vehicles",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/department-hire-vehicles"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-hire-vehicles"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-hire-vehicles",
+      "locator": "DC Code § 50-301.10a"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1035",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "department-hire-vehicles"
+          }
+        ]
+      }
+    ]
+  }
+}

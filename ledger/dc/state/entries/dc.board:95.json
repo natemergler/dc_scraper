@@ -1,0 +1,40 @@
+{
+  "id": "dc.board:95",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Health Information Exchange Policy Board (HIE)",
+  "attributes": {
+    "shortName": "Health Information Exchange Policy Board (HIE)",
+    "sourceBoardId": "95"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "95"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "95",
+      "locator": "Mayor's Order 2016-035"
+    }
+  ],
+  "relations": {
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:1038",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "95"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "95",
+            "locator": "Mayor's Order 2016-035"
+          }
+        ]
+      }
+    ]
+  }
+}
