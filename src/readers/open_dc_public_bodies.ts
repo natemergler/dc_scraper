@@ -327,6 +327,9 @@ function sanitizeEnablingStatuteText(text?: string): string | undefined {
   if (!text) {
     return undefined;
   }
+  if (/^(?:n\/?a|none)$/i.test(text.trim())) {
+    return undefined;
+  }
   if (/\b(?:meeting|agenda)\s*#?\d+\b/i.test(text)) {
     return undefined;
   }

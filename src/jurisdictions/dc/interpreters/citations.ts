@@ -29,6 +29,7 @@ const CFR_SECTION_LIST = /\b\d+\s*CFR\s*§{2}\s*[0-9][0-9A-Za-z.\-\s,()]+/gi;
 // Match CFR citations without § that contain one or more section items.
 const CFR_NO_SECTION_LIST = /\b\d+\s*CFR\s*(?!§)\s*[0-9][^!?]*/gi;
 const USC_PATTERN = /\b\d+\s*U\.?S\.?C\.?\s*§?\s*[0-9]+[0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
+const US_CODE_PATTERN = /\b\d+\s*U\.?S\.?\s*Code\s*§?\s*[0-9]+[0-9A-Za-z.\-]*(?:\([^)]+\))*/gi;
 const USC_SINGLE_RANGE =
   /\b\d+\s*U\.?S\.?C\.?\s*§?\s*[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\s*(?:[\u2013\u2014]|-(?=[0-9])|\s+(?:to|through)\s+)[0-9]+(?:\.[0-9]+)*(?:\([^)]+\))*\b/gi;
 const USC_SECTION_LIST = /\b\d+\s*U\.?S\.?C\.?\s*§{2}\s*[0-9][0-9A-Za-z.\-\s,()]+/gi;
@@ -131,6 +132,13 @@ function expandDCCitationRange(locator: string): string[] | null {
 }
 
 function normalizeSingleCitation(locator: string): string[] {
+  const usCodeMatch = locator.match(
+    /^([0-9]+)\s*U\.?S\.?\s*Code\s*§?\s*([0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*)$/i,
+  );
+  if (usCodeMatch) {
+    return [`${usCodeMatch[1]} U.S.C. § ${usCodeMatch[2].trim()}`];
+  }
+
   if (locator.includes("§")) {
     return [locator];
   }
@@ -411,6 +419,7 @@ export function parseLegalCitationLocators(payload: Record<string, unknown>): st
       ...extractFromPattern(text, USC_SINGLE_RANGE),
       ...extractFromPattern(text, CFR_PATTERN),
       ...extractFromPattern(text, USC_PATTERN),
+      ...extractFromPattern(text, US_CODE_PATTERN),
     ];
     for (const match of matches) {
       const normalizedLocators = normalizeSingleCitation(match);

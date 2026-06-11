@@ -374,6 +374,48 @@ Deno.test("OpenDCPublicBodiesReader suppresses meeting-title enabling statute va
   assertEquals(record.payload.governingAgency, "MOPI");
 });
 
+Deno.test("OpenDCPublicBodiesReader suppresses n/a enabling statute values", async () => {
+  const detail = `
+    <html>
+    <body>
+      <h3>Enabling Statute or Mayoral Order</h3>
+      <p>N/A</p>
+      <h3>Governing Agency or Agency Acronym</h3>
+      <p>Office of Planning (OP)</p>
+    </body>
+    </html>
+  `;
+
+  const index =
+    `<a href="/public-bodies/apple-tree-early-learning-pcs/">AppleTree Early Learning PCS</a>`;
+
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("apple-tree-early-learning-pcs")) {
+        return new Response(detail, { status: 200 });
+      }
+      return new Response(index, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records.length, 1);
+  assertEquals(result.records[0].payload.enablingStatute, undefined);
+  assertEquals(result.records[0].payload.enablingStatuteUrl, undefined);
+});
+
 Deno.test("OpenDCPublicBodiesReader excludes contact, members, meetings data", async () => {
   const source: OpenDCPublicBodiesSource = {
     id: "open_dc.public_bodies",

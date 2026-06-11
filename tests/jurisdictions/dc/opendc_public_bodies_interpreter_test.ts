@@ -352,6 +352,10 @@ Deno.test("open_dc.public_bodies creates finding for unresolvable agency label",
     (f) => f.code === "dc.interpreter.opendc_governing_agency_unresolved",
   );
   assertEquals(unresolvedFinding !== undefined, true);
+  assertEquals(
+    unresolvedFinding!.message,
+    'Public body "Test Board" has governing agency "Department of Administrative Services" that does not resolve to a known agency in lookup',
+  );
 });
 
 Deno.test("open_dc.public_bodies reports likely duplicate bodies when normalized names collide across slugs", () => {
