@@ -44,6 +44,7 @@ import { type DcInterpreterContext } from "./interpreters/context.ts";
 import { type Revision } from "../../core/types.ts";
 import type { PromotionPolicy } from "../../compiler/promotion.ts";
 import { dcPromotionPolicy } from "./promotion.ts";
+import type { SourceCoverageCatalogItem } from "../../export/export.ts";
 
 export const dcJurisdiction = "dc";
 
@@ -64,6 +65,7 @@ export interface DcJurisdictionRuntime {
   kinds: KindRegistry;
   sources: DcSourceBinding[];
   promotionPolicy: PromotionPolicy;
+  sourceCoverage: SourceCoverageCatalogItem[];
   revisions: Revision[];
 }
 
@@ -112,6 +114,152 @@ export const dcRuntime: DcJurisdictionRuntime = {
     legalEntrypointsBinding,
     mayorExecutiveStructureBinding,
     oancProfilesBinding,
+  ],
+  sourceCoverage: [
+    {
+      source: "bega.structure",
+      sourceType: "bega.structure",
+      family: "institutional_structure",
+      scope:
+        "Board of Ethics and Government Accountability, Office of Government Ethics, and Office of Open Government institutional structure pages.",
+      contributes: "BEGA/OGE/OOG organization entries and source-backed part_of relations.",
+      excludes: "Staff, contacts, forms, events, and broad ethics/legal databases.",
+    },
+    {
+      source: "dccouncil.committees",
+      sourceType: "dccouncil.committees",
+      family: "council_structure",
+      scope: "Council committee pages and membership lists from official Council web pages.",
+      contributes:
+        "Council committee entries, chair relations, and committee membership relations.",
+      excludes:
+        "Legislation, hearing records, staff biographies, contacts, and committee document archives.",
+    },
+    {
+      source: "dccouncil.members",
+      sourceType: "dccouncil.members",
+      family: "council_structure",
+      scope: "Official Councilmember roster/profile links.",
+      contributes: "Councilmember entries used by committee membership and chair relations.",
+      excludes:
+        "Personal contact details, biographies beyond names/official profile URLs, newsletters, and campaign material.",
+    },
+    {
+      source: "dccourts.structure",
+      sourceType: "dccourts.structure",
+      family: "judicial_structure",
+      scope:
+        "DC Courts home, Court of Appeals, Superior Court, and direct Superior Court division links.",
+      contributes:
+        "Court system, court, and court division entries with part_of relations when collected.",
+      excludes:
+        "Case search, filings, calendars, judges/staff profiles, contacts, and legal advice.",
+      notes:
+        "Live collection from this environment has returned HTTP 403; fixture and CLI coverage exist, but current committed state has no live courts records.",
+    },
+    {
+      source: "dcgis.agencies",
+      sourceType: "arcgis.table",
+      family: "executive_agencies",
+      scope: "DCGIS agency table.",
+      contributes:
+        "Core agency entries and agency name lookup context for source-backed relation endpoint resolution.",
+      excludes: "Contacts, service directories, and non-agency program pages.",
+    },
+    {
+      source: "dcgis.ancs",
+      sourceType: "arcgis.table",
+      family: "advisory_neighborhood_commissions",
+      scope: "DCGIS ANC boundary/source table.",
+      contributes: "ANC entries and identifiers used by SMD containment relations.",
+      excludes: "Commissioner contact data, meeting details, and financial records.",
+    },
+    {
+      source: "dcgis.authorities",
+      sourceType: "arcgis.table",
+      family: "public_bodies",
+      scope: "DCGIS Government Operations layer filtered to TYPE = 'Authority'.",
+      contributes: "Authority entries and governance relations when live rows exist.",
+      excludes: "Boards, commissions, councils, contacts, and membership rosters.",
+      notes:
+        "Current live layer has no Authority rows; this is collected-empty source coverage, not a failed source.",
+    },
+    {
+      source: "dcgis.boards",
+      sourceType: "arcgis.table",
+      family: "public_bodies",
+      scope: "DCGIS Government Operations layer filtered to TYPE = 'Board'.",
+      contributes: "Board entries, governing agency relations, and legal/provenance citations.",
+      excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
+    },
+    {
+      source: "dcgis.commissions",
+      sourceType: "arcgis.table",
+      family: "public_bodies",
+      scope: "DCGIS Government Operations layer filtered to TYPE = 'Commission'.",
+      contributes:
+        "Commission entries, governing agency relations, and legal/provenance citations.",
+      excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
+    },
+    {
+      source: "dcgis.councils",
+      sourceType: "arcgis.table",
+      family: "public_bodies",
+      scope: "DCGIS Government Operations layer filtered to TYPE = 'Council'.",
+      contributes: "Council entries, governing agency relations, and legal/provenance citations.",
+      excludes:
+        "Council committees, Councilmember offices, contacts, membership rosters, and source-shadow merge decisions.",
+    },
+    {
+      source: "dcgis.smds",
+      sourceType: "arcgis.table",
+      family: "advisory_neighborhood_commissions",
+      scope: "DCGIS SMD boundary/source table.",
+      contributes:
+        "SMD entries, ANC containment relations, commissioner seat entries, and seat-to-SMD representation relations.",
+      excludes:
+        "Commissioner emails, phone numbers, addresses, meeting locations, and broad person profiles.",
+    },
+    {
+      source: "legal.entrypoints",
+      sourceType: "legal.entrypoints",
+      family: "legal_provenance",
+      scope:
+        "Official legal entrypoint anchors for Code, Register/DCMR, laws/regulations/courts, and Mayor's Orders.",
+      contributes: "Legal source anchor entries for provenance and inspection.",
+      excludes:
+        "Full legal databases, section/rule/order entities, legal interpretation, and completeness claims.",
+    },
+    {
+      source: "mayor.executive_structure",
+      sourceType: "mayor.executive_structure",
+      family: "executive_structure",
+      scope: "Official Mayor/DC.gov executive branch and organizational-chart pages.",
+      contributes:
+        "Mayor/EOM office entries plus part_of and reports_to relations where source-backed.",
+      excludes:
+        "Staff biographies, initiatives, programs, events, contacts, stale successor choices, and silent agency merges.",
+    },
+    {
+      source: "oanc.profiles",
+      sourceType: "oanc.profiles",
+      family: "advisory_neighborhood_commissions",
+      scope: "Official OANC ANC index and profile pages.",
+      contributes:
+        "ANC profile URLs and represented-neighborhood summaries where conservatively extractable.",
+      excludes:
+        "Emails, phones, physical addresses, meeting locations, financial document details, commissioner contact fields, and broad person records.",
+    },
+    {
+      source: "open_dc.public_bodies",
+      sourceType: "open_dc.public_bodies",
+      family: "public_bodies",
+      scope: "Open DC public body index/detail pages.",
+      contributes:
+        "Public body entries, legal/provenance citations, duplicate/source-shadow signals, and governing/administering relation candidates.",
+      excludes:
+        "Contacts, member lists, meeting pages, local file links, event-title authority noise, and automatic duplicate merges.",
+    },
   ],
   revisions: [],
 };
