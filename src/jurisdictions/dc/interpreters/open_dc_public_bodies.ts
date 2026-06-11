@@ -5,7 +5,7 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { parseLegalCitationLocators } from "./citations.ts";
+import { parseLegalCitationLocators, parseLegalCitationLocatorsFromUrl } from "./citations.ts";
 import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
@@ -141,13 +141,14 @@ function resolveAgencyRelation(
 }
 
 function getAgencyRelationFinding(
-  name: string,
+  subjectName: string,
+  agencyLabel: string,
   subjectProvisionalId: string,
   context?: DcInterpreterContext,
 ): { code: string; message: string } | undefined {
-  if (!name || isNonRelationshipLabel(name)) return undefined;
+  if (!agencyLabel || isNonRelationshipLabel(agencyLabel)) return undefined;
 
-  const normalized = normalizeAgencyLookupKey(name);
+  const normalized = normalizeAgencyLookupKey(agencyLabel);
 
   if (context?.agencyLookup) {
     const resolvedId = context.agencyLookup.get(normalized);
@@ -156,26 +157,27 @@ function getAgencyRelationFinding(
       if (fullId === subjectProvisionalId) {
         return {
           code: "dc.interpreter.opendc_governing_agency_self_reference",
-          message: `Public body "${name}" has governing agency "${name}" that resolves to self`,
+          message:
+            `Public body "${subjectName}" has governing agency "${agencyLabel}" that resolves to self`,
         };
       }
       return {
         code: "dc.interpreter.opendc_governing_agency_unresolved",
         message:
-          `Public body "${name}" has governing agency "${name}" that does not resolve to a known agency in lookup`,
+          `Public body "${subjectName}" has governing agency "${agencyLabel}" that does not resolve to a known agency in lookup`,
       };
     }
     return {
       code: "dc.interpreter.opendc_governing_agency_unresolved",
       message:
-        `Public body "${name}" has governing agency "${name}" that does not resolve to a known agency in lookup`,
+        `Public body "${subjectName}" has governing agency "${agencyLabel}" that does not resolve to a known agency in lookup`,
     };
   }
 
   return {
     code: "dc.interpreter.opendc_governing_agency_unresolved",
     message:
-      `Public body "${name}" has governing agency "${name}" but no agency lookup is available`,
+      `Public body "${subjectName}" has governing agency "${agencyLabel}" but no agency lookup is available`,
   };
 }
 
@@ -302,8 +304,12 @@ export function interpretOpenDCPublicBodies(
     const legalLocators = parsed.enablingStatute
       ? parseLegalCitationLocators({ LEGAL_REFERENCE: parsed.enablingStatute })
       : [];
+    const urlLegalLocators = parsed.enablingStatuteUrl
+      ? parseLegalCitationLocatorsFromUrl(parsed.enablingStatuteUrl)
+      : [];
+    const sourceLegalLocators = [...new Set([...legalLocators, ...urlLegalLocators])].sort();
 
-    for (const locator of legalLocators) {
+    for (const locator of sourceLegalLocators) {
       citations.push(cite(sourceKind, parsed.record.key, { locator }));
     }
 
@@ -349,6 +355,7 @@ export function interpretOpenDCPublicBodies(
       });
     } else if (parsed.governingAgency) {
       const finding = getAgencyRelationFinding(
+        parsed.name,
         parsed.governingAgency,
         parsed.provisionalId,
         context,
@@ -380,6 +387,7 @@ export function interpretOpenDCPublicBodies(
       });
     } else if (parsed.administeringAgency) {
       const finding = getAgencyRelationFinding(
+        parsed.name,
         parsed.administeringAgency,
         parsed.provisionalId,
         context,
@@ -394,7 +402,7 @@ export function interpretOpenDCPublicBodies(
       }
     }
 
-    if (parsed.enablingStatute && legalLocators.length === 0) {
+    if (parsed.enablingStatute && sourceLegalLocators.length === 0) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_unparsed",

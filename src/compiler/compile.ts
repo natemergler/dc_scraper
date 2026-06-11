@@ -524,18 +524,27 @@ function sortUniqueCitations(citations: CitationValue[]): CitationValue[] {
   const unique: CitationValue[] = [];
   for (const citation of citations) {
     if (!isCitationValue(citation)) continue;
-    const key = "source" in citation
-      ? `${citation.source}:${citation.sourceRecordId}`
-      : `uncited:${citation.uncited ? citation.reason ?? "" : ""}`;
+    const key = citationIdentity(citation);
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(citation);
   }
   return unique.sort((left, right) => {
-    const leftSource = "source" in left ? `${left.source}:${left.sourceRecordId}` : "";
-    const rightSource = "source" in right ? `${right.source}:${right.sourceRecordId}` : "";
-    return leftSource.localeCompare(rightSource);
+    return citationIdentity(left).localeCompare(citationIdentity(right));
   });
+}
+
+function citationIdentity(citation: CitationValue): string {
+  if ("source" in citation) {
+    return [
+      "source",
+      citation.source,
+      citation.sourceRecordId,
+      citation.locator ?? "",
+      citation.url ?? "",
+    ].join(":");
+  }
+  return `uncited:${citation.reason ?? ""}`;
 }
 
 function validateAndSortState(

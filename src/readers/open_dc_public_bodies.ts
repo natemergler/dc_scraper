@@ -239,7 +239,11 @@ function parseDetailPage(html: string): {
   function setField(fieldName: string, value: { text: string; url?: string }) {
     const normalized = resolveFieldAlias(normalizeFieldName(fieldName));
     if (!fields[normalized]) {
-      fields[normalized] = value;
+      const sanitizedUrl = value.url ? sanitizeSourceUrl(value.url) : undefined;
+      fields[normalized] = {
+        text: value.text,
+        ...(sanitizedUrl ? { url: sanitizedUrl } : {}),
+      };
     }
   }
 
@@ -291,9 +295,12 @@ function parseDetailPage(html: string): {
     setField(fieldName, { text: fieldValue });
   }
 
+  const enablingStatuteField = fields["enabling statute or mayoral order"];
+  const enablingStatute = sanitizeEnablingStatuteText(enablingStatuteField?.text);
+
   return {
-    enablingStatute: fields["enabling statute or mayoral order"]?.text,
-    enablingStatuteUrl: fields["enabling statute or mayoral order"]?.url,
+    enablingStatute,
+    enablingStatuteUrl: enablingStatute ? enablingStatuteField?.url : undefined,
     governingAgency: extractAgencyName(fields["governing agency or agency acronym"]?.text),
     governingAgencyAcronym: extractAcronym(fields["governing agency or agency acronym"]?.text),
     administeringAgency: extractAgencyName(fields["administering agency"]?.text),
@@ -302,6 +309,47 @@ function parseDetailPage(html: string): {
 
 function normalizeFieldName(name: string): string {
   return name.toLowerCase().replace(WHITESPACE_RE, " ").trim();
+}
+
+function sanitizeSourceUrl(url: string): string | undefined {
+  const decoded = decodeRepeatedly(url).toLowerCase().replace(/\\/g, "/");
+  if (
+    decoded.includes("file:///") ||
+    decoded.includes("/users/") ||
+    /^[a-z]:\//.test(decoded)
+  ) {
+    return undefined;
+  }
+  return url;
+}
+
+function sanitizeEnablingStatuteText(text?: string): string | undefined {
+  if (!text) {
+    return undefined;
+  }
+  if (/^(?:n\/?a|none)$/i.test(text.trim())) {
+    return undefined;
+  }
+  if (/\b(?:meeting|agenda)\s*#?\d+\b/i.test(text)) {
+    return undefined;
+  }
+  return text;
+}
+
+function decodeRepeatedly(value: string): string {
+  let current = value;
+  for (let i = 0; i < 3; i += 1) {
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current) {
+        return decoded;
+      }
+      current = decoded;
+    } catch {
+      return current;
+    }
+  }
+  return current;
 }
 
 function resolveOpenDcUrl(href: string): string | null {
@@ -352,6 +400,7 @@ function decodeHtml(value: string): string {
   return value
     .replace(/&#8217;|&#039;/g, "'")
     .replace(/&#038;|&amp;/g, "&")
+    .replace(/&#167;|&sect;/g, "§")
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .replace(/&#8220;|&#8221;/g, '"')

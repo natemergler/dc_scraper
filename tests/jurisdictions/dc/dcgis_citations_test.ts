@@ -3,6 +3,7 @@ import { cite } from "../../../src/core/types.ts";
 import {
   collectRecordCitations,
   parseLegalCitationLocators,
+  parseLegalCitationLocatorsFromUrl,
 } from "../../../src/jurisdictions/dc/interpreters/citations.ts";
 
 Deno.test("dc legal citation parser extracts and deduplicates locators", () => {
@@ -46,12 +47,14 @@ Deno.test("collectRecordCitations prepends source citation before parsed locator
 Deno.test("dc legal citation parser expands section lists and simple ranges", () => {
   const payload = {
     ENACTMENT:
-      "D.C. Code §§ 2-601 - 2-602 and 3-101 to 3-103; D.C. Municipal Regulations §§ 8-101, 8-102, and 8-103",
+      "D.C. Code §§ 2-601 - 2-602 and 3-101 to 3-103; D.C. Municipal Regulations §§ 8-101, 8-102, and 8-103; D.C. Code §§ 2-1601 to 1608",
   };
 
   assertEquals(
     parseLegalCitationLocators(payload),
     [
+      "D.C. Code § 2-1601",
+      "D.C. Code § 2-1608",
       "D.C. Code § 2-601",
       "D.C. Code § 2-602",
       "D.C. Code § 3-101",
@@ -141,20 +144,68 @@ Deno.test("dc legal citation parser preserves nested subsections and shorthand",
 
 Deno.test("dc legal citation parser supports no-section-sign forms", () => {
   const payload = {
-    STATUTE: "42 U.S.C. 1983 and 42 U.S.C. 1984; 16 CFR 1002 and 5 CFR §1000",
-    LEGAL_BASIS: "D.C. Code 7-200.1",
+    STATUTE: "42 U.S.C. 1983 and 42 U.S.C. 1984; 33 U.S. Code § 1267; 16 CFR 1002 and 5 CFR §1000",
+    LEGAL_BASIS: "D.C. Code 7-200.1; DC Code Section 7-671.02",
   };
 
   assertEquals(
     parseLegalCitationLocators(payload),
     [
       "16 CFR 1002",
+      "33 U.S.C. § 1267",
       "42 U.S.C. § 1983",
       "42 U.S.C. § 1984",
       "5 CFR §1000",
       "D.C. Code § 7-200.1",
+      "DC Code § 7-671.02",
     ],
   );
+});
+
+Deno.test("dc legal citation parser preserves en-dash section numbers", () => {
+  const payload = {
+    LEGAL_REFERENCE: "DC Code § 1–621.5",
+  };
+
+  assertEquals(parseLegalCitationLocators(payload), ["DC Code § 1-621.5"]);
+});
+
+Deno.test("dc legal citation parser extracts explicit Mayor's Order locators", () => {
+  const payload = {
+    LEGAL_REFERENCE:
+      "Mayor’s Order 2024-034: Establishment; Mayor's Order 2009-225; amended by 2013-154; MO 2016-083",
+  };
+
+  assertEquals(parseLegalCitationLocators(payload), [
+    "Mayor's Order 2009-225",
+    "Mayor's Order 2024-034",
+  ]);
+});
+
+Deno.test("dc legal citation parser extracts D.C. Law and D.C. Act locators", () => {
+  const payload = {
+    LEGAL_REFERENCE:
+      "D.C. Law 21-74. Higher Education Licensure Commission Amendment Act of 2015; 2015-260; D.C. Act 21-386",
+  };
+
+  assertEquals(parseLegalCitationLocators(payload), [
+    "D.C. Act 21-386",
+    "D.C. Law 21-74",
+  ]);
+});
+
+Deno.test("dc legal citation parser extracts official Code and Law locators from URLs", () => {
+  assertEquals(
+    parseLegalCitationLocatorsFromUrl(
+      "https://code.dccouncil.us/dc/council/code/sections/50-1831.html",
+    ),
+    ["D.C. Code § 50-1831"],
+  );
+  assertEquals(
+    parseLegalCitationLocatorsFromUrl("https://code.dccouncil.gov/us/dc/council/laws/24-176"),
+    ["D.C. Law 24-176"],
+  );
+  assertEquals(parseLegalCitationLocatorsFromUrl("https://dcps.dc.gov/publication/foo"), []);
 });
 
 Deno.test("dc legal citation parser expands no-section-sign ranges", () => {
@@ -180,12 +231,15 @@ Deno.test("dc legal citation parser expands no-section-sign ranges", () => {
 
 Deno.test("dc legal citation parser expands D.C. no-section-sign to/through ranges", () => {
   const payload = {
-    LEGAL_BASIS: "D.C. Code 7-300.1 to 7-300.3 and D.C. Official Code 12-100 through 12-101",
+    LEGAL_BASIS:
+      "D.C. Code 7-300.1 to 7-300.3 and D.C. Code 2-1601 to 1608 and D.C. Official Code 12-100 through 12-101",
   };
 
   assertEquals(
     parseLegalCitationLocators(payload),
     [
+      "D.C. Code § 2-1601",
+      "D.C. Code § 2-1608",
       "D.C. Code § 7-300.1",
       "D.C. Code § 7-300.3",
       "D.C. Official Code § 12-100",

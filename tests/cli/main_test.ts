@@ -2321,6 +2321,471 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
   }
 });
 
+Deno.test("CLI flow with bega.structure produces offices and part_of relations", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-bega-release-" });
+
+  const responses = new Map<string, string>([
+    [
+      "https://bega.dc.gov/node/61616/",
+      `
+      <html>
+        <head><title>About BEGA | bega</title></head>
+        <body>
+          <h1 class="page-title">About BEGA</h1>
+          <p>The Board of Ethics and Government Accountability (BEGA) is an independent agency.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://bega.dc.gov/page/office-government-ethics",
+      `
+      <html>
+        <head><title>Office of Government Ethics | bega</title></head>
+        <body>
+          <h1 id="page-title">Office of Government Ethics</h1>
+          <p>The Office of Government Ethics (OGE) administers the Code of Conduct.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://www.open-dc.gov/office-open-government",
+      `
+      <html>
+        <head><title>Office of Open Government | Open DC</title></head>
+        <body>
+          <h1>Office of Open Government</h1>
+          <p>The Office of Open Government (OOG) ensures open meetings compliance.</p>
+        </body>
+      </html>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const body = responses.get(key);
+    if (!body) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(body, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "bega.structure",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(
+      stateEntries.includes("dc.agency:board-of-ethics-and-government-accountability.json"),
+      true,
+    );
+    assertEquals(stateEntries.includes("dc.office:office-of-government-ethics.json"), true);
+    assertEquals(stateEntries.includes("dc.office:office-of-open-government.json"), true);
+
+    const ogeEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.office:office-of-government-ethics.json"),
+      ),
+    ) as {
+      kind: string;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(ogeEntry.kind, "dc.office");
+    assertEquals(
+      ogeEntry.relations["dc.relation:part_of"][0]?.to,
+      "dc.agency:board-of-ethics-and-government-accountability",
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 3);
+    assertEquals(countRows(db, "state_relations"), 2);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 3);
+    assertEquals(manifest.counts.relations, 2);
+    assertEquals(manifest.counts.relationKinds["dc.relation:part_of"], 2);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("Board of Ethics and Government Accountability"), true);
+    assertEquals(entriesCsv.includes("Office of Government Ethics"), true);
+    assertEquals(entriesCsv.includes("Office of Open Government"), true);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:part_of"), true);
+    assertEquals(relationsCsv.includes("dc.office:office-of-government-ethics"), true);
+    assertEquals(
+      relationsCsv.includes("dc.agency:board-of-ethics-and-government-accountability"),
+      true,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
+Deno.test("CLI flow with dccourts.structure produces courts and division part_of relations", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-release-" });
+
+  const responses = new Map<string, string>([
+    [
+      "https://www.dccourts.gov/",
+      `
+      <html>
+        <head><title>District of Columbia Courts</title></head>
+        <body>
+          <h1>District of Columbia Courts</h1>
+          <p>The District of Columbia Courts are the judicial branch of the District.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://www.dccourts.gov/court-of-appeals",
+      `
+      <html>
+        <head><title>Court of Appeals | District of Columbia Courts</title></head>
+        <body>
+          <h1>Court of Appeals</h1>
+          <p>The Court of Appeals is the highest court of the District of Columbia.</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://www.dccourts.gov/superior-court",
+      `
+      <html>
+        <head><title>Superior Court | District of Columbia Courts</title></head>
+        <body>
+          <h1>Superior Court</h1>
+          <p>The Superior Court handles trial-level matters.</p>
+          <a href="/superior-court/superior-court-divisions/civil-division">Civil Division</a>
+          <a href="/superior-court/superior-court-divisions/tax-division">Tax Division</a>
+          <a href="/superior-court/superior-court-divisions/crime-victims-compensation">Crime Victims Compensation Program</a>
+          <a href="/superior-court/superior-court-divisions/auditor-master">Office of the Auditor-Master</a>
+          <a href="/superior-court/superior-court-divisions/family-division/forms">Family Division</a>
+        </body>
+      </html>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const body = responses.get(key);
+    if (!body) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(body, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dccourts.structure",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntries.includes("dc.court_system:district-of-columbia-courts.json"), true);
+    assertEquals(stateEntries.includes("dc.court:court-of-appeals.json"), true);
+    assertEquals(stateEntries.includes("dc.court:superior-court.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:civil-division.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:tax-division.json"), true);
+    assertEquals(
+      stateEntries.includes("dc.court_division:crime-victims-compensation.json"),
+      false,
+    );
+    assertEquals(stateEntries.includes("dc.court_division:auditor-master.json"), false);
+    assertEquals(stateEntries.includes("dc.court_division:family-division.json"), false);
+
+    const civilEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.court_division:civil-division.json")),
+    ) as {
+      kind: string;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(civilEntry.kind, "dc.court_division");
+    assertEquals(civilEntry.relations["dc.relation:part_of"][0]?.to, "dc.court:superior-court");
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 5);
+    assertEquals(countRows(db, "state_relations"), 4);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 5);
+    assertEquals(manifest.counts.relations, 4);
+    assertEquals(manifest.counts.relationKinds["dc.relation:part_of"], 4);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("District of Columbia Courts"), true);
+    assertEquals(entriesCsv.includes("Court of Appeals"), true);
+    assertEquals(entriesCsv.includes("Superior Court"), true);
+    assertEquals(entriesCsv.includes("Civil Division"), true);
+    assertEquals(entriesCsv.includes("Tax Division"), true);
+    assertEquals(entriesCsv.includes("Crime Victims Compensation Program"), false);
+    assertEquals(entriesCsv.includes("Office of the Auditor-Master"), false);
+
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    assertEquals(relationsCsv.includes("dc.relation:part_of"), true);
+    assertEquals(relationsCsv.includes("dc.court:court-of-appeals"), true);
+    assertEquals(relationsCsv.includes("dc.court:superior-court"), true);
+    assertEquals(relationsCsv.includes("dc.court_division:civil-division"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
+Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-release-" });
+
+  const legalHtml = `
+  <html>
+    <body>
+      <a href="https://code.dccouncil.gov/">District of Columbia Official Code</a>
+      <a href="https://dcregs.dc.gov/">DC Register / DCMR</a>
+      <a href="https://mayor.dc.gov/page/mayors-orders">Mayor's Orders</a>
+      <a href="https://dc.gov/page/laws-regulations-and-courts">Laws, Regulations and Courts</a>
+      <a href="https://mayor.dc.gov/">Mayor</a>
+      <a href="/page/services">Services</a>
+      <a href="https://dcregs.dc.gov/Common/DCMR/ChapterList.aspx?subtitleId=1">DCMR Title List</a>
+    </body>
+  </html>
+  `;
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    if (key !== "https://dc.gov/page/laws-regulations-and-courts") {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(legalHtml, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "legal.entrypoints",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(
+      stateEntries.includes("dc.legal_source:district-of-columbia-official-code.json"),
+      true,
+    );
+    assertEquals(stateEntries.includes("dc.legal_source:dc-register-dcmr.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:mayors-orders.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:laws-regulations-and-courts.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:dcmr-title-list.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_source:mayor.json"), false);
+
+    const codeEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.legal_source:district-of-columbia-official-code.json"),
+      ),
+    ) as {
+      family: string;
+      kind: string;
+      relations: Record<string, unknown>;
+    };
+    assertEquals(codeEntry.family, "authority");
+    assertEquals(codeEntry.kind, "dc.legal_source");
+    assertEquals(codeEntry.relations, {});
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const db = openWorkspace(workspace);
+    initWorkspace(db);
+    assertEquals(countRows(db, "state_entries"), 5);
+    assertEquals(countRows(db, "state_relations"), 0);
+    closeWorkspace(db);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 5);
+    assertEquals(manifest.counts.relations, 0);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("District of Columbia Official Code"), true);
+    assertEquals(entriesCsv.includes("DC Register / DCMR"), true);
+    assertEquals(entriesCsv.includes("Mayor's Orders"), true);
+    assertEquals(entriesCsv.includes("Laws, Regulations and Courts"), true);
+    assertEquals(entriesCsv.includes("DCMR Title List"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {

@@ -27,3 +27,7 @@ export const dcChairsRelation = defineRelationKind({
 export const dcMemberOfRelation = defineRelationKind({
   kind: "dc.relation:member_of",
 });
+
+export const dcPartOfRelation = defineRelationKind({
+  kind: "dc.relation:part_of",
+});

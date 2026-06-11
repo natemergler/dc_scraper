@@ -46,6 +46,45 @@ Deno.test("compile merges duplicate fragments into one baseline entry", () => {
   ]);
 });
 
+Deno.test("compile preserves locator citations from the same source record", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    fragments: [{
+      fragmentType: "entry",
+      source: "open_dc.public_bodies",
+      sourceRecordId: "advisory-committee-acupuncture",
+      provisionalId: "dc.agency:advisory-committee-acupuncture",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Advisory Committee on Acupuncture",
+      attributes: { shortName: "Advisory Committee on Acupuncture" },
+      citations: [
+        cite("open_dc.public_bodies", "advisory-committee-acupuncture"),
+        cite("open_dc.public_bodies", "advisory-committee-acupuncture", {
+          locator: "DC Code § 3-1202.03",
+        }),
+        cite("open_dc.public_bodies", "advisory-committee-acupuncture", {
+          locator: "DC Code § 3-1202.03",
+        }),
+      ],
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  const entry = result.state?.entries.get("dc.agency:advisory-committee-acupuncture");
+  assertEquals(entry?.citations, [
+    cite("open_dc.public_bodies", "advisory-committee-acupuncture"),
+    cite("open_dc.public_bodies", "advisory-committee-acupuncture", {
+      locator: "DC Code § 3-1202.03",
+    }),
+  ]);
+});
+
 Deno.test("compile marks conflicts when revision makes state invalid", () => {
   const registry = new KindRegistry();
   registry.register(dcAgencyKind);
