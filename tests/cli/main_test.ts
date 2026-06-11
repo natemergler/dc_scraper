@@ -2875,6 +2875,143 @@ Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async
   }
 });
 
+Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-mayor-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-mayor-state-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-mayor-release-" });
+
+  const mayorPages = new Map<string, string>([
+    [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      `
+      <html>
+        <head><title>Organizational Charts | mayor</title></head>
+        <body>
+          <h1>Organizational Charts for Agencies and Offices Under the Mayor's Authority</h1>
+          <p>Phone: (202) 727-2643</p>
+          <p>Email: mayor@example.com</p>
+        </body>
+      </html>
+      `,
+    ],
+    [
+      "https://mayor.dc.gov/page/executive-branch-0",
+      `
+      <html>
+        <head><title>Executive Branch | mayor</title></head>
+        <body><h1>Executive Branch</h1></body>
+      </html>
+      `,
+    ],
+  ]);
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request) => {
+    const key = typeof input === "string"
+      ? input
+      : input instanceof URL
+      ? input.toString()
+      : input.url;
+    const html = mayorPages.get(key);
+    if (!html) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(html, {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  }) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "mayor.executive_structure",
+      "--limit",
+      "3",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntries.includes("dc.office:executive-office-of-the-mayor.json"), true);
+    assertEquals(stateEntries.includes("dc.office:office-of-communications.json"), true);
+    assertEquals(
+      stateEntries.includes("dc.office:mayors-office-of-community-relations-and-services.json"),
+      true,
+    );
+
+    const communicationsEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.office:office-of-communications.json"),
+      ),
+    ) as {
+      kind: string;
+      relations: Record<string, Array<{ kind: string; to: string }>>;
+    };
+    assertEquals(communicationsEntry.kind, "dc.office");
+    assertEquals(
+      communicationsEntry.relations["dc.relation:part_of"][0]?.to,
+      "dc.office:executive-office-of-the-mayor",
+    );
+
+    const indexCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "index",
+    ]);
+    assertEquals(indexCode, 0);
+
+    const checkCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "check",
+    ]);
+    assertEquals(checkCode, 0);
+
+    const exportCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "--release-root",
+      releaseRoot,
+      "export",
+    ]);
+    assertEquals(exportCode, 0);
+
+    const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
+    assertEquals(manifest.counts.entries, 3);
+    assertEquals(manifest.counts.relations, 2);
+
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    assertEquals(entriesCsv.includes("Executive Office of the Mayor"), true);
+    assertEquals(entriesCsv.includes("Office of Communications"), true);
+    assertEquals(entriesCsv.includes("mayor@example.com"), false);
+    assertEquals(entriesCsv.includes("(202) 727-2643"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {
