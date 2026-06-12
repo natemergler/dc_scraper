@@ -84,11 +84,20 @@ export interface Finding {
   citation?: CitationValue;
 }
 
+export interface RevisionTargetSelector {
+  canonicalId?: string;
+  previousIds?: string[];
+  sourceRefs?: Citation[];
+  kind?: string;
+  name?: string;
+}
+
 export interface Revision {
   id: string;
   source: string;
   targetKind: "entry" | "relation";
   targetId: string;
+  target?: RevisionTargetSelector;
   rationale?: string;
   evidence?: CitationValue[];
   patch: Record<string, unknown>;

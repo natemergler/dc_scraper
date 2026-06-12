@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:dc-housing-authority",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Housing Authority",
+  "attributes": {
+    "shortName": "Housing Authority",
+    "sourceAgencyId": "1016"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "10"
+    }
+  ],
+  "relations": {}
+}

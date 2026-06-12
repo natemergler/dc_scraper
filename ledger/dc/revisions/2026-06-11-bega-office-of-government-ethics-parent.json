@@ -3,7 +3,19 @@
   "source": "audited_revision",
   "targetKind": "relation",
   "targetId": "dc.office:office-of-government-ethics",
-  "rationale": "Retarget BEGA structure office hierarchy to the canonical DCGIS BEGA agency before suppressing the duplicate BEGA structure agency shadow.",
+  "target": {
+    "canonicalId": "dc.office:office-of-government-ethics",
+    "sourceRefs": [
+      {
+        "source": "bega.structure",
+        "sourceRecordId": "office-of-government-ethics",
+        "url": "https://bega.dc.gov/page/office-government-ethics"
+      }
+    ],
+    "kind": "dc.office",
+    "name": "Office of Government Ethics"
+  },
+  "rationale": "Retarget BEGA structure office hierarchy to the canonical BEGA agency while preserving the audited source-shadow decision as review metadata.",
   "evidence": [
     {
       "source": "bega.structure",
@@ -20,7 +32,7 @@
       "dc.relation:part_of": [
         {
           "kind": "dc.relation:part_of",
-          "to": "dc.agency:1138",
+          "to": "dc.agency:board-of-ethics-and-government-accountability",
           "citations": [
             {
               "source": "bega.structure",

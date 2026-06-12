@@ -6,7 +6,11 @@ import {
   type RelationFragment,
 } from "../../../core/types.ts";
 import { collectRecordCitations } from "./citations.ts";
-import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
+import {
+  dcAgencyReferenceId,
+  type DcInterpreterContext,
+  normalizeAgencyLookupKey,
+} from "./context.ts";
 
 export interface DcgisBoardsInterpreterResult {
   entryFragments: EntryFragment[];
@@ -69,7 +73,7 @@ function parseAgencyId(
 ): string | null {
   const explicitAgencyId = asString(payload.AGENCY_ID);
   if (explicitAgencyId) {
-    return explicitAgencyId;
+    return context?.agencyIdLookup?.get(explicitAgencyId) ?? explicitAgencyId;
   }
 
   const governingAgency = asString(payload.GOVERNING_AGENCY);
@@ -91,7 +95,7 @@ function makeBoardProvisionalId(boardId: string): string {
 }
 
 function makeAgencyProvisionalId(agencyId: string): string {
-  return `dc.agency:${agencyId}`;
+  return dcAgencyReferenceId(agencyId);
 }
 
 export function interpretDcgisBoards(

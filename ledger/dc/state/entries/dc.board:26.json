@@ -22,7 +22,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1001",
+        "to": "dc.agency:alcoholic-beverage-and-cannabis-administration",
         "citations": [
           {
             "source": "dcgis.boards",

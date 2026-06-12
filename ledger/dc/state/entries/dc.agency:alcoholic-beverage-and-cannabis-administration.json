@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:alcoholic-beverage-and-cannabis-administration",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Alcoholic Beverage and Cannabis Administration",
+  "attributes": {
+    "shortName": "Alcoholic Beverage and Cannabis Administration",
+    "sourceAgencyId": "1001"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "1"
+    }
+  ],
+  "relations": {}
+}

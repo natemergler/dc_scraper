@@ -40,7 +40,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1060",
+        "to": "dc.agency:mayors-office-of-veterans-affairs",
         "citations": [
           {
             "source": "dcgis.boards",

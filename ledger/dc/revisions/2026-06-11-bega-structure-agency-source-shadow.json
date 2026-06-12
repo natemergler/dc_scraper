@@ -3,7 +3,26 @@
   "source": "audited_revision",
   "targetKind": "entry",
   "targetId": "dc.agency:board-of-ethics-and-government-accountability",
-  "rationale": "The BEGA structure source page names the same Board of Ethics and Government Accountability organization already represented by DCGIS agency 1138; after office relations are retargeted, this duplicate source-shaped agency entry should not remain as a separate canonical agency.",
+  "target": {
+    "canonicalId": "dc.agency:board-of-ethics-and-government-accountability",
+    "previousIds": [
+      "dc.agency:1138"
+    ],
+    "sourceRefs": [
+      {
+        "source": "bega.structure",
+        "sourceRecordId": "board-of-ethics-and-government-accountability",
+        "url": "https://bega.dc.gov/node/61616/"
+      },
+      {
+        "source": "dcgis.agencies",
+        "sourceRecordId": "118"
+      }
+    ],
+    "kind": "dc.agency",
+    "name": "Board of Ethics and Government Accountability"
+  },
+  "rationale": "The BEGA structure source page names the same Board of Ethics and Government Accountability organization already represented by DCGIS agency 1138. After canonical agency ID migration, both source fragments attach to the same civic agency ID, so this revision records the audited source-shadow decision without suppressing the canonical BEGA agency.",
   "evidence": [
     {
       "source": "bega.structure",
@@ -16,6 +35,9 @@
     }
   ],
   "patch": {
-    "suppress": true
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.agency:board-of-ethics-and-government-accountability"
+    }
   }
 }

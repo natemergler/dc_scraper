@@ -34,7 +34,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1071",
+        "to": "dc.agency:office-of-contracting-and-procurement",
         "citations": [
           {
             "source": "dcgis.boards",

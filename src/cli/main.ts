@@ -27,6 +27,7 @@ import { MayorExecutiveStructureReader } from "../readers/mayor_executive_struct
 import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
+import { buildIdentityAliasResolver, loadIdentityAliases } from "../identity/aliases.ts";
 import { loadRevisions } from "../revisions/load.ts";
 import {
   applyDraftRevision,
@@ -239,7 +240,9 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     initWorkspace(workspace);
 
     const revisionRoot = revisionRootForStateRoot(stateRoot);
+    const identityRoot = identityRootForStateRoot(stateRoot);
     const revisions = await loadRevisions(revisionRoot);
+    const identityAliases = await loadIdentityAliases(identityRoot);
     const workspaceCompilation = compileFromWorkspace(workspace);
     workspace.db.run("DELETE FROM fragments");
     saveFragments(
@@ -258,6 +261,7 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
       promotionPolicy: dcRuntime.promotionPolicy,
       findings: workspaceCompilation.findings,
       revisions: [...dcRuntime.revisions, ...revisions],
+      identityAliases,
       generatedAt: new Date().toISOString(),
     });
     const allFindings = [...result.findings, ...result.conflicts];
@@ -443,10 +447,27 @@ async function runReviewResolve(
 
 async function runRevisionValidate(workspaceRoot: string, stateRoot: string): Promise<number> {
   const revisionRoot = revisionRootForStateRoot(stateRoot);
+  const identityRoot = identityRootForStateRoot(stateRoot);
   const trackedRevisions = await loadRevisions(revisionRoot);
+  const identityAliases = await loadIdentityAliases(identityRoot);
+  const identityResolver = buildIdentityAliasResolver(identityAliases);
+  const loadedState = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  if (identityResolver.issues.length > 0) {
+    for (const issue of identityResolver.issues) {
+      console.error(`${issue.code}: ${issue.message}`);
+    }
+    return 1;
+  }
+  const targetIssues = identityResolver.assertTargetExists(loadedState.state.entries);
+  if (targetIssues.length > 0) {
+    for (const issue of targetIssues) {
+      console.error(`${issue.code}: ${issue.message}`);
+    }
+    return 1;
+  }
   const draftRevisions = await loadDraftRevisions(workspaceRoot);
   console.log(
-    `revision validation passed: ${trackedRevisions.length} tracked, ${draftRevisions.length} draft`,
+    `revision validation passed: ${trackedRevisions.length} tracked, ${draftRevisions.length} draft, ${identityAliases.length} identity aliases`,
   );
   return 0;
 }
@@ -546,15 +567,19 @@ function compileFromWorkspace(
         if (!interpreterContext.agencyLookup) {
           interpreterContext.agencyLookup = new Map();
         }
+        if (!interpreterContext.agencyIdLookup) {
+          interpreterContext.agencyIdLookup = new Map();
+        }
         const agencyId = typeof entryFragment.attributes.sourceAgencyId === "string"
           ? entryFragment.attributes.sourceAgencyId
           : entryFragment.provisionalId.startsWith("dc.agency:")
           ? entryFragment.provisionalId.replace("dc.agency:", "")
           : entryFragment.provisionalId;
+        interpreterContext.agencyIdLookup.set(agencyId, entryFragment.provisionalId);
 
         const normalizedName = normalizeAgencyLookupKey(entryFragment.name);
         if (normalizedName.length > 0 && !interpreterContext.agencyLookup.has(normalizedName)) {
-          interpreterContext.agencyLookup.set(normalizedName, agencyId);
+          interpreterContext.agencyLookup.set(normalizedName, entryFragment.provisionalId);
         }
 
         const shortName = entryFragment.attributes.shortName;
@@ -564,7 +589,7 @@ function compileFromWorkspace(
             normalizedShortName.length > 0 &&
             !interpreterContext.agencyLookup.has(normalizedShortName)
           ) {
-            interpreterContext.agencyLookup.set(normalizedShortName, agencyId);
+            interpreterContext.agencyLookup.set(normalizedShortName, entryFragment.provisionalId);
           }
         }
       }
@@ -838,6 +863,10 @@ function parseReviewResolutionType(value: unknown): ReviewResolutionType {
 
 function revisionRootForStateRoot(stateRoot: string): string {
   return join(stateRoot, "..", "revisions");
+}
+
+function identityRootForStateRoot(stateRoot: string): string {
+  return join(stateRoot, "..", "identity");
 }
 
 function validateCliOptions(options: CliOptions): CliOptions {

@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:office-of-the-state-superintendent-of-education",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the State Superintendent of Education",
+  "attributes": {
+    "shortName": "Office of the State Superintendent of Education",
+    "sourceAgencyId": "1097"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "80"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-education",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-state-superintendent-of-education",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

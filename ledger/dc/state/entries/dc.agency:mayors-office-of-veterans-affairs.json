@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-of-veterans-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Veterans Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office of Veterans Affairs",
+    "sourceAgencyId": "1060"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "83"
+    }
+  ],
+  "relations": {}
+}

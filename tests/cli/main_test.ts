@@ -621,8 +621,8 @@ Deno.test("state commands generate index check committed state", async () => {
     assertEquals(generateCode, 0);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
-    assertEquals(stateEntries.includes("dc.agency:a-1.json"), true);
-    assertEquals(stateEntries.includes("dc.agency:a-2.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:agency-one.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:agency-two.json"), true);
 
     const indexCode = await runCli([
       "--workspace",
@@ -660,35 +660,53 @@ Deno.test("state commands generate index check committed state", async () => {
 Deno.test("reconcile candidates reports review packets from committed state", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-reconcile-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-reconcile-state-" });
-  const restoreFetch = mockArcGISFetch(
-    new Map([
-      [
-        "0",
+  const responses = [
+    {
+      features: [
         {
-          features: [
-            {
-              attributes: {
-                OBJECTID: 1,
-                AGENCY_ID: "a-1",
-                AGENCY_NAME: "Shared Agency",
-                SHORT_NAME: "SA1",
-              },
-            },
-            {
-              attributes: {
-                OBJECTID: 2,
-                AGENCY_ID: "a-2",
-                AGENCY_NAME: "Shared Agency",
-                SHORT_NAME: "SA2",
-              },
-            },
-          ],
-          exceededTransferLimit: false,
-          objectIdFieldName: "OBJECTID",
+          attributes: {
+            OBJECTID: 1,
+            AGENCY_ID: "a-1",
+            AGENCY_NAME: "Shared Agency",
+            SHORT_NAME: "SA",
+          },
         },
       ],
-    ]),
-  );
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+    {
+      features: [
+        {
+          attributes: {
+            OBJECTID: 2,
+            BOARD_ID: "b-1",
+            BOARD_NAME: "Shared Agency",
+            SHORT_NAME: "SB",
+          },
+        },
+      ],
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+  ];
+
+  const originalFetch = globalThis.fetch;
+  let callCount = 0;
+  globalThis.fetch = (async (_input: string | URL | Request, _init?: RequestInit) => {
+    const response = responses[callCount];
+    callCount += 1;
+    if (!response) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+  const restoreFetch = () => {
+    globalThis.fetch = originalFetch;
+  };
 
   try {
     const collectCode = await runCli([
@@ -697,9 +715,19 @@ Deno.test("reconcile candidates reports review packets from committed state", as
       "collect",
       "dcgis.agencies",
       "--limit",
-      "2",
+      "1",
     ]);
     assertEquals(collectCode, 0);
+
+    const collectBoardCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.boards",
+      "--limit",
+      "1",
+    ]);
+    assertEquals(collectBoardCode, 0);
 
     const generateCode = await runCli([
       "--workspace",
@@ -774,7 +802,7 @@ Deno.test("state generation applies revision overlays from ledger revisions", as
       id: "revision-1",
       source: "operator",
       targetKind: "entry",
-      targetId: "dc.agency:a-1",
+      targetId: "dc.agency:agency-one",
       patch: {
         name: "Agency One (canonical)",
       },
@@ -803,7 +831,7 @@ Deno.test("state generation applies revision overlays from ledger revisions", as
     assertEquals(generateCode, 0);
 
     const stateEntry = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-1.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:agency-one.json")),
     ) as { name: string };
     assertEquals(stateEntry.name, "Agency One (canonical)");
   } finally {
@@ -829,7 +857,7 @@ Deno.test("state generation applies suppress revisions from ledger revisions", a
         attributes: {
           OBJECTID: 1,
           AGENCY_ID: "a-1",
-          AGENCY_NAME: "Agency One",
+          AGENCY_NAME: "Agency One Shadow",
           SHORT_NAME: "A1",
         },
       },
@@ -860,7 +888,7 @@ Deno.test("state generation applies suppress revisions from ledger revisions", a
       id: "suppress-shadow",
       source: "operator",
       targetKind: "entry",
-      targetId: "dc.agency:shadow",
+      targetId: "dc.agency:agency-one-shadow",
       rationale: "Reviewed duplicate source shadow.",
       evidence: [{ source: "dcgis.agencies", sourceRecordId: "2" }],
       patch: { suppress: true },
@@ -889,8 +917,8 @@ Deno.test("state generation applies suppress revisions from ledger revisions", a
     assertEquals(generateCode, 0);
 
     const stateEntryFiles = await listEntryFiles(join(stateRoot, "entries"));
-    assertEquals(stateEntryFiles.includes("dc.agency:a-1.json"), true);
-    assertEquals(stateEntryFiles.includes("dc.agency:shadow.json"), false);
+    assertEquals(stateEntryFiles.includes("dc.agency:agency-one.json"), true);
+    assertEquals(stateEntryFiles.includes("dc.agency:agency-one-shadow.json"), false);
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });
@@ -914,7 +942,7 @@ Deno.test("state generation persists review revisions from ledger revisions", as
         attributes: {
           OBJECTID: 1,
           AGENCY_ID: "a-1",
-          AGENCY_NAME: "Agency One",
+          AGENCY_NAME: "Agency Two",
           SHORT_NAME: "A1",
         },
       },
@@ -945,13 +973,13 @@ Deno.test("state generation persists review revisions from ledger revisions", as
       id: "preserve-distinct",
       source: "operator",
       targetKind: "entry",
-      targetId: "dc.agency:a-1",
+      targetId: "dc.agency:agency-one",
       rationale: "Reviewed duplicate-looking names and preserved them as distinct.",
       evidence: [{ source: "dcgis.agencies", sourceRecordId: "1" }],
       patch: {
         review: {
           decision: "preserve_distinct",
-          relatedEntryIds: ["dc.agency:a-2"],
+          relatedEntryIds: ["dc.agency:agency-two"],
         },
       },
     }),
@@ -979,15 +1007,15 @@ Deno.test("state generation persists review revisions from ledger revisions", as
     assertEquals(generateCode, 0);
 
     const agencyOne = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-1.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:agency-one.json")),
     ) as { attributes: { revisionReviews?: unknown[] } };
-    const agencyTwoExists = await exists(join(stateRoot, "entries", "dc.agency:a-2.json"));
+    const agencyTwoExists = await exists(join(stateRoot, "entries", "dc.agency:agency-two.json"));
     assertEquals(agencyTwoExists, true);
     assertEquals(agencyOne.attributes.revisionReviews, [{
       decision: "preserve_distinct",
       evidence: [{ source: "dcgis.agencies", sourceRecordId: "1" }],
       rationale: "Reviewed duplicate-looking names and preserved them as distinct.",
-      relatedEntryIds: ["dc.agency:a-2"],
+      relatedEntryIds: ["dc.agency:agency-two"],
       revisionId: "preserve-distinct",
       source: "operator",
     }]);
@@ -1117,12 +1145,12 @@ Deno.test("state generation applies relation revision overlays", async () => {
       id: "revision-a2-relations",
       source: "operator",
       targetKind: "relation",
-      targetId: "dc.agency:a-2",
+      targetId: "dc.agency:agency-two",
       patch: {
         relations: {
           "dc.relation:governs": [{
             kind: "dc.relation:governs",
-            to: "dc.agency:a-1",
+            to: "dc.agency:agency-one",
           }],
         },
       },
@@ -1151,9 +1179,9 @@ Deno.test("state generation applies relation revision overlays", async () => {
     assertEquals(generateCode, 0);
 
     const agencyTwo = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-2.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:agency-two.json")),
     ) as { relations: Record<string, Array<{ to: string }>> };
-    assertEquals(agencyTwo.relations["dc.relation:governs"][0]?.to, "dc.agency:a-1");
+    assertEquals(agencyTwo.relations["dc.relation:governs"][0]?.to, "dc.agency:agency-one");
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });
@@ -1221,7 +1249,7 @@ Deno.test("state generation can compile agency and board sources together", asyn
     assertEquals(generateCode, 0);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
-    assertEquals(stateEntries.includes("dc.agency:a-1.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:agency-one.json"), true);
     assertEquals(stateEntries.includes("dc.board:b-1.json"), true);
   } finally {
     restoreFetch();
@@ -1363,7 +1391,7 @@ Deno.test("state generation can compile agency, board, commission, and council s
     assertEquals(generateCode, 0);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
-    assertEquals(stateEntries.includes("dc.agency:a-1.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:agency-one.json"), true);
     assertEquals(stateEntries.includes("dc.board:b-1.json"), true);
     assertEquals(stateEntries.includes("dc.commission:c-1.json"), true);
     assertEquals(stateEntries.includes("dc.council:co-1.json"), true);
@@ -1792,14 +1820,14 @@ Deno.test("state generation can compile authority source", async () => {
     assertEquals(generateCode, 0);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
-    assertEquals(stateEntries.includes("dc.agency:a-1.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:agency-one.json"), true);
     assertEquals(stateEntries.includes("dc.authority:au-1.json"), true);
 
     const authorityEntry = JSON.parse(
       await Deno.readTextFile(join(stateRoot, "entries", "dc.authority:au-1.json")),
     ) as { family: string; relations: Record<string, Array<{ to: string }>> };
     assertEquals(authorityEntry.family, "authority");
-    assertEquals(authorityEntry.relations["dc.relation:governs"][0]?.to, "dc.agency:a-1");
+    assertEquals(authorityEntry.relations["dc.relation:governs"][0]?.to, "dc.agency:agency-one");
   } finally {
     restoreFetch();
     await Deno.remove(workspace, { recursive: true });
@@ -1927,11 +1955,11 @@ Deno.test(
 
       assertEquals(
         boardEntry.relations["dc.relation:governs"][0]?.to,
-        "dc.agency:a-1",
+        "dc.agency:district-of-columbia",
       );
       assertEquals(
         commissionEntry.relations["dc.relation:governs"][0]?.to,
-        "dc.agency:a-1",
+        "dc.agency:district-of-columbia",
       );
     } finally {
       restoreFetch();
@@ -2219,18 +2247,18 @@ Deno.test("export command indexes committed state and writes release artifacts",
 
     const affiliations = await Deno.readTextFile(join(releaseRoot, "dc_board_affiliations.csv"));
     assertEquals(affiliations.includes("dc.board:b-1"), true);
-    assertEquals(affiliations.includes("dc.agency:a-1"), true);
+    assertEquals(affiliations.includes("dc.agency:agency-one"), true);
     const commissionAffiliations = await Deno.readTextFile(
       join(releaseRoot, "dc_commission_affiliations.csv"),
     );
     assertEquals(commissionAffiliations.includes("dc.commission:c-1"), true);
-    assertEquals(commissionAffiliations.includes("dc.agency:a-1"), true);
+    assertEquals(commissionAffiliations.includes("dc.agency:agency-one"), true);
 
     const authorityAffiliations = await Deno.readTextFile(
       join(releaseRoot, "dc_authority_affiliations.csv"),
     );
     assertEquals(authorityAffiliations.includes("dc.authority:au-1"), true);
-    assertEquals(authorityAffiliations.includes("dc.agency:a-1"), true);
+    assertEquals(authorityAffiliations.includes("dc.agency:agency-one"), true);
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
@@ -2568,7 +2596,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(stateEntries.includes("dc.authority:water-authority.json"), true);
     assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), false);
     assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
-    assertEquals(stateEntries.includes("dc.agency:dpw.json"), true);
+    assertEquals(stateEntries.includes("dc.agency:department-of-public-works.json"), true);
     assertEquals(stateEntries.includes("dc.agency:meetings.json"), false);
 
     const advisoryEntry = JSON.parse(
@@ -2578,7 +2606,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     };
     assertEquals(
       advisoryEntry.relations["dc.relation:governs"]?.[0]?.to,
-      "dc.agency:dpw",
+      "dc.agency:department-of-public-works",
     );
 
     const waterAuthorityEntry = JSON.parse(
@@ -2656,7 +2684,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:governs"), true);
     assertEquals(relationsCsv.includes("dc.board:advisory-board"), true);
-    assertEquals(relationsCsv.includes("dc.agency:dpw"), true);
+    assertEquals(relationsCsv.includes("dc.agency:department-of-public-works"), true);
   } finally {
     restoreFetch();
     await Deno.remove(workspace, { recursive: true });
@@ -3397,35 +3425,53 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
   const revisionRoot = join(projectRoot, "revisions");
   await Deno.mkdir(stateRoot, { recursive: true });
 
-  const restoreFetch = mockArcGISFetch(
-    new Map([
-      [
-        "0",
+  const responses = [
+    {
+      features: [
         {
-          features: [
-            {
-              attributes: {
-                OBJECTID: 1,
-                AGENCY_ID: "a-1",
-                AGENCY_NAME: "Shared Agency",
-                SHORT_NAME: "SA1",
-              },
-            },
-            {
-              attributes: {
-                OBJECTID: 2,
-                AGENCY_ID: "a-2",
-                AGENCY_NAME: "Shared Agency",
-                SHORT_NAME: "SA2",
-              },
-            },
-          ],
-          exceededTransferLimit: false,
-          objectIdFieldName: "OBJECTID",
+          attributes: {
+            OBJECTID: 1,
+            AGENCY_ID: "a-1",
+            AGENCY_NAME: "Shared Agency",
+            SHORT_NAME: "SA",
+          },
         },
       ],
-    ]),
-  );
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+    {
+      features: [
+        {
+          attributes: {
+            OBJECTID: 2,
+            BOARD_ID: "b-1",
+            BOARD_NAME: "Shared Agency",
+            SHORT_NAME: "SB",
+          },
+        },
+      ],
+      exceededTransferLimit: false,
+      objectIdFieldName: "OBJECTID",
+    },
+  ];
+
+  const originalFetch = globalThis.fetch;
+  let callCount = 0;
+  globalThis.fetch = (async (_input: string | URL | Request, _init?: RequestInit) => {
+    const response = responses[callCount];
+    callCount += 1;
+    if (!response) {
+      return new Response("missing fixture", { status: 404 });
+    }
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+  const restoreFetch = () => {
+    globalThis.fetch = originalFetch;
+  };
 
   try {
     const collectCode = await runCli([
@@ -3434,9 +3480,19 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       "collect",
       "dcgis.agencies",
       "--limit",
-      "2",
+      "1",
     ]);
     assertEquals(collectCode, 0);
+
+    const collectBoardCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.boards",
+      "--limit",
+      "1",
+    ]);
+    assertEquals(collectBoardCode, 0);
 
     const compileCode = await runCli([
       "--workspace",
@@ -3499,7 +3555,7 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       "--as",
       "preserve-distinct",
       "--target",
-      "dc.agency:a-1",
+      "dc.agency:shared-agency",
     ]);
     assertEquals(resolveCode, 0);
 
@@ -3543,7 +3599,7 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(regenerateCode, 0);
 
     const agency = JSON.parse(
-      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-1.json")),
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:shared-agency.json")),
     ) as { attributes: { revisionReviews?: unknown[] } };
     assertEquals(Array.isArray(agency.attributes.revisionReviews), true);
   } finally {

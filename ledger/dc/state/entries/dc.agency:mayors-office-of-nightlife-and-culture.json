@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-of-nightlife-and-culture",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Nightlife and Culture",
+  "attributes": {
+    "shortName": "Mayor's Office of Nightlife and Culture",
+    "sourceAgencyId": "1170"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "149"
+    }
+  ],
+  "relations": {}
+}

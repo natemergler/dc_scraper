@@ -30,7 +30,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1170",
+        "to": "dc.agency:mayors-office-of-nightlife-and-culture",
         "citations": [
           {
             "source": "open_dc.public_bodies",

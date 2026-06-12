@@ -67,6 +67,43 @@ Deno.test("loadRevisions reads revision rationale and evidence", async () => {
   }
 });
 
+Deno.test("loadRevisions reads optional migration-aware target selectors", async () => {
+  const revisionRoot = await Deno.makeTempDir({ prefix: "civic-ledger-revisions-load-target-" });
+
+  await Deno.writeTextFile(
+    join(revisionRoot, "target-selector.json"),
+    JSON.stringify({
+      id: "target-selector",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.agency:1052",
+      target: {
+        canonicalId: "dc.agency:executive-office-of-the-mayor",
+        previousIds: ["dc.agency:1052"],
+        sourceRefs: [{ source: "dcgis.agencies", sourceRecordId: "45" }],
+        kind: "dc.agency",
+        name: "Executive Office of the Mayor",
+      },
+      patch: { attributes: { reviewed: true } },
+    }),
+  );
+
+  try {
+    const revisions = await loadRevisions(revisionRoot);
+
+    assertEquals(revisions.length, 1);
+    assertEquals(revisions[0].target, {
+      canonicalId: "dc.agency:executive-office-of-the-mayor",
+      previousIds: ["dc.agency:1052"],
+      sourceRefs: [{ source: "dcgis.agencies", sourceRecordId: "45" }],
+      kind: "dc.agency",
+      name: "Executive Office of the Mayor",
+    });
+  } finally {
+    await Deno.remove(revisionRoot, { recursive: true });
+  }
+});
+
 Deno.test("loadRevisions reads audited review decisions", async () => {
   const revisionRoot = await Deno.makeTempDir({ prefix: "civic-ledger-revisions-load-review-" });
 

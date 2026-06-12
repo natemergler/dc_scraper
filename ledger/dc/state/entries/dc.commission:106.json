@@ -22,7 +22,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1058",
+        "to": "dc.agency:mayors-office-of-community-affairs",
         "citations": [
           {
             "source": "dcgis.commissions",

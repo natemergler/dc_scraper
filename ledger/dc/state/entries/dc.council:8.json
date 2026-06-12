@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1031",
+        "to": "dc.agency:department-on-disability-services",
         "citations": [
           {
             "source": "dcgis.councils",

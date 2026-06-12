@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-federal-and-regional-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Federal and Regional Affairs",
+  "attributes": {
+    "shortName": "Office of Federal and Regional Affairs",
+    "sourceAgencyId": "1074"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "65"
+    }
+  ],
+  "relations": {}
+}

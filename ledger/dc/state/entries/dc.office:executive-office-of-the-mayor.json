@@ -20,7 +20,7 @@
         ],
         "rationale": "Preserve the Mayor-source office facet separately from the DCGIS agency facet for this state snapshot. DCGIS classifies EOM as an agency/budget source row, while the Mayor organizational-chart source contributes an executive hierarchy office node; merging or suppressing either facet would be a broader canonical identity decision.",
         "relatedEntryIds": [
-          "dc.agency:1052"
+          "dc.agency:executive-office-of-the-mayor"
         ],
         "revisionId": "2026-06-11-eom-agency-office-review",
         "source": "audited_revision"

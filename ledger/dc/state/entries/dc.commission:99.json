@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1055",
+        "to": "dc.agency:homeland-security-and-emergency-management-agency",
         "citations": [
           {
             "source": "dcgis.commissions",

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:health-benefit-exchange-authority",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Health Benefit Exchange Authority",
+  "attributes": {
+    "shortName": "Health Benefit Exchange Authority",
+    "sourceAgencyId": "1054"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "49"
+    }
+  ],
+  "relations": {}
+}

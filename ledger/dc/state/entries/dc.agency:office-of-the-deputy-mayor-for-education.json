@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-deputy-mayor-for-education",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Deputy Mayor for Education",
+  "attributes": {
+    "shortName": "Office of the Deputy Mayor for Education",
+    "sourceAgencyId": "1089"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "32"
+    }
+  ],
+  "relations": {}
+}

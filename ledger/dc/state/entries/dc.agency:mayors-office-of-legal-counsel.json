@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-of-legal-counsel",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor’s Office of Legal Counsel",
+  "attributes": {
+    "shortName": "Mayor’s Office of Legal Counsel",
+    "sourceAgencyId": "1135"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "117"
+    }
+  ],
+  "relations": {}
+}

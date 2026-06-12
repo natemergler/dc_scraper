@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-inspector-general",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Inspector General",
+  "attributes": {
+    "shortName": "Office of the Inspector General",
+    "sourceAgencyId": "1093"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "67"
+    }
+  ],
+  "relations": {}
+}

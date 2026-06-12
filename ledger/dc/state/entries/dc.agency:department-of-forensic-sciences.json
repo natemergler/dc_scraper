@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:department-of-forensic-sciences",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Forensic Sciences",
+  "attributes": {
+    "shortName": "Department of Forensic Sciences",
+    "sourceAgencyId": "1034"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "26"
+    }
+  ],
+  "relations": {}
+}

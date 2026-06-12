@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-of-community-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office of Community Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office of Community Affairs",
+    "sourceAgencyId": "1058"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "52"
+    }
+  ],
+  "relations": {}
+}

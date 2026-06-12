@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-city-administrator",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the City Administrator",
+  "attributes": {
+    "shortName": "Office of the City Administrator",
+    "sourceAgencyId": "1087"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "57"
+    }
+  ],
+  "relations": {}
+}

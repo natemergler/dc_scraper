@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1140",
+        "to": "dc.agency:commission-on-the-arts-and-humanities",
         "citations": [
           {
             "source": "open_dc.public_bodies",

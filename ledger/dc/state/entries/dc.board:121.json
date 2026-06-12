@@ -32,7 +32,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1034",
+        "to": "dc.agency:department-of-forensic-sciences",
         "citations": [
           {
             "source": "dcgis.boards",

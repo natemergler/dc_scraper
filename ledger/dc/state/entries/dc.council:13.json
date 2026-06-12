@@ -22,7 +22,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1035",
+        "to": "dc.agency:department-of-for-hire-vehicles",
         "citations": [
           {
             "source": "dcgis.councils",

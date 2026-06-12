@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:real-property-tax-appeals-commission",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Real Property Tax Appeals Commission",
+  "attributes": {
+    "shortName": "Real Property Tax Appeals Commission",
+    "sourceAgencyId": "1144"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "124"
+    }
+  ],
+  "relations": {}
+}

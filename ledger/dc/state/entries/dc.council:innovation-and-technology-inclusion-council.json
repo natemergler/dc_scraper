@@ -24,7 +24,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1092",
+        "to": "dc.agency:office-of-the-deputy-mayor-for-planning-and-economic-development",
         "citations": [
           {
             "source": "open_dc.public_bodies",

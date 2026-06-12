@@ -34,7 +34,17 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1031",
+        "to": "dc.agency:department-of-human-services",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-rehabilitation-council-src"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-on-disability-services",
         "citations": [
           {
             "source": "dcgis.councils",
@@ -44,16 +54,6 @@
             "source": "dcgis.councils",
             "sourceRecordId": "6",
             "locator": "Mayor's Order 2001-173"
-          }
-        ]
-      },
-      {
-        "kind": "dc.relation:governs",
-        "to": "dc.agency:1041",
-        "citations": [
-          {
-            "source": "open_dc.public_bodies",
-            "sourceRecordId": "state-rehabilitation-council-src"
           }
         ]
       }

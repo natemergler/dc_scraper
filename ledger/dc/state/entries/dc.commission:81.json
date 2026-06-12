@@ -34,7 +34,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1095",
+        "to": "dc.agency:office-of-the-secretary",
         "citations": [
           {
             "source": "dcgis.commissions",

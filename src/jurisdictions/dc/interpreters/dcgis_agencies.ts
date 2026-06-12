@@ -6,6 +6,7 @@ import {
   type RelationFragment,
 } from "../../../core/types.ts";
 import { collectRecordCitations } from "./citations.ts";
+import { dcAgencyCanonicalId } from "./context.ts";
 
 export interface DcgisAgenciesInterpreterResult {
   entryFragments: EntryFragment[];
@@ -29,6 +30,15 @@ export interface DcGisAgencyPayload {
 const dcAgencyKind = "dc.agency" as const;
 const relationKind = "dc.relation:reports_to" as const;
 const sourceKind = "dcgis.agencies" as const;
+
+type ParsedAgency = {
+  record: ReaderResultRecord;
+  sourceRecord: Record<string, unknown>;
+  agencyId: string;
+  agencyName: string;
+  parentAgencyId: string | null;
+  provisionalId: string;
+};
 
 function asString(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -80,16 +90,13 @@ function parseParentAgencyId(payload: Record<string, unknown>): string | null {
   return null;
 }
 
-function makeAgencyProvisionalId(agencyId: string): string {
-  return `dc.agency:${agencyId}`;
-}
-
 export function interpretDcgisAgencies(
   records: ReaderResultRecord[],
 ): DcgisAgenciesInterpreterResult {
   const entryFragments: EntryFragment[] = [];
   const relationFragments: RelationFragment[] = [];
   const findings: Finding[] = [];
+  const parsedAgencies: ParsedAgency[] = [];
 
   for (const record of records) {
     if (!record || typeof record !== "object") {
@@ -134,7 +141,42 @@ export function interpretDcgisAgencies(
       continue;
     }
 
-    const provisionalId = makeAgencyProvisionalId(agencyId);
+    const provisionalId = dcAgencyCanonicalId(agencyName);
+    parsedAgencies.push({
+      record,
+      sourceRecord,
+      agencyId,
+      agencyName,
+      parentAgencyId: parseParentAgencyId(sourceRecord),
+      provisionalId,
+    });
+  }
+
+  const idBySourceAgencyId = new Map<string, string>();
+  const sourceIdsByCanonicalId = new Map<string, Set<string>>();
+  for (const agency of parsedAgencies) {
+    idBySourceAgencyId.set(agency.agencyId, agency.provisionalId);
+    const existing = sourceIdsByCanonicalId.get(agency.provisionalId) ?? new Set<string>();
+    existing.add(agency.agencyId);
+    sourceIdsByCanonicalId.set(agency.provisionalId, existing);
+  }
+
+  for (const [canonicalId, sourceIds] of sourceIdsByCanonicalId) {
+    if (sourceIds.size <= 1) {
+      continue;
+    }
+    findings.push({
+      kind: "conflict",
+      code: "dc.identity.canonical_id_collision",
+      message: `dcgis.agencies canonical ID ${canonicalId} is shared by source agency IDs ${
+        [...sourceIds].sort().join(", ")
+      }`,
+      citation: cite(sourceKind, [...sourceIds].sort()[0]),
+    });
+  }
+
+  for (const agency of parsedAgencies) {
+    const { record, sourceRecord, agencyId, agencyName, parentAgencyId, provisionalId } = agency;
     const shortName = parseShortName(sourceRecord, agencyName);
     const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
 
@@ -153,15 +195,25 @@ export function interpretDcgisAgencies(
       citations,
     });
 
-    const parentAgencyId = parseParentAgencyId(sourceRecord);
     if (parentAgencyId && parentAgencyId !== agencyId) {
+      const parentProvisionalId = idBySourceAgencyId.get(parentAgencyId);
+      if (!parentProvisionalId) {
+        findings.push({
+          kind: "warn",
+          code: "dc.interpreter.parent_agency_missing",
+          message:
+            `dcgis.agencies record ${record.key} references missing parent agency ${parentAgencyId}`,
+          citation: cite(sourceKind, record.key),
+        });
+        continue;
+      }
       relationFragments.push({
         fragmentType: "relation",
         source: sourceKind,
         sourceRecordId: record.key,
         from: provisionalId,
         relationKind,
-        to: makeAgencyProvisionalId(parentAgencyId),
+        to: parentProvisionalId,
         citations,
       });
     }
