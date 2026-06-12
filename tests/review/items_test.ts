@@ -1,6 +1,12 @@
 import { assertEquals } from "@std/assert";
 
-import { cite, type Entry, type LedgerState, type Revision } from "../../src/core/types.ts";
+import {
+  cite,
+  type Entry,
+  type Finding,
+  type LedgerState,
+  type Revision,
+} from "../../src/core/types.ts";
 import { generateReviewItems } from "../../src/review/items.ts";
 import { loadReviewItems, saveReviewItems } from "../../src/review/store.ts";
 
@@ -158,6 +164,43 @@ Deno.test("review item store round-trips workspace files", async () => {
     assertEquals(loaded.length, 1);
     assertEquals(loaded[0].id, "same_normalized_name:food-policy-council");
     assertEquals(loaded[0].category, "source_shadow");
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+  }
+});
+
+Deno.test("finding review items preserve distinct source evidence", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-review-finding-store-" });
+  try {
+    const findings: Finding[] = [
+      {
+        kind: "warn",
+        code: "dc.promotion.opendc_specific_public_body_promoted",
+        message:
+          "Open DC public body dc.board:29 promoted as dc.board; review may still be needed for identity reconciliation",
+        citation: cite("open_dc.public_bodies", "board-accountancy"),
+      },
+      {
+        kind: "warn",
+        code: "dc.promotion.opendc_specific_public_body_promoted",
+        message:
+          "Open DC public body dc.board:29 promoted as dc.board; review may still be needed for identity reconciliation",
+        citation: cite("open_dc.public_bodies", "board-accountancy-0"),
+      },
+    ];
+
+    const items = generateReviewItems(state([]), findings);
+    await saveReviewItems(workspace, items);
+    const loaded = await loadReviewItems(workspace);
+
+    assertEquals(loaded.length, 2);
+    assertEquals(new Set(loaded.map((item) => item.id)).size, 2);
+    assertEquals(
+      loaded.map((item) =>
+        "sourceRecordId" in item.citations[0] ? item.citations[0].sourceRecordId : ""
+      ).sort(),
+      ["board-accountancy", "board-accountancy-0"],
+    );
   } finally {
     await Deno.remove(workspace, { recursive: true });
   }

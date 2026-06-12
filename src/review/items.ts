@@ -347,7 +347,12 @@ function reviewItemFromFinding(finding: Finding, generatedAt: string): ReviewIte
 
   const citation = finding.citation && isCitationValue(finding.citation) ? finding.citation : null;
   const citations = citation ? [citation] : [];
-  const id = `finding:${stableReviewKey(finding.code)}:${stableReviewKey(finding.message)}`;
+  const citationSegment = citation
+    ? `:${stableReviewIdSegment(citationIdentity(citation), 60)}`
+    : "";
+  const id = `finding:${stableReviewKey(finding.code)}:${
+    stableReviewKey(finding.message)
+  }${citationSegment}`;
 
   return {
     id,
@@ -807,6 +812,18 @@ function uniqueCitations(citations: CitationValue[]): CitationValue[] {
 
 function sameCitation(left: CitationValue, right: CitationValue): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function citationIdentity(citation: CitationValue): string {
+  if ("uncited" in citation) {
+    return `uncited:${citation.reason ?? ""}`;
+  }
+  return [
+    citation.source,
+    citation.sourceRecordId,
+    citation.locator ?? "",
+    citation.url ?? "",
+  ].join("|");
 }
 
 function compareReviewItems(left: ReviewItem, right: ReviewItem): number {
