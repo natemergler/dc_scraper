@@ -45,6 +45,11 @@ export function createDraftRevision(
   if (stateIds.length === 0) {
     throw new Error(`review item ${item.id} does not identify a state entry target`);
   }
+  if (options.targetId && !stateIds.includes(options.targetId)) {
+    throw new Error(
+      `review resolution target ${options.targetId} is not one of the review item entries`,
+    );
+  }
 
   const primaryTarget = options.targetId ?? stateIds[0];
   const relatedIds = stateIds.filter((id) => id !== primaryTarget);
@@ -92,11 +97,6 @@ export function createDraftRevision(
   if (decisionType === "source-shadow") {
     if (!options.targetId) {
       throw new Error("source-shadow resolution requires --target <canonical-entry-id>");
-    }
-    if (!stateIds.includes(options.targetId)) {
-      throw new Error(
-        `source-shadow target ${options.targetId} is not one of the review item entries`,
-      );
     }
     const shadowId = stateIds.find((id) => id !== options.targetId);
     if (!shadowId) {

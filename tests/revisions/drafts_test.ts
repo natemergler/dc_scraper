@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 
 import { cite, type Entry, type LedgerState } from "../../src/core/types.ts";
@@ -92,6 +92,35 @@ Deno.test("createDraftRevision builds source-shadow suppression revisions", () =
     decision: "source_shadow",
     canonicalEntryId: "dc.council:19",
   });
+});
+
+Deno.test("createDraftRevision rejects targets outside the review item", () => {
+  const [item] = generateReviewItems(
+    state([
+      entry({
+        id: "dc.agency:1052",
+        kind: "dc.agency",
+        name: "Executive Office of the Mayor",
+        citations: [cite("dcgis.agencies", "45")],
+      }),
+      entry({
+        id: "dc.office:executive-office-of-the-mayor",
+        kind: "dc.office",
+        name: "Executive Office of the Mayor",
+        citations: [cite("mayor.executive_structure", "executive-office-of-the-mayor")],
+      }),
+    ]),
+  );
+
+  assertThrows(
+    () =>
+      createDraftRevision(item, {
+        decisionType: "preserve-distinct",
+        targetId: "dc.agency:not-in-review-item",
+      }),
+    Error,
+    "not one of the review item entries",
+  );
 });
 
 Deno.test("draft revision store validates draft shape", async () => {
