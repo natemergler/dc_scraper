@@ -43,7 +43,7 @@ export async function loadRevisions(revisionRoot: string): Promise<Revision[]> {
   return revisions;
 }
 
-function parseRevisionPayload(path: string, payload: unknown): Revision {
+export function parseRevisionPayload(path: string, payload: unknown): Revision {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error(`invalid revision payload in ${path}: revision must be an object`);
   }

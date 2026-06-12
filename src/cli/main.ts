@@ -28,9 +28,27 @@ import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
 import { exportReleaseArtifacts } from "../export/export.ts";
 import { loadRevisions } from "../revisions/load.ts";
+import {
+  applyDraftRevision,
+  createDraftRevision,
+  type DraftRevision,
+  loadDraftRevisions,
+  writeDraftRevision,
+} from "../revisions/drafts.ts";
 import { findReconciliationCandidates } from "../reconciliation/candidates.ts";
+import {
+  generateReviewItems,
+  type ReviewItem,
+  type ReviewResolutionType,
+} from "../review/items.ts";
+import { loadReviewItems, saveReviewItems } from "../review/store.ts";
 
-import { type EntryFragment, type Finding, type RelationFragment } from "../core/types.ts";
+import {
+  type CitationValue,
+  type EntryFragment,
+  type Finding,
+  type RelationFragment,
+} from "../core/types.ts";
 import {
   type DcInterpreterContext,
   normalizeAgencyLookupKey,
@@ -47,6 +65,22 @@ type CliOptions = {
 type WorkspaceCompilation = {
   fragments: Array<EntryFragment | RelationFragment>;
   findings: Finding[];
+};
+
+type ReviewListOptions = CliOptions & {
+  json?: boolean;
+  status?: string;
+};
+
+type ReviewShowOptions = CliOptions & {
+  json?: boolean;
+};
+
+type ReviewResolveOptions = CliOptions & {
+  as?: string;
+  target?: string;
+  kind?: string;
+  rationale?: string;
 };
 
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
@@ -204,7 +238,7 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
   try {
     initWorkspace(workspace);
 
-    const revisionRoot = join(stateRoot, "..", "revisions");
+    const revisionRoot = revisionRootForStateRoot(stateRoot);
     const revisions = await loadRevisions(revisionRoot);
     const workspaceCompilation = compileFromWorkspace(workspace);
     workspace.db.run("DELETE FROM fragments");
@@ -226,6 +260,7 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
       revisions: [...dcRuntime.revisions, ...revisions],
       generatedAt: new Date().toISOString(),
     });
+    const allFindings = [...result.findings, ...result.conflicts];
 
     workspace.db.run("DELETE FROM baselines");
     saveBaseline(workspace, {
@@ -235,7 +270,7 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     });
 
     workspace.db.run("DELETE FROM findings");
-    for (const finding of [...result.findings, ...result.conflicts]) {
+    for (const finding of allFindings) {
       saveFinding(workspace, finding);
     }
 
@@ -246,8 +281,18 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
       return 1;
     }
 
+    const draftRevisions = await safelyLoadDraftRevisions(workspaceRoot);
+    const reviewItems = generateReviewItems(result.state, allFindings, {
+      trackedRevisions: [...dcRuntime.revisions, ...revisions],
+      draftRevisions,
+      generatedAt: result.state.generatedAt,
+    });
+    await saveReviewItems(workspaceRoot, reviewItems);
+
     await writeCommittedState(result.state, stateRoot);
-    console.log(`state generated with ${result.state.entries.size} entries`);
+    console.log(
+      `state generated with ${result.state.entries.size} entries; ${reviewItems.length} review items`,
+    );
     return 0;
   } finally {
     closeWorkspace(workspace);
@@ -319,6 +364,164 @@ async function runReconcileCandidates(stateRoot: string, limit?: number): Promis
   const report = findReconciliationCandidates(loaded.state, { limit });
   console.log(JSON.stringify(report, null, 2));
   return 0;
+}
+
+async function runReviewList(options: ReviewListOptions): Promise<number> {
+  const cliOptions = validateCliOptions(options);
+  const items = await refreshReviewItemsFromCommittedState(
+    cliOptions.workspace,
+    cliOptions.stateRoot,
+  );
+  const status = options.status;
+  const filtered = status && status !== "all"
+    ? items.filter((item) => item.status === status)
+    : items;
+
+  if (options.json) {
+    console.log(JSON.stringify(
+      {
+        reviewItemCount: filtered.length,
+        totalReviewItemCount: items.length,
+        items: filtered,
+      },
+      null,
+      2,
+    ));
+    return 0;
+  }
+
+  printReviewList(filtered, items.length);
+  return 0;
+}
+
+async function runReviewShow(itemId: string, options: ReviewShowOptions): Promise<number> {
+  const cliOptions = validateCliOptions(options);
+  const items = await refreshReviewItemsFromCommittedState(
+    cliOptions.workspace,
+    cliOptions.stateRoot,
+  );
+  const item = items.find((candidate) => candidate.id === itemId);
+  if (!item) {
+    throw new Error(`review item not found: ${itemId}`);
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(item, null, 2));
+    return 0;
+  }
+
+  printReviewItem(item);
+  return 0;
+}
+
+async function runReviewResolve(
+  itemId: string,
+  options: ReviewResolveOptions,
+): Promise<number> {
+  const cliOptions = validateCliOptions(options);
+  const decisionType = parseReviewResolutionType(options.as);
+  const items = await refreshReviewItemsFromCommittedState(
+    cliOptions.workspace,
+    cliOptions.stateRoot,
+  );
+  const item = items.find((candidate) => candidate.id === itemId);
+  if (!item) {
+    throw new Error(`review item not found: ${itemId}`);
+  }
+
+  const draft = createDraftRevision(item, {
+    decisionType,
+    targetId: options.target,
+    kind: options.kind,
+    rationale: options.rationale,
+  });
+  const path = await writeDraftRevision(cliOptions.workspace, draft);
+  await refreshReviewItemsFromCommittedState(cliOptions.workspace, cliOptions.stateRoot);
+  console.log(`draft revision written: ${path}`);
+  return 0;
+}
+
+async function runRevisionValidate(workspaceRoot: string, stateRoot: string): Promise<number> {
+  const revisionRoot = revisionRootForStateRoot(stateRoot);
+  const trackedRevisions = await loadRevisions(revisionRoot);
+  const draftRevisions = await loadDraftRevisions(workspaceRoot);
+  console.log(
+    `revision validation passed: ${trackedRevisions.length} tracked, ${draftRevisions.length} draft`,
+  );
+  return 0;
+}
+
+async function runRevisionApplyDraft(
+  workspaceRoot: string,
+  stateRoot: string,
+  draftId: string,
+): Promise<number> {
+  const revisionRoot = revisionRootForStateRoot(stateRoot);
+  const path = await applyDraftRevision(workspaceRoot, revisionRoot, draftId);
+  console.log(`tracked revision written: ${path}`);
+  return 0;
+}
+
+async function refreshReviewItemsFromCommittedState(
+  workspaceRoot: string,
+  stateRoot: string,
+): Promise<ReviewItem[]> {
+  const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  const revisionRoot = revisionRootForStateRoot(stateRoot);
+  const trackedRevisions = await loadRevisions(revisionRoot);
+  const draftRevisions = await safelyLoadDraftRevisions(workspaceRoot);
+  const findings = loadPersistedFindings(workspaceRoot);
+  const items = generateReviewItems(loaded.state, findings, {
+    trackedRevisions: [...dcRuntime.revisions, ...trackedRevisions],
+    draftRevisions,
+    generatedAt: loaded.state.generatedAt,
+  });
+  await saveReviewItems(workspaceRoot, items);
+  return await loadReviewItems(workspaceRoot);
+}
+
+function loadPersistedFindings(workspaceRoot: string): Finding[] {
+  const workspace = openWorkspace(workspaceRoot);
+  try {
+    initWorkspace(workspace);
+    const rows = workspace.db.prepare("SELECT payload FROM findings ORDER BY id ASC")
+      .all() as Array<
+        { payload: string }
+      >;
+    const findings: Finding[] = [];
+    for (const row of rows) {
+      try {
+        const payload = JSON.parse(row.payload) as Finding;
+        if (
+          payload &&
+          typeof payload === "object" &&
+          typeof payload.kind === "string" &&
+          typeof payload.code === "string" &&
+          typeof payload.message === "string"
+        ) {
+          findings.push(payload);
+        }
+      } catch {
+        continue;
+      }
+    }
+    return findings;
+  } finally {
+    closeWorkspace(workspace);
+  }
+}
+
+async function safelyLoadDraftRevisions(workspaceRoot: string): Promise<DraftRevision[]> {
+  try {
+    return await loadDraftRevisions(workspaceRoot);
+  } catch (error) {
+    console.error(
+      `warning: draft revisions could not be loaded: ${
+        error instanceof Error ? error.message : "unknown error"
+      }`,
+    );
+    return [];
+  }
 }
 
 function compileFromWorkspace(
@@ -422,6 +625,12 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
       onExitCode(await runCollect(sourceId, cliOptions.workspace, cliOptions.limit));
     });
 
+  root.command("compile", "Compile committed state from workspace records.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runStateGenerate(cliOptions.workspace, cliOptions.stateRoot));
+    });
+
   const state = new Command<CliOptions>()
     .description("State management commands.")
     .action(() => {
@@ -470,7 +679,165 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
 
   root.command("reconcile", reconcile);
 
+  const review = new Command<CliOptions>()
+    .description("Review workflow commands.")
+    .action(() => {
+      throw new Error("review requires `list`, `show`, or `resolve`");
+    });
+
+  review.command("list", "List persisted review items.")
+    .option("--json", "Emit review items as JSON.")
+    .option("--status <status:string>", "Filter by open, drafted, applied, or all.", {
+      default: "all",
+    })
+    .action(async (options) => {
+      onExitCode(await runReviewList(options as ReviewListOptions));
+    });
+
+  review.command("show <itemId:string>", "Show one review item evidence packet.")
+    .option("--json", "Emit the full review item packet as JSON.")
+    .action(async (options, itemId) => {
+      onExitCode(await runReviewShow(itemId, options as ReviewShowOptions));
+    });
+
+  review.command("resolve <itemId:string>", "Write a draft revision for a review resolution.")
+    .option("--as <decision:string>", "Resolution type.")
+    .option("--target <entry-id:string>", "Canonical or target entry ID.")
+    .option("--kind <kind:string>", "Kind to use with override-kind.")
+    .option("--rationale <text:string>", "Operator rationale for the draft revision.")
+    .action(async (options, itemId) => {
+      onExitCode(await runReviewResolve(itemId, options as ReviewResolveOptions));
+    });
+
+  root.command("review", review);
+
+  const revision = new Command<CliOptions>()
+    .description("Revision workflow commands.")
+    .action(() => {
+      throw new Error("revision requires `validate` or `apply-draft`");
+    });
+
+  revision.command("validate", "Validate tracked and draft revisions.")
+    .action(async (options) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runRevisionValidate(cliOptions.workspace, cliOptions.stateRoot));
+    });
+
+  revision.command("apply-draft <draftId:string>", "Apply a draft revision as tracked curation.")
+    .action(async (options, draftId) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runRevisionApplyDraft(cliOptions.workspace, cliOptions.stateRoot, draftId));
+    });
+
+  root.command("revision", revision);
+
   return root;
+}
+
+function printReviewList(items: ReviewItem[], totalCount: number): void {
+  if (items.length === 0) {
+    console.log(`no review items (${totalCount} total)`);
+    return;
+  }
+
+  console.log(
+    [
+      "STATUS".padEnd(8),
+      "SEVERITY".padEnd(8),
+      "CATEGORY".padEnd(28),
+      "CLASSIFICATION".padEnd(26),
+      "ID",
+    ].join("  "),
+  );
+  for (const item of items) {
+    console.log(
+      [
+        item.status.padEnd(8),
+        item.severity.padEnd(8),
+        item.category.padEnd(28),
+        item.classification.padEnd(26),
+        item.id,
+      ].join("  "),
+    );
+  }
+  console.log(`${items.length} shown, ${totalCount} total`);
+}
+
+function printReviewItem(item: ReviewItem): void {
+  console.log(item.title);
+  console.log(`ID: ${item.id}`);
+  console.log(`Status: ${item.status}`);
+  console.log(`Category: ${item.category}`);
+  console.log(`Classification: ${item.classification}`);
+  console.log(`Severity: ${item.severity}`);
+  console.log(`Confidence: ${item.confidence}`);
+  console.log(`Blocks state generation: ${item.blocks.stateGeneration ? "yes" : "no"}`);
+  console.log(`Blocks release readiness: ${item.blocks.releaseReadiness ? "yes" : "no"}`);
+  console.log(`Suggested resolutions: ${item.suggestedResolutions.join(", ")}`);
+  if (item.trackedRevisionIds.length > 0) {
+    console.log(`Tracked revisions: ${item.trackedRevisionIds.join(", ")}`);
+  }
+  if (item.draftRevisionIds.length > 0) {
+    console.log(`Draft revisions: ${item.draftRevisionIds.join(", ")}`);
+  }
+  console.log("");
+  console.log(item.summary);
+  console.log(item.rationale);
+
+  if (item.candidateEntries.length > 0) {
+    console.log("");
+    console.log("Entries:");
+    for (const entry of item.candidateEntries) {
+      console.log(`- ${entry.id} | ${entry.kind} | ${entry.name} | ${entry.sources.join(", ")}`);
+    }
+  }
+
+  if (item.affected.relationEndpoints.length > 0) {
+    console.log("");
+    console.log("Relation endpoints:");
+    for (const endpoint of item.affected.relationEndpoints) {
+      console.log(`- ${endpoint.from} --${endpoint.kind}--> ${endpoint.to}`);
+    }
+  }
+
+  if (item.citations.length > 0) {
+    console.log("");
+    console.log("Evidence:");
+    for (const citation of item.citations) {
+      console.log(`- ${formatCitation(citation)}`);
+    }
+  }
+}
+
+function formatCitation(citation: CitationValue): string {
+  if ("uncited" in citation) {
+    return citation.reason ? `uncited: ${citation.reason}` : "uncited";
+  }
+  return [
+    citation.source,
+    citation.sourceRecordId,
+    citation.locator,
+    citation.url,
+  ].filter((part): part is string => typeof part === "string" && part.length > 0).join(" | ");
+}
+
+function parseReviewResolutionType(value: unknown): ReviewResolutionType {
+  if (
+    value === "preserve-distinct" ||
+    value === "source-shadow" ||
+    value === "alias" ||
+    value === "suppress" ||
+    value === "override-kind"
+  ) {
+    return value;
+  }
+  throw new Error(
+    "--as must be one of preserve-distinct, source-shadow, alias, suppress, override-kind",
+  );
+}
+
+function revisionRootForStateRoot(stateRoot: string): string {
+  return join(stateRoot, "..", "revisions");
 }
 
 function validateCliOptions(options: CliOptions): CliOptions {
