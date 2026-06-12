@@ -3388,6 +3388,171 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
   }
 });
 
+Deno.test("review workflow lists, shows, drafts, validates, and applies revisions", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-review-workflow-" });
+  const projectRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-review-workflow-project-",
+  });
+  const stateRoot = join(projectRoot, "state");
+  const revisionRoot = join(projectRoot, "revisions");
+  await Deno.mkdir(stateRoot, { recursive: true });
+
+  const restoreFetch = mockArcGISFetch(
+    new Map([
+      [
+        "0",
+        {
+          features: [
+            {
+              attributes: {
+                OBJECTID: 1,
+                AGENCY_ID: "a-1",
+                AGENCY_NAME: "Shared Agency",
+                SHORT_NAME: "SA1",
+              },
+            },
+            {
+              attributes: {
+                OBJECTID: 2,
+                AGENCY_ID: "a-2",
+                AGENCY_NAME: "Shared Agency",
+                SHORT_NAME: "SA2",
+              },
+            },
+          ],
+          exceededTransferLimit: false,
+          objectIdFieldName: "OBJECTID",
+        },
+      ],
+    ]),
+  );
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dcgis.agencies",
+      "--limit",
+      "2",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const compileCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "compile",
+    ]);
+    assertEquals(compileCode, 0);
+
+    const itemId = "same_normalized_name:shared-agency";
+    const listResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--json",
+      ])
+    );
+    assertEquals(listResult.code, 0);
+    const listJson = JSON.parse(listResult.output) as {
+      reviewItemCount: number;
+      items: Array<{ id: string; status: string }>;
+    };
+    assertEquals(listJson.reviewItemCount, 1);
+    assertEquals(listJson.items[0].id, itemId);
+    assertEquals(listJson.items[0].status, "open");
+
+    const showResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "show",
+        itemId,
+        "--json",
+      ])
+    );
+    assertEquals(showResult.code, 0);
+    const showJson = JSON.parse(showResult.output) as {
+      id: string;
+      suggestedResolutions: string[];
+    };
+    assertEquals(showJson.id, itemId);
+    assertEquals(showJson.suggestedResolutions.includes("preserve-distinct"), true);
+
+    const resolveCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "review",
+      "resolve",
+      itemId,
+      "--as",
+      "preserve-distinct",
+      "--target",
+      "dc.agency:a-1",
+    ]);
+    assertEquals(resolveCode, 0);
+
+    const draftFiles = await listEntryFiles(join(workspace, "draft-revisions"));
+    assertEquals(draftFiles.length, 1);
+    const draft = JSON.parse(
+      await Deno.readTextFile(join(workspace, "draft-revisions", draftFiles[0])),
+    ) as { id: string };
+    const draftId = draft.id;
+
+    const validateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "revision",
+      "validate",
+    ]);
+    assertEquals(validateCode, 0);
+
+    const applyCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "revision",
+      "apply-draft",
+      draftId,
+    ]);
+    assertEquals(applyCode, 0);
+    assertEquals(await exists(join(revisionRoot, `${draftId}.json`)), true);
+
+    const regenerateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(regenerateCode, 0);
+
+    const agency = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:a-1.json")),
+    ) as { attributes: { revisionReviews?: unknown[] } };
+    assertEquals(Array.isArray(agency.attributes.revisionReviews), true);
+  } finally {
+    restoreFetch();
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(projectRoot, { recursive: true });
+  }
+});
+
 async function listEntryFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
   for await (const entry of Deno.readDir(directory)) {
@@ -3417,6 +3582,22 @@ function stripAnsi(input: string): string {
     output += input[index];
   }
   return output;
+}
+
+async function captureConsole(
+  fn: () => Promise<number>,
+): Promise<{ code: number; output: string }> {
+  const originalLog = console.log;
+  const output: string[] = [];
+  console.log = (...args: unknown[]) => {
+    output.push(args.map((arg) => String(arg)).join(" "));
+  };
+  try {
+    const code = await fn();
+    return { code, output: stripAnsi(output.join("\n")) };
+  } finally {
+    console.log = originalLog;
+  }
 }
 
 async function exists(path: string): Promise<boolean> {
