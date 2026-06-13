@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:district-department-of-transportation",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "District Department of Transportation",
+  "attributes": {
+    "shortName": "District Department of Transportation",
+    "sourceAgencyId": "1048"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "23"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "district-department-of-transportation",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

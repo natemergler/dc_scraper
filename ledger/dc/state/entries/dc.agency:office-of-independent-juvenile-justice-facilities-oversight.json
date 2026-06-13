@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-independent-juvenile-justice-facilities-oversight",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Independent Juvenile Justice Facilities Oversight",
+  "attributes": {
+    "shortName": "Office of Independent Juvenile Justice Facilities Oversight",
+    "sourceAgencyId": "1173"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "152"
+    }
+  ],
+  "relations": {}
+}

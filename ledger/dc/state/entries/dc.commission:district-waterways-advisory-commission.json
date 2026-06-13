@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1033",
+        "to": "dc.agency:department-of-energy-and-environment",
         "citations": [
           {
             "source": "open_dc.public_bodies",

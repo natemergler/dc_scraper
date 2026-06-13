@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-policy-and-legislative-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Policy and Legislative Affairs",
+  "attributes": {
+    "shortName": "Office of Policy and Legislative Affairs",
+    "sourceAgencyId": "1081"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "74"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-racial-equity",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Racial Equity",
+  "attributes": {
+    "shortName": "Office of Racial Equity",
+    "sourceAgencyId": "1178"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "159"
+    }
+  ],
+  "relations": {}
+}

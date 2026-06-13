@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:state-board-of-education",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "State Board of Education",
+  "attributes": {
+    "shortName": "State Board of Education",
+    "sourceAgencyId": "1145"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "125"
+    }
+  ],
+  "relations": {}
+}

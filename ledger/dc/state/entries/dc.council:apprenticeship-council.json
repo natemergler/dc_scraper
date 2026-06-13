@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1032",
+        "to": "dc.agency:department-of-employment-services",
         "citations": [
           {
             "source": "open_dc.public_bodies",

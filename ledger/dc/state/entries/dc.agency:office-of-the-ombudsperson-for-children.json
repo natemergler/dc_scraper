@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-ombudsperson-for-children",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Ombudsperson for Children",
+  "attributes": {
+    "shortName": "Office of the Ombudsperson for Children",
+    "sourceAgencyId": "1176"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "155"
+    }
+  ],
+  "relations": {}
+}

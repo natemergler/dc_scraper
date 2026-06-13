@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-on-fathers-men-and-boys",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office on Fathers, Men, and Boys",
+  "attributes": {
+    "shortName": "Mayor's Office on Fathers, Men, and Boys",
+    "sourceAgencyId": "1141"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "121"
+    }
+  ],
+  "relations": {}
+}

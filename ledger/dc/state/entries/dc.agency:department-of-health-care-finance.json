@@ -1,0 +1,31 @@
+{
+  "id": "dc.agency:department-of-health-care-finance",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Health Care Finance",
+  "attributes": {
+    "shortName": "Department of Health Care Finance",
+    "sourceAgencyId": "1038"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "29"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-health-care-finance",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

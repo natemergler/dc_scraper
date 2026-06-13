@@ -22,7 +22,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1174",
+        "to": "dc.agency:office-of-the-deputy-mayor-for-public-safety-and-justice",
         "citations": [
           {
             "source": "dcgis.boards",

@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1075",
+        "to": "dc.agency:office-of-human-rights",
         "citations": [
           {
             "source": "dcgis.commissions",

@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1038",
+        "to": "dc.agency:department-of-health-care-finance",
         "citations": [
           {
             "source": "open_dc.public_bodies",

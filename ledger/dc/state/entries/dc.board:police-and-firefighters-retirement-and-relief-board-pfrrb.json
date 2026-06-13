@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1040",
+        "to": "dc.agency:department-of-human-resources",
         "citations": [
           {
             "source": "open_dc.public_bodies",

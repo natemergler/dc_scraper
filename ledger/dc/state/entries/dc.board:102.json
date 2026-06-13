@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1039",
+        "to": "dc.agency:department-of-housing-and-community-development",
         "citations": [
           {
             "source": "dcgis.boards",

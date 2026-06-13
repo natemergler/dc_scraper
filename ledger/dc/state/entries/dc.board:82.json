@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1097",
+        "to": "dc.agency:office-of-the-state-superintendent-of-education",
         "citations": [
           {
             "source": "dcgis.boards",

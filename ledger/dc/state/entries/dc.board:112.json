@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1080",
+        "to": "dc.agency:office-of-police-complaints",
         "citations": [
           {
             "source": "open_dc.public_bodies",

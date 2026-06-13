@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1064",
+        "to": "dc.agency:mayors-office-on-womens-policy-and-initiatives",
         "citations": [
           {
             "source": "dcgis.commissions",

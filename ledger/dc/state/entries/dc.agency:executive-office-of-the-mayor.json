@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:executive-office-of-the-mayor",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Executive Office of the Mayor",
+  "attributes": {
+    "shortName": "Executive Office of the Mayor",
+    "sourceAgencyId": "1052"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "45"
+    }
+  ],
+  "relations": {}
+}

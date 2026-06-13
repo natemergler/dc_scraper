@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-campaign-finance",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Campaign Finance",
+  "attributes": {
+    "shortName": "Office of Campaign Finance",
+    "sourceAgencyId": "1148"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "127"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:commission-on-the-arts-and-humanities",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Commission on the Arts and Humanities",
+  "attributes": {
+    "shortName": "Commission on the Arts and Humanities",
+    "sourceAgencyId": "1140"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "120"
+    }
+  ],
+  "relations": {}
+}

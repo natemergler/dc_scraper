@@ -21,7 +21,7 @@
     "dc.relation:part_of": [
       {
         "kind": "dc.relation:part_of",
-        "to": "dc.agency:1138",
+        "to": "dc.agency:board-of-ethics-and-government-accountability",
         "citations": [
           {
             "source": "bega.structure",

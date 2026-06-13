@@ -30,7 +30,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1180",
+        "to": "dc.agency:department-of-licensing-and-consumer-protection",
         "citations": [
           {
             "source": "open_dc.public_bodies",

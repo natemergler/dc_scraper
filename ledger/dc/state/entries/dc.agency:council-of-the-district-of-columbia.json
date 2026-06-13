@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:council-of-the-district-of-columbia",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Council of the District of Columbia",
+  "attributes": {
+    "shortName": "Council of the District of Columbia",
+    "sourceAgencyId": "1012"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "7"
+    }
+  ],
+  "relations": {}
+}

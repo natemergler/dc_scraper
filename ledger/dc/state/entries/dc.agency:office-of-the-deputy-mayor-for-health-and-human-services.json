@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-deputy-mayor-for-health-and-human-services",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Deputy Mayor for Health and Human Services",
+  "attributes": {
+    "shortName": "Office of the Deputy Mayor for Health and Human Services",
+    "sourceAgencyId": "1091"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "34"
+    }
+  ],
+  "relations": {}
+}

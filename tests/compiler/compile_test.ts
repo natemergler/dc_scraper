@@ -144,6 +144,123 @@ Deno.test("compile marks conflicts when revision makes state invalid", () => {
   );
 });
 
+Deno.test("compile resolves revision targets through identity aliases", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    promotionPolicy: promoteAllFragmentsPolicy,
+    identityAliases: [{
+      id: "dcgis-agency-1052",
+      canonicalId: "dc.agency:executive-office-of-the-mayor",
+      previousIds: ["dc.agency:1052"],
+      sourceRefs: [cite("dcgis.agencies", "45")],
+      kind: "dc.agency",
+      name: "Executive Office of the Mayor",
+      rationale: "migrated",
+      evidence: [],
+    }],
+    fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "45",
+      provisionalId: "dc.agency:executive-office-of-the-mayor",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Executive Office of the Mayor",
+      attributes: { shortName: "EOM", sourceAgencyId: "1052" },
+      citations: [cite("dcgis.agencies", "45")],
+    }],
+    revisions: [{
+      id: "r1",
+      source: "test",
+      targetKind: "entry",
+      targetId: "dc.agency:1052",
+      target: {
+        canonicalId: "dc.agency:executive-office-of-the-mayor",
+        previousIds: ["dc.agency:1052"],
+        sourceRefs: [cite("dcgis.agencies", "45")],
+        kind: "dc.agency",
+      },
+      patch: { attributes: { reviewed: true } },
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(
+    result.state?.entries.get("dc.agency:executive-office-of-the-mayor")?.attributes.reviewed,
+    true,
+  );
+});
+
+Deno.test("compile resolves relation patch endpoints through identity aliases", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+  registry.registerRelation(defineRelationKind({ kind: "dc.relation:governs" }));
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    promotionPolicy: promoteAllFragmentsPolicy,
+    identityAliases: [{
+      id: "dcgis-agency-1138",
+      canonicalId: "dc.agency:board-of-ethics-and-government-accountability",
+      previousIds: ["dc.agency:1138"],
+      sourceRefs: [cite("dcgis.agencies", "118")],
+      rationale: "migrated",
+      evidence: [],
+    }],
+    fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "118",
+      provisionalId: "dc.agency:board-of-ethics-and-government-accountability",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Board of Ethics and Government Accountability",
+      attributes: { shortName: "BEGA", sourceAgencyId: "1138" },
+      citations: [cite("dcgis.agencies", "118")],
+    }, {
+      fragmentType: "entry",
+      source: "bega.structure",
+      sourceRecordId: "office-of-government-ethics",
+      provisionalId: "dc.agency:office-of-government-ethics",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Office of Government Ethics",
+      attributes: { shortName: "OGE" },
+      citations: [cite("bega.structure", "office-of-government-ethics")],
+    }],
+    revisions: [{
+      id: "r1",
+      source: "test",
+      targetKind: "entry",
+      targetId: "dc.agency:office-of-government-ethics",
+      patch: {
+        relations: {
+          "dc.relation:governs": [{
+            kind: "dc.relation:governs",
+            to: "dc.agency:1138",
+            citations: [cite("bega.structure", "office-of-government-ethics")],
+          }],
+        },
+      },
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(
+    result.state?.entries.get("dc.agency:office-of-government-ethics")?.relations[
+      "dc.relation:governs"
+    ]?.[0].to,
+    "dc.agency:board-of-ethics-and-government-accountability",
+  );
+});
+
 Deno.test("compiler output is deterministic regardless of fragment order", () => {
   const registry = new KindRegistry();
   registry.register(dcAgencyKind);
@@ -747,6 +864,16 @@ Deno.test("compile dedupes legacy and canonical relation facets", () => {
     kindRegistry: registry,
     promotionPolicy: legacyDcRelationPolicy,
     fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      provisionalId: "dc.agency:a-1",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency One",
+      attributes: { shortName: "A1", sourceAgencyId: "a-1" },
+      citations: [cite("dcgis.agencies", "row-1")],
+    }, {
       fragmentType: "entry",
       source: "dcgis.agencies",
       sourceRecordId: "row-2",

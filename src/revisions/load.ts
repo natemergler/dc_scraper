@@ -1,6 +1,12 @@
 import { join } from "@std/path";
 
-import { type CitationValue, isCitationValue, type Revision } from "../core/types.ts";
+import {
+  type Citation,
+  type CitationValue,
+  isCitationValue,
+  type Revision,
+  type RevisionTargetSelector,
+} from "../core/types.ts";
 
 export async function loadRevisions(revisionRoot: string): Promise<Revision[]> {
   const revisions: Revision[] = [];
@@ -72,6 +78,8 @@ export function parseRevisionPayload(path: string, payload: unknown): Revision {
     throw new Error(`invalid revision payload in ${path}: targetId must be a non-empty string`);
   }
 
+  const target = parseTargetSelector(path, candidate.target);
+
   const patch = candidate.patch;
   if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
     throw new Error(`invalid revision payload in ${path}: patch must be an object`);
@@ -133,9 +141,49 @@ export function parseRevisionPayload(path: string, payload: unknown): Revision {
     source,
     targetKind,
     targetId,
+    ...(target ? { target } : {}),
     ...(typeof rationale === "string" ? { rationale } : {}),
     ...(parsedEvidence ? { evidence: parsedEvidence } : {}),
     patch: patch as Record<string, unknown>,
+  };
+}
+
+function parseTargetSelector(
+  path: string,
+  value: unknown,
+): RevisionTargetSelector | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`invalid revision payload in ${path}: target must be an object`);
+  }
+
+  const target = value as Record<string, unknown>;
+  const canonicalId = optionalString(path, "target.canonicalId", target.canonicalId);
+  const previousIds = optionalStringArray(path, "target.previousIds", target.previousIds);
+  const sourceRefs = optionalCitationArray(path, "target.sourceRefs", target.sourceRefs);
+  const kind = optionalString(path, "target.kind", target.kind);
+  const name = optionalString(path, "target.name", target.name);
+
+  if (
+    canonicalId === undefined &&
+    previousIds === undefined &&
+    sourceRefs === undefined &&
+    kind === undefined &&
+    name === undefined
+  ) {
+    throw new Error(
+      `invalid revision payload in ${path}: target must include at least one selector field`,
+    );
+  }
+
+  return {
+    ...(canonicalId ? { canonicalId } : {}),
+    ...(previousIds ? { previousIds } : {}),
+    ...(sourceRefs ? { sourceRefs } : {}),
+    ...(kind ? { kind } : {}),
+    ...(name ? { name } : {}),
   };
 }
 
@@ -203,4 +251,70 @@ function hasNonEmptyStringArray(value: unknown): value is string[] {
   return Array.isArray(value) &&
     value.length > 0 &&
     value.every((item) => typeof item === "string" && item.trim().length > 0);
+}
+
+function optionalString(path: string, field: string, value: unknown): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(
+      `invalid revision payload in ${path}: ${field} must be a non-empty string`,
+    );
+  }
+  return value;
+}
+
+function optionalStringArray(path: string, field: string, value: unknown): string[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  validateStringArray(path, field, value);
+  return [...(value as string[])].sort((left, right) => left.localeCompare(right));
+}
+
+function optionalCitationArray(
+  path: string,
+  field: string,
+  value: unknown,
+): Citation[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(
+      `invalid revision payload in ${path}: ${field} must be a non-empty source citation array`,
+    );
+  }
+  const citations = value.filter(isCitation);
+  if (citations.length !== value.length) {
+    throw new Error(
+      `invalid revision payload in ${path}: ${field} must contain only source citations`,
+    );
+  }
+  return [...citations].sort((left, right) => {
+    return citationKey(left).localeCompare(citationKey(right));
+  });
+}
+
+function isCitation(value: unknown): value is Citation {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.source === "string" &&
+    typeof candidate.sourceRecordId === "string" &&
+    (candidate.locator === undefined || typeof candidate.locator === "string") &&
+    (candidate.url === undefined || typeof candidate.url === "string")
+  );
+}
+
+function citationKey(citation: Citation): string {
+  return [
+    citation.source,
+    citation.sourceRecordId,
+    citation.locator ?? "",
+    citation.url ?? "",
+  ].join("|");
 }

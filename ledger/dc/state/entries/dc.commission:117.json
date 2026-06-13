@@ -40,17 +40,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1180",
-        "citations": [
-          {
-            "source": "open_dc.public_bodies",
-            "sourceRecordId": "real-estate-commission"
-          }
-        ]
-      },
-      {
-        "kind": "dc.relation:governs",
-        "to": "dc.agency:1181",
+        "to": "dc.agency:department-of-buildings",
         "citations": [
           {
             "source": "dcgis.commissions",
@@ -60,6 +50,16 @@
             "source": "dcgis.commissions",
             "sourceRecordId": "117",
             "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-licensing-and-consumer-protection",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-estate-commission"
           }
         ]
       }

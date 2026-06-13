@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:dc-office-of-zoning",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Office of Zoning",
+  "attributes": {
+    "shortName": "Office of Zoning",
+    "sourceAgencyId": "1019"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "15"
+    }
+  ],
+  "relations": {}
+}

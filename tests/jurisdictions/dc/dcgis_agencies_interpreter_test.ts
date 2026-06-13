@@ -17,9 +17,18 @@ Deno.test("dcgis.agencies records become agency fragments and relation", () => {
       SHORT_NAME: "A1",
       PARENT_AGENCY_ID: "a-root",
     },
+  }, {
+    source: dcgisAgenciesSource.id,
+    snapshotKey: "page-0",
+    key: "row-root",
+    payload: {
+      AGENCY_ID: "a-root",
+      AGENCY_NAME: "Agency Root",
+      SHORT_NAME: "ROOT",
+    },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
+  assertEquals(output.entryFragments.length, 2);
   assertEquals(output.relationFragments.length, 1);
   assertEquals(output.findings, []);
 
@@ -27,7 +36,7 @@ Deno.test("dcgis.agencies records become agency fragments and relation", () => {
   assertEquals(entryFragment.fragmentType, "entry");
   assertEquals(entryFragment.source, dcgisAgenciesSource.id);
   assertEquals(entryFragment.sourceRecordId, "row-1");
-  assertEquals(entryFragment.provisionalId, "dc.agency:a-1");
+  assertEquals(entryFragment.provisionalId, "dc.agency:agency-one");
   assertEquals(entryFragment.kind, "dc.agency");
   assertEquals(entryFragment.name, "Agency One");
   assertEquals(entryFragment.citations, [cite(dcgisAgenciesSource.id, "row-1")]);
@@ -36,8 +45,8 @@ Deno.test("dcgis.agencies records become agency fragments and relation", () => {
 
   const [relationFragment] = output.relationFragments;
   assertEquals(relationFragment.fragmentType, "relation");
-  assertEquals(relationFragment.from, "dc.agency:a-1");
-  assertEquals(relationFragment.to, "dc.agency:a-root");
+  assertEquals(relationFragment.from, "dc.agency:agency-one");
+  assertEquals(relationFragment.to, "dc.agency:agency-root");
   assertEquals(relationFragment.relationKind, "dc.relation:reports_to");
   assertEquals(relationFragment.citations, [cite(dcgisAgenciesSource.id, "row-1")]);
 });
@@ -63,6 +72,30 @@ Deno.test("dcgis.agencies records include parsed legal citation locators", () =>
       locator: "D.C. Code § 1-102.5",
     }),
   ]);
+});
+
+Deno.test("dcgis.agencies reports canonical ID collisions", () => {
+  const output = interpretDcgisAgencies([{
+    source: dcgisAgenciesSource.id,
+    snapshotKey: "page-0",
+    key: "row-1",
+    payload: {
+      AGENCY_ID: "a-1",
+      AGENCY_NAME: "Agency One",
+    },
+  }, {
+    source: dcgisAgenciesSource.id,
+    snapshotKey: "page-0",
+    key: "row-2",
+    payload: {
+      AGENCY_ID: "a-2",
+      AGENCY_NAME: "Agency-One",
+    },
+  }]);
+
+  assertEquals(output.findings.length, 1);
+  assertEquals(output.findings[0].kind, "conflict");
+  assertEquals(output.findings[0].code, "dc.identity.canonical_id_collision");
 });
 
 Deno.test("dcgis.agencies reports warning when name is missing", () => {

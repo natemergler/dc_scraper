@@ -5,7 +5,11 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { type DcInterpreterContext, normalizeAgencyLookupKey } from "./context.ts";
+import {
+  dcAgencyReferenceId,
+  type DcInterpreterContext,
+  normalizeAgencyLookupKey,
+} from "./context.ts";
 
 export interface MayorExecutiveStructureInterpreterResult {
   entryFragments: EntryFragment[];
@@ -42,7 +46,7 @@ function makeOfficeProvisionalId(key: string): string {
 }
 
 function makeAgencyProvisionalId(agencyId: string): string {
-  return `dc.agency:${agencyId}`;
+  return dcAgencyReferenceId(agencyId);
 }
 
 function relationKindForSourceValue(value: string | null) {

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-for-the-deaf-deafblind-and-hard-of-hearing",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office for the Deaf, DeafBlind, and Hard of Hearing",
+  "attributes": {
+    "shortName": "Office for the Deaf, DeafBlind, and Hard of Hearing",
+    "sourceAgencyId": "1175"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "154"
+    }
+  ],
+  "relations": {}
+}

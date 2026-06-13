@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1068",
+        "to": "dc.agency:office-of-administrative-hearings",
         "citations": [
           {
             "source": "dcgis.commissions",

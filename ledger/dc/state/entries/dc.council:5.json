@@ -22,7 +22,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1037",
+        "to": "dc.agency:dc-health",
         "citations": [
           {
             "source": "dcgis.councils",

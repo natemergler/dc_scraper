@@ -1,4 +1,5 @@
 import {
+  type Citation,
   type CitationValue,
   type Entry,
   type EntryFragment,
@@ -6,9 +7,15 @@ import {
   isCitationValue,
   type LedgerState,
   type RelationFragment,
+  type RevisionTargetSelector,
 } from "../core/types.ts";
 import { KindRegistry } from "../core/kinds.ts";
 import { type Revision } from "../core/types.ts";
+import {
+  buildIdentityAliasResolver,
+  type IdentityAlias,
+  type IdentityAliasResolver,
+} from "../identity/aliases.ts";
 import type { EntryPromotionDecision, PromotionPolicy } from "./promotion.ts";
 
 export interface CompileOptions {
@@ -18,6 +25,7 @@ export interface CompileOptions {
   promotionPolicy: PromotionPolicy;
   findings?: Finding[];
   revisions?: Revision[];
+  identityAliases?: IdentityAlias[];
   generatedAt?: string;
 }
 
@@ -34,6 +42,9 @@ const conflictCode = {
   missingEntrySource: "compiler.conflict.relation_source_missing",
   missingEntryTarget: "compiler.conflict.relation_target_missing",
   missingRevisionTarget: "compiler.conflict.revision_target_missing",
+  ambiguousRevisionTarget: "compiler.conflict.revision_target_ambiguous",
+  revisionTargetGuardMismatch: "compiler.conflict.revision_target_guard_mismatch",
+  invalidIdentityAlias: "compiler.conflict.identity_alias_invalid",
   invalidRevisionPatch: "compiler.conflict.revision_invalid_state",
 } as const;
 
@@ -52,6 +63,14 @@ const defaultTimestamp = () => new Date().toISOString();
 export function compileFragments(input: CompileOptions): CompilerResult {
   const findings: Finding[] = [...(input.findings ?? [])];
   const conflicts: Finding[] = [];
+  const identityResolver = buildIdentityAliasResolver(input.identityAliases ?? []);
+  for (const issue of identityResolver.issues) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.invalidIdentityAlias,
+      message: issue.message,
+    });
+  }
 
   const entryFragments = input.fragments.filter((fragment): fragment is EntryFragment =>
     fragment.fragmentType === "entry"
@@ -79,6 +98,13 @@ export function compileFragments(input: CompileOptions): CompilerResult {
   );
 
   const stateWithRelations = validateAndSortState(baseState, input.kindRegistry, conflicts);
+  for (const issue of identityResolver.assertTargetExists(stateWithRelations.entries)) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.invalidIdentityAlias,
+      message: issue.message,
+    });
+  }
 
   if (conflicts.length > 0) {
     return finalize({ ok: false, baseline: stateWithRelations, state: null, findings, conflicts });
@@ -89,6 +115,7 @@ export function compileFragments(input: CompileOptions): CompilerResult {
     stateWithRelations,
     input.kindRegistry,
     input.promotionPolicy,
+    identityResolver,
     findings,
     conflicts,
   );
@@ -345,6 +372,7 @@ function applyRevisions(
   baseline: LedgerState,
   kindRegistry: KindRegistry,
   promotionPolicy: PromotionPolicy,
+  identityResolver: IdentityAliasResolver,
   findings: Finding[],
   conflicts: Finding[],
 ): LedgerState {
@@ -356,23 +384,29 @@ function applyRevisions(
   };
 
   for (const revision of [...revisions].sort((left, right) => left.id.localeCompare(right.id))) {
-    const entry = outputState.entries.get(revision.targetId);
+    const targetId = resolveRevisionTargetId(revision, outputState, identityResolver, conflicts);
+    if (!targetId) {
+      continue;
+    }
+
+    const entry = outputState.entries.get(targetId);
     if (!entry) {
       conflicts.push({
         kind: "conflict",
         code: conflictCode.missingRevisionTarget,
-        message: `revision target entry not found: ${revision.targetId}`,
+        message: `revision target entry not found: ${targetId}`,
       });
       continue;
     }
+    const effectiveRevision = targetId === revision.targetId ? revision : { ...revision, targetId };
 
     if (revision.targetKind === "entry") {
       if (revision.patch.suppress === true) {
-        suppressEntry(outputState, revision.targetId);
+        suppressEntry(outputState, targetId);
         findings.push({
           kind: "info",
           code: "compiler.revision.entry_suppressed",
-          message: `revision ${revision.id} suppressed entry ${revision.targetId}${
+          message: `revision ${revision.id} suppressed entry ${targetId}${
             revision.rationale ? `: ${revision.rationale}` : ""
           }`,
           citation: revision.evidence?.[0],
@@ -382,7 +416,13 @@ function applyRevisions(
 
       let patched: Entry;
       try {
-        patched = applyEntryPatch(entry, revision, promotionPolicy, findings);
+        patched = applyEntryPatch(
+          entry,
+          effectiveRevision,
+          promotionPolicy,
+          identityResolver,
+          findings,
+        );
       } catch (error) {
         conflicts.push({
           kind: "conflict",
@@ -391,14 +431,14 @@ function applyRevisions(
         });
         continue;
       }
-      outputState.entries.set(revision.targetId, patched);
+      outputState.entries.set(targetId, patched);
 
       const result = kindRegistry.validateEntry(patched);
       if (!result.ok) {
         conflicts.push({
           kind: "conflict",
           code: conflictCode.invalidRevisionPatch,
-          message: `invalid state after applying revision ${revision.id} to ${revision.targetId}: ${
+          message: `invalid state after applying revision ${revision.id} to ${targetId}: ${
             result.issues
               .map((issue) => issue.message).join(", ")
           }`,
@@ -410,8 +450,15 @@ function applyRevisions(
     if (revision.targetKind === "relation") {
       let patched: Entry;
       try {
-        patched = applyRelationPatch(entry, revision.patch, revision.id, promotionPolicy, findings);
-        outputState.entries.set(revision.targetId, patched);
+        patched = applyRelationPatch(
+          entry,
+          revision.patch,
+          revision.id,
+          promotionPolicy,
+          identityResolver,
+          findings,
+        );
+        outputState.entries.set(targetId, patched);
       } catch (error) {
         conflicts.push({
           kind: "conflict",
@@ -426,11 +473,10 @@ function applyRevisions(
         conflicts.push({
           kind: "conflict",
           code: conflictCode.invalidRevisionPatch,
-          message:
-            `invalid state after applying relation revision ${revision.id} to ${revision.targetId}: ${
-              result.issues
-                .map((issue) => issue.message).join(", ")
-            }`,
+          message: `invalid state after applying relation revision ${revision.id} to ${targetId}: ${
+            result.issues
+              .map((issue) => issue.message).join(", ")
+          }`,
         });
       }
       continue;
@@ -444,6 +490,140 @@ function applyRevisions(
   }
 
   return outputState;
+}
+
+function resolveRevisionTargetId(
+  revision: Revision,
+  state: LedgerState,
+  identityResolver: IdentityAliasResolver,
+  conflicts: Finding[],
+): string | null {
+  const candidates = new Set<string>();
+  const ambiguousInputs: string[] = [];
+
+  const addCanonicalCandidate = (id: string): void => {
+    if (state.entries.has(id)) {
+      candidates.add(id);
+    }
+  };
+  const addPreviousIdCandidate = (id: string): void => {
+    if (state.entries.has(id)) {
+      candidates.add(id);
+      return;
+    }
+    const resolution = identityResolver.resolvePreviousId(id);
+    if (resolution.status === "resolved") {
+      candidates.add(resolution.canonicalId);
+      return;
+    }
+    if (resolution.status === "ambiguous") {
+      ambiguousInputs.push(
+        `${id} -> ${resolution.canonicalIds.join(", ")}`,
+      );
+    }
+  };
+
+  if (revision.target?.canonicalId) {
+    addCanonicalCandidate(revision.target.canonicalId);
+  }
+  addPreviousIdCandidate(revision.targetId);
+  for (const previousId of revision.target?.previousIds ?? []) {
+    addPreviousIdCandidate(previousId);
+  }
+  for (const sourceRef of revision.target?.sourceRefs ?? []) {
+    const resolution = identityResolver.resolveSourceRef(sourceRef);
+    if (resolution.status === "resolved") {
+      candidates.add(resolution.canonicalId);
+      continue;
+    }
+    if (resolution.status === "ambiguous") {
+      ambiguousInputs.push(
+        `${sourceRef.source}:${sourceRef.sourceRecordId} -> ${resolution.canonicalIds.join(", ")}`,
+      );
+    }
+  }
+
+  if (ambiguousInputs.length > 0) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.ambiguousRevisionTarget,
+      message: `revision ${revision.id} has ambiguous identity selector(s): ${
+        ambiguousInputs.join("; ")
+      }`,
+    });
+    return null;
+  }
+
+  const resolvedCandidates = [...candidates].sort((left, right) => left.localeCompare(right));
+  if (resolvedCandidates.length === 0) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.missingRevisionTarget,
+      message: `revision target entry not found: ${revision.targetId}`,
+    });
+    return null;
+  }
+  if (resolvedCandidates.length > 1) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.ambiguousRevisionTarget,
+      message: `revision ${revision.id} target selectors resolved to multiple entries: ${
+        resolvedCandidates.join(", ")
+      }`,
+    });
+    return null;
+  }
+
+  const targetId = resolvedCandidates[0];
+  const target = state.entries.get(targetId);
+  if (!target) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.missingRevisionTarget,
+      message: `revision target entry not found: ${targetId}`,
+    });
+    return null;
+  }
+  if (!targetMatchesSelector(target, revision.target)) {
+    conflicts.push({
+      kind: "conflict",
+      code: conflictCode.revisionTargetGuardMismatch,
+      message: `revision ${revision.id} target guard does not match ${targetId}: expected ${
+        selectorDescription(revision.target)
+      }`,
+    });
+    return null;
+  }
+
+  return targetId;
+}
+
+function targetMatchesSelector(entry: Entry, selector?: RevisionTargetSelector): boolean {
+  if (!selector) {
+    return true;
+  }
+  if (selector.kind && entry.kind !== selector.kind) {
+    return false;
+  }
+  if (selector.name && entry.name !== selector.name) {
+    return false;
+  }
+  return true;
+}
+
+function selectorDescription(selector?: RevisionTargetSelector): string {
+  if (!selector) {
+    return "no selector";
+  }
+  const parts: string[] = [];
+  if (selector.canonicalId) parts.push(`canonicalId=${selector.canonicalId}`);
+  if (selector.kind) parts.push(`kind=${selector.kind}`);
+  if (selector.name) parts.push(`name=${selector.name}`);
+  if (selector.previousIds?.length) parts.push(`previousIds=${selector.previousIds.join(",")}`);
+  if (selector.sourceRefs?.length) {
+    parts.push(`sourceRefs=${selector.sourceRefs.map(citationIdentity).join(",")}`);
+  }
+  return parts.join("; ");
 }
 
 function suppressEntry(state: LedgerState, targetId: string): void {
@@ -466,6 +646,7 @@ function applyRelationPatch(
   patch: Record<string, unknown>,
   revisionId: string,
   promotionPolicy: PromotionPolicy,
+  identityResolver: IdentityAliasResolver,
   findings: Finding[],
 ): Entry {
   if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
@@ -522,7 +703,7 @@ function applyRelationPatch(
           : [];
         return {
           kind: relationKind,
-          to: candidate.to,
+          to: resolveRevisionReferenceId(candidate.to, revisionId, identityResolver, findings),
           citations: sortUniqueCitations(citations),
         };
       })
@@ -549,6 +730,7 @@ function applyEntryPatch(
   entry: Entry,
   revision: Revision,
   promotionPolicy: PromotionPolicy,
+  identityResolver: IdentityAliasResolver,
   findings: Finding[],
 ): Entry {
   const patch = revision.patch;
@@ -598,7 +780,7 @@ function applyEntryPatch(
   }
 
   if (patch.review !== undefined) {
-    const review = buildRevisionReview(revision);
+    const review = buildRevisionReview(revision, identityResolver, findings);
     const existingReviews = Array.isArray(output.attributes.revisionReviews)
       ? output.attributes.revisionReviews.filter((value) =>
         value && typeof value === "object" && !Array.isArray(value)
@@ -643,7 +825,7 @@ function applyEntryPatch(
 
           return {
             kind: relationKind,
-            to: candidate.to,
+            to: resolveRevisionReferenceId(candidate.to, revision.id, identityResolver, findings),
             citations,
           };
         })
@@ -672,7 +854,11 @@ function applyEntryPatch(
   return output;
 }
 
-function buildRevisionReview(revision: Revision): Record<string, unknown> {
+function buildRevisionReview(
+  revision: Revision,
+  identityResolver: IdentityAliasResolver,
+  findings: Finding[],
+): Record<string, unknown> {
   const rawReview = revision.patch.review;
   if (!rawReview || typeof rawReview !== "object" || Array.isArray(rawReview)) {
     throw new Error(`invalid entry revision ${revision.id}: review must be an object`);
@@ -707,7 +893,8 @@ function buildRevisionReview(revision: Revision): Record<string, unknown> {
       revision.id,
       "review.relatedEntryIds",
       review.relatedEntryIds,
-    );
+    ).map((id) => resolveRevisionReferenceId(id, revision.id, identityResolver, findings))
+      .sort((left, right) => left.localeCompare(right));
   }
   if (review.aliasNames !== undefined) {
     output.aliasNames = requireStringArray(revision.id, "review.aliasNames", review.aliasNames);
@@ -720,7 +907,12 @@ function buildRevisionReview(revision: Revision): Record<string, unknown> {
         `invalid entry revision ${revision.id}: review.canonicalEntryId must be a non-empty string`,
       );
     }
-    output.canonicalEntryId = review.canonicalEntryId;
+    output.canonicalEntryId = resolveRevisionReferenceId(
+      review.canonicalEntryId,
+      revision.id,
+      identityResolver,
+      findings,
+    );
   }
 
   if (decision === "preserve_distinct" && !Array.isArray(output.relatedEntryIds)) {
@@ -738,6 +930,33 @@ function buildRevisionReview(revision: Revision): Record<string, unknown> {
   }
 
   return sortObjectKeys(output);
+}
+
+function resolveRevisionReferenceId(
+  id: string,
+  revisionId: string,
+  identityResolver: IdentityAliasResolver,
+  findings: Finding[],
+): string {
+  const resolution = identityResolver.resolvePreviousId(id);
+  if (resolution.status === "missing") {
+    return id;
+  }
+  if (resolution.status === "ambiguous") {
+    throw new Error(
+      `revision ${revisionId} reference ${id} resolves to multiple canonical entries: ${
+        resolution.canonicalIds.join(", ")
+      }`,
+    );
+  }
+  if (resolution.canonicalId !== id) {
+    findings.push({
+      kind: "info",
+      code: "compiler.identity_alias.reference_resolved",
+      message: `revision ${revisionId} reference ${id} resolved to ${resolution.canonicalId}`,
+    });
+  }
+  return resolution.canonicalId;
 }
 
 function requireStringArray(revisionId: string, field: string, value: unknown): string[] {
@@ -832,6 +1051,21 @@ function validateAndSortState(
           kind: "conflict",
           code: issueResult.code,
           message: `state validation failed for ${issue.id}: ${issueResult.message}`,
+        });
+      }
+    }
+  }
+  for (const entry of output.entries.values()) {
+    for (const relations of Object.values(entry.relations)) {
+      for (const relation of relations) {
+        if (output.entries.has(relation.to)) {
+          continue;
+        }
+        conflicts.push({
+          kind: "conflict",
+          code: conflictCode.missingEntryTarget,
+          message:
+            `relation target entry not found after revisions: ${entry.id} ${relation.kind} ${relation.to}`,
         });
       }
     }

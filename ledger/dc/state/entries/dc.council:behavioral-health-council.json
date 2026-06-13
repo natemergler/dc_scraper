@@ -25,7 +25,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:1028",
+        "to": "dc.agency:department-of-behavioral-health",
         "citations": [
           {
             "source": "open_dc.public_bodies",
