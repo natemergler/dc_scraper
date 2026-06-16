@@ -3062,6 +3062,46 @@ Deno.test("CLI flow with dccourts.structure produces courts and division part_of
   }
 });
 
+Deno.test("CLI flow with dccourts.structure falls back to seeded official structure on 403", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-seeded-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-seeded-state-" });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch =
+    (async () => new Response("blocked", { status: 403 })) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dccourts.structure",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntries.includes("dc.court_system:district-of-columbia-courts.json"), true);
+    assertEquals(stateEntries.includes("dc.court:court-of-appeals.json"), true);
+    assertEquals(stateEntries.includes("dc.court:superior-court.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:civil-division.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:tax-division.json"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-state-" });

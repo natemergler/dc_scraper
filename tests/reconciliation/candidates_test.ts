@@ -191,6 +191,83 @@ Deno.test("findReconciliationCandidates ignores expected body-to-legal-authority
   );
 });
 
+Deno.test("findReconciliationCandidates ignores court division discovery-page overlap with parent court", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.court:superior-court",
+        kind: "dc.court",
+        name: "Superior Court",
+        attributes: {
+          shortName: "Superior Court",
+          officialUrl: "https://www.dccourts.gov/superior-court",
+          sourcePageUrl: "https://www.dccourts.gov/superior-court",
+        },
+        citations: [cite("dccourts.structure", "superior-court", {
+          url: "https://www.dccourts.gov/superior-court",
+        })],
+      }),
+      entry({
+        id: "dc.court_division:civil-division",
+        kind: "dc.court_division",
+        name: "Civil Division",
+        attributes: {
+          shortName: "Civil Division",
+          officialUrl:
+            "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
+          sourceDiscoveryPageUrl: "https://www.dccourts.gov/superior-court",
+          sourcePageUrl:
+            "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
+        },
+        citations: [cite("dccourts.structure", "civil-division", {
+          url: "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
+        })],
+        relations: {
+          "dc.relation:part_of": [{
+            kind: "dc.relation:part_of",
+            to: "dc.court:superior-court",
+            citations: [cite("dccourts.structure", "civil-division", {
+              url:
+                "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
+            })],
+          }],
+        },
+      }),
+      entry({
+        id: "dc.court_division:tax-division",
+        kind: "dc.court_division",
+        name: "Tax Division",
+        attributes: {
+          shortName: "Tax Division",
+          officialUrl:
+            "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division",
+          sourceDiscoveryPageUrl: "https://www.dccourts.gov/superior-court",
+          sourcePageUrl:
+            "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division",
+        },
+        citations: [cite("dccourts.structure", "tax-division", {
+          url: "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division",
+        })],
+        relations: {
+          "dc.relation:part_of": [{
+            kind: "dc.relation:part_of",
+            to: "dc.court:superior-court",
+            citations: [cite("dccourts.structure", "tax-division", {
+              url: "https://www.dccourts.gov/superior-court/superior-court-divisions/tax-division",
+            })],
+          }],
+        },
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(
+    report.candidates.some((candidate) => candidate.reason === "shared_url"),
+    false,
+  );
+});
+
 Deno.test("findReconciliationCandidates reports total count separately from limited packets", () => {
   const report = findReconciliationCandidates(
     state([

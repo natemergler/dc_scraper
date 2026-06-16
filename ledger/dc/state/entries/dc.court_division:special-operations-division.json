@@ -1,0 +1,37 @@
+{
+  "id": "dc.court_division:special-operations-division",
+  "family": "organization",
+  "kind": "dc.court_division",
+  "name": "Special Operations Division",
+  "attributes": {
+    "officialUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division",
+    "shortName": "Special Operations Division",
+    "sourceCourtDivisionKey": "special-operations-division",
+    "sourceDCCourtsKey": "special-operations-division",
+    "sourceDiscoveryPageUrl": "https://www.dccourts.gov/superior-court",
+    "sourceFromSeed": true,
+    "sourcePageUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division"
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "special-operations-division",
+      "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court:superior-court",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "special-operations-division",
+            "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/special-operations-division"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -22,6 +22,7 @@ export interface DCCourtsStructurePayload {
   pageTitle?: unknown;
   heading?: unknown;
   summary?: unknown;
+  fromSeed?: unknown;
 }
 
 const sourceKind = "dccourts.structure" as const;
@@ -80,6 +81,7 @@ export function interpretDCCourtsStructure(
     pageTitle?: string;
     heading?: string;
     summary?: string;
+    fromSeed: boolean;
     provisionalId: string;
   }> = [];
   const entryIdsByName = new Map<string, string>();
@@ -133,6 +135,7 @@ export function interpretDCCourtsStructure(
       pageTitle: asString(sourceRecord.pageTitle) ?? undefined,
       heading: asString(sourceRecord.heading) ?? undefined,
       summary: asString(sourceRecord.summary) ?? undefined,
+      fromSeed: sourceRecord.fromSeed === true,
       provisionalId,
     };
     parsedRecords.push(parsed);
@@ -141,6 +144,7 @@ export function interpretDCCourtsStructure(
 
   for (const parsed of parsedRecords) {
     const attributes: Record<string, unknown> = {
+      officialUrl: parsed.url,
       shortName: parsed.name,
       sourceDCCourtsKey: parsed.key,
       sourcePageUrl: parsed.url,
@@ -164,7 +168,11 @@ export function interpretDCCourtsStructure(
       attributes.sourceHeading = parsed.heading;
     }
     if (parsed.summary) {
+      attributes.description = parsed.summary;
       attributes.sourceSummary = parsed.summary;
+    }
+    if (parsed.fromSeed) {
+      attributes.sourceFromSeed = true;
     }
 
     entryFragments.push({

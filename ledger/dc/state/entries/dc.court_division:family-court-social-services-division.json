@@ -1,0 +1,37 @@
+{
+  "id": "dc.court_division:family-court-social-services-division",
+  "family": "organization",
+  "kind": "dc.court_division",
+  "name": "Family Court Social Services Division",
+  "attributes": {
+    "officialUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division",
+    "shortName": "Family Court Social Services Division",
+    "sourceCourtDivisionKey": "family-court-social-services-division",
+    "sourceDCCourtsKey": "family-court-social-services-division",
+    "sourceDiscoveryPageUrl": "https://www.dccourts.gov/superior-court",
+    "sourceFromSeed": true,
+    "sourcePageUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division"
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "family-court-social-services-division",
+      "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court:superior-court",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "family-court-social-services-division",
+            "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/family-court-social-services-division"
+          }
+        ]
+      }
+    ]
+  }
+}

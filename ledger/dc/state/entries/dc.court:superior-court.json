@@ -1,0 +1,40 @@
+{
+  "id": "dc.court:superior-court",
+  "family": "organization",
+  "kind": "dc.court",
+  "name": "Superior Court",
+  "attributes": {
+    "description": "The Superior Court is the court of general jurisdiction over nearly all local legal matters including criminal, family, civil, juvenile, landlord-tenant, probate, small claims, and tax.",
+    "officialUrl": "https://www.dccourts.gov/superior-court",
+    "shortName": "Superior Court",
+    "sourceCourtKey": "superior-court",
+    "sourceDCCourtsKey": "superior-court",
+    "sourceFromSeed": true,
+    "sourceHeading": "Superior Court",
+    "sourcePageTitle": "Superior Court | District of Columbia Courts",
+    "sourcePageUrl": "https://www.dccourts.gov/superior-court",
+    "sourceSummary": "The Superior Court is the court of general jurisdiction over nearly all local legal matters including criminal, family, civil, juvenile, landlord-tenant, probate, small claims, and tax."
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "superior-court",
+      "url": "https://www.dccourts.gov/superior-court"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court_system:district-of-columbia-courts",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "superior-court",
+            "url": "https://www.dccourts.gov/superior-court"
+          }
+        ]
+      }
+    ]
+  }
+}

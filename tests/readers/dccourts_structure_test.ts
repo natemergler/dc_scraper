@@ -79,6 +79,7 @@ Deno.test("DCCourtsStructureReader collects court pages and direct Superior Cour
   assertEquals(root.payload.name, "District of Columbia Courts");
   assertEquals(root.payload.entryKind, "court_system");
   assertEquals(root.payload.heading, "District of Columbia Courts");
+  assertEquals(root.payload.fromSeed, false);
 
   const appeals = result.records[1];
   assertEquals(appeals.payload.name, "Court of Appeals");
@@ -94,6 +95,7 @@ Deno.test("DCCourtsStructureReader collects court pages and direct Superior Cour
     "https://www.dccourts.gov/superior-court/superior-court-divisions/civil-division",
   );
   assertEquals(civil.payload.discoveryPageUrl, "https://www.dccourts.gov/superior-court");
+  assertEquals(civil.payload.fromSeed, false);
 });
 
 Deno.test("DCCourtsStructureReader respects record limit", async () => {
@@ -113,4 +115,30 @@ Deno.test("DCCourtsStructureReader respects record limit", async () => {
     "superior-court",
     "civil-division",
   ]);
+});
+
+Deno.test("DCCourtsStructureReader falls back to seeded official structure on HTTP 403", async () => {
+  const reader = new DCCourtsStructureReader({
+    fetcher: async () => new Response("blocked", { status: 403 }),
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source: dccourtsStructureSource,
+  });
+
+  assertEquals(result.snapshots.length, 3);
+  assertEquals(
+    result.records.some((record) => record.key === "district-of-columbia-courts"),
+    true,
+  );
+  assertEquals(
+    result.records.some((record) => record.key === "court-of-appeals"),
+    true,
+  );
+  assertEquals(
+    result.records.some((record) => record.key === "civil-division"),
+    true,
+  );
+  assertEquals(result.records.every((record) => record.payload.fromSeed === true), true);
 });

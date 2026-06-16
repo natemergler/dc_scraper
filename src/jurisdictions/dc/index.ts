@@ -176,11 +176,11 @@ export const dcRuntime: DcJurisdictionRuntime = {
       scope:
         "DC Courts home, Court of Appeals, Superior Court, and direct Superior Court division links.",
       contributes:
-        "Court system, court, and court division entries with part_of relations when collected.",
+        "Court system, court, and court division entries with part_of relations, official URLs, and bounded source-backed descriptions.",
       excludes:
         "Case search, filings, calendars, judges/staff profiles, contacts, and legal advice.",
       notes:
-        "Live collection from this environment has returned HTTP 403; fixture and CLI coverage exist, but current committed state has no live courts records.",
+        "Live collection from this environment currently returns HTTP 403, so the source falls back to a tracked official-structure seed rooted in dccourts.gov URLs until live collection is available again.",
     },
     {
       source: "dcgis.agencies",

@@ -12,6 +12,7 @@ export interface DCCourtsStructureSource extends ReaderSource {
   homeUrl: string;
   courtOfAppealsUrl: string;
   superiorCourtUrl: string;
+  seededStructure: DCCourtsStructureSeed[];
 }
 
 export interface DCCourtsStructureReaderOptions {
@@ -21,6 +22,19 @@ export interface DCCourtsStructureReaderOptions {
 export interface DCCourtsStructureRecordPayload {
   name: string;
   key: string;
+  url: string;
+  entryKind: "court_system" | "court" | "court_division";
+  parentName?: string;
+  discoveryPageUrl?: string;
+  pageTitle?: string;
+  heading?: string;
+  summary?: string;
+  fromSeed: boolean;
+}
+
+export interface DCCourtsStructureSeed {
+  key: string;
+  name: string;
   url: string;
   entryKind: "court_system" | "court" | "court_division";
   parentName?: string;
@@ -49,6 +63,17 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
   }
 
   async collect(input: ReaderInput<DCCourtsStructureSource>): Promise<ReaderResult> {
+    try {
+      return await this.collectLive(input);
+    } catch (error) {
+      if (error instanceof DCCourtsStructureHttpError && error.status === 403) {
+        return collectSeededStructure(input.source, input.limit);
+      }
+      throw error;
+    }
+  }
+
+  private async collectLive(input: ReaderInput<DCCourtsStructureSource>): Promise<ReaderResult> {
     const snapshots: ReaderResultSnapshot[] = [];
     const records: ReaderResultRecord[] = [];
     const recordLimit = input.limit;
@@ -72,6 +97,7 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
         pageTitle: homePage.pageTitle,
         heading: homePage.heading,
         summary: homePage.summary,
+        fromSeed: false,
       } satisfies DCCourtsStructureRecordPayload,
     });
 
@@ -95,6 +121,7 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
         pageTitle: appealsPage.pageTitle,
         heading: appealsPage.heading,
         summary: appealsPage.summary,
+        fromSeed: false,
       } satisfies DCCourtsStructureRecordPayload,
     });
 
@@ -118,6 +145,7 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
         pageTitle: superiorPage.pageTitle,
         heading: superiorPage.heading,
         summary: superiorPage.summary,
+        fromSeed: false,
       } satisfies DCCourtsStructureRecordPayload,
     });
 
@@ -141,6 +169,7 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
           entryKind: "court_division",
           parentName: superiorCourtName,
           discoveryPageUrl: input.source.superiorCourtUrl,
+          fromSeed: false,
         } satisfies DCCourtsStructureRecordPayload,
       });
     }
@@ -162,11 +191,19 @@ export class DCCourtsStructureReader implements Reader<DCCourtsStructureSource> 
 
     const body = await response.text();
     if (!response.ok) {
-      throw new Error(
-        `DC Courts structure request failed for ${sourceId}: HTTP ${response.status}`,
-      );
+      throw new DCCourtsStructureHttpError(sourceId, response.status);
     }
     return body;
+  }
+}
+
+class DCCourtsStructureHttpError extends Error {
+  readonly status: number;
+
+  constructor(sourceId: string, status: number) {
+    super(`DC Courts structure request failed for ${sourceId}: HTTP ${status}`);
+    this.name = "DCCourtsStructureHttpError";
+    this.status = status;
   }
 }
 
@@ -195,6 +232,45 @@ function makeSnapshot(
       ...payload,
     },
   };
+}
+
+function collectSeededStructure(
+  source: DCCourtsStructureSource,
+  limit: number | undefined,
+): ReaderResult {
+  const records = source.seededStructure
+    .slice(0, typeof limit === "number" ? limit : source.seededStructure.length)
+    .map((seed) => ({
+      source: source.id,
+      snapshotKey: seed.entryKind === "court_division" ? "superior-court" : seed.key,
+      key: seed.key,
+      payload: {
+        name: seed.name,
+        key: seed.key,
+        url: seed.url,
+        entryKind: seed.entryKind,
+        parentName: seed.parentName,
+        discoveryPageUrl: seed.discoveryPageUrl,
+        pageTitle: seed.pageTitle,
+        heading: seed.heading,
+        summary: seed.summary,
+        fromSeed: true,
+      } satisfies DCCourtsStructureRecordPayload,
+    }));
+
+  const snapshots = source.seededStructure
+    .filter((seed) => seed.entryKind !== "court_division")
+    .map((seed) =>
+      makeSnapshot(source.id, seed.key, {
+        url: seed.url,
+        pageTitle: seed.pageTitle,
+        heading: seed.heading,
+        fromSeed: true,
+        fallbackStatus: 403,
+      })
+    );
+
+  return { snapshots, records };
 }
 
 function parseInstitutionPage(html: string): {
