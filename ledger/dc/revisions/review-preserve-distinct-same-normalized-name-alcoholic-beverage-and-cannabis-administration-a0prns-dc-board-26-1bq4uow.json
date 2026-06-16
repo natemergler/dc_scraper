@@ -1,0 +1,35 @@
+{
+  "id": "review-preserve-distinct-same-normalized-name-alcoholic-beverage-and-cannabis-administration-a0prns-dc-board-26-1bq4uow",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.board:26",
+  "rationale": "Preserve the DCGIS board facet separately from the ABCA agency facet for now. The board record carries governing-body and legal-authority structure while the agency record carries the official agency page and administrative metadata. Collapsing or suppressing it needs a broader cross-source decision with the distinct Open DC ABC Board record.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-administration-abca:abca-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "1"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26",
+      "locator": "D.C. Code § 25-201"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:alcoholic-beverage-and-cannabis-administration"
+      ]
+    }
+  }
+}

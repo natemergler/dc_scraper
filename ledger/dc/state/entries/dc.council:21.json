@@ -4,6 +4,37 @@
   "kind": "dc.council",
   "name": "Criminal Justice Coordinating Council",
   "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "criminal-justice-coordinating-council:cjcc-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "4"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "21",
+            "locator": "D.C. Code § 22-4232"
+          },
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "21"
+          }
+        ],
+        "rationale": "Preserve the Criminal Justice Coordinating Council body facet separately from the agency facet for now. The council record carries public-body and legal-authority structure while the agency record carries official site and administrative metadata, and collapsing them is a broader canonical modeling decision.",
+        "relatedEntryIds": [
+          "dc.agency:criminal-justice-coordinating-council"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-criminal-justice-coordinating-council-uzv0d8-dc-council-21-194yyuw",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Criminal Justice Coordinating Council",
     "sourceCouncilId": "21"
   },
