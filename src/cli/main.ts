@@ -9,6 +9,7 @@ import {
   initWorkspace,
   loadRecords,
   openWorkspace,
+  replaceSourceData,
   saveBaseline,
   saveFinding,
   saveFragments,
@@ -16,6 +17,7 @@ import {
   saveSnapshot,
   type Workspace,
 } from "../workspace/workspace.ts";
+import { AgencyDirectoryReader } from "../readers/agency_directory.ts";
 import { ArcGISTableReader } from "../readers/arcgis_table.ts";
 import { DCCouncilmembersReader } from "../readers/dccouncil_councilmembers.ts";
 import { DCCouncilCommitteePagesReader } from "../readers/dccouncil_committee_pages.ts";
@@ -112,6 +114,7 @@ async function runCollect(
   try {
     initWorkspace(workspace);
     const result = await collectSourceRecords(sourceBinding.source, workspaceRoot, limit);
+    replaceSourceData(workspace, sourceId);
 
     for (const snapshot of result.snapshots) {
       const snapshotId = saveSnapshot(workspace, {
@@ -150,6 +153,15 @@ async function collectSourceRecords(
   workspaceRoot: string,
   limit?: number,
 ) {
+  if (source.type === "dc.agency_directory") {
+    const reader = new AgencyDirectoryReader();
+    return await reader.collect({
+      workspace: { root: workspaceRoot },
+      source: source as Parameters<AgencyDirectoryReader["collect"]>[0]["source"],
+      limit,
+    });
+  }
+
   if (source.type === "arcgis.table") {
     const reader = new ArcGISTableReader();
     return await reader.collect({
@@ -570,12 +582,16 @@ function compileFromWorkspace(
         if (!interpreterContext.agencyIdLookup) {
           interpreterContext.agencyIdLookup = new Map();
         }
+        if (!interpreterContext.agencyNameLookup) {
+          interpreterContext.agencyNameLookup = new Map();
+        }
         const agencyId = typeof entryFragment.attributes.sourceAgencyId === "string"
           ? entryFragment.attributes.sourceAgencyId
           : entryFragment.provisionalId.startsWith("dc.agency:")
           ? entryFragment.provisionalId.replace("dc.agency:", "")
           : entryFragment.provisionalId;
         interpreterContext.agencyIdLookup.set(agencyId, entryFragment.provisionalId);
+        interpreterContext.agencyNameLookup.set(entryFragment.provisionalId, entryFragment.name);
 
         const normalizedName = normalizeAgencyLookupKey(entryFragment.name);
         if (normalizedName.length > 0 && !interpreterContext.agencyLookup.has(normalizedName)) {

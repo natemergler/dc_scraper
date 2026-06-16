@@ -4,6 +4,7 @@ import { compileFragments } from "../../../src/compiler/compile.ts";
 import { cite, type EntryFragment } from "../../../src/core/types.ts";
 import { dcRuntime } from "../../../src/jurisdictions/dc/index.ts";
 import { interpretOpenDCPublicBodies } from "../../../src/jurisdictions/dc/interpreters/open_dc_public_bodies.ts";
+import { agencyDirectorySourceId } from "../../../src/jurisdictions/dc/sources/agency_directory.ts";
 import { openDCPublicBodiesSourceId } from "../../../src/jurisdictions/dc/sources/open_dc_public_bodies.ts";
 
 Deno.test("DC promotion policy promotes valid DCGIS agencies", () => {
@@ -24,6 +25,34 @@ Deno.test("DC promotion policy promotes valid DCGIS agencies", () => {
 
   assertEquals(result.ok, true);
   assertEquals(result.state?.entries.has("dc.agency:a-1"), true);
+});
+
+Deno.test("DC promotion policy promotes agency-directory enrichment fragments", () => {
+  const result = compileFragments({
+    jurisdiction: dcRuntime.jurisdiction,
+    generatedAt: "2026-06-16T00:00:00.000Z",
+    kindRegistry: dcRuntime.kinds,
+    promotionPolicy: dcRuntime.promotionPolicy,
+    fragments: [entryFragment({
+      source: agencyDirectorySourceId,
+      sourceRecordId: "office-of-the-secretary-os:os-dc-gov",
+      provisionalId: "dc.agency:office-of-the-secretary",
+      kind: "dc.agency",
+      name: "Office of the Secretary",
+      attributes: {
+        shortName: "Office of the Secretary",
+        officialUrl: "https://os.dc.gov",
+        sourcePageUrl: "https://dc.gov/page/agency-list",
+      },
+    })],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(result.state?.entries.has("dc.agency:office-of-the-secretary"), true);
+  assertEquals(
+    result.state?.entries.get("dc.agency:office-of-the-secretary")?.attributes.officialUrl,
+    "https://os.dc.gov",
+  );
 });
 
 Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {

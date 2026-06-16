@@ -25,6 +25,7 @@ import {
   dcRepresentsRelation,
 } from "./kinds/relation.ts";
 import { interpretDcgisAgencies } from "./interpreters/dcgis_agencies.ts";
+import { agencyDirectoryBinding } from "./sources/agency_directory.ts";
 import { dcgisAgenciesBinding } from "./sources/dcgis_agencies.ts";
 import { dcgisCommissionsBinding } from "./sources/dcgis_commissions.ts";
 import { dcgisBoardsBinding } from "./sources/dcgis_boards.ts";
@@ -101,6 +102,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
   sources: [
     dcgisAncsBinding,
     dcgisAgenciesBinding,
+    agencyDirectoryBinding,
     dcgisBoardsBinding,
     dcgisCommissionsBinding,
     dcgisCouncilsBinding,
@@ -116,6 +118,18 @@ export const dcRuntime: DcJurisdictionRuntime = {
     oancProfilesBinding,
   ],
   sourceCoverage: [
+    {
+      source: "dc.agency_directory",
+      sourceType: "dc.agency_directory",
+      family: "executive_agencies",
+      scope: "Official DC agency list page at dc.gov.",
+      contributes:
+        "Source-backed official URLs for canonical dc.agency entries when directory rows resolve cleanly to the existing agency spine.",
+      excludes:
+        "Contacts, staff directories, program-only rows, logos/images, and unmatched rows that do not safely resolve to canonical agencies.",
+      notes:
+        "The page includes some clusters, campaigns, and program surfaces; this source enriches existing agencies and does not auto-create duplicate agency entries for unmatched rows.",
+    },
     {
       source: "bega.structure",
       sourceType: "bega.structure",

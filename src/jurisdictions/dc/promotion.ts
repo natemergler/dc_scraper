@@ -1,5 +1,6 @@
 import type { EntryFragment } from "../../core/types.ts";
 import type { EntryPromotionDecision, PromotionPolicy } from "../../compiler/promotion.ts";
+import { agencyDirectorySourceId } from "./sources/agency_directory.ts";
 import { dcgisAgenciesSourceId } from "./sources/dcgis_agencies.ts";
 import { dcgisAncsSourceId } from "./sources/dcgis_ancs.ts";
 import { dcgisAuthoritiesSourceId } from "./sources/dcgis_authorities.ts";
@@ -17,6 +18,7 @@ import { dccourtsStructureSourceId } from "./sources/dccourts_structure.ts";
 import { legalEntrypointsSourceId } from "./sources/legal_entrypoints.ts";
 
 const promotedKindsBySource = new Map<string, Set<string>>([
+  [agencyDirectorySourceId, new Set(["dc.agency"])],
   [dcgisAgenciesSourceId, new Set(["dc.agency"])],
   [dcgisAncsSourceId, new Set(["dc.anc"])],
   [dcgisAuthoritiesSourceId, new Set(["dc.authority"])],
