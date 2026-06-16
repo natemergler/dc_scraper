@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Mayor’s Office of Legal Counsel",
   "attributes": {
+    "officialUrl": "https://molc.dc.gov",
     "shortName": "Mayor’s Office of Legal Counsel",
-    "sourceAgencyId": "1135"
+    "sourceAgencyId": "1135",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-of-legal-counsel:molc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "117"

@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of For-Hire Vehicles",
   "attributes": {
+    "officialUrl": "https://dfhv.dc.gov",
     "shortName": "Department of For-Hire Vehicles",
-    "sourceAgencyId": "1035"
+    "sourceAgencyId": "1035",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-for-hire-vehicles:dfhv-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "25"

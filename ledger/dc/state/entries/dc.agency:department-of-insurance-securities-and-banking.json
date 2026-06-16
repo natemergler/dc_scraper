@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Insurance Securities and Banking",
   "attributes": {
+    "officialUrl": "https://disb.dc.gov",
     "shortName": "Department of Insurance Securities and Banking",
-    "sourceAgencyId": "1042"
+    "sourceAgencyId": "1042",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-insurance-securities-and-banking:disb-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "31"

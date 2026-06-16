@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "District Department of Transportation",
   "attributes": {
+    "officialUrl": "https://ddot.dc.gov",
     "shortName": "District Department of Transportation",
-    "sourceAgencyId": "1048"
+    "sourceAgencyId": "1048",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "district-department-of-transportation:ddot-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "23"

@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Aging and Community Living",
   "attributes": {
+    "officialUrl": "https://dcoa.dc.gov",
     "shortName": "Department of Aging and Community Living",
-    "sourceAgencyId": "1020"
+    "sourceAgencyId": "1020",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-aging-and-community-living:dcoa-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "14"

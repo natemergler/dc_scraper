@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Labor Relations and Collective Bargaining",
   "attributes": {
+    "officialUrl": "https://olrcb.dc.gov",
     "shortName": "Office of Labor Relations and Collective Bargaining",
-    "sourceAgencyId": "1076"
+    "sourceAgencyId": "1076",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-labor-relations-and-collective-bargaining:olrcb-dc",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "69"

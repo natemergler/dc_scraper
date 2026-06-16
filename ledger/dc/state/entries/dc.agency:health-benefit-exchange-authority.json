@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Health Benefit Exchange Authority",
   "attributes": {
+    "officialUrl": "https://hbx.dc.gov",
     "shortName": "Health Benefit Exchange Authority",
-    "sourceAgencyId": "1054"
+    "sourceAgencyId": "1054",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "health-benefit-exchange-authority:hbx-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "49"

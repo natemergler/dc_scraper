@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Human Resources",
   "attributes": {
+    "officialUrl": "https://dchr.dc.gov",
     "shortName": "Department of Human Resources",
-    "sourceAgencyId": "1040"
+    "sourceAgencyId": "1040",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-human-resources:dchr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "12"

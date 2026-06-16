@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Lottery and Gaming",
   "attributes": {
+    "officialUrl": "https://lottery.dc.gov",
     "shortName": "Office of Lottery and Gaming",
-    "sourceAgencyId": "1156"
+    "sourceAgencyId": "1156",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-lottery-and-gaming:lottery-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "135"

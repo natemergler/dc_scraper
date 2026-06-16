@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of the State Superintendent of Education",
   "attributes": {
+    "officialUrl": "https://osse.dc.gov",
     "shortName": "Office of the State Superintendent of Education",
-    "sourceAgencyId": "1097"
+    "sourceAgencyId": "1097",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-state-superintendent-of-education:osse-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "80"

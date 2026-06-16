@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Metropolitan Police Department",
   "attributes": {
+    "officialUrl": "https://mpdc.dc.gov",
     "shortName": "Metropolitan Police Department",
-    "sourceAgencyId": "1067"
+    "sourceAgencyId": "1067",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "metropolitan-police-department:mpd-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "53"

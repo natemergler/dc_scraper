@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Commission on the Arts and Humanities",
   "attributes": {
+    "officialUrl": "https://dcarts.dc.gov",
     "shortName": "Commission on the Arts and Humanities",
-    "sourceAgencyId": "1140"
+    "sourceAgencyId": "1140",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "commission-on-the-arts-and-humanities:dcarts-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "120"

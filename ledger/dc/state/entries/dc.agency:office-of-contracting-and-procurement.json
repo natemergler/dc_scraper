@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Contracting and Procurement",
   "attributes": {
+    "officialUrl": "https://ocp.dc.gov",
     "shortName": "Office of Contracting and Procurement",
-    "sourceAgencyId": "1071"
+    "sourceAgencyId": "1071",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-contracting-and-procurement:ocp-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "60"

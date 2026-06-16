@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Public Employee Relations Board",
   "attributes": {
+    "officialUrl": "https://perb.dc.gov",
     "shortName": "Public Employee Relations Board",
-    "sourceAgencyId": "1101"
+    "sourceAgencyId": "1101",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "public-employee-relations-board:perb-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "86"

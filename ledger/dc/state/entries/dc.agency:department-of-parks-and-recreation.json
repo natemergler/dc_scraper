@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Parks and Recreation",
   "attributes": {
+    "officialUrl": "https://dpr.dc.gov",
     "shortName": "Department of Parks and Recreation",
-    "sourceAgencyId": "1044"
+    "sourceAgencyId": "1044",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-parks-and-recreation:dpr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "41"

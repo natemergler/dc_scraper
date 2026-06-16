@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Alcoholic Beverage and Cannabis Administration",
   "attributes": {
+    "officialUrl": "https://abca.dc.gov",
     "shortName": "Alcoholic Beverage and Cannabis Administration",
-    "sourceAgencyId": "1001"
+    "sourceAgencyId": "1001",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-administration-abca:abca-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "1"

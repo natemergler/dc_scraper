@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Corrections",
   "attributes": {
+    "officialUrl": "https://doc.dc.gov",
     "shortName": "Department of Corrections",
-    "sourceAgencyId": "1030"
+    "sourceAgencyId": "1030",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-corrections:doc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "37"

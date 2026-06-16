@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Mayor's Office of Lesbian Gay Bisexual Transgender and Questioning Affairs",
   "attributes": {
+    "officialUrl": "https://lgbtq.dc.gov",
     "shortName": "Mayor's Office of Lesbian Gay Bisexual Transgender and Questioning Affairs",
-    "sourceAgencyId": "1057"
+    "sourceAgencyId": "1057",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-of-lesbian-gay-bisexual-transgender-and-questioning-affairs:lgbtq-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "51"

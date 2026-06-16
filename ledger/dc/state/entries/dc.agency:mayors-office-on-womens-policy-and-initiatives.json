@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Mayor's Office on Women's Policy and Initiatives",
   "attributes": {
+    "officialUrl": "https://owpi.dc.gov",
     "shortName": "Mayor's Office on Women's Policy and Initiatives",
-    "sourceAgencyId": "1064"
+    "sourceAgencyId": "1064",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-on-women-s-policy-and-initiatives:owpi-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "85"

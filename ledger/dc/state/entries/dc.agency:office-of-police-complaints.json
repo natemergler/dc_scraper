@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Police Complaints",
   "attributes": {
+    "officialUrl": "https://policecomplaints.dc.gov",
     "shortName": "Office of Police Complaints",
-    "sourceAgencyId": "1080"
+    "sourceAgencyId": "1080",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-police-complaints:policecomplaints-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "16"

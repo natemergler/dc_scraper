@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of General Services",
   "attributes": {
+    "officialUrl": "https://dgs.dc.gov",
     "shortName": "Department of General Services",
-    "sourceAgencyId": "1036"
+    "sourceAgencyId": "1036",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-general-services:dgs-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "27"

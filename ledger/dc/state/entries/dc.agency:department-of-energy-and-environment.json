@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Energy and Environment",
   "attributes": {
+    "officialUrl": "https://doee.dc.gov",
     "shortName": "Department of Energy and Environment",
-    "sourceAgencyId": "1033"
+    "sourceAgencyId": "1033",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-energy-environment:doee-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "38"
