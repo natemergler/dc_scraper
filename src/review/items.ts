@@ -588,14 +588,14 @@ function classificationFromCandidate(
 }
 
 function categoryFromFinding(finding: Finding): ReviewCategory | null {
+  if (finding.code.includes("not_promoted") || finding.code.includes("promotion")) {
+    return "out_of_scope_candidate";
+  }
   if (finding.code.includes("relation_target") || finding.code.includes("relation_source")) {
     return "relation_endpoint_missing";
   }
   if (finding.code.includes("legal")) {
     return "legal_authority_ambiguous";
-  }
-  if (finding.code.includes("not_promoted") || finding.code.includes("promotion")) {
-    return "out_of_scope_candidate";
   }
   if (finding.code.includes("missing") || finding.code.includes("invalid")) {
     return "incomplete_entry";

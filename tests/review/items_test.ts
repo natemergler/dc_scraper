@@ -205,3 +205,22 @@ Deno.test("finding review items preserve distinct source evidence", async () => 
     await Deno.remove(workspace, { recursive: true });
   }
 });
+
+Deno.test("relation not promoted findings stay classified as out of scope", () => {
+  const findings: Finding[] = [
+    {
+      kind: "warn",
+      code: "compiler.relation_source_not_promoted",
+      message:
+        "relation source entry was not promoted into baseline: dc.agency:adult-career-pathways-task-force; relation skipped",
+      citation: cite("open_dc.public_bodies", "adult-career-pathways-task-force"),
+    },
+  ];
+
+  const items = generateReviewItems(state([]), findings);
+
+  assertEquals(items.length, 1);
+  assertEquals(items[0].category, "out_of_scope_candidate");
+  assertEquals(items[0].classification, "out_of_scope");
+  assertEquals(items[0].suggestedResolutions, ["suppress"]);
+});
