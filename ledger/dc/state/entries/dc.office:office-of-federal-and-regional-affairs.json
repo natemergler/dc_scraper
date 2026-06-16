@@ -4,6 +4,28 @@
   "kind": "dc.office",
   "name": "Office of Federal and Regional Affairs",
   "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "65"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-federal-and-regional-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of Federal and Regional Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-federal-and-regional-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-federal-and-regional-affairs-yrd96u-dc-office-office-of-federal-and-regional-6hgnsf",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of Federal and Regional Affairs",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-federal-and-regional-affairs",

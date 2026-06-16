@@ -1,0 +1,31 @@
+{
+  "id": "review-preserve-distinct-same-normalized-name-office-of-the-deputy-mayor-for-public-safety-and-justice-1tc1pi9-dc-office-office-of-the-deputy-mayor-for-my1de4",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+  "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Deputy Mayor for Public Safety and Justice. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice:dmpsj-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "153"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:office-of-the-deputy-mayor-for-public-safety-and-justice"
+      ]
+    }
+  }
+}

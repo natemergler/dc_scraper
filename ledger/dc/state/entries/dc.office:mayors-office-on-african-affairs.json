@@ -4,6 +4,28 @@
   "kind": "dc.office",
   "name": "Mayor's Office on African Affairs",
   "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "54"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-african-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office on African Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-on-african-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-on-african-affairs-ejit3u-dc-office-mayors-office-on-african-affai-1wxd138",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Mayor's Office on African Affairs",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "mayors-office-on-african-affairs",

@@ -4,6 +4,28 @@
   "kind": "dc.office",
   "name": "Mayor's Office on Latino Affairs",
   "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "68"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-latino-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office on Latino Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-on-latino-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-on-latino-affairs-rr7ayr-dc-office-mayors-office-on-latino-affair-mn0n9t",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Mayor's Office on Latino Affairs",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "mayors-office-on-latino-affairs",
