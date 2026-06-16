@@ -6,18 +6,15 @@
 
 # DC Data CLI
 
-This repo is a maintainer-first local CLI for D.C. civic structure data. It
-fetches public sources, normalizes typed candidates into a SQLite file,
-records replayable JSONL decisions when resolution is needed, and builds a compact public release
-package.
-
-
+This repo is a maintainer-first local CLI for D.C. civic structure data. It fetches public sources,
+normalizes typed candidates into a SQLite file, records replayable JSONL decisions when resolution
+is needed, and builds a compact public release package.
 
 ```text
 source connector -> local artifact -> SQLite workbench -> audit -> browse -> decide when needed -> release package
 ```
 
-Local state lives under `data/`, `resolutions/`, and `releases/`. 
+Local state lives under `data/`, `resolutions/`, and `releases/`.
 
 ```bash
 WORKBENCH_DB=data/workbench.sqlite
@@ -35,10 +32,8 @@ deno task dc -- release build --source-profile custom --db "$WORKBENCH_DB" --out
 deno task dc -- release inspect --out "$FRESH_RELEASE_DIR"
 ```
 
-The default workbench database is `data/workbench.sqlite`.  Use `deno task dc -- source fetch --all` when you need the full configured-source data
-
-
-
+The default workbench database is `data/workbench.sqlite`. Use `deno task dc -- source fetch --all`
+when you need the full configured-source data
 
 Use inspection commands when you want scriptable state:
 
