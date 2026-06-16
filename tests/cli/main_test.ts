@@ -399,6 +399,12 @@ Deno.test("state generation can compile Council committees and councilmembers to
       committeeEntryFiles.includes("dc.councilmember:councilmember-trayon-white-sr.json"),
       true,
     );
+    assertEquals(
+      committeeEntryFiles.includes("dc.elected_office:at-large-councilmember.json"),
+      true,
+    );
+    assertEquals(committeeEntryFiles.includes("dc.elected_office:council-chairman.json"), true);
+    assertEquals(committeeEntryFiles.includes("dc.ward:8.json"), true);
 
     const committeeEntry = JSON.parse(
       await Deno.readTextFile(
@@ -436,6 +442,10 @@ Deno.test("state generation can compile Council committees and councilmembers to
       chairEntry.relations["dc.relation:member_of"][0]?.to,
       "dc.committee:committee-of-the-whole",
     );
+    assertEquals(
+      chairEntry.relations["dc.relation:holds"][0]?.to,
+      "dc.elected_office:council-chairman",
+    );
 
     const ward8Entry = JSON.parse(
       await Deno.readTextFile(
@@ -449,6 +459,11 @@ Deno.test("state generation can compile Council committees and councilmembers to
       ward8Entry.relations["dc.relation:member_of"][0]?.to,
       "dc.committee:committee-of-the-whole",
     );
+    assertEquals(
+      ward8Entry.relations["dc.relation:holds"][0]?.to,
+      "dc.elected_office:ward-8-councilmember",
+    );
+    assertEquals(ward8Entry.relations["dc.relation:represents"][0]?.to, "dc.ward:8");
 
     const indexCode = await runCli([
       "--workspace",
@@ -462,8 +477,8 @@ Deno.test("state generation can compile Council committees and councilmembers to
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "state_entries"), 8);
-    assertEquals(countRows(db, "state_relations"), 11);
+    assertEquals(countRows(db, "state_entries"), 16);
+    assertEquals(countRows(db, "state_relations"), 23);
     closeWorkspace(db);
 
     const checkCode = await runCli([
@@ -487,20 +502,26 @@ Deno.test("state generation can compile Council committees and councilmembers to
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 8);
-    assertEquals(manifest.counts.relations, 11);
+    assertEquals(manifest.counts.entries, 16);
+    assertEquals(manifest.counts.relations, 23);
     assertEquals(manifest.counts.relationKinds["dc.relation:chairs"], 2);
     assertEquals(manifest.counts.relationKinds["dc.relation:member_of"], 9);
+    assertEquals(manifest.counts.relationKinds["dc.relation:holds"], 6);
+    assertEquals(manifest.counts.relationKinds["dc.relation:represents"], 6);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
     assertEquals(entriesCsv.includes("dc.committee:committee-of-the-whole"), true);
     assertEquals(entriesCsv.includes("dc.councilmember:phil-mendelson"), true);
+    assertEquals(entriesCsv.includes("dc.elected_office:council-chairman"), true);
+    assertEquals(entriesCsv.includes("dc.ward:8"), true);
     assertEquals(entriesCsv.includes("Committee of the Whole"), true);
     assertEquals(entriesCsv.includes("Trayon White"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:chairs"), true);
+    assertEquals(relationsCsv.includes("dc.relation:holds"), true);
     assertEquals(relationsCsv.includes("dc.relation:member_of"), true);
+    assertEquals(relationsCsv.includes("dc.relation:represents"), true);
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });

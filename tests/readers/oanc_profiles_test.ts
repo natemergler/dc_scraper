@@ -8,7 +8,11 @@ const HTML_BY_URL = new Map<string, string>([
     `
     <html>
       <body>
+        <h2>Ward 4</h2>
         <a href="/anc-profile/anc-4e">ANC 4E</a>
+        <h2>Ward 6</h2>
+        <a href="https://oanc.dc.gov/anc-profile/anc-6-8f">ANC 6/8F</a>
+        <h2>Ward 8</h2>
         <a href="https://oanc.dc.gov/anc-profile/anc-6-8f">ANC 6/8F</a>
       </body>
     </html>
@@ -62,10 +66,12 @@ Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood
   assertEquals(result.records.length, 2);
   assertEquals(result.records[0].key, "4E");
   assertEquals(result.records[0].payload.profileUrl, "https://oanc.dc.gov/anc-profile/anc-4e");
+  assertEquals(result.records[0].payload.wardNumbers, ["4"]);
   assertEquals(
     result.records[0].payload.representedNeighborhoods,
     "the Crestwood and 16th Street Heights neighborhoods",
   );
+  assertEquals(result.records[1].payload.wardNumbers, ["6", "8"]);
   const payloadKeys = Object.keys(result.records[0].payload);
   assertEquals(payloadKeys.includes("email"), false);
   assertEquals(payloadKeys.includes("phone"), false);

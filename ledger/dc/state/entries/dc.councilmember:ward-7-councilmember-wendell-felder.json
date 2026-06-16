@@ -2,10 +2,12 @@
   "id": "dc.councilmember:ward-7-councilmember-wendell-felder",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 7 Councilmember Wendell Felder",
+  "name": "Wendell Felder",
   "attributes": {
+    "officeLabel": "Ward 7 Councilmember",
     "sourceProfileSlug": "ward-7-councilmember-wendell-felder",
-    "sourceProfileUrl": "https://dccouncil.gov/council/ward-7-councilmember-wendell-felder/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-7-councilmember-wendell-felder/",
+    "wardNumber": "7"
   },
   "citations": [
     {
@@ -46,6 +48,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-7-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-7-councilmember-wendell-felder"
           }
         ]
       }
@@ -108,6 +122,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:7",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-7-councilmember-wendell-felder"
           }
         ]
       }

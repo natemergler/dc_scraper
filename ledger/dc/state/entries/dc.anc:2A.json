@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the West End, Foggy Bottom, George Washington University, and part of the Downtown neighborhoods",
     "sourceAncId": "2A",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2a",
+    "sourceWardNumbers": [
+      "2"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2a"
   },
   "citations": [

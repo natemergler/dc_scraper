@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the LeDroit Park, southern Columbia Heights, U Street, and northern Shaw neighborhoods",
     "sourceAncId": "1B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1b",
+    "sourceWardNumbers": [
+      "1"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1b-00"
   },
   "citations": [

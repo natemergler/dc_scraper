@@ -1,0 +1,103 @@
+{
+  "id": "dc.ward:5",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 5",
+  "attributes": {
+    "wardNumber": "5"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-5-councilmember-zachary-parker"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5F"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5A",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5A"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5E"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:5F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "5F"
+          }
+        ]
+      }
+    ]
+  }
+}

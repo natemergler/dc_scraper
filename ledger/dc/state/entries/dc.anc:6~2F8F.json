@@ -5,7 +5,11 @@
   "name": "ANC 6/8F",
   "attributes": {
     "sourceAncId": "6/8F",
-    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f"
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourceWardNumbers": [
+      "6",
+      "8"
+    ]
   },
   "citations": [
     {

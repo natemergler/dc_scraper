@@ -21,10 +21,11 @@ export interface OancProfileRecordPayload {
   name: string;
   profileUrl: string;
   representedNeighborhoods?: string;
+  wardNumbers?: string[];
 }
 
-const ANC_PROFILE_LINK_RE =
-  /<a[^>]*href="([^"]*\/anc-profile\/anc-[^"#?]+)"[^>]*>\s*ANC\s+([^<]+)\s*<\/a>/gi;
+const INDEX_TOKEN_RE =
+  /<h[1-6][^>]*>\s*Ward\s+(\d+)\s*<\/h[1-6]>|<a[^>]*href="([^"]*\/anc-profile\/anc-[^"#?]+)"[^>]*>\s*ANC\s+([^<]+)\s*<\/a>/gi;
 const TAG_RE = /<[^>]+>/g;
 const WHITESPACE_RE = /\s+/g;
 
@@ -76,6 +77,7 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
           name: `ANC ${profile.ancId}`,
           profileUrl: profile.profileUrl,
           representedNeighborhoods: extractRepresentedNeighborhoods(html),
+          ...(profile.wardNumbers.length > 0 ? { wardNumbers: profile.wardNumbers } : {}),
         } satisfies OancProfileRecordPayload,
       });
     }
@@ -103,19 +105,44 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
   }
 }
 
-function extractProfileLinks(html: string): Array<{ ancId: string; profileUrl: string }> {
-  const links: Array<{ ancId: string; profileUrl: string }> = [];
-  const seen = new Set<string>();
-  for (const match of html.matchAll(ANC_PROFILE_LINK_RE)) {
-    const profileUrl = resolveOancUrl(match[1]);
-    const ancId = normalizeAncId(match[2]);
-    if (!profileUrl || !ancId || seen.has(ancId)) {
+function extractProfileLinks(
+  html: string,
+): Array<{ ancId: string; profileUrl: string; wardNumbers: string[] }> {
+  const byAncId = new Map<string, { profileUrl: string; wardNumbers: Set<string> }>();
+  let currentWardNumber: string | null = null;
+
+  for (const match of html.matchAll(INDEX_TOKEN_RE)) {
+    if (match[1]) {
+      currentWardNumber = match[1];
       continue;
     }
-    seen.add(ancId);
-    links.push({ ancId, profileUrl });
+
+    const profileUrl = resolveOancUrl(match[2]);
+    const ancId = normalizeAncId(match[3]);
+    if (!profileUrl || !ancId) {
+      continue;
+    }
+
+    let entry = byAncId.get(ancId);
+    if (!entry) {
+      entry = {
+        profileUrl,
+        wardNumbers: new Set<string>(),
+      };
+      byAncId.set(ancId, entry);
+    }
+    if (currentWardNumber) {
+      entry.wardNumbers.add(currentWardNumber);
+    }
   }
-  return links;
+
+  return [...byAncId.entries()]
+    .map(([ancId, value]) => ({
+      ancId,
+      profileUrl: value.profileUrl,
+      wardNumbers: [...value.wardNumbers].sort(),
+    }))
+    .sort((left, right) => left.ancId.localeCompare(right.ancId));
 }
 
 function extractRepresentedNeighborhoods(html: string): string | undefined {

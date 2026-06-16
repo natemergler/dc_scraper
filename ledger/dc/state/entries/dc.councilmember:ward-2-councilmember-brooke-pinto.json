@@ -2,10 +2,12 @@
   "id": "dc.councilmember:ward-2-councilmember-brooke-pinto",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 2 Councilmember Brooke Pinto",
+  "name": "Brooke Pinto",
   "attributes": {
+    "officeLabel": "Ward 2 Councilmember",
     "sourceProfileSlug": "ward-2-councilmember-brooke-pinto",
-    "sourceProfileUrl": "https://dccouncil.gov/council/ward-2-councilmember-brooke-pinto/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-2-councilmember-brooke-pinto/",
+    "wardNumber": "2"
   },
   "citations": [
     {
@@ -42,6 +44,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-2-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-2-councilmember-brooke-pinto"
           }
         ]
       }
@@ -94,6 +108,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:2",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-2-councilmember-brooke-pinto"
           }
         ]
       }

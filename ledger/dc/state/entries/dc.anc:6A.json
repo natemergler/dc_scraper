@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Atlas District and part of the Capitol Hill neighborhoods",
     "sourceAncId": "6A",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "sourceWardNumbers": [
+      "6"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6a"
   },
   "citations": [

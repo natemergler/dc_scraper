@@ -114,6 +114,30 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
           sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
         },
       }),
+      entryFragment({
+        source: "oanc.profiles",
+        sourceRecordId: "4E",
+        provisionalId: "dc.ward:4",
+        family: "area",
+        kind: "dc.ward",
+        name: "Ward 4",
+        attributes: {
+          wardNumber: "4",
+        },
+      }),
+      entryFragment({
+        source: "dccouncil.members",
+        sourceRecordId: "ward-4-councilmember-janeese-lewis-george",
+        provisionalId: "dc.elected_office:ward-4-councilmember",
+        family: "position",
+        kind: "dc.elected_office",
+        name: "Ward 4 Councilmember",
+        attributes: {
+          officeType: "ward_councilmember",
+          sourceLabel: "Ward 4 Councilmember",
+          wardNumber: "4",
+        },
+      }),
     ],
   });
 
@@ -124,6 +148,8 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
   assertEquals(result.state?.entries.has("dc.council:co-1"), true);
   assertEquals(result.state?.entries.has("dc.office:office-one"), true);
   assertEquals(result.state?.entries.has("dc.anc:4E"), true);
+  assertEquals(result.state?.entries.has("dc.ward:4"), true);
+  assertEquals(result.state?.entries.has("dc.elected_office:ward-4-councilmember"), true);
 });
 
 Deno.test("DC promotion policy keeps bad Open DC examples out of canonical state", () => {

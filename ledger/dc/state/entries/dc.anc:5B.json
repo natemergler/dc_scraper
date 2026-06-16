@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Brookland, University Heights, and Woodridge neighborhoods",
     "sourceAncId": "5B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourceWardNumbers": [
+      "5"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5b"
   },
   "citations": [

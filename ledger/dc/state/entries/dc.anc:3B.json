@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Glover Park and part of the Cathedral Heights neighborhoods",
     "sourceAncId": "3B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3b",
+    "sourceWardNumbers": [
+      "3"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3b"
   },
   "citations": [

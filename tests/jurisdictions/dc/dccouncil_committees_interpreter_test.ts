@@ -50,16 +50,18 @@ Deno.test("dccouncil.committees records become committee, councilmember, and mem
   assertEquals(chairEntry.provisionalId, "dc.councilmember:phil-mendelson");
   assertEquals(chairEntry.kind, "dc.councilmember");
   assertEquals(chairEntry.family, "person");
-  assertEquals(chairEntry.name, "Chairman Phil Mendelson");
+  assertEquals(chairEntry.name, "Phil Mendelson");
   assertEquals(chairEntry.attributes.sourceProfileSlug, "phil-mendelson");
   assertEquals(
     chairEntry.attributes.sourceProfileUrl,
     "https://dccouncil.gov/council/phil-mendelson/",
   );
+  assertEquals(chairEntry.attributes.officeLabel, "Chairman");
 
   assertEquals(memberEntry.provisionalId, "dc.councilmember:anita-bonds");
   assertEquals(memberEntry.kind, "dc.councilmember");
-  assertEquals(memberEntry.name, "At-Large Councilmember Anita Bonds");
+  assertEquals(memberEntry.name, "Anita Bonds");
+  assertEquals(memberEntry.attributes.officeLabel, "At-Large Councilmember");
 
   assertEquals(chairsRelation.from, "dc.councilmember:phil-mendelson");
   assertEquals(chairsRelation.relationKind, "dc.relation:chairs");

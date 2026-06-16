@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the American University Park, Tenleytown, and Friendship Heights neighborhoods",
     "sourceAncId": "3E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3e",
+    "sourceWardNumbers": [
+      "3"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3e"
   },
   "citations": [

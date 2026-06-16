@@ -1,0 +1,31 @@
+{
+  "id": "dc.elected_office:ward-1-councilmember",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "Ward 1 Councilmember",
+  "attributes": {
+    "officeType": "ward_councilmember",
+    "sourceLabel": "Ward 1 Councilmember",
+    "wardNumber": "1"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "brianne-nadeau"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:1",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "brianne-nadeau"
+          }
+        ]
+      }
+    ]
+  }
+}

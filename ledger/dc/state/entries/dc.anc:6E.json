@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Mount Vernon Triangle, NoMa, Northwest One, Sursum Corda, Judiciary Square, and Downtown East neighborhoods",
     "sourceAncId": "6E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourceWardNumbers": [
+      "6"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6e"
   },
   "citations": [

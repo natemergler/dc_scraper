@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Barry Farm, Congress Heights, and Douglass neighborhoods",
     "sourceAncId": "8C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourceWardNumbers": [
+      "8"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8c"
   },
   "citations": [

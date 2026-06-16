@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Adams Morgan, Lanier Heights, and part of Kalorama Heights neighborhoods",
     "sourceAncId": "1C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1c",
+    "sourceWardNumbers": [
+      "1"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1c"
   },
   "citations": [

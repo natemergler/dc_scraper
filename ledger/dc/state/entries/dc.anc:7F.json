@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Benning, Dupont Hill, and part of the Hill East neighborhoods",
     "sourceAncId": "7F",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7f",
+    "sourceWardNumbers": [
+      "7"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7f"
   },
   "citations": [

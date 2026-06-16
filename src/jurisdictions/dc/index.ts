@@ -11,14 +11,17 @@ import { dcCourtDivisionKind } from "./kinds/court_division.ts";
 import { dcCourtSystemKind } from "./kinds/court_system.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
+import { dcElectedOfficeKind } from "./kinds/elected_office.ts";
 import { dcOfficeKind } from "./kinds/office.ts";
 import { dcLegalSourceKind } from "./kinds/legal_source.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
+import { dcWardKind } from "./kinds/ward.ts";
 import {
   dcAffiliatedWithRelation,
   dcChairsRelation,
   dcContainsRelation,
   dcGovernsRelation,
+  dcHoldsRelation,
   dcMemberOfRelation,
   dcPartOfRelation,
   dcReportsToRelation,
@@ -83,13 +86,16 @@ dcKindRegistry.register(dcCourtKind);
 dcKindRegistry.register(dcCourtDivisionKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
+dcKindRegistry.register(dcElectedOfficeKind);
 dcKindRegistry.register(dcOfficeKind);
 dcKindRegistry.register(dcLegalSourceKind);
 dcKindRegistry.register(dcSmdKind);
+dcKindRegistry.register(dcWardKind);
 dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
+dcKindRegistry.registerRelation(dcHoldsRelation);
 dcKindRegistry.registerRelation(dcMemberOfRelation);
 dcKindRegistry.registerRelation(dcPartOfRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
@@ -154,7 +160,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "dccouncil.members",
       family: "council_structure",
       scope: "Official Councilmember roster/profile links.",
-      contributes: "Councilmember entries used by committee membership and chair relations.",
+      contributes:
+        "Councilmember entries, elected office nodes, and ward representation relations from official roster labels.",
       excludes:
         "Personal contact details, biographies beyond names/official profile URLs, newsletters, and campaign material.",
     },
@@ -260,7 +267,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "advisory_neighborhood_commissions",
       scope: "Official OANC ANC index and profile pages.",
       contributes:
-        "ANC profile URLs and represented-neighborhood summaries where conservatively extractable.",
+        "ANC profile URLs, represented-neighborhood summaries, and ward-to-ANC containment relations where conservatively extractable.",
       excludes:
         "Emails, phones, physical addresses, meeting locations, financial document details, commissioner contact fields, and broad person records.",
     },

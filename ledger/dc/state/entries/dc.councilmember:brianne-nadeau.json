@@ -2,10 +2,12 @@
   "id": "dc.councilmember:brianne-nadeau",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 1 Councilmember Brianne K. Nadeau",
+  "name": "Brianne K. Nadeau",
   "attributes": {
+    "officeLabel": "Ward 1 Councilmember",
     "sourceProfileSlug": "brianne-nadeau",
-    "sourceProfileUrl": "https://dccouncil.gov/council/brianne-nadeau/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/brianne-nadeau/",
+    "wardNumber": "1"
   },
   "citations": [
     {
@@ -42,6 +44,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-on-public-works-and-operations"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-1-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "brianne-nadeau"
           }
         ]
       }
@@ -94,6 +108,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:1",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "brianne-nadeau"
           }
         ]
       }

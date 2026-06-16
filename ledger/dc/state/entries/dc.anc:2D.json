@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Kalorama Heights neighborhoods",
     "sourceAncId": "2D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2d",
+    "sourceWardNumbers": [
+      "2"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2d"
   },
   "citations": [

@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the northern part of the Columbia Heights neighborhood",
     "sourceAncId": "1A",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourceWardNumbers": [
+      "1"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1a"
   },
   "citations": [

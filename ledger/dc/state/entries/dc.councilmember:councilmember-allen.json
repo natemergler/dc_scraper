@@ -2,10 +2,12 @@
   "id": "dc.councilmember:councilmember-allen",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 6 Councilmember Charles Allen",
+  "name": "Charles Allen",
   "attributes": {
+    "officeLabel": "Ward 6 Councilmember",
     "sourceProfileSlug": "councilmember-allen",
-    "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-allen/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-allen/",
+    "wardNumber": "6"
   },
   "citations": [
     {
@@ -42,6 +44,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-6-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-allen"
           }
         ]
       }
@@ -94,6 +108,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:6",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-allen"
           }
         ]
       }

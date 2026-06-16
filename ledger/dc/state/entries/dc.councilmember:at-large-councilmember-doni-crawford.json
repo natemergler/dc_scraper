@@ -2,8 +2,9 @@
   "id": "dc.councilmember:at-large-councilmember-doni-crawford",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "At-Large Councilmember Doni Crawford",
+  "name": "Doni Crawford",
   "attributes": {
+    "officeLabel": "At-Large Councilmember",
     "sourceProfileSlug": "at-large-councilmember-doni-crawford",
     "sourceProfileUrl": "https://dccouncil.gov/council/at-large-councilmember-doni-crawford/"
   },
@@ -34,6 +35,18 @@
     }
   ],
   "relations": {
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "at-large-councilmember-doni-crawford"
+          }
+        ]
+      }
+    ],
     "dc.relation:member_of": [
       {
         "kind": "dc.relation:member_of",

@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Southwest/Waterfront neighborhood",
     "sourceAncId": "6D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6d",
+    "sourceWardNumbers": [
+      "6"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6d"
   },
   "citations": [

@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Bellevue neighborhood",
     "sourceAncId": "8D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8d",
+    "sourceWardNumbers": [
+      "8"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8d"
   },
   "citations": [

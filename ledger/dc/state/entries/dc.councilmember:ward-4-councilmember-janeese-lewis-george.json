@@ -2,10 +2,12 @@
   "id": "dc.councilmember:ward-4-councilmember-janeese-lewis-george",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 4 Councilmember Janeese Lewis George",
+  "name": "Janeese Lewis George",
   "attributes": {
+    "officeLabel": "Ward 4 Councilmember",
     "sourceProfileSlug": "ward-4-councilmember-janeese-lewis-george",
-    "sourceProfileUrl": "https://dccouncil.gov/council/ward-4-councilmember-janeese-lewis-george/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-4-councilmember-janeese-lewis-george/",
+    "wardNumber": "4"
   },
   "citations": [
     {
@@ -42,6 +44,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-on-facilities"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-4-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-4-councilmember-janeese-lewis-george"
           }
         ]
       }
@@ -94,6 +108,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:4",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-4-councilmember-janeese-lewis-george"
           }
         ]
       }

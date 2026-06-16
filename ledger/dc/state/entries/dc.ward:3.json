@@ -1,0 +1,103 @@
+{
+  "id": "dc.ward:3",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 3",
+  "attributes": {
+    "wardNumber": "3"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-3-councilmember-matthew-frumin"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3F"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3A",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3A"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3E"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3F"
+          }
+        ]
+      }
+    ]
+  }
+}

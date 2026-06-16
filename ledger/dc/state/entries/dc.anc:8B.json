@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Garfield Heights, Hillsdale, Knox Hill/Buena Vista, Skyland, and Woodland neighborhoods",
     "sourceAncId": "8B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourceWardNumbers": [
+      "8"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8b"
   },
   "citations": [

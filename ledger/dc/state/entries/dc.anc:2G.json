@@ -7,6 +7,9 @@
     "gisId": "ANCPly_332",
     "sourceAncId": "2G",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourceWardNumbers": [
+      "2"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2g"
   },
   "citations": [

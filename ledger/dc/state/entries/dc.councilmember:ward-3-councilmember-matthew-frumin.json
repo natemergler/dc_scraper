@@ -2,10 +2,12 @@
   "id": "dc.councilmember:ward-3-councilmember-matthew-frumin",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Ward 3 Councilmember Matthew Frumin",
+  "name": "Matthew Frumin",
   "attributes": {
+    "officeLabel": "Ward 3 Councilmember",
     "sourceProfileSlug": "ward-3-councilmember-matthew-frumin",
-    "sourceProfileUrl": "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/"
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/",
+    "wardNumber": "3"
   },
   "citations": [
     {
@@ -42,6 +44,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-human-services"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-3-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-3-councilmember-matthew-frumin"
           }
         ]
       }
@@ -94,6 +108,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:3",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-3-councilmember-matthew-frumin"
           }
         ]
       }

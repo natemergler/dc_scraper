@@ -1,0 +1,89 @@
+{
+  "id": "dc.ward:7",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 7",
+  "attributes": {
+    "wardNumber": "7"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-7-councilmember-wendell-felder"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7F"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:7B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "7B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:7C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "7C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:7D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "7D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:7E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "7E"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:7F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "7F"
+          }
+        ]
+      }
+    ]
+  }
+}

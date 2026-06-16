@@ -17,13 +17,14 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
         name: "ANC 4E",
         profileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
         representedNeighborhoods: "the Crestwood and 16th Street Heights neighborhoods",
+        wardNumbers: ["4"],
       },
     },
   ]);
 
   assertEquals(output.findings, []);
-  assertEquals(output.entryFragments.length, 1);
-  assertEquals(output.relationFragments.length, 0);
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 1);
   assertEquals(output.entryFragments[0].provisionalId, "dc.anc:4E");
   assertEquals(output.entryFragments[0].kind, "dc.anc");
   assertEquals(output.entryFragments[0].attributes.sourceAncId, "4E");
@@ -35,8 +36,47 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
     output.entryFragments[0].attributes.representedNeighborhoods,
     "the Crestwood and 16th Street Heights neighborhoods",
   );
+  assertEquals(output.entryFragments[0].attributes.sourceWardNumbers, ["4"]);
   assertEquals(output.entryFragments[0].citations, [
     cite(oancProfilesSource.id, "4E", { url: "https://oanc.dc.gov/anc-profile/anc-4e" }),
+  ]);
+  assertEquals(output.entryFragments[1].provisionalId, "dc.ward:4");
+  assertEquals(output.entryFragments[1].kind, "dc.ward");
+  assertEquals(output.relationFragments[0], {
+    fragmentType: "relation",
+    source: oancProfilesSource.id,
+    sourceRecordId: "4E",
+    from: "dc.ward:4",
+    relationKind: "dc.relation:contains",
+    to: "dc.anc:4E",
+    citations: [cite(oancProfilesSource.id, "4E")],
+  });
+});
+
+Deno.test("oanc.profiles supports ANCs listed under multiple wards", () => {
+  const output = interpretOancProfiles([
+    {
+      source: oancProfilesSource.id,
+      snapshotKey: "profile-0",
+      key: "6/8F",
+      payload: {
+        ancId: "6/8F",
+        name: "ANC 6/8F",
+        profileUrl: "https://oanc.dc.gov/anc-profile/anc-68f",
+        wardNumbers: ["6", "8"],
+      },
+    },
+  ]);
+
+  assertEquals(output.findings, []);
+  assertEquals(output.entryFragments.map((entry) => entry.provisionalId), [
+    "dc.anc:6~2F8F",
+    "dc.ward:6",
+    "dc.ward:8",
+  ]);
+  assertEquals(output.relationFragments.map((relation) => relation.to), [
+    "dc.anc:6~2F8F",
+    "dc.anc:6~2F8F",
   ]);
 });
 

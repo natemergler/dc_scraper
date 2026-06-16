@@ -7,6 +7,9 @@
     "gisId": "ANCPly_325",
     "sourceAncId": "1E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourceWardNumbers": [
+      "1"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1e"
   },
   "citations": [

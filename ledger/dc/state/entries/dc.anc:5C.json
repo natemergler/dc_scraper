@@ -8,6 +8,9 @@
     "representedNeighborhoods": "the Arboretum, Brentwood, Fort Lincoln, Gateway, Langdon, and part of the Woodridge neighborhoods",
     "sourceAncId": "5C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5c",
+    "sourceWardNumbers": [
+      "5"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5c"
   },
   "citations": [

@@ -1,0 +1,17 @@
+{
+  "id": "dc.elected_office:council-chairman",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "Chairman",
+  "attributes": {
+    "officeType": "council_chairman",
+    "sourceLabel": "Chairman"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "phil-mendelson"
+    }
+  ],
+  "relations": {}
+}
