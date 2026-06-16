@@ -15,14 +15,23 @@
       "sourceRecordId": "109"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "109",
-      "locator": "D.C. Code § 1-129.31"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "new-columbia-statehood-commission"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-129-31",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "109",
+            "locator": "D.C. Code § 1-129.31"
+          }
+        ]
+      }
+    ]
+  }
 }

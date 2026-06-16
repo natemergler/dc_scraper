@@ -17,21 +17,29 @@
       "sourceRecordId": "56"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "56",
-      "locator": "D.C. Code § 3-1202.14"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-respiratory-care"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-respiratory-care",
-      "locator": "DC Code § 3-1202.14"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-14",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "56",
+            "locator": "D.C. Code § 3-1202.14"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-respiratory-care",
+            "locator": "D.C. Code § 3-1202.14"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "56"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "56",
-            "locator": "D.C. Code § 3-1202.14"
           }
         ]
       }

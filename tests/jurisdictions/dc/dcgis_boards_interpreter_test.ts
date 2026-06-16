@@ -127,6 +127,32 @@ Deno.test("dcgis.boards resolves governing agency label with abbreviation varian
   assertEquals(relationFragment.to, "dc.agency:a-1");
 });
 
+Deno.test("dcgis.boards records create legal authority relations from parsed locators", () => {
+  const output = interpretDcgisBoards([{
+    source: dcgisBoardsSource.id,
+    snapshotKey: "page-0",
+    key: "row-6",
+    payload: {
+      BOARD_ID: "b-6",
+      BOARD_NAME: "Board With Statute",
+      SHORT_NAME: "BWS",
+      LEGAL_REFERENCE: "D.C. Law 10-50",
+    },
+  }]);
+
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 1);
+  const boardFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board");
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
+  assertEquals(boardFragment?.citations, [cite(dcgisBoardsSource.id, "row-6")]);
+  assertEquals(authorityFragment?.attributes.authorityType, "dc_law");
+  assertEquals(authorityFragment?.attributes.locator, "D.C. Law 10-50");
+  assertEquals(output.relationFragments[0].relationKind, "dc.relation:authorized_by");
+  assertEquals(output.relationFragments[0].to, "dc.legal_authority:d-c-law-10-50");
+});
+
 Deno.test("dcgis.boards source binding links interpreter", () => {
   assertEquals(dcgisBoardsBinding.source.id, dcgisBoardsSource.id);
   assertEquals(dcgisBoardsBinding.interpret, interpretDcgisBoards);

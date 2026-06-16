@@ -2618,6 +2618,10 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), false);
     assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
     assertEquals(stateEntries.includes("dc.agency:department-of-public-works.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-1-123.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-law-10-50.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-1-200.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-47-2853-06-b-1.json"), true);
     assertEquals(stateEntries.includes("dc.agency:meetings.json"), false);
 
     const advisoryEntry = JSON.parse(
@@ -2628,6 +2632,13 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(
       advisoryEntry.relations["dc.relation:governs"]?.[0]?.to,
       "dc.agency:department-of-public-works",
+    );
+    assertEquals(
+      advisoryEntry.relations["dc.relation:authorized_by"]?.map((relation) => relation.to).sort(),
+      [
+        "dc.legal_authority:d-c-code-1-123",
+        "dc.legal_authority:d-c-law-10-50",
+      ],
     );
 
     const waterAuthorityEntry = JSON.parse(
@@ -2652,10 +2663,10 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "fragments"), 7);
+    assertEquals(countRows(db, "fragments"), 15);
     assertEquals(countRows(db, "baselines"), 1);
-    assertEquals(countRows(db, "state_entries"), 5);
-    assertEquals(countRows(db, "state_relations"), 1);
+    assertEquals(countRows(db, "state_entries"), 9);
+    assertEquals(countRows(db, "state_relations"), 5);
     const baselineRow = db.db.prepare(
       "SELECT payload FROM baselines ORDER BY id DESC LIMIT 1",
     ).get() as { payload: string } | undefined;
@@ -2690,8 +2701,9 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 5);
-    assertEquals(manifest.counts.relations, 1);
+    assertEquals(manifest.counts.entries, 9);
+    assertEquals(manifest.counts.relations, 5);
+    assertEquals(manifest.counts.relationKinds["dc.relation:authorized_by"], 4);
     assertEquals(manifest.counts.relationKinds["dc.relation:governs"], 1);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
@@ -2701,9 +2713,12 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(entriesCsv.includes("Climate Task Force"), false);
     assertEquals(entriesCsv.includes("Board of Accountancy"), true);
     assertEquals(entriesCsv.includes("Department of Public Works"), true);
+    assertEquals(entriesCsv.includes("D.C. Law 10-50"), true);
+    assertEquals(entriesCsv.includes("D.C. Code § 1-123"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:governs"), true);
+    assertEquals(relationsCsv.includes("dc.relation:authorized_by"), true);
     assertEquals(relationsCsv.includes("dc.board:advisory-board"), true);
     assertEquals(relationsCsv.includes("dc.agency:department-of-public-works"), true);
   } finally {

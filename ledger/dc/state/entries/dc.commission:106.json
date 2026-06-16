@@ -11,14 +11,22 @@
     {
       "source": "dcgis.commissions",
       "sourceRecordId": "106"
-    },
-    {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "106",
-      "locator": "Mayor's Order 2012-127"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2012-127",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "106",
+            "locator": "Mayor's Order 2012-127"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "106"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "106",
-            "locator": "Mayor's Order 2012-127"
           }
         ]
       }

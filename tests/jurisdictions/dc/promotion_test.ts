@@ -96,6 +96,19 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
         attributes: { shortName: "CO1", sourceCouncilId: "co-1" },
       }),
       entryFragment({
+        source: "dcgis.boards",
+        sourceRecordId: "board-legal-1",
+        provisionalId: "dc.legal_authority:d-c-code-1-123",
+        family: "authority",
+        kind: "dc.legal_authority",
+        name: "D.C. Code § 1-123",
+        attributes: {
+          authorityType: "dc_code",
+          locator: "D.C. Code § 1-123",
+          canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
+        },
+      }),
+      entryFragment({
         source: "mayor.executive_structure",
         sourceRecordId: "office-1",
         provisionalId: "dc.office:office-one",
@@ -146,6 +159,7 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
   assertEquals(result.state?.entries.has("dc.commission:c-1"), true);
   assertEquals(result.state?.entries.has("dc.authority:au-1"), true);
   assertEquals(result.state?.entries.has("dc.council:co-1"), true);
+  assertEquals(result.state?.entries.has("dc.legal_authority:d-c-code-1-123"), true);
   assertEquals(result.state?.entries.has("dc.office:office-one"), true);
   assertEquals(result.state?.entries.has("dc.anc:4E"), true);
   assertEquals(result.state?.entries.has("dc.ward:4"), true);

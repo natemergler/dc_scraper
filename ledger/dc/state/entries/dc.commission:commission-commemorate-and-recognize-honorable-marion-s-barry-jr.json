@@ -13,12 +13,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr",
-      "locator": "Mayor's Order 2015-081"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2015-081",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-commemorate-and-recognize-honorable-marion-s-barry-jr",
+            "locator": "Mayor's Order 2015-081"
+          }
+        ]
+      }
+    ]
+  }
 }

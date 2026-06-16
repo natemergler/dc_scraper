@@ -17,21 +17,35 @@
       "sourceRecordId": "19"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "19",
-      "locator": "D.C. Code § 48-312"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "food-policy-council"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "food-policy-council",
-      "locator": "D.C. Official Code § 48-314.05"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-48-312",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "19",
+            "locator": "D.C. Code § 48-312"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-48-314-05",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "food-policy-council",
+            "locator": "D.C. Code § 48-314.05"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +54,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "19"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "19",
-            "locator": "D.C. Code § 48-312"
           },
           {
             "source": "open_dc.public_bodies",

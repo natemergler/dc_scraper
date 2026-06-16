@@ -17,19 +17,28 @@
       "sourceRecordId": "85"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "85",
-      "locator": "D.C. Code § 2-360.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "contract-appeals-board-cab"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "contract-appeals-board-cab",
-      "locator": "DC Code § 2-360.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-360-01",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "85",
+            "locator": "D.C. Code § 2-360.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "contract-appeals-board-cab",
+            "locator": "D.C. Code § 2-360.01"
+          }
+        ]
+      }
+    ]
+  }
 }

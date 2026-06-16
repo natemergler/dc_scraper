@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-9-1109-11",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 9-1109.11",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/9-1109.11",
+    "locator": "D.C. Code § 9-1109.11",
+    "shortName": "D.C. Code § 9-1109.11"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "washington-metrorail-safety-commission",
+      "locator": "D.C. Code § 9-1109.11"
+    }
+  ],
+  "relations": {}
+}

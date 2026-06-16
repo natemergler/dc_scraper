@@ -14,17 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "tax-revision-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "tax-revision-commission",
-      "locator": "D.C. Code § 47-462"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "tax-revision-commission",
-      "locator": "D.C. Official Code § 47-462(a)"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-462-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "tax-revision-commission",
+            "locator": "D.C. Code § 47-462(a)",
+            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-462"
+          }
+        ]
+      }
+    ]
+  }
 }

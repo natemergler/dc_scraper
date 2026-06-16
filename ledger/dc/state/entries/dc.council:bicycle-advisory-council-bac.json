@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "bicycle-advisory-council-bac"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "bicycle-advisory-council-bac",
-      "locator": "D.C. Code § 50-1604"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-50-1604",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "bicycle-advisory-council-bac",
+            "locator": "D.C. Code § 50-1604"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

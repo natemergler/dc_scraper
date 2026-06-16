@@ -17,21 +17,29 @@
       "sourceRecordId": "52"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "52",
-      "locator": "D.C. Code § 3-1202.13"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-professional-counseling"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-professional-counseling",
-      "locator": "DC Code § 3-1202.13"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-13",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "52",
+            "locator": "D.C. Code § 3-1202.13"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-professional-counseling",
+            "locator": "D.C. Code § 3-1202.13"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "52"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "52",
-            "locator": "D.C. Code § 3-1202.13"
           }
         ]
       }

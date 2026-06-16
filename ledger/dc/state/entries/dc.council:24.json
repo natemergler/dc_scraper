@@ -17,19 +17,28 @@
       "sourceRecordId": "24"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "24",
-      "locator": "D.C. Code § 24-101.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "corrections-information-council-cic"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "corrections-information-council-cic",
-      "locator": "D.C. Code § 24-101.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-24-101-01",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "24",
+            "locator": "D.C. Code § 24-101.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "corrections-information-council-cic",
+            "locator": "D.C. Code § 24-101.01"
+          }
+        ]
+      }
+    ]
+  }
 }

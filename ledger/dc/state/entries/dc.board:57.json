@@ -11,14 +11,22 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "57"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "57",
-      "locator": "Mayor's Order 2003-156"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2003-156",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "57",
+            "locator": "Mayor's Order 2003-156"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "57"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "57",
-            "locator": "Mayor's Order 2003-156"
           }
         ]
       }

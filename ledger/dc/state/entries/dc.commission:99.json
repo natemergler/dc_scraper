@@ -17,21 +17,29 @@
       "sourceRecordId": "99"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "99",
-      "locator": "D.C. Code § 7-2271.02"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "homeland-security-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "homeland-security-commission",
-      "locator": "DC Code § 7-2271.02"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-2271-02",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "99",
+            "locator": "D.C. Code § 7-2271.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "homeland-security-commission",
+            "locator": "D.C. Code § 7-2271.02"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "99"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "99",
-            "locator": "D.C. Code § 7-2271.02"
           },
           {
             "source": "open_dc.public_bodies",

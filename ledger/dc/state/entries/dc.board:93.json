@@ -11,14 +11,22 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "93"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "93",
-      "locator": "D.C. Law 22-155"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-22-155",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "93",
+            "locator": "D.C. Law 22-155"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "93"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "93",
-            "locator": "D.C. Law 22-155"
           }
         ]
       }

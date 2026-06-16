@@ -11,14 +11,22 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "26"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "26",
-      "locator": "D.C. Code § 25-201"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-25-201",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "26",
+            "locator": "D.C. Code § 25-201"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "26"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "26",
-            "locator": "D.C. Code § 25-201"
           }
         ]
       }

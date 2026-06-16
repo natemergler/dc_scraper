@@ -17,19 +17,28 @@
       "sourceRecordId": "105"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "105",
-      "locator": "D.C. Code § 3-1301"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "lottery-and-charitable-games-control-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "lottery-and-charitable-games-control-board",
-      "locator": "DC Code § 3-1301"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1301",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "105",
+            "locator": "D.C. Code § 3-1301"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "lottery-and-charitable-games-control-board",
+            "locator": "D.C. Code § 3-1301"
+          }
+        ]
+      }
+    ]
+  }
 }

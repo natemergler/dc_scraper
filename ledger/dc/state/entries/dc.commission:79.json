@@ -17,21 +17,29 @@
       "sourceRecordId": "79"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "79",
-      "locator": "D.C. Code § 2-1831.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-selection-and-tenure-administrative-law-judges-office-administrative"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-selection-and-tenure-administrative-law-judges-office-administrative",
-      "locator": "D.C. Code § 2-1831.06"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1831-06",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "79",
+            "locator": "D.C. Code § 2-1831.06"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-selection-and-tenure-administrative-law-judges-office-administrative",
+            "locator": "D.C. Code § 2-1831.06"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "79"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "79",
-            "locator": "D.C. Code § 2-1831.06"
           },
           {
             "source": "open_dc.public_bodies",

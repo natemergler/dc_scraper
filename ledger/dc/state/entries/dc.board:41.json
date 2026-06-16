@@ -17,19 +17,28 @@
       "sourceRecordId": "41"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "41",
-      "locator": "D.C. Code § 39-104"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-library-trustees"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-library-trustees",
-      "locator": "D.C. Code § 39-104"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-39-104",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "41",
+            "locator": "D.C. Code § 39-104"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-library-trustees",
+            "locator": "D.C. Code § 39-104"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -17,21 +17,29 @@
       "sourceRecordId": "119"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "119",
-      "locator": "D.C. Code § 42-3502.02"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "rental-housing-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "rental-housing-commission",
-      "locator": "DC Code § 42-3502.02"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-42-3502-02",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "119",
+            "locator": "D.C. Code § 42-3502.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "rental-housing-commission",
+            "locator": "D.C. Code § 42-3502.02"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "119"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "119",
-            "locator": "D.C. Code § 42-3502.02"
           },
           {
             "source": "open_dc.public_bodies",

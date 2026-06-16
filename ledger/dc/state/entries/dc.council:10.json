@@ -17,21 +17,29 @@
       "sourceRecordId": "10"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "10",
-      "locator": "D.C. Code § 44-403"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "statewide-health-coordinating-council-shcc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "statewide-health-coordinating-council-shcc",
-      "locator": "DC Code § 44-403"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-44-403",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "10",
+            "locator": "D.C. Code § 44-403"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "statewide-health-coordinating-council-shcc",
+            "locator": "D.C. Code § 44-403"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "10"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "10",
-            "locator": "D.C. Code § 44-403"
           },
           {
             "source": "open_dc.public_bodies",

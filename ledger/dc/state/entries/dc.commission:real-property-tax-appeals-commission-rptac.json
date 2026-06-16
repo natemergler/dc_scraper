@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "real-property-tax-appeals-commission-rptac"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "real-property-tax-appeals-commission-rptac",
-      "locator": "D.C. Code § 47-825.01a"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-825-01a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-property-tax-appeals-commission-rptac",
+            "locator": "D.C. Code § 47-825.01a"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

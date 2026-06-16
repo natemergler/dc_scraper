@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-39-201",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 39-201",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/39-201",
+    "locator": "D.C. Code § 39-201",
+    "shortName": "D.C. Code § 39-201"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-arts-and-humanities",
+      "locator": "D.C. Code § 39-201"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-3-1202-13",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 3-1202.13",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.13",
+    "locator": "D.C. Code § 3-1202.13",
+    "shortName": "D.C. Code § 3-1202.13"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "52",
+      "locator": "D.C. Code § 3-1202.13"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-professional-counseling",
+      "locator": "D.C. Code § 3-1202.13"
+    }
+  ],
+  "relations": {}
+}

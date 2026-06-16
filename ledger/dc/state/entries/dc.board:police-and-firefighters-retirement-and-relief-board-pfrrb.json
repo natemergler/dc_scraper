@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb",
-      "locator": "D.C. Code § 5-722"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-722",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-and-firefighters-retirement-and-relief-board-pfrrb",
+            "locator": "D.C. Code § 5-722"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

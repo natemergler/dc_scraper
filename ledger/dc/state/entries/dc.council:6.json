@@ -16,21 +16,29 @@
       "sourceRecordId": "6"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "6",
-      "locator": "Mayor's Order 2001-173"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "state-rehabilitation-council-src"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "state-rehabilitation-council-src",
-      "locator": "Mayor's Order 2001-173"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2001-173",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "6",
+            "locator": "Mayor's Order 2001-173"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-rehabilitation-council-src",
+            "locator": "Mayor's Order 2001-173"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -49,11 +57,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "6"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "6",
-            "locator": "Mayor's Order 2001-173"
           }
         ]
       }

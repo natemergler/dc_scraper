@@ -12,12 +12,14 @@ import { dcCourtSystemKind } from "./kinds/court_system.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
 import { dcElectedOfficeKind } from "./kinds/elected_office.ts";
+import { dcLegalAuthorityKind } from "./kinds/legal_authority.ts";
 import { dcOfficeKind } from "./kinds/office.ts";
 import { dcLegalSourceKind } from "./kinds/legal_source.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
 import { dcWardKind } from "./kinds/ward.ts";
 import {
   dcAffiliatedWithRelation,
+  dcAuthorizedByRelation,
   dcChairsRelation,
   dcContainsRelation,
   dcGovernsRelation,
@@ -87,10 +89,12 @@ dcKindRegistry.register(dcCourtDivisionKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
 dcKindRegistry.register(dcElectedOfficeKind);
+dcKindRegistry.register(dcLegalAuthorityKind);
 dcKindRegistry.register(dcOfficeKind);
 dcKindRegistry.register(dcLegalSourceKind);
 dcKindRegistry.register(dcSmdKind);
 dcKindRegistry.register(dcWardKind);
+dcKindRegistry.registerRelation(dcAuthorizedByRelation);
 dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
@@ -184,7 +188,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "executive_agencies",
       scope: "DCGIS agency table.",
       contributes:
-        "Core agency entries and agency name lookup context for source-backed relation endpoint resolution.",
+        "Core agency entries, agency name lookup context for source-backed relation endpoint resolution, and authorized_by relations when explicit legal locators are present.",
       excludes: "Contacts, service directories, and non-agency program pages.",
     },
     {
@@ -200,7 +204,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Authority'.",
-      contributes: "Authority entries and governance relations when live rows exist.",
+      contributes:
+        "Authority entries, governing agency relations, and legal authority nodes/authorized_by relations when explicit locators are present.",
       excludes: "Boards, commissions, councils, contacts, and membership rosters.",
       notes:
         "Current live layer has no Authority rows; this is collected-empty source coverage, not a failed source.",
@@ -210,7 +215,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Board'.",
-      contributes: "Board entries, governing agency relations, and legal/provenance citations.",
+      contributes:
+        "Board entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
     },
     {
@@ -219,7 +225,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Commission'.",
       contributes:
-        "Commission entries, governing agency relations, and legal/provenance citations.",
+        "Commission entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
     },
     {
@@ -227,7 +233,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Council'.",
-      contributes: "Council entries, governing agency relations, and legal/provenance citations.",
+      contributes:
+        "Council entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes:
         "Council committees, Councilmember offices, contacts, membership rosters, and source-shadow merge decisions.",
     },
@@ -277,7 +284,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "public_bodies",
       scope: "Open DC public body index/detail pages.",
       contributes:
-        "Public body entries, legal/provenance citations, duplicate/source-shadow signals, and governing/administering relation candidates.",
+        "Public body entries, legal authority nodes/authorized_by relations from explicit enabling locators, duplicate/source-shadow signals, and governing/administering relation candidates.",
       excludes:
         "Contacts, member lists, meeting pages, local file links, event-title authority noise, and automatic duplicate merges.",
     },

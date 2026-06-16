@@ -16,21 +16,35 @@
       "sourceRecordId": "95"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "95",
-      "locator": "Mayor's Order 2016-035"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "health-information-exchange-policy-board-hie"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "health-information-exchange-policy-board-hie",
-      "locator": "Mayor's Order 2012-24"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2012-24",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "health-information-exchange-policy-board-hie",
+            "locator": "Mayor's Order 2012-24"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2016-035",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "95",
+            "locator": "Mayor's Order 2016-035"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -39,11 +53,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "95"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "95",
-            "locator": "Mayor's Order 2016-035"
           },
           {
             "source": "open_dc.public_bodies",

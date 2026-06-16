@@ -11,14 +11,22 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "83"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "83",
-      "locator": "D.C. Code § 7-2509.08"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-2509-08",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "83",
+            "locator": "D.C. Code § 7-2509.08"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "83"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "83",
-            "locator": "D.C. Code § 7-2509.08"
           }
         ]
       }

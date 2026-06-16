@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "humanities-council-washington-dc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "humanities-council-washington-dc",
-      "locator": "D.C. Code §1993-200"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1993-200",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "humanities-council-washington-dc",
+            "locator": "D.C. Code § 1993-200"
+          }
+        ]
+      }
+    ]
+  }
 }

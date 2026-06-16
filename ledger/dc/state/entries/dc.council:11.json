@@ -11,12 +11,21 @@
     {
       "source": "dcgis.councils",
       "sourceRecordId": "11"
-    },
-    {
-      "source": "dcgis.councils",
-      "sourceRecordId": "11",
-      "locator": "D.C. Code § 42-1903.08a"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-42-1903-08a",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "11",
+            "locator": "D.C. Code § 42-1903.08a"
+          }
+        ]
+      }
+    ]
+  }
 }

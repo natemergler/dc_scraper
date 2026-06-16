@@ -14,14 +14,23 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "opioid-abatement-advisory-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "opioid-abatement-advisory-commission",
-      "locator": "D.C. Code § 7-3212"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-3212",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "opioid-abatement-advisory-commission",
+            "locator": "D.C. Code § 7-3212",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-3212"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

@@ -14,17 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-fathers-men-and-boys"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-fathers-men-and-boys",
-      "locator": "D.C. Code § 3-731"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-fathers-men-and-boys",
-      "locator": "D.C. Official Code § 3-731"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-731",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-fathers-men-and-boys",
+            "locator": "D.C. Code § 3-731",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/3-731.html"
+          }
+        ]
+      }
+    ]
+  }
 }

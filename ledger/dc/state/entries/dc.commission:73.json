@@ -17,21 +17,29 @@
       "sourceRecordId": "73"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "73",
-      "locator": "D.C. Code § 2-1404.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-human-rights"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-human-rights",
-      "locator": "D.C. Code § 2-1404.01"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1404-01",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "73",
+            "locator": "D.C. Code § 2-1404.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-human-rights",
+            "locator": "D.C. Code § 2-1404.01"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "73"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "73",
-            "locator": "D.C. Code § 2-1404.01"
           },
           {
             "source": "open_dc.public_bodies",

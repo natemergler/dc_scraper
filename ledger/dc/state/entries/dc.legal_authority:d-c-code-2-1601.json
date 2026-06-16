@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-2-1601",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 2-1601",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1601",
+    "locator": "D.C. Code § 2-1601",
+    "shortName": "D.C. Code § 2-1601"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "134",
+      "locator": "D.C. Code § 2-1601"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-defender-service-board-trustees",
+      "locator": "D.C. Code § 2-1601"
+    }
+  ],
+  "relations": {}
+}

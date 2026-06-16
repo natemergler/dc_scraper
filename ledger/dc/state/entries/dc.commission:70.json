@@ -17,21 +17,29 @@
       "sourceRecordId": "70"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "70",
-      "locator": "D.C. Code § 3-651"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-fashion-arts-and-events"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-fashion-arts-and-events",
-      "locator": "D.C. Code § 3-651"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-651",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "70",
+            "locator": "D.C. Code § 3-651"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-fashion-arts-and-events",
+            "locator": "D.C. Code § 3-651"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "70"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "70",
-            "locator": "D.C. Code § 3-651"
           }
         ]
       }

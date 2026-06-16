@@ -11,12 +11,21 @@
     {
       "source": "dcgis.commissions",
       "sourceRecordId": "68"
-    },
-    {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "68",
-      "locator": "D.C. Code § 2-1374"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1374",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "68",
+            "locator": "D.C. Code § 2-1374"
+          }
+        ]
+      }
+    ]
+  }
 }

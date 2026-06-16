@@ -16,19 +16,28 @@
       "sourceRecordId": "3"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "3",
-      "locator": "Mayor's Order 2011-110"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "mayors-interfaith-council-mic"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "mayors-interfaith-council-mic",
-      "locator": "Mayor's Order 2011-110"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2011-110",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "3",
+            "locator": "Mayor's Order 2011-110"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "mayors-interfaith-council-mic",
+            "locator": "Mayor's Order 2011-110"
+          }
+        ]
+      }
+    ]
+  }
 }

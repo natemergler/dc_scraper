@@ -17,26 +17,41 @@
       "sourceRecordId": "132"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "132",
-      "locator": "Mayor's Order 2001-92"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "advisory-board-veterans-affairs-district-columbia"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
-      "locator": "D.C. Code § 49-1004"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
-      "locator": "Mayor's Order 2001-92"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-49-1004",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+            "locator": "D.C. Code § 49-1004",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/49-1004.html"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2001-92",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132",
+            "locator": "Mayor's Order 2001-92"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+            "locator": "Mayor's Order 2001-92"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -45,11 +60,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "132"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "132",
-            "locator": "Mayor's Order 2001-92"
           },
           {
             "source": "open_dc.public_bodies",

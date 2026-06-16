@@ -17,21 +17,29 @@
       "sourceRecordId": "98"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "98",
-      "locator": "D.C. Code § 6-1103"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "historic-preservation-review-board-hprb"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "historic-preservation-review-board-hprb",
-      "locator": "D.C. Code § 6-1103"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-1103",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "98",
+            "locator": "D.C. Code § 6-1103"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "historic-preservation-review-board-hprb",
+            "locator": "D.C. Code § 6-1103"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "98"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "98",
-            "locator": "D.C. Code § 6-1103"
           },
           {
             "source": "open_dc.public_bodies",

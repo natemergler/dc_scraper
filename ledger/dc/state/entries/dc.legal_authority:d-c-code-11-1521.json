@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-11-1521",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 11-1521",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/11-1521",
+    "locator": "D.C. Code § 11-1521",
+    "shortName": "D.C. Code § 11-1521"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "74",
+      "locator": "D.C. Code § 11-1521"
+    }
+  ],
+  "relations": {}
+}

@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board",
-      "locator": "DC Code § 25-201"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-25-201",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board",
+            "locator": "D.C. Code § 25-201"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

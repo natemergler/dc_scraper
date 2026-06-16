@@ -14,19 +14,23 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-nightlife-and-culture"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-nightlife-and-culture",
-      "locator": "D.C. Code § 3-664"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-nightlife-and-culture",
-      "locator": "D.C. Official Code § 3-664"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-664",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-nightlife-and-culture",
+            "locator": "D.C. Code § 3-664",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/3-664.html#"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

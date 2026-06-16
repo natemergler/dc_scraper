@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-asian-and-pacific-islander-affairs"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-asian-and-pacific-islander-affairs",
-      "locator": "D.C. Code § 2-1374"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1374",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-asian-and-pacific-islander-affairs",
+            "locator": "D.C. Code § 2-1374"
+          }
+        ]
+      }
+    ]
+  }
 }

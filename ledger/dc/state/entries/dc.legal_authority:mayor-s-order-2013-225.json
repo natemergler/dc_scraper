@@ -1,0 +1,24 @@
+{
+  "id": "dc.legal_authority:mayor-s-order-2013-225",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "Mayor's Order 2013-225",
+  "attributes": {
+    "authorityType": "mayors_order",
+    "locator": "Mayor's Order 2013-225",
+    "shortName": "Mayor's Order 2013-225"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "121",
+      "locator": "Mayor's Order 2013-225"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+      "locator": "Mayor's Order 2013-225"
+    }
+  ],
+  "relations": {}
+}

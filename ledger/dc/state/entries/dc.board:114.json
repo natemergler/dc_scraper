@@ -16,21 +16,29 @@
       "sourceRecordId": "114"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "114",
-      "locator": "Mayor's Order 2015-165"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "procurement-accountability-review-board-parb"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "procurement-accountability-review-board-parb",
-      "locator": "Mayor's Order 2015-165"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2015-165",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "114",
+            "locator": "Mayor's Order 2015-165"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "procurement-accountability-review-board-parb",
+            "locator": "Mayor's Order 2015-165"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -39,11 +47,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "114"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "114",
-            "locator": "Mayor's Order 2015-165"
           },
           {
             "source": "open_dc.public_bodies",

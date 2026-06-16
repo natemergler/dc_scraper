@@ -17,19 +17,28 @@
       "sourceRecordId": "108"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "108",
-      "locator": "D.C. Code § 2-1002"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "national-capital-planning-commission-ncpc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "national-capital-planning-commission-ncpc",
-      "locator": "DC Code § 2-1002"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1002",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "108",
+            "locator": "D.C. Code § 2-1002"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "national-capital-planning-commission-ncpc",
+            "locator": "D.C. Code § 2-1002"
+          }
+        ]
+      }
+    ]
+  }
 }

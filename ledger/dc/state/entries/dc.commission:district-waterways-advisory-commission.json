@@ -14,14 +14,23 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "district-waterways-advisory-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "district-waterways-advisory-commission",
-      "locator": "D.C. Law 24-336"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-24-336",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-waterways-advisory-commission",
+            "locator": "D.C. Law 24-336",
+            "url": "https://code.dccouncil.gov/us/dc/council/laws/24-336"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

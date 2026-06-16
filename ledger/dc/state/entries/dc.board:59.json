@@ -17,19 +17,28 @@
       "sourceRecordId": "59"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "59",
-      "locator": "D.C. Code § 38-1202.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-trustees-university-district-columbia-udc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-trustees-university-district-columbia-udc",
-      "locator": "D.C. Code § 38-1202.06"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1202-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "59",
+            "locator": "D.C. Code § 38-1202.06"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-trustees-university-district-columbia-udc",
+            "locator": "D.C. Code § 38-1202.06"
+          }
+        ]
+      }
+    ]
+  }
 }

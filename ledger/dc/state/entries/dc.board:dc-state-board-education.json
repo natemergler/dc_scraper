@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "dc-state-board-education"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "dc-state-board-education",
-      "locator": "D.C. Code § 38-2651"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-2651",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "dc-state-board-education",
+            "locator": "D.C. Code § 38-2651"
+          }
+        ]
+      }
+    ]
+  }
 }

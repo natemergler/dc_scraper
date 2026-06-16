@@ -11,12 +11,21 @@
     {
       "source": "dcgis.councils",
       "sourceRecordId": "21"
-    },
-    {
-      "source": "dcgis.councils",
-      "sourceRecordId": "21",
-      "locator": "D.C. Code § 22-4232"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-22-4232",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "21",
+            "locator": "D.C. Code § 22-4232"
+          }
+        ]
+      }
+    ]
+  }
 }

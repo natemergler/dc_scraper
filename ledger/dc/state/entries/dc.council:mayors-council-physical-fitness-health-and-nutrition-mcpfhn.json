@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn",
-      "locator": "DC Code § 7-121"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-121",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn",
+            "locator": "D.C. Code § 7-121"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -96,6 +96,101 @@ Deno.test("findReconciliationCandidates reports shared URLs and legal locators",
   );
 });
 
+Deno.test("findReconciliationCandidates does not treat shared legal authority relations as locator duplicates", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.board:b",
+        kind: "dc.board",
+        name: "Board B",
+        citations: [cite("dcgis.boards", "b")],
+        relations: {
+          "dc.relation:authorized_by": [{
+            kind: "dc.relation:authorized_by",
+            to: "dc.legal_authority:d-c-code-1-123",
+            citations: [cite("dcgis.boards", "b", { locator: "D.C. Code § 1-123" })],
+          }],
+        },
+      }),
+      entry({
+        id: "dc.commission:c",
+        kind: "dc.commission",
+        name: "Commission C",
+        citations: [cite("open_dc.public_bodies", "c")],
+        relations: {
+          "dc.relation:authorized_by": [{
+            kind: "dc.relation:authorized_by",
+            to: "dc.legal_authority:d-c-code-1-123",
+            citations: [cite("open_dc.public_bodies", "c", { locator: "D.C. Code § 1-123" })],
+          }],
+        },
+      }),
+      entry({
+        id: "dc.legal_authority:d-c-code-1-123",
+        family: "authority",
+        kind: "dc.legal_authority",
+        name: "D.C. Code § 1-123",
+        attributes: {
+          authorityType: "dc_code",
+          locator: "D.C. Code § 1-123",
+        },
+        citations: [cite("dcgis.boards", "b", { locator: "D.C. Code § 1-123" })],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(
+    report.candidates.some((candidate) => candidate.reason === "shared_legal_locator"),
+    false,
+  );
+});
+
+Deno.test("findReconciliationCandidates ignores expected body-to-legal-authority URL overlap", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.board:b",
+        kind: "dc.board",
+        name: "Board B",
+        attributes: {
+          shortName: "Board B",
+          enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
+        },
+        citations: [cite("open_dc.public_bodies", "b")],
+        relations: {
+          "dc.relation:authorized_by": [{
+            kind: "dc.relation:authorized_by",
+            to: "dc.legal_authority:d-c-code-1-123",
+            citations: [cite("open_dc.public_bodies", "b", { locator: "D.C. Code § 1-123" })],
+          }],
+        },
+      }),
+      entry({
+        id: "dc.legal_authority:d-c-code-1-123",
+        family: "authority",
+        kind: "dc.legal_authority",
+        name: "D.C. Code § 1-123",
+        attributes: {
+          authorityType: "dc_code",
+          locator: "D.C. Code § 1-123",
+          canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
+        },
+        citations: [cite("open_dc.public_bodies", "b", {
+          locator: "D.C. Code § 1-123",
+          url: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
+        })],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(
+    report.candidates.some((candidate) => candidate.reason === "shared_url"),
+    false,
+  );
+});
+
 Deno.test("findReconciliationCandidates reports total count separately from limited packets", () => {
   const report = findReconciliationCandidates(
     state([

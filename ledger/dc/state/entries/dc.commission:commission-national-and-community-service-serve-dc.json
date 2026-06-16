@@ -13,12 +13,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-national-and-community-service-serve-dc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-national-and-community-service-serve-dc",
-      "locator": "Mayor's Order 2013-171"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2013-171",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-national-and-community-service-serve-dc",
+            "locator": "Mayor's Order 2013-171"
+          }
+        ]
+      }
+    ]
+  }
 }

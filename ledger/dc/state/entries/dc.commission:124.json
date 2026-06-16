@@ -17,19 +17,28 @@
       "sourceRecordId": "124"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "124",
-      "locator": "D.C. Code § 3-1431"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "uniform-law-commission-ulc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "uniform-law-commission-ulc",
-      "locator": "DC Code § 3-1431"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1431",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "124",
+            "locator": "D.C. Code § 3-1431"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "uniform-law-commission-ulc",
+            "locator": "D.C. Code § 3-1431"
+          }
+        ]
+      }
+    ]
+  }
 }

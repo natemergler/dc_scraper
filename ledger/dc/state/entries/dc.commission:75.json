@@ -17,21 +17,29 @@
       "sourceRecordId": "75"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "75",
-      "locator": "D.C. Code § 2-1321"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-latino-community-development"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-latino-community-development",
-      "locator": "DC Code § 2-1321"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1321",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "75",
+            "locator": "D.C. Code § 2-1321"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-latino-community-development",
+            "locator": "D.C. Code § 2-1321"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "75"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "75",
-            "locator": "D.C. Code § 2-1321"
           },
           {
             "source": "open_dc.public_bodies",

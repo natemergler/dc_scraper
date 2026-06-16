@@ -17,19 +17,28 @@
       "sourceRecordId": "7"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "7",
-      "locator": "D.C. Code § 38-271.07"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc",
-      "locator": "DC Code § 38-271.07"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-271-07",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "7",
+            "locator": "D.C. Code § 38-271.07"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc",
+            "locator": "D.C. Code § 38-271.07"
+          }
+        ]
+      }
+    ]
+  }
 }

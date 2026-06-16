@@ -11,12 +11,21 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "87"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "87",
-      "locator": "D.C. Code § 38-1802.14"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1802-14",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "87",
+            "locator": "D.C. Code § 38-1802.14"
+          }
+        ]
+      }
+    ]
+  }
 }

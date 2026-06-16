@@ -17,21 +17,29 @@
       "sourceRecordId": "111"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "111",
-      "locator": "D.C. Code § 44-951.02"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center",
-      "locator": "DC Code § 44-951.02"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-44-951-02",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "111",
+            "locator": "D.C. Code § 44-951.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center",
+            "locator": "D.C. Code § 44-951.02"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

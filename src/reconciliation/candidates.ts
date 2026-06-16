@@ -242,6 +242,12 @@ function isDetectorNoise(group: CandidateGroup): boolean {
   if (group.reason !== "shared_url") {
     return false;
   }
+  if (group.entries.every((entry) => entry.kind === "dc.legal_authority")) {
+    return true;
+  }
+  if (isAuthorizedLegalAuthorityUrlGroup(group.entries)) {
+    return true;
+  }
   const families = new Set(group.entries.map((entry) => entry.family));
   const kinds = new Set(group.entries.map((entry) => entry.kind));
   const sourceFamilies = new Set(group.entries.flatMap(collectSources));
@@ -252,6 +258,25 @@ function isDetectorNoise(group: CandidateGroup): boolean {
 
   return families.size === 1 && families.has("area") && kinds.size === 1 &&
     sourceFamilies.size === 1;
+}
+
+function isAuthorizedLegalAuthorityUrlGroup(entries: Entry[]): boolean {
+  const legalAuthorityIds = new Set(
+    entries
+      .filter((entry) => entry.kind === "dc.legal_authority")
+      .map((entry) => entry.id),
+  );
+  if (legalAuthorityIds.size === 0) {
+    return false;
+  }
+
+  return entries.every((entry) => {
+    if (entry.kind === "dc.legal_authority") {
+      return true;
+    }
+    const authorizedBy = entry.relations["dc.relation:authorized_by"] ?? [];
+    return authorizedBy.some((relation) => legalAuthorityIds.has(relation.to));
+  });
 }
 
 function normalizeName(name: string): string | null {

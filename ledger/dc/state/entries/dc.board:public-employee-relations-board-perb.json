@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "public-employee-relations-board-perb"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "public-employee-relations-board-perb",
-      "locator": "DC Code § 1-605.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-605-01",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-employee-relations-board-perb",
+            "locator": "D.C. Code § 1-605.01"
+          }
+        ]
+      }
+    ]
+  }
 }

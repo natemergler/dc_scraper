@@ -17,21 +17,29 @@
       "sourceRecordId": "44"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "44",
-      "locator": "D.C. Code § 3-1202.15"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-massage-therapy"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-massage-therapy",
-      "locator": "DC Code § 3-1202.15"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-15",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "44",
+            "locator": "D.C. Code § 3-1202.15"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-massage-therapy",
+            "locator": "D.C. Code § 3-1202.15"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "44"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "44",
-            "locator": "D.C. Code § 3-1202.15"
           }
         ]
       }

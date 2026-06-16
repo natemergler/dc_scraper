@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_authority:d-c-code-2-1555-05-a",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 2-1555.05(a)",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1555.05",
+    "locator": "D.C. Code § 2-1555.05(a)",
+    "shortName": "D.C. Code § 2-1555.05(a)"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
+      "locator": "D.C. Code § 2-1555.05(a)",
+      "url": "https://code.dccouncil.us/dc/council/code/sections/2-1555.05.html"
+    }
+  ],
+  "relations": {}
+}

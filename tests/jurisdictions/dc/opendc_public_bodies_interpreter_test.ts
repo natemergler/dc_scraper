@@ -47,11 +47,11 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
     },
   }], contextWithAgencyLookup);
 
-  assertEquals(output.entryFragments.length, 1);
-  assertEquals(output.relationFragments.length, 1);
+  assertEquals(output.entryFragments.length, 3);
+  assertEquals(output.relationFragments.length, 3);
   assertEquals(output.findings.length, 0);
 
-  const [entryFragment] = output.entryFragments;
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board")!;
   assertEquals(entryFragment.fragmentType, "entry");
   assertEquals(entryFragment.source, openDCPublicBodiesSource.id);
   assertEquals(entryFragment.sourceRecordId, "advisory-board");
@@ -60,11 +60,7 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
   assertEquals(entryFragment.name, "Advisory Board");
   assertEquals(entryFragment.attributes.shortName, "Advisory Board");
   assertEquals(entryFragment.attributes.sourceOpenDcSlug, "advisory-board");
-  assertEquals(entryFragment.citations, [
-    cite(openDCPublicBodiesSource.id, "advisory-board"),
-    cite(openDCPublicBodiesSource.id, "advisory-board", { locator: "D.C. Code § 1-123" }),
-    cite(openDCPublicBodiesSource.id, "advisory-board", { locator: "D.C. Law 10-50" }),
-  ]);
+  assertEquals(entryFragment.citations, [cite(openDCPublicBodiesSource.id, "advisory-board")]);
 
   const relations = output.relationFragments;
   const governingRelation = relations.find(
@@ -72,8 +68,14 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
   );
   assertEquals(governingRelation?.from, "dc.board:advisory-board");
   assertEquals(governingRelation?.relationKind, "dc.relation:governs");
-
-  assertEquals(relations.length, 1);
+  const authorityTargets = relations
+    .filter((relation) => relation.relationKind === "dc.relation:authorized_by")
+    .map((relation) => relation.to)
+    .sort();
+  assertEquals(authorityTargets, [
+    "dc.legal_authority:d-c-code-1-123",
+    "dc.legal_authority:d-c-law-10-50",
+  ]);
 });
 
 Deno.test("open_dc.public_bodies merges exact trusted public-body source shadows", () => {
@@ -137,16 +139,20 @@ Deno.test("open_dc.public_bodies interprets commission entry", () => {
     },
   }], contextWithAgencyLookup);
 
-  assertEquals(output.entryFragments.length, 1);
+  assertEquals(output.entryFragments.length, 2);
   const [entryFragment] = output.entryFragments;
   assertEquals(entryFragment.provisionalId, "dc.commission:planning-commission");
   assertEquals(entryFragment.kind, "dc.commission");
 
-  assertEquals(output.relationFragments.length, 1);
+  assertEquals(output.relationFragments.length, 2);
   const governingRelation = output.relationFragments.find(
     (r) => r.to === "dc.agency:OP",
   );
   assertEquals(governingRelation?.from, "dc.commission:planning-commission");
+  const authorityRelation = output.relationFragments.find((r) =>
+    r.relationKind === "dc.relation:authorized_by"
+  );
+  assertEquals(authorityRelation?.to, "dc.legal_authority:d-c-code-1-200");
 });
 
 Deno.test("open_dc.public_bodies interprets authority entry with non-relationship labels", () => {
@@ -445,14 +451,15 @@ Deno.test("open_dc.public_bodies parses legal citations from enabling statute", 
     },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.citations.length, 2);
-  assertEquals(entryFragment.citations[0], cite(openDCPublicBodiesSource.id, "legal-board"));
-  assertEquals(
-    entryFragment.citations[1],
-    cite(openDCPublicBodiesSource.id, "legal-board", { locator: "D.C. Code § 1-200.01" }),
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 1);
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board")!;
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
   );
+  assertEquals(entryFragment?.citations, [cite(openDCPublicBodiesSource.id, "legal-board")]);
+  assertEquals(authorityFragment?.attributes.locator, "D.C. Code § 1-200.01");
+  assertEquals(output.relationFragments[0].to, "dc.legal_authority:d-c-code-1-200-01");
 });
 
 Deno.test("open_dc.public_bodies preserves mayoral order authority text as evidence and locator citation", () => {
@@ -469,8 +476,12 @@ Deno.test("open_dc.public_bodies preserves mayoral order authority text as evide
     },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  const [entryFragment] = output.entryFragments;
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 1);
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board")!;
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
   assertEquals(
     entryFragment.attributes.enablingStatute,
     "Mayor's Order 2020-123 (some description)",
@@ -483,11 +494,10 @@ Deno.test("open_dc.public_bodies preserves mayoral order authority text as evide
     entryFragment.citations,
     [
       cite(openDCPublicBodiesSource.id, "board-with-order"),
-      cite(openDCPublicBodiesSource.id, "board-with-order", {
-        locator: "Mayor's Order 2020-123",
-      }),
     ],
   );
+  assertEquals(authorityFragment?.attributes.locator, "Mayor's Order 2020-123");
+  assertEquals(output.relationFragments[0].to, "dc.legal_authority:mayor-s-order-2020-123");
 
   const unparsedFinding = output.findings.find(
     (f) => f.code === "dc.interpreter.opendc_enabling_statute_unparsed",
@@ -514,6 +524,7 @@ Deno.test("open_dc.public_bodies derives Code locator citations from official Co
     cite(openDCPublicBodiesSource.id, "major-crash-review-task-force"),
     cite(openDCPublicBodiesSource.id, "major-crash-review-task-force", {
       locator: "D.C. Code § 50-1831",
+      url: "https://code.dccouncil.us/dc/council/code/sections/50-1831.html",
     }),
   ]);
   assertEquals(
@@ -541,11 +552,13 @@ Deno.test("open_dc.public_bodies combines text and URL legal refs", () => {
     },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  const [entryFragment] = output.entryFragments;
-  assertEquals(entryFragment.citations, [
-    cite(openDCPublicBodiesSource.id, "statute-board"),
-    cite(openDCPublicBodiesSource.id, "statute-board", { locator: "D.C. Code § 1-123" }),
-    cite(openDCPublicBodiesSource.id, "statute-board", { locator: "D.C. Law 10-50" }),
+  assertEquals(output.entryFragments.length, 3);
+  assertEquals(output.relationFragments.length, 2);
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board")!;
+  assertEquals(entryFragment?.citations, [cite(openDCPublicBodiesSource.id, "statute-board")]);
+  const authorityTargets = output.relationFragments.map((relation) => relation.to).sort();
+  assertEquals(authorityTargets, [
+    "dc.legal_authority:d-c-code-1-123",
+    "dc.legal_authority:d-c-law-10-50",
   ]);
 });

@@ -17,21 +17,29 @@
       "sourceRecordId": "33"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "33",
-      "locator": "D.C. Code § 3-1202.16"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-chiropractic"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-chiropractic",
-      "locator": "DC Code § 3-1202.16"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-16",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "33",
+            "locator": "D.C. Code § 3-1202.16"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-chiropractic",
+            "locator": "D.C. Code § 3-1202.16"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "33"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "33",
-            "locator": "D.C. Code § 3-1202.16"
           }
         ]
       }

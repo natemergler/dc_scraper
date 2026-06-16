@@ -19,17 +19,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
-      "locator": "D.C. Code § 2-1555.05"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
-      "locator": "D.C. Official Code § 2-1555.05(a)"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1555-05-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-out-school-time-grants-and-youth-outcomes",
+            "locator": "D.C. Code § 2-1555.05(a)",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/2-1555.05.html"
+          }
+        ]
+      }
+    ]
+  }
 }

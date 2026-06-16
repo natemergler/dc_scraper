@@ -15,14 +15,23 @@
       "sourceRecordId": "30"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "30",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-architecture-interior-design-and-landscape-architecture"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "30",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      }
+    ]
+  }
 }

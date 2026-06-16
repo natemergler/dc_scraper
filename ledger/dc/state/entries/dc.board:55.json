@@ -17,24 +17,35 @@
       "sourceRecordId": "55"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "55",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-real-estate-appraisers"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-real-estate-appraisers",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-real-estate-appraisers",
-      "locator": "D.C. Code § 47-2853.06(g)"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "55",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-g",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-real-estate-appraisers",
+            "locator": "D.C. Code § 47-2853.06(g)",
+            "url": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(g)"
+          }
+        ]
+      }
+    ]
+  }
 }

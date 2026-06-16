@@ -17,19 +17,28 @@
       "sourceRecordId": "94"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "94",
-      "locator": "D.C. Code § 31-3171.02"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "health-benefit-exchange-authority-executive-board-hbx"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "health-benefit-exchange-authority-executive-board-hbx",
-      "locator": "DC Code § 31-3171.02"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-31-3171-02",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "94",
+            "locator": "D.C. Code § 31-3171.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "health-benefit-exchange-authority-executive-board-hbx",
+            "locator": "D.C. Code § 31-3171.02"
+          }
+        ]
+      }
+    ]
+  }
 }

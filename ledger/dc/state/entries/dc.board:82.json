@@ -17,21 +17,29 @@
       "sourceRecordId": "82"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "82",
-      "locator": "D.C. Code § 38-194"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "common-lottery-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "common-lottery-board",
-      "locator": "D.C. Code § 38-194"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-194",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "82",
+            "locator": "D.C. Code § 38-194"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "common-lottery-board",
+            "locator": "D.C. Code § 38-194"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "82"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "82",
-            "locator": "D.C. Code § 38-194"
           }
         ]
       }

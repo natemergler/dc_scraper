@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-6-621-01",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 6-621.01",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/6-621.01",
+    "locator": "D.C. Code § 6-621.01",
+    "shortName": "D.C. Code § 6-621.01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "131",
+      "locator": "D.C. Code § 6-621.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "zoning-commission",
+      "locator": "D.C. Code § 6-621.01"
+    }
+  ],
+  "relations": {}
+}

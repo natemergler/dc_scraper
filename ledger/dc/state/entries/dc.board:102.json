@@ -17,21 +17,29 @@
       "sourceRecordId": "102"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "102",
-      "locator": "D.C. Code § 42-2802.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "housing-production-trust-fund-board-hptf"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "housing-production-trust-fund-board-hptf",
-      "locator": "D.C. Code § 42-2802.01"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-42-2802-01",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "102",
+            "locator": "D.C. Code § 42-2802.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-production-trust-fund-board-hptf",
+            "locator": "D.C. Code § 42-2802.01"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "102"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "102",
-            "locator": "D.C. Code § 42-2802.01"
           },
           {
             "source": "open_dc.public_bodies",

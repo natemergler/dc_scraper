@@ -17,21 +17,29 @@
       "sourceRecordId": "78"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "78",
-      "locator": "D.C. Code § 24-1303"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs",
-      "locator": "D. C. Code § 24-1303"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-24-1303",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "78",
+            "locator": "D.C. Code § 24-1303"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs",
+            "locator": "D.C. Code § 24-1303"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "78"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "78",
-            "locator": "D.C. Code § 24-1303"
           }
         ]
       }

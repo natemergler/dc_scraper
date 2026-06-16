@@ -17,24 +17,35 @@
       "sourceRecordId": "86"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "86",
-      "locator": "D.C. Code § 3-151"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "criminal-code-reform-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "criminal-code-reform-commission",
-      "locator": "D.C. Code § 3-151"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "criminal-code-reform-commission",
-      "locator": "D.C. Official Code § 3-151(a)"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-151",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "86",
+            "locator": "D.C. Code § 3-151"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-151-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "criminal-code-reform-commission",
+            "locator": "D.C. Code § 3-151(a)",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/3-151.html"
+          }
+        ]
+      }
+    ]
+  }
 }

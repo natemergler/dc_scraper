@@ -17,21 +17,29 @@
       "sourceRecordId": "43"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "43",
-      "locator": "D.C. Code § 3-1202.17"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-marriage-and-family-therapy"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-marriage-and-family-therapy",
-      "locator": "DC Code § 3-1202.17"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-17",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "43",
+            "locator": "D.C. Code § 3-1202.17"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-marriage-and-family-therapy",
+            "locator": "D.C. Code § 3-1202.17"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "43"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "43",
-            "locator": "D.C. Code § 3-1202.17"
           }
         ]
       }

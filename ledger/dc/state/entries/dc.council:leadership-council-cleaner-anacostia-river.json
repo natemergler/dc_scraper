@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "leadership-council-cleaner-anacostia-river"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "leadership-council-cleaner-anacostia-river",
-      "locator": "Mayor's Order 2015-171"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2015-171",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "leadership-council-cleaner-anacostia-river",
+            "locator": "Mayor's Order 2015-171"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "dc-commission-poverty"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "dc-commission-poverty",
-      "locator": "D.C. Official Code § 3-641"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-641",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "dc-commission-poverty",
+            "locator": "D.C. Code § 3-641"
+          }
+        ]
+      }
+    ]
+  }
 }

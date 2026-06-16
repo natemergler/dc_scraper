@@ -17,21 +17,29 @@
       "sourceRecordId": "91"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "91",
-      "locator": "D.C. Code § 38-2661.11"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "district-columbia-state-athletics-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "district-columbia-state-athletics-commission",
-      "locator": "D.C. Code § 38-2661.11"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-2661-11",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "91",
+            "locator": "D.C. Code § 38-2661.11"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-columbia-state-athletics-commission",
+            "locator": "D.C. Code § 38-2661.11"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "91"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "91",
-            "locator": "D.C. Code § 38-2661.11"
           }
         ]
       }

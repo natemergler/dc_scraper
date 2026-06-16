@@ -15,16 +15,24 @@
       "sourceRecordId": "49"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "49",
-      "locator": "D.C. Code § 3-1202.08"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-pharmacy"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-08",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "49",
+            "locator": "D.C. Code § 3-1202.08"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -33,11 +41,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "49"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "49",
-            "locator": "D.C. Code § 3-1202.08"
           }
         ]
       }

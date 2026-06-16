@@ -17,19 +17,28 @@
       "sourceRecordId": "18"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "18",
-      "locator": "D.C. Code § 50-2361.31"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "multimodal-accessibility-advisory-council"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "multimodal-accessibility-advisory-council",
-      "locator": "DC Code § 50-2361.31"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-50-2361-31",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "18",
+            "locator": "D.C. Code § 50-2361.31"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "multimodal-accessibility-advisory-council",
+            "locator": "D.C. Code § 50-2361.31"
+          }
+        ]
+      }
+    ]
+  }
 }

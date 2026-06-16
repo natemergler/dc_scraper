@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "opioid-fatality-review-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "opioid-fatality-review-board",
-      "locator": "Mayor's Order 2019-026"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2019-026",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "opioid-fatality-review-board",
+            "locator": "Mayor's Order 2019-026"
+          }
+        ]
+      }
+    ]
+  }
 }

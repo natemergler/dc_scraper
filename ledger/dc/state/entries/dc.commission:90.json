@@ -17,19 +17,28 @@
       "sourceRecordId": "90"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "90",
-      "locator": "D.C. Code § 3-101"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "district-columbia-sentencing-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "district-columbia-sentencing-commission",
-      "locator": "DC Code § 3-101"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-101",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "90",
+            "locator": "D.C. Code § 3-101"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-columbia-sentencing-commission",
+            "locator": "D.C. Code § 3-101"
+          }
+        ]
+      }
+    ]
+  }
 }

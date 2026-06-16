@@ -11,14 +11,22 @@
     {
       "source": "dcgis.councils",
       "sourceRecordId": "5"
-    },
-    {
-      "source": "dcgis.councils",
-      "sourceRecordId": "5",
-      "locator": "D.C. Code § 7-121"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-121",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "5",
+            "locator": "D.C. Code § 7-121"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "5"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "5",
-            "locator": "D.C. Code § 7-121"
           }
         ]
       }

@@ -17,26 +17,36 @@
       "sourceRecordId": "39"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "39",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-funeral-directors"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-funeral-directors",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-funeral-directors",
-      "locator": "D.C. Code § 47-2853.06(f)"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "39",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-f",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-funeral-directors",
+            "locator": "D.C. Code § 47-2853.06(f)",
+            "url": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(f)"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

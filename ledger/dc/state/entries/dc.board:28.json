@@ -17,21 +17,29 @@
       "sourceRecordId": "28"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "28",
-      "locator": "D.C. Code § 6-902"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-condemnation-insanitary-buildings"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-condemnation-insanitary-buildings",
-      "locator": "D. C. Code § 6-902"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-902",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "28",
+            "locator": "D.C. Code § 6-902"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-condemnation-insanitary-buildings",
+            "locator": "D.C. Code § 6-902"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "28"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "28",
-            "locator": "D.C. Code § 6-902"
           },
           {
             "source": "open_dc.public_bodies",

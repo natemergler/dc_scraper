@@ -17,21 +17,29 @@
       "sourceRecordId": "92"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "92",
-      "locator": "D.C. Code § 16-1052"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "domestic-violence-fatality-review-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "domestic-violence-fatality-review-board",
-      "locator": "D.C. Code § 16-1052"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-16-1052",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "92",
+            "locator": "D.C. Code § 16-1052"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "domestic-violence-fatality-review-board",
+            "locator": "D.C. Code § 16-1052"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "92"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "92",
-            "locator": "D.C. Code § 16-1052"
           }
         ]
       }

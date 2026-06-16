@@ -17,21 +17,29 @@
       "sourceRecordId": "64"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "64",
-      "locator": "D.C. Code § 3-702"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-women"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-women",
-      "locator": "DC Code § 3-702"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-702",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "64",
+            "locator": "D.C. Code § 3-702"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-women",
+            "locator": "D.C. Code § 3-702"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "64"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "64",
-            "locator": "D.C. Code § 3-702"
           }
         ]
       }

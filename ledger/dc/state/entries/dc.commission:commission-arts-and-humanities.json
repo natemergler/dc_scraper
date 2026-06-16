@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-arts-and-humanities"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-arts-and-humanities",
-      "locator": "DC Code § 39-201"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-39-201",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities",
+            "locator": "D.C. Code § 39-201"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

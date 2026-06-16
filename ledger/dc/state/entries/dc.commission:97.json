@@ -11,14 +11,22 @@
     {
       "source": "dcgis.commissions",
       "sourceRecordId": "97"
-    },
-    {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "97",
-      "locator": "D.C. Code § 38-1303"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1303",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "97",
+            "locator": "D.C. Code § 38-1303"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "97"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "97",
-            "locator": "D.C. Code § 38-1303"
           }
         ]
       }
