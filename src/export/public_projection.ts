@@ -22,6 +22,7 @@ export interface GovGraphNode {
   family: string;
   description?: string;
   officialUrl?: string;
+  sourcePageUrl?: string;
   legalAuthorityIds: string[];
   sourceCitationCount: number;
   publicStatus: GovGraphPublicStatus;
@@ -127,7 +128,8 @@ export function buildGovGraphProjection(
       kind: entry.kind,
       family: entry.family,
       description: publicDescriptionForEntry(entry),
-      officialUrl: publicUrlForEntry(entry),
+      officialUrl: publicOfficialUrlForEntry(entry),
+      sourcePageUrl: publicSourcePageUrlForEntry(entry),
       legalAuthorityIds: authorizedByTargets(entry, entryIndex, excludedNodeIds),
       sourceCitationCount: sourceCitationCount(entry.citations),
       publicStatus: "published",
@@ -292,10 +294,17 @@ function publicDescriptionForEntry(entry: Entry): string | undefined {
   return undefined;
 }
 
-function publicUrlForEntry(entry: Entry): string | undefined {
+function publicOfficialUrlForEntry(entry: Entry): string | undefined {
   const candidates = [
     stringAttribute(entry, "officialUrl"),
     stringAttribute(entry, "webUrl"),
+  ];
+
+  return candidates.find((candidate) => candidate && candidate.length > 0);
+}
+
+function publicSourcePageUrlForEntry(entry: Entry): string | undefined {
+  const candidates = [
     stringAttribute(entry, "sourceOpenDcUrl"),
     stringAttribute(entry, "sourceDccouncilUrl"),
     stringAttribute(entry, "sourceOancProfileUrl"),

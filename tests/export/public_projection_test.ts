@@ -133,6 +133,14 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
     projection.nodes.find((node) => node.id === "dc.agency:a-1")?.officialUrl,
     "https://agency.example",
   );
+  assertEquals(
+    projection.nodes.find((node) => node.id === "dc.board:b-1")?.officialUrl,
+    undefined,
+  );
+  assertEquals(
+    projection.nodes.find((node) => node.id === "dc.board:b-1")?.sourcePageUrl,
+    "https://board.example",
+  );
 
   assertEquals(projection.edges, [{
     id: "dc.board:b-1::dc.relation:governs::dc.agency:a-1",
