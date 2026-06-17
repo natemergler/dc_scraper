@@ -2248,6 +2248,9 @@ Deno.test("export command indexes committed state and writes release artifacts",
       "dc_board_affiliations.csv",
       "dc_commission_affiliations.csv",
       "dc_authority_affiliations.csv",
+      "govgraph_nodes.json",
+      "govgraph_edges.json",
+      "govgraph_summary.json",
       "manifest.json",
       "ledger.sqlite",
       "README.md",
@@ -2265,6 +2268,8 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(manifest.counts.boardAffiliations, 1);
     assertEquals(manifest.counts.commissionAffiliations, 1);
     assertEquals(manifest.counts.authorityAffiliations, 1);
+    assertEquals(manifest.counts.govGraphNodes, 5);
+    assertEquals(manifest.counts.govGraphEdges, 3);
 
     const affiliations = await Deno.readTextFile(join(releaseRoot, "dc_board_affiliations.csv"));
     assertEquals(affiliations.includes("dc.board:b-1"), true);
@@ -2280,6 +2285,15 @@ Deno.test("export command indexes committed state and writes release artifacts",
     );
     assertEquals(authorityAffiliations.includes("dc.authority:au-1"), true);
     assertEquals(authorityAffiliations.includes("dc.agency:agency-one"), true);
+
+    const govGraphEdges = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_edges.json")),
+    ) as Array<Record<string, unknown>>;
+    assertEquals(govGraphEdges.length, 3);
+    assertEquals(
+      govGraphEdges.every((edge) => edge.verb === "administered_by"),
+      true,
+    );
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {

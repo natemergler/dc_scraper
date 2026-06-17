@@ -160,6 +160,8 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(result.boardAffiliationCount, 1);
     assertEquals(result.commissionAffiliationCount, 1);
     assertEquals(result.authorityAffiliationCount, 1);
+    assertEquals(result.govGraphNodeCount, 4);
+    assertEquals(result.govGraphEdgeCount, 4);
 
     const expectedFiles = [
       "entries.csv",
@@ -170,6 +172,9 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       "dc_board_affiliations.csv",
       "dc_commission_affiliations.csv",
       "dc_authority_affiliations.csv",
+      "govgraph_nodes.json",
+      "govgraph_edges.json",
+      "govgraph_summary.json",
       "manifest.json",
       "ledger.sqlite",
       "README.md",
@@ -196,9 +201,15 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals((manifest.counts as Record<string, unknown>).citations, 7);
     assertEquals((manifest.counts as Record<string, unknown>).sources, 2);
     assertEquals((manifest.counts as Record<string, unknown>).sourceCoverage, 3);
+    assertEquals((manifest.counts as Record<string, unknown>).govGraphNodes, 4);
+    assertEquals((manifest.counts as Record<string, unknown>).govGraphEdges, 4);
     assertEquals(
       (manifest.outputs as Record<string, unknown>).sourceCoverageCsv,
       "source_coverage.csv",
+    );
+    assertEquals(
+      (manifest.outputs as Record<string, unknown>).govGraphNodesJson,
+      "govgraph_nodes.json",
     );
 
     const entriesRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "entries.csv")));
@@ -266,6 +277,23 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       await Deno.readTextFile(join(releaseRoot, "dc_authority_affiliations.csv")),
     );
     assertEquals(authorityAffiliations[1][0], "dc.authority:au-1");
+
+    const govGraphNodes = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_nodes.json")),
+    ) as Array<Record<string, unknown>>;
+    assertEquals(govGraphNodes.length, 4);
+    assertEquals(govGraphNodes[0].publicStatus, "published");
+
+    const govGraphEdges = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_edges.json")),
+    ) as Array<Record<string, unknown>>;
+    assertEquals(govGraphEdges.length, 4);
+    assertEquals(
+      govGraphEdges.some((edge) =>
+        edge.relationKind === "dc.relation:governs" && edge.verb === "administered_by"
+      ),
+      true,
+    );
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
@@ -345,6 +373,8 @@ Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async 
     assertEquals(result.boardAffiliationCount, 0);
     assertEquals(result.commissionAffiliationCount, 0);
     assertEquals(result.authorityAffiliationCount, 0);
+    assertEquals(result.govGraphNodeCount, 1);
+    assertEquals(result.govGraphEdgeCount, 0);
 
     const citationsRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "citations.csv")));
     assertEquals(citationsRows.length, 1);

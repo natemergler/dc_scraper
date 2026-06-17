@@ -360,11 +360,13 @@ async function runExport(
   try {
     initWorkspace(workspace);
     indexState(workspace, loaded.state);
+    const reviewItems = await refreshReviewItemsFromCommittedState(workspaceRoot, stateRoot);
     const result = await exportReleaseArtifacts({
       workspace,
       jurisdiction: dcRuntime.jurisdiction,
       releaseRoot,
       sourceCatalog: dcRuntime.sourceCoverage,
+      reviewItems,
     });
     console.log(
       `exported ${result.entryCount} entries, ${result.relationCount} relations to ${result.releaseRoot}`,
