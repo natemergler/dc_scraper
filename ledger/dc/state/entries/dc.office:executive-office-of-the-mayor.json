@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Executive Office of the Mayor",
   "attributes": {
+    "officialUrl": "https://mayor.dc.gov/",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",
@@ -31,9 +32,18 @@
     "sourceMayorExecutiveStructureKey": "executive-office-of-the-mayor",
     "sourceOfficeKey": "executive-office-of-the-mayor",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "executive-office-of-the-mayor",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "executive-office-of-the-mayor",

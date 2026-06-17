@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office of Policy and Innovation",
   "attributes": {
+    "description": "Responsible for generating the fresh ideas that allow the District government to better serve District residents, create forwardthinking change, and support a city that is as innovative as it is historic.",
     "shortName": "Mayor's Office of Policy and Innovation",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "mayors-office-of-policy-and-innovation",

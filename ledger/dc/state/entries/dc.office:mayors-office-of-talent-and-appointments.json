@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office of Talent and Appointments",
   "attributes": {
+    "description": "Makes recommendations for outstanding community leaders to serve as appointed leadership staff or members to District boards and commissions.",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

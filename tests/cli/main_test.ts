@@ -3261,8 +3261,19 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
         <head><title>Organizational Charts | mayor</title></head>
         <body>
           <h1>Organizational Charts for Agencies and Offices Under the Mayor's Authority</h1>
-          <p>Phone: (202) 727-2643</p>
-          <p>Email: mayor@example.com</p>
+          <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+            <div class="field-items">
+              <div class="field-item even" property="content:encoded">
+                <p><strong><a href="/sites/default/files/dc/sites/mayormb/page_content/attachments/OCA080921.pdf">Executive Office of the Mayor (EOM)</a>:</strong></p>
+                <ul>
+                  <li><strong>Office of Communications</strong>: Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.</li>
+                  <li><strong>Mayor's Office of Community Relations and Services (MOCRS)</strong>: Serves as the Mayor's primary constituent services organization by providing rapid and complete responses to constituent requests, complaints, and questions.</li>
+                </ul>
+                <p>Phone: (202) 727-2643</p>
+                <p>Email: mayor@example.com</p>
+              </div>
+            </div>
+          </div>
         </body>
       </html>
       `,
@@ -3272,7 +3283,16 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
       `
       <html>
         <head><title>Executive Branch | mayor</title></head>
-        <body><h1>Executive Branch</h1></body>
+        <body>
+          <h1>Executive Branch</h1>
+          <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+            <div class="field-items">
+              <div class="field-item even" property="content:encoded">
+                <p><strong><a href="https://mayor.dc.gov" title="Executive Office of the Mayor">Executive Office of the Mayor</a></strong></p>
+              </div>
+            </div>
+          </div>
+        </body>
       </html>
       `,
     ],
@@ -3330,13 +3350,27 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
       ),
     ) as {
       kind: string;
+      attributes: Record<string, unknown>;
       relations: Record<string, Array<{ kind: string; to: string }>>;
     };
     assertEquals(communicationsEntry.kind, "dc.office");
     assertEquals(
+      communicationsEntry.attributes.description,
+      "Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.",
+    );
+    assertEquals(
       communicationsEntry.relations["dc.relation:part_of"][0]?.to,
       "dc.office:executive-office-of-the-mayor",
     );
+
+    const eomEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.office:executive-office-of-the-mayor.json"),
+      ),
+    ) as {
+      attributes: Record<string, unknown>;
+    };
+    assertEquals(eomEntry.attributes.officialUrl, "https://mayor.dc.gov/");
 
     const indexCode = await runCli([
       "--workspace",

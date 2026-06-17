@@ -4,6 +4,8 @@
   "kind": "dc.office",
   "name": "Mayor's Office of Community Affairs",
   "attributes": {
+    "description": "Fosters communication and relationships across all eight wards and between the community and District agencies. Oversees the following offices: Mayor's Office on African Affairs, Mayor's Office of African American Affairs, Mayor's Office on Asian and Pacific Islander Affairs, Mayor's Office of the Clean City, Mayor's Office on Fathers, Men, and Boys, Mayor's Office on Latino Affairs, Mayor's Office of LGBTQ Affairs, Mayor's Office of Nightlife and Culture, Mayor's Office of Religious Affairs, Mayor's Office on Returning Citizens Affairs, Mayor's Office of Veterans Affairs, Mayor's Office of Volunteerism and Partnerships, and Mayor's Office on Women's Policy and Initiatives.",
+    "officialUrl": "https://moca.dc.gov/",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",
@@ -31,9 +33,18 @@
     "sourceMayorExecutiveStructureKey": "mayors-office-of-community-affairs",
     "sourceOfficeKey": "mayors-office-of-community-affairs",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-community-affairs",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "mayors-office-of-community-affairs",

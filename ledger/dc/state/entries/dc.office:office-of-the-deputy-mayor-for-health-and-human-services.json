@@ -4,6 +4,8 @@
   "kind": "dc.office",
   "name": "Office of the Deputy Mayor for Health and Human Services",
   "attributes": {
+    "description": "Oversees the District's health and human support service agencies in order to coordinate a comprehensive system of benefits, goods, and services across multiple agencies to ensure that children, youth, and adults, with and without disabilities, can lead healthy, meaningful, and productive lives.",
+    "officialUrl": "http://dmhhs.dc.gov/",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",
@@ -36,9 +38,18 @@
     "sourceMayorExecutiveStructureKey": "office-of-the-deputy-mayor-for-health-and-human-services",
     "sourceOfficeKey": "office-of-the-deputy-mayor-for-health-and-human-services",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",

@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Office of Policy and Legislative Affairs",
   "attributes": {
+    "description": "Performs policy analysis, develops policy issues and marshals the Mayor's legislative agenda.",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

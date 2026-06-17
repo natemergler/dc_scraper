@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office of Legal Counsel",
   "attributes": {
+    "description": "Provides legal counsel to the Mayor, Deputy Mayors' offices, and District agencies, with particular attention to coordinating legal support with agency general counsels and their staff.",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

@@ -4,6 +4,8 @@
   "kind": "dc.office",
   "name": "Office of the Deputy Mayor for Public Safety and Justice",
   "attributes": {
+    "description": "Oversees the District's public safety agencies to develop and lead interagency public safety initiatives to improve the quality of life in the District's neighborhoods.",
+    "officialUrl": "https://dmpsj.dc.gov/",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",
@@ -36,9 +38,18 @@
     "sourceMayorExecutiveStructureKey": "office-of-the-deputy-mayor-for-public-safety-and-justice",
     "sourceOfficeKey": "office-of-the-deputy-mayor-for-public-safety-and-justice",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice",
