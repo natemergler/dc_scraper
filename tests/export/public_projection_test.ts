@@ -92,6 +92,12 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
         to: "dc.smd:8F01",
       }],
     }),
+    makeReviewItem({
+      id: "out-of-scope-finding",
+      category: "out_of_scope_candidate",
+      stateIds: [],
+      relationEndpoints: [],
+    }),
   ];
 
   const projection = buildGovGraphProjection(entries, reviewItems);
@@ -135,6 +141,7 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
   assertEquals(projection.summary.excludedEdgeCount, 1);
   assertEquals(projection.summary.blockedReviewItemCount, 1);
   assertEquals(projection.summary.blockedReviewCountsByCategory.identity_conflict, 1);
+  assertEquals(projection.summary.blockedReviewCountsByCategory.out_of_scope_candidate, undefined);
   assertEquals(projection.summary.mappedRelationCount, 1);
 });
 

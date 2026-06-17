@@ -87,7 +87,9 @@ export function buildGovGraphProjection(
   const entryList = [...entries];
   const entryIndex = new Map(entryList.map((entry) => [entry.id, entry]));
   const blockingItems = reviewItems.filter((item) =>
-    item.status === "open" && item.blocks.releaseReadiness
+    item.status === "open" &&
+    item.blocks.releaseReadiness &&
+    hasProjectionImpact(item)
   );
 
   const excludedNodeIds = new Set<string>();
@@ -215,6 +217,10 @@ export function buildGovGraphProjection(
       mappedRelationCount,
     },
   };
+}
+
+function hasProjectionImpact(item: ReviewItem): boolean {
+  return item.affected.stateIds.length > 0 || item.affected.relationEndpoints.length > 0;
 }
 
 function relationId(from: string, relationKind: string, to: string): string {
