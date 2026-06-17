@@ -1,0 +1,97 @@
+{
+  "id": "2026-06-16-ward-6-anc-8f-containment",
+  "source": "audited_revision",
+  "targetKind": "relation",
+  "targetId": "dc.ward:6",
+  "target": {
+    "canonicalId": "dc.ward:6",
+    "sourceRefs": [
+      {
+        "source": "dccouncil.members",
+        "sourceRecordId": "councilmember-allen"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ],
+    "kind": "dc.ward",
+    "name": "Ward 6"
+  },
+  "rationale": "Retarget Ward 6 ANC containment to canonical ANC 8F while preserving the OANC 6/8F evidence that the ANC spans Ward 6 and Ward 8.",
+  "evidence": [
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "relations": {
+      "dc.relation:contains": [
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:6A",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6A"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:6B",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6B"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:6C",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6C"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:6D",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6D"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:6E",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6E"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:8F",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6/8F",
+              "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

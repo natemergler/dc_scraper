@@ -1,0 +1,53 @@
+{
+  "id": "2026-06-16-anc-commissioner-seat-8f04-oanc-profile",
+  "source": "audited_revision",
+  "targetKind": "entry",
+  "targetId": "dc.anc_commissioner_seat:8F04",
+  "target": {
+    "canonicalId": "dc.anc_commissioner_seat:8F04",
+    "sourceRefs": [
+      {
+        "source": "dcgis.smds",
+        "sourceRecordId": "8F04"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ],
+    "kind": "dc.anc_commissioner_seat",
+    "name": "Commissioner Seat for SMD 8F04"
+  },
+  "rationale": "Retain the OANC commissioner-holder and officer-role evidence for ANC 8F04 on the canonical seat after suppressing the conflicting ANC 6/8F shadow entry.",
+  "evidence": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8F04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "attributes": {
+      "currentHolderName": "Edward Daniels",
+      "officerRole": "Secretary",
+      "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+      "sourcePageLastModified": "2026-06-16T21:58:02.000Z"
+    },
+    "citations": [
+      {
+        "source": "dcgis.smds",
+        "sourceRecordId": "8F04"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ]
+  }
+}

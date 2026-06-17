@@ -1,0 +1,56 @@
+{
+  "id": "2026-06-16-anc-8f-oanc-profile-enrichment",
+  "source": "audited_revision",
+  "targetKind": "entry",
+  "targetId": "dc.anc:8F",
+  "target": {
+    "canonicalId": "dc.anc:8F",
+    "sourceRefs": [
+      {
+        "source": "dcgis.ancs",
+        "sourceRecordId": "8F"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ],
+    "kind": "dc.anc",
+    "name": "ANC 8F"
+  },
+  "rationale": "Carry the OANC ANC 6/8F profile's public website and freshness metadata onto canonical ANC 8F. The OANC profile links to the ANC 8F site and commissioner roster, so public projection should retain those facts on the canonical ANC instead of on a conflicting shadow entry.",
+  "evidence": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "attributes": {
+      "officialUrl": "http://anc8f.org/",
+      "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+      "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
+      "sourceWardNumbers": [
+        "6",
+        "8"
+      ]
+    },
+    "citations": [
+      {
+        "source": "dcgis.ancs",
+        "sourceRecordId": "8F"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ]
+  }
+}

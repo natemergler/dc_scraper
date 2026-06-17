@@ -32,16 +32,6 @@
     "dc.relation:contains": [
       {
         "kind": "dc.relation:contains",
-        "to": "dc.anc:6~2F8F",
-        "citations": [
-          {
-            "source": "oanc.profiles",
-            "sourceRecordId": "6/8F"
-          }
-        ]
-      },
-      {
-        "kind": "dc.relation:contains",
         "to": "dc.anc:8B",
         "citations": [
           {
@@ -67,6 +57,17 @@
           {
             "source": "oanc.profiles",
             "sourceRecordId": "8D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:8F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "6/8F",
+            "url": "https://oanc.dc.gov/anc-profile/anc-68f"
           }
         ]
       }
