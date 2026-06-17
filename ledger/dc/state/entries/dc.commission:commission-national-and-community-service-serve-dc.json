@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "Commission for National and Community Service (Serve DC)",
   "attributes": {
+    "description": "The purpose of the Commission is to encourage community service and volunteer participation as a means of community and state problem-solving; to promote and support voluntary citizen involvement in government and private programs throughout the District of Columbia; to develop a comprehensive vision and strategic plan for community service initiatives in the District of Columbia; and to serve as the District's liaison between national and other state organizations in concert with the District of Columbia strategic plan.",
     "enablingStatute": "Mayor's Order 2013-171",
     "shortName": "Commission for National and Community Service (Serve DC)",
     "sourceOpenDcSlug": "commission-national-and-community-service-serve-dc",

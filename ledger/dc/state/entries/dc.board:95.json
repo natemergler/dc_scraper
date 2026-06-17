@@ -4,7 +4,9 @@
   "kind": "dc.board",
   "name": "Health Information Exchange Policy Board (HIE)",
   "attributes": {
+    "description": "The Board is tasked with making recommendations to the Mayor, and Directors of several key District Government agencies, regarding the District’s HIE policies, mission, definition, vision, geographic scope, and functional scope of HIE operations, and how they should be coordinated with local and national efforts. More information about the HIE Policy Board can be reviewed at this link .",
     "enablingStatute": "Mayor's Order 2012-24",
+    "officialUrl": "https://dhcf.dc.gov/page/hie-policy-board",
     "shortName": "Health Information Exchange Policy Board (HIE)",
     "sourceBoardId": "95",
     "sourceOpenDcSlug": "health-information-exchange-policy-board-hie",

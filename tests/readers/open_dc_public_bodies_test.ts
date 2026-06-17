@@ -67,6 +67,9 @@ const DETAIL_ADVISORY_BOARD = `
   <p>Office of the Mayor</p>
   <h3>Point of Contact</h3>
   <p>john.doe@dc.gov</p>
+  <h3>Public body website</h3>
+  <p>https://dpw.dc.gov/service/advisory-board</p>
+  <p>The Advisory Board serves as an advisory body to the Mayor on sanitation and public works policy across the District.</p>
   <h3>Members</h3>
   <table><tr><td>Member 1</td></tr></table>
   <h3>Meetings</h3>
@@ -250,6 +253,11 @@ Deno.test("OpenDCPublicBodiesReader fetches and parses detail pages", async () =
   assertEquals(advisory.payload.governingAgency, "Department of Public Works");
   assertEquals(advisory.payload.governingAgencyAcronym, "DPW");
   assertEquals(advisory.payload.administeringAgency, "Office of the Mayor");
+  assertEquals(advisory.payload.officialUrl, "https://dpw.dc.gov/service/advisory-board");
+  assertEquals(
+    advisory.payload.description,
+    "The Advisory Board serves as an advisory body to the Mayor on sanitation and public works policy across the District.",
+  );
 
   const planning = result.records.find((r) => r.key === "planning-commission")!;
   assertEquals(planning.payload.name, "Planning Commission");
@@ -615,13 +623,18 @@ const DRUPAL_DETAIL_BOARD = `
     <div class="field-label">Administering Agency / Agency Acronym:&nbsp;</div>
     <div class="field-items"><div class="field-item even">Department of Licensing and Consumer Protection</div></div>
   </div>
-  <div class="field field-name-field-members field-type-text">
-    <div class="field-label">Members:&nbsp;</div>
-    <div class="field-items"><div class="field-item even">John Smith, Jane Doe</div></div>
-  </div>
   <div class="field field-name-field-contact field-type-text">
     <div class="field-label">Point of Contact:&nbsp;</div>
     <div class="field-items"><div class="field-item even">board@example.gov</div></div>
+  </div>
+  <div class="field field-name-field-public-body-website field-type-link-field">
+    <div class="field-label">Public body website:&nbsp;</div>
+    <div class="field-items"><div class="field-item even"><a href="https://dlcp.dc.gov/board-accountancy">Board of Accountancy</a></div></div>
+  </div>
+  <p>The Board of Accountancy advises the District on professional accountancy standards and licensure oversight.</p>
+  <div class="field field-name-field-members field-type-text">
+    <div class="field-label">Members:&nbsp;</div>
+    <div class="field-items"><div class="field-item even">John Smith, Jane Doe</div></div>
   </div>
   <div class="view view-meetings-calendar">
     <a href="/public-bodies/board-accountancy/meetings">Meeting calendar</a>
@@ -672,6 +685,11 @@ Deno.test("OpenDCPublicBodiesReader parses Drupal-style detail page with enablin
     record.payload.administeringAgency,
     "Department of Licensing and Consumer Protection",
   );
+  assertEquals(record.payload.officialUrl, "https://dlcp.dc.gov/board-accountancy");
+  assertEquals(
+    record.payload.description,
+    "The Board of Accountancy advises the District on professional accountancy standards and licensure oversight.",
+  );
 });
 
 Deno.test("OpenDCPublicBodiesReader excludes contact and member data from Drupal-style payload", async () => {
@@ -704,6 +722,37 @@ Deno.test("OpenDCPublicBodiesReader excludes contact and member data from Drupal
   assertEquals(payloadKeys.includes("email"), false);
   assertEquals(payloadKeys.includes("meetingLinks"), false);
   assertEquals(payloadKeys.includes("documentLinks"), false);
+});
+
+Deno.test("OpenDCPublicBodiesReader does not treat point-of-contact mailto as official URL", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const withoutWebsite = DRUPAL_DETAIL_BOARD.replace(
+    /<div class="field field-name-field-public-body-website[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/,
+    "",
+  );
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("board-accountancy")) {
+        return new Response(withoutWebsite, { status: 200 });
+      }
+      return new Response(DRUPAL_INDEX_BOARD, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records[0].payload.officialUrl, undefined);
 });
 
 const DRUPAL_DETAIL_TASK_FORCE = `

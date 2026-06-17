@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "Opioid Abatement Advisory Commission",
   "attributes": {
+    "description": "(3) Ensure that the monies the District receives and deposits into the Fund have the effect of preventing, treating, and reducing opioid use disorder and co-occurring substance use and mental health disorders and reducing fatalities.",
     "enablingStatute": "Opioid Litigation Proceeds Amendment Act of 2022",
     "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-3212",
     "shortName": "Opioid Abatement Advisory Commission",

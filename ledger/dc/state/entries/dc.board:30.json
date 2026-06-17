@@ -4,6 +4,7 @@
   "kind": "dc.board",
   "name": "Board of Architecture, Interior Design, and Landscape Architecture",
   "attributes": {
+    "description": "Report website problems to: Drupal development webmaster",
     "shortName": "Board of Architecture, Interior Design, and Landscape Architecture",
     "sourceBoardId": "30",
     "sourceOpenDcSlug": "board-architecture-interior-design-and-landscape-architecture",

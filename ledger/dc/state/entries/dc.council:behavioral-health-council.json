@@ -4,6 +4,7 @@
   "kind": "dc.council",
   "name": "Behavioral Health Council",
   "attributes": {
+    "description": "*The Council is not a public body, but is voluntarily choosing to comply with the Open Meetings Act.",
     "enablingStatute": "D.C. Code § 7-1131.10",
     "enablingStatuteUrl": "https://beta.code.dccouncil.us/dc/council/code/sections/7-1131.10.html",
     "shortName": "Behavioral Health Council",

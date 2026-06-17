@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "DC America 250 Commission",
   "attributes": {
+    "description": "In 2026, the United States will celebrate the 250th anniversary of the signing of the Declaration of Independence. Joining efforts with America250, the national, nonpartisan organization that has been charged by Congress to orchestrate a nationwide commemoration and celebration for the Semiquincentennial, Mayor Muriel Bowser will announce that Washington, DC, has established its official DC250 Commission. DC250 will play a key role in planning, coordinating and supporting activities for the 250th milestone in the nation’s capital.",
     "shortName": "DC America 250 Commission",
     "sourceOpenDcSlug": "dc-america-250-commission",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-america-250-commission"

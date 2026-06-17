@@ -38,6 +38,9 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
       name: "Advisory Board",
       slug: "advisory-board",
       detailUrl: "https://www.open-dc.gov/public-bodies/advisory-board/",
+      description:
+        "The Advisory Board serves as an advisory body to the Mayor on sanitation and public works policy across the District.",
+      officialUrl: "https://dpw.dc.gov/service/advisory-board",
       enablingStatute: "D.C. Law 10-50",
       enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
       governingAgency: "Department of Public Works",
@@ -60,6 +63,11 @@ Deno.test("open_dc.public_bodies interprets board entry with resolved governing 
   assertEquals(entryFragment.name, "Advisory Board");
   assertEquals(entryFragment.attributes.shortName, "Advisory Board");
   assertEquals(entryFragment.attributes.sourceOpenDcSlug, "advisory-board");
+  assertEquals(
+    entryFragment.attributes.description,
+    "The Advisory Board serves as an advisory body to the Mayor on sanitation and public works policy across the District.",
+  );
+  assertEquals(entryFragment.attributes.officialUrl, "https://dpw.dc.gov/service/advisory-board");
   assertEquals(entryFragment.citations, [cite(openDCPublicBodiesSource.id, "advisory-board")]);
 
   const relations = output.relationFragments;

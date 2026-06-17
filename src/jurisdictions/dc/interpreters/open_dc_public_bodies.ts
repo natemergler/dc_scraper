@@ -31,6 +31,8 @@ export interface OpenDCPublicBodyPayload {
   name?: unknown;
   slug?: unknown;
   detailUrl?: unknown;
+  description?: unknown;
+  officialUrl?: unknown;
   enablingStatute?: unknown;
   enablingStatuteUrl?: unknown;
   governingAgency?: unknown;
@@ -231,6 +233,8 @@ export function interpretOpenDCPublicBodies(
     name: string;
     slug: string;
     detailUrl: string;
+    description?: string;
+    officialUrl?: string;
     enablingStatute?: string;
     enablingStatuteUrl?: string;
     governingAgency?: string;
@@ -268,6 +272,8 @@ export function interpretOpenDCPublicBodies(
     const name = asString(sourceRecord.name);
     const slug = asString(sourceRecord.slug);
     const detailUrl = asString(sourceRecord.detailUrl);
+    const description = asString(sourceRecord.description);
+    const officialUrl = asString(sourceRecord.officialUrl);
     const enablingStatute = asString(sourceRecord.enablingStatute);
     const enablingStatuteUrl = asString(sourceRecord.enablingStatuteUrl);
     const governingAgency = asString(sourceRecord.governingAgency);
@@ -304,6 +310,8 @@ export function interpretOpenDCPublicBodies(
       name,
       slug,
       detailUrl,
+      description: description ?? undefined,
+      officialUrl: officialUrl ?? undefined,
       enablingStatute: enablingStatute ?? undefined,
       enablingStatuteUrl: enablingStatuteUrl ?? undefined,
       governingAgency: governingAgency ?? undefined,
@@ -374,6 +382,12 @@ export function interpretOpenDCPublicBodies(
     }
     if (parsed.enablingStatuteUrl) {
       attributes.enablingStatuteUrl = parsed.enablingStatuteUrl;
+    }
+    if (parsed.description) {
+      attributes.description = parsed.description;
+    }
+    if (parsed.officialUrl) {
+      attributes.officialUrl = parsed.officialUrl;
     }
 
     entryFragments.push({

@@ -4,6 +4,7 @@
   "kind": "dc.board",
   "name": "Common Lottery Review Board",
   "attributes": {
+    "description": "Report website problems to: Drupal development webmaster",
     "shortName": "Common Lottery Review Board",
     "sourceOpenDcSlug": "common-lottery-review-board",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/common-lottery-review-board"

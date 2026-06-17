@@ -4,7 +4,9 @@
   "kind": "dc.council",
   "name": "State Rehabilitation Council (SRC)",
   "attributes": {
+    "description": "Mayor's Order: 2001-173 State Rehabilitation Council",
     "enablingStatute": "Mayor's Order 2001-173",
+    "officialUrl": "https://www.open-dc.gov/sites/default/files/2001-173%20State%20Rehabilitation%20Council.pdf",
     "shortName": "State Rehabilitation Council (SRC)",
     "sourceCouncilId": "6",
     "sourceOpenDcSlug": "state-rehabilitation-council-src",
