@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D08",
   "attributes": {
+    "currentHolderName": "Brian Alcorn",
+    "officerRole": "Chairperson",
     "sourceAncId": "7D",
     "sourceFirstName": "BRIAN",
     "sourceLastName": "ALCORN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceRepresentativeName": "BRIAN ALCORN",
     "sourceSmdId": "7D08"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

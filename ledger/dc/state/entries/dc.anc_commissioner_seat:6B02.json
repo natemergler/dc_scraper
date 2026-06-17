@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6B02",
   "attributes": {
+    "currentHolderName": "Gerald \"Jerry\" Sroufe",
     "sourceAncId": "6B",
     "sourceFirstName": "GERALD",
     "sourceLastName": "SROUFE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "sourcePageLastModified": "2026-06-16T20:52:03.000Z",
     "sourceRepresentativeName": "GERALD \"JERRY\" SROUFE",
     "sourceSmdId": "6B02"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6B02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
     }
   ],
   "relations": {

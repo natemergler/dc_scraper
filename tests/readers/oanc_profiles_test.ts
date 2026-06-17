@@ -28,6 +28,30 @@ const HTML_BY_URL = new Map<string, string>([
         <p>Website: https://anc4e.example</p>
         <p>Advisory Neighborhood Commission 4E represents the Crestwood and 16th Street Heights neighborhoods.</p>
         <p>Meeting Location: Virtual</p>
+        <div class="font-heavy">Commissioners</div>
+        <div>
+          <div class="uk-overflow-auto">
+            <table class="uk-table uk-table-striped">
+              <thead><tr><th>SMD</th><th>Name</th><th>Address</th><th>Phone</th><th>Email</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>4E01</td>
+                  <td><div>Aretha "Nikki" Jones</div><div><em>Treasurer</em></div></td>
+                  <td>Washington, DC 20011</td>
+                  <td>(202) 555-1111</td>
+                  <td><a href="mailto:4e01@example.com">4e01@example.com</a></td>
+                </tr>
+                <tr>
+                  <td>4E02</td>
+                  <td>Vince Micone</td>
+                  <td>Washington, DC 20011</td>
+                  <td>(202) 555-2222</td>
+                  <td><a href="mailto:4e02@example.com">4e02@example.com</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         <a href="/financials">Financials</a>
       </body>
     </html>
@@ -53,7 +77,12 @@ Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood
       if (!html) {
         return new Response("missing fixture", { status: 404 });
       }
-      return new Response(html, { status: 200 });
+      return new Response(html, {
+        status: 200,
+        headers: url.includes("/anc-profile/")
+          ? { "last-modified": "Tue, 16 Jun 2026 21:58:02 GMT" }
+          : undefined,
+      });
     },
   });
 
@@ -71,6 +100,16 @@ Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood
     result.records[0].payload.representedNeighborhoods,
     "the Crestwood and 16th Street Heights neighborhoods",
   );
+  assertEquals(result.records[0].payload.officialUrl, "https://anc4e.example/");
+  assertEquals(result.records[0].payload.pageLastModified, "2026-06-16T21:58:02.000Z");
+  assertEquals(result.records[0].payload.commissioners, [{
+    smdId: "4E01",
+    name: `Aretha "Nikki" Jones`,
+    officerRole: "Treasurer",
+  }, {
+    smdId: "4E02",
+    name: "Vince Micone",
+  }]);
   assertEquals(result.records[1].payload.wardNumbers, ["6", "8"]);
   const payloadKeys = Object.keys(result.records[0].payload);
   assertEquals(payloadKeys.includes("email"), false);
@@ -81,7 +120,13 @@ Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood
 
 Deno.test("OancProfilesReader respects record limit", async () => {
   const reader = new OancProfilesReader({
-    fetcher: async (url) => new Response(HTML_BY_URL.get(url) ?? "", { status: 200 }),
+    fetcher: async (url) =>
+      new Response(HTML_BY_URL.get(url) ?? "", {
+        status: 200,
+        headers: url.includes("/anc-profile/")
+          ? { "last-modified": "Tue, 16 Jun 2026 21:58:02 GMT" }
+          : undefined,
+      }),
   });
 
   const result = await reader.collect({

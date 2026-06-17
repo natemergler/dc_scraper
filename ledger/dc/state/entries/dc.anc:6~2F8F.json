@@ -4,8 +4,10 @@
   "kind": "dc.anc",
   "name": "ANC 6/8F",
   "attributes": {
+    "officialUrl": "http://anc8f.org/",
     "sourceAncId": "6/8F",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceWardNumbers": [
       "6",
       "8"

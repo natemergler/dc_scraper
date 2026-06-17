@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3F06",
   "attributes": {
+    "currentHolderName": "Courtney Carlson",
+    "officerRole": "Chairperson",
     "sourceAncId": "3F",
     "sourceFirstName": "COURTNEY",
     "sourceLastName": "CARLSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3f",
+    "sourcePageLastModified": "2026-06-16T20:55:27.000Z",
     "sourceRepresentativeName": "COURTNEY CARLSON",
     "sourceSmdId": "3F06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3F06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3f"
     }
   ],
   "relations": {

@@ -5,8 +5,10 @@
   "name": "ANC 2G",
   "attributes": {
     "gisId": "ANCPly_332",
+    "officialUrl": "http://anc2g.org/",
     "sourceAncId": "2G",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourcePageLastModified": "2026-06-16T21:57:57.000Z",
     "sourceWardNumbers": [
       "2"
     ],

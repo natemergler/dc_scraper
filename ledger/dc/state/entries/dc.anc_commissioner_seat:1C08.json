@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1C08",
   "attributes": {
+    "currentHolderName": "David Fucillo",
     "sourceAncId": "1C",
     "sourceFirstName": "DAVID",
     "sourceLastName": "FUCILLO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1c",
+    "sourcePageLastModified": "2026-06-16T21:16:45.000Z",
     "sourceRepresentativeName": "DAVID FUCILLO",
     "sourceSmdId": "1C08"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1C08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1c"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6E09",
   "attributes": {
+    "currentHolderName": "Ritanch Hans",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "6E",
     "sourceFirstName": "RITANCH",
     "sourceLastName": "HANS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceRepresentativeName": "RITANCH HANS",
     "sourceSmdId": "6E09"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6E09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6e"
     }
   ],
   "relations": {

@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1E04",
   "attributes": {
+    "currentHolderName": "Rashida Brown",
     "sourceAncId": "1E",
     "sourceFirstName": "RASHIDA",
     "sourceLastName": "BROWN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourcePageLastModified": "2026-06-16T20:55:12.000Z",
     "sourceRepresentativeName": "RASHIDA BROWN",
     "sourceSmdId": "1E04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
     }
   ],
   "relations": {

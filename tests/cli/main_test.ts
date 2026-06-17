@@ -3437,8 +3437,26 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
           <h1>ANC 4E</h1>
           <p>Email: 4e@example.com</p>
           <p>Phone: (202) 727-9945</p>
+          <p>Website: <a href="https://anc4e.example">anc4e.example</a></p>
           <p>Advisory Neighborhood Commission 4E represents the Crestwood and 16th Street Heights neighborhoods.</p>
           <p>Meeting Location: Virtual</p>
+          <div class="font-heavy">Commissioners</div>
+          <div>
+            <div class="uk-overflow-auto">
+              <table class="uk-table uk-table-striped">
+                <thead><tr><th>SMD</th><th>Name</th><th>Address</th><th>Phone</th><th>Email</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>4E01</td>
+                    <td><div>Aretha "Nikki" Jones</div><div><em>Treasurer</em></div></td>
+                    <td>Washington, DC 20011</td>
+                    <td>(202) 390-2229</td>
+                    <td><a href="mailto:4e01@example.com">4e01@example.com</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <a href="/financials">Financials</a>
         </body>
       </html>
@@ -3459,7 +3477,12 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     }
     return new Response(html, {
       status: 200,
-      headers: { "content-type": "text/html" },
+      headers: {
+        "content-type": "text/html",
+        ...(key.includes("/anc-profile/")
+          ? { "last-modified": "Tue, 16 Jun 2026 21:58:02 GMT" }
+          : {}),
+      },
     });
   }) as typeof globalThis.fetch;
 
@@ -3495,6 +3518,16 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
       ancEntry.attributes.representedNeighborhoods,
       "the Crestwood and 16th Street Heights neighborhoods",
     );
+    assertEquals(ancEntry.attributes.officialUrl, "https://anc4e.example/");
+    assertEquals(ancEntry.attributes.sourcePageLastModified, "2026-06-16T21:58:02.000Z");
+
+    const seatEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc_commissioner_seat:4E01.json")),
+    ) as {
+      attributes: Record<string, unknown>;
+    };
+    assertEquals(seatEntry.attributes.currentHolderName, 'Aretha "Nikki" Jones');
+    assertEquals(seatEntry.attributes.officerRole, "Treasurer");
 
     const indexCode = await runCli([
       "--workspace",
@@ -3529,9 +3562,19 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
     assertEquals(entriesCsv.includes("Crestwood and 16th Street Heights"), true);
     assertEquals(entriesCsv.includes("4e@example.com"), false);
+    assertEquals(entriesCsv.includes("4e01@example.com"), false);
     assertEquals(entriesCsv.includes("(202) 727-9945"), false);
+    assertEquals(entriesCsv.includes("(202) 390-2229"), false);
     assertEquals(entriesCsv.includes("Meeting Location"), false);
     assertEquals(entriesCsv.includes("Financials"), false);
+
+    const govGraphNodes = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_nodes.json")),
+    ) as Array<{ id: string; description?: string }>;
+    assertEquals(
+      govGraphNodes.find((node) => node.id === "dc.anc_commissioner_seat:4E01")?.description,
+      'Current commissioner: Aretha "Nikki" Jones. Officer role: Treasurer.',
+    );
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });

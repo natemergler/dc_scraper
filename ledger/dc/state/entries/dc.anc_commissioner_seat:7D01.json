@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D01",
   "attributes": {
+    "currentHolderName": "Josh Taborn",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "7D",
     "sourceFirstName": "JOSHUA",
     "sourceLastName": "TABORN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceRepresentativeName": "JOSHUA TABORN",
     "sourceSmdId": "7D01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

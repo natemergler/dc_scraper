@@ -5,8 +5,10 @@
   "name": "ANC 3C",
   "attributes": {
     "gisId": "ANCPly_336",
+    "officialUrl": "https://anc3c.dc.gov/",
     "sourceAncId": "3C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3c",
+    "sourcePageLastModified": "2026-06-16T20:51:29.000Z",
     "sourceWardNumbers": [
       "3"
     ],

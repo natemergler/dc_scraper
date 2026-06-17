@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5E05",
   "attributes": {
+    "currentHolderName": "Alice Thompson",
     "sourceAncId": "5E",
     "sourceFirstName": "ALICE",
     "sourceLastName": "THOMPSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5e",
+    "sourcePageLastModified": "2026-06-16T20:35:49.000Z",
     "sourceRepresentativeName": "ALICE ARCENIA THOMPSON",
     "sourceSmdId": "5E05"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5E05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5e"
     }
   ],
   "relations": {

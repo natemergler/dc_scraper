@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7B02",
   "attributes": {
+    "currentHolderName": "Jamaal Maurice Pearsall",
     "sourceAncId": "7B",
     "sourceFirstName": "JAMAAL",
     "sourceLastName": "PEARSALL",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7b",
+    "sourcePageLastModified": "2026-06-16T20:27:46.000Z",
     "sourceRepresentativeName": "JAMAAL MAURICE PEARSALL",
     "sourceSmdId": "7B02"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7B02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7b"
     }
   ],
   "relations": {

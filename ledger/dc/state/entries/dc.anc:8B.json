@@ -5,9 +5,11 @@
   "name": "ANC 8B",
   "attributes": {
     "gisId": "ANCPly_362",
+    "officialUrl": "https://www.facebook.com/groups/374432668582169",
     "representedNeighborhoods": "the Garfield Heights, Hillsdale, Knox Hill/Buena Vista, Skyland, and Woodland neighborhoods",
     "sourceAncId": "8B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourcePageLastModified": "2026-06-16T20:57:07.000Z",
     "sourceWardNumbers": [
       "8"
     ],

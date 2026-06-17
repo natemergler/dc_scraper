@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 4E01",
   "attributes": {
+    "currentHolderName": "Aretha \"Nikki\" Jones",
+    "officerRole": "Treasurer",
     "sourceAncId": "4E",
     "sourceFirstName": "ARETHA",
     "sourceLastName": "JONES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4e",
+    "sourcePageLastModified": "2026-06-16T20:56:04.000Z",
     "sourceRepresentativeName": "ARETHA \"NIKKI\" JONES",
     "sourceSmdId": "4E01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "4E01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4e"
     }
   ],
   "relations": {

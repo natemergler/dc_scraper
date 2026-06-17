@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 4C05",
   "attributes": {
+    "currentHolderName": "Brittany Kademian",
     "sourceAncId": "4C",
     "sourceFirstName": "BRITTANY",
     "sourceLastName": "KADEMIAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourcePageLastModified": "2026-06-16T21:38:19.000Z",
     "sourceRepresentativeName": "BRITTANY KADEMIAN",
     "sourceSmdId": "4C05"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "4C05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
     }
   ],
   "relations": {

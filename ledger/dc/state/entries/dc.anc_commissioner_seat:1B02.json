@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1B02",
   "attributes": {
+    "currentHolderName": "Francois Barrilleaux",
     "sourceAncId": "1B",
     "sourceFirstName": "FRANCOIS",
     "sourceLastName": "BARRILLEAUX",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1b",
+    "sourcePageLastModified": "2026-06-16T21:53:40.000Z",
     "sourceRepresentativeName": "FRANCOIS BARRILLEAUX",
     "sourceSmdId": "1B02"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1B02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1b"
     }
   ],
   "relations": {

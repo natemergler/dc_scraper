@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7C01",
   "attributes": {
+    "currentHolderName": "Brian A. Glover",
+    "officerRole": "Sergeant-at-Arms",
     "sourceAncId": "7C",
     "sourceFirstName": "BRIAN",
     "sourceLastName": "GLOVER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7c",
+    "sourcePageLastModified": "2026-06-16T20:53:13.000Z",
     "sourceRepresentativeName": "BRIAN A. GLOVER",
     "sourceSmdId": "7C01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7C01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7c"
     }
   ],
   "relations": {

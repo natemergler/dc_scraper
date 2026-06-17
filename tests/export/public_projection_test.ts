@@ -79,6 +79,18 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
       citations: [sourceCitation("dcgis.smds", "8F01")],
       relations: {},
     },
+    {
+      id: "dc.anc_commissioner_seat:8F01",
+      family: "position",
+      kind: "dc.anc_commissioner_seat",
+      name: "Commissioner Seat for SMD 8F01",
+      attributes: {
+        currentHolderName: "Nic Wilson",
+        officerRole: "Chairperson",
+      },
+      citations: [sourceCitation("oanc.profiles", "6/8F")],
+      relations: {},
+    },
   ];
 
   const reviewItems: ReviewItem[] = [
@@ -104,10 +116,15 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
 
   assertEquals(projection.nodes.map((node) => node.id), [
     "dc.agency:a-1",
+    "dc.anc_commissioner_seat:8F01",
     "dc.board:b-1",
     "dc.legal_authority:law-1",
     "dc.smd:8F01",
   ]);
+  assertEquals(
+    projection.nodes.find((node) => node.id === "dc.anc_commissioner_seat:8F01")?.description,
+    "Current commissioner: Nic Wilson. Officer role: Chairperson.",
+  );
   assertEquals(
     projection.nodes.find((node) => node.id === "dc.board:b-1")?.legalAuthorityIds,
     ["dc.legal_authority:law-1"],
@@ -135,7 +152,7 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
     publicStatus: "published",
   }]);
 
-  assertEquals(projection.summary.nodeCount, 4);
+  assertEquals(projection.summary.nodeCount, 5);
   assertEquals(projection.summary.edgeCount, 2);
   assertEquals(projection.summary.excludedNodeCount, 1);
   assertEquals(projection.summary.excludedEdgeCount, 1);

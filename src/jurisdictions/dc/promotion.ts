@@ -29,7 +29,7 @@ const promotedKindsBySource = new Map<string, Set<string>>([
   [dccouncilCommitteesSourceId, new Set(["dc.committee", "dc.councilmember"])],
   [dccouncilMembersSourceId, new Set(["dc.councilmember", "dc.elected_office", "dc.ward"])],
   [mayorExecutiveStructureSourceId, new Set(["dc.office"])],
-  [oancProfilesSourceId, new Set(["dc.anc", "dc.ward"])],
+  [oancProfilesSourceId, new Set(["dc.anc", "dc.ward", "dc.anc_commissioner_seat"])],
   [begaStructureSourceId, new Set(["dc.agency", "dc.office"])],
   [dccourtsStructureSourceId, new Set(["dc.court_system", "dc.court", "dc.court_division"])],
   [legalEntrypointsSourceId, new Set(["dc.legal_source"])],

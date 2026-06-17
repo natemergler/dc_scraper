@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5D04",
   "attributes": {
+    "currentHolderName": "Nathan S. Hosler",
     "sourceAncId": "5D",
     "sourceFirstName": "NATHAN",
     "sourceLastName": "HOSLER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5d",
+    "sourcePageLastModified": "2026-06-16T21:58:00.000Z",
     "sourceRepresentativeName": "NATHAN HOSLER",
     "sourceSmdId": "5D04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5D04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5d"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7C07",
   "attributes": {
+    "currentHolderName": "Antawan Holmes",
+    "officerRole": "Chairperson",
     "sourceAncId": "7C",
     "sourceFirstName": "ANTAWAN",
     "sourceLastName": "HOLMES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7c",
+    "sourcePageLastModified": "2026-06-16T20:53:13.000Z",
     "sourceRepresentativeName": "ANTAWAN HOLMES",
     "sourceSmdId": "7C07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7C07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7c"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7E04",
   "attributes": {
+    "currentHolderName": "Natasha Dupee",
+    "officerRole": "Chairperson",
     "sourceAncId": "7E",
     "sourceFirstName": "NATASHA",
     "sourceLastName": "DUPEE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "sourcePageLastModified": "2026-06-16T20:48:07.000Z",
     "sourceRepresentativeName": "NATASHA DUPEE",
     "sourceSmdId": "7E04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
     }
   ],
   "relations": {

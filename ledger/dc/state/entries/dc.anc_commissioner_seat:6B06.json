@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6B06",
   "attributes": {
+    "currentHolderName": "Anna Krebs",
+    "officerRole": "Treasurer",
     "sourceAncId": "6B",
     "sourceFirstName": "ANNA",
     "sourceLastName": "KREBS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "sourcePageLastModified": "2026-06-16T20:52:03.000Z",
     "sourceRepresentativeName": "ANNA KREBS",
     "sourceSmdId": "6B06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6B06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
     }
   ],
   "relations": {

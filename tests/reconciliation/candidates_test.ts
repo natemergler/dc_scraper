@@ -366,3 +366,95 @@ Deno.test("findReconciliationCandidates filters common source-page URL noise", (
   assertEquals(report.candidateCount, 0);
   assertEquals(report.candidates, []);
 });
+
+Deno.test("findReconciliationCandidates ignores OANC ANC profile overlap with commissioner seats", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.anc:4E",
+        kind: "dc.anc",
+        name: "ANC 4E",
+        attributes: {
+          sourceAncId: "4E",
+          sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
+          officialUrl: "https://anc4e.example/",
+        },
+        citations: [cite("oanc.profiles", "4E", {
+          url: "https://oanc.dc.gov/anc-profile/anc-4e",
+        })],
+      }),
+      entry({
+        id: "dc.anc_commissioner_seat:4E01",
+        family: "position",
+        kind: "dc.anc_commissioner_seat",
+        name: "Commissioner Seat for SMD 4E01",
+        attributes: {
+          sourceAncId: "4E",
+          sourceSmdId: "4E01",
+          sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
+          currentHolderName: 'Aretha "Nikki" Jones',
+        },
+        citations: [cite("oanc.profiles", "4E", {
+          url: "https://oanc.dc.gov/anc-profile/anc-4e",
+        })],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(report.candidateCount, 0);
+  assertEquals(report.candidates, []);
+});
+
+Deno.test("findReconciliationCandidates ignores ANC website overlap with member SMDs", () => {
+  const report = findReconciliationCandidates(
+    state([
+      entry({
+        id: "dc.anc:4B",
+        kind: "dc.anc",
+        name: "ANC 4B",
+        attributes: {
+          sourceAncId: "4B",
+          officialUrl: "https://anc4b.org/",
+          webUrl: "https://anc.dc.gov/page/advisory-neighborhood-commission-4b",
+        },
+        citations: [cite("dcgis.ancs", "4B")],
+        relations: {
+          "dc.relation:contains": [{
+            kind: "dc.relation:contains",
+            to: "dc.smd:4B01",
+            citations: [cite("dcgis.smds", "4B01")],
+          }],
+        },
+      }),
+      entry({
+        id: "dc.smd:4B01",
+        family: "area",
+        kind: "dc.smd",
+        name: "SMD 4B01",
+        attributes: {
+          sourceAncId: "4B",
+          sourceSmdId: "4B01",
+          webUrl: "https://anc4b.org",
+        },
+        citations: [cite("dcgis.smds", "4B01")],
+      }),
+      entry({
+        id: "dc.smd:4B02",
+        family: "area",
+        kind: "dc.smd",
+        name: "SMD 4B02",
+        attributes: {
+          sourceAncId: "4B",
+          sourceSmdId: "4B02",
+          webUrl: "https://anc4b.org/",
+        },
+        citations: [cite("dcgis.smds", "4B02")],
+      }),
+    ]),
+    { generatedAt: "fixed" },
+  );
+
+  assertEquals(report.candidateCount, 0);
+  assertEquals(report.candidates, []);
+});

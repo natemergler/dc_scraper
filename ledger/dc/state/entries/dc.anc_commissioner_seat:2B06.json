@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2B06",
   "attributes": {
+    "currentHolderName": "Matt Johnson",
     "sourceAncId": "2B",
     "sourceFirstName": "MATT",
     "sourceLastName": "JOHNSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourcePageLastModified": "2026-06-16T20:06:56.000Z",
     "sourceRepresentativeName": "MATT JOHNSON",
     "sourceSmdId": "2B06"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2B06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
     }
   ],
   "relations": {

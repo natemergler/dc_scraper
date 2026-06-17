@@ -5,9 +5,11 @@
   "name": "ANC 1A",
   "attributes": {
     "gisId": "ANCPly_321",
+    "officialUrl": "https://anc1a.org/",
     "representedNeighborhoods": "the northern part of the Columbia Heights neighborhood",
     "sourceAncId": "1A",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourcePageLastModified": "2026-06-16T20:51:33.000Z",
     "sourceWardNumbers": [
       "1"
     ],

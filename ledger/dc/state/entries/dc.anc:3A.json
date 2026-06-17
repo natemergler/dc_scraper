@@ -5,9 +5,11 @@
   "name": "ANC 3A",
   "attributes": {
     "gisId": "ANCPly_334",
+    "officialUrl": "http://www.anc3a.org/",
     "representedNeighborhoods": "the McLean Gardens and part of the Cathedral Heights neighborhoods",
     "sourceAncId": "3A",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3a",
+    "sourcePageLastModified": "2026-06-16T20:56:42.000Z",
     "sourceWardNumbers": [
       "3"
     ],

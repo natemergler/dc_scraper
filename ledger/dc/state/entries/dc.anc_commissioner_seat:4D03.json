@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 4D03",
   "attributes": {
+    "currentHolderName": "Brendi Bluitt",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "4D",
     "sourceFirstName": "BRENDI",
     "sourceLastName": "BLUITT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4d",
+    "sourcePageLastModified": "2026-06-16T20:55:51.000Z",
     "sourceRepresentativeName": "BRENDI E. BLUITT",
     "sourceSmdId": "4D03"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "4D03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4d"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6C04",
   "attributes": {
+    "currentHolderName": "Mark Eckenwiler",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "6C",
     "sourceFirstName": "MARK",
     "sourceLastName": "ECKENWILER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourcePageLastModified": "2026-06-16T21:58:01.000Z",
     "sourceRepresentativeName": "MARK ECKENWILER",
     "sourceSmdId": "6C04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6C04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
     }
   ],
   "relations": {

@@ -16,14 +16,21 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
         ancId: "4E",
         name: "ANC 4E",
         profileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
+        officialUrl: "https://anc4e.example/",
         representedNeighborhoods: "the Crestwood and 16th Street Heights neighborhoods",
         wardNumbers: ["4"],
+        pageLastModified: "2026-06-16T21:58:02.000Z",
+        commissioners: [{
+          smdId: "4E01",
+          name: 'Aretha "Nikki" Jones',
+          officerRole: "Treasurer",
+        }],
       },
     },
   ]);
 
   assertEquals(output.findings, []);
-  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.entryFragments.length, 3);
   assertEquals(output.relationFragments.length, 1);
   assertEquals(output.entryFragments[0].provisionalId, "dc.anc:4E");
   assertEquals(output.entryFragments[0].kind, "dc.anc");
@@ -36,12 +43,25 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
     output.entryFragments[0].attributes.representedNeighborhoods,
     "the Crestwood and 16th Street Heights neighborhoods",
   );
+  assertEquals(output.entryFragments[0].attributes.officialUrl, "https://anc4e.example/");
+  assertEquals(
+    output.entryFragments[0].attributes.sourcePageLastModified,
+    "2026-06-16T21:58:02.000Z",
+  );
   assertEquals(output.entryFragments[0].attributes.sourceWardNumbers, ["4"]);
   assertEquals(output.entryFragments[0].citations, [
     cite(oancProfilesSource.id, "4E", { url: "https://oanc.dc.gov/anc-profile/anc-4e" }),
   ]);
-  assertEquals(output.entryFragments[1].provisionalId, "dc.ward:4");
-  assertEquals(output.entryFragments[1].kind, "dc.ward");
+  assertEquals(output.entryFragments[1].provisionalId, "dc.anc_commissioner_seat:4E01");
+  assertEquals(output.entryFragments[1].kind, "dc.anc_commissioner_seat");
+  assertEquals(output.entryFragments[1].attributes.currentHolderName, 'Aretha "Nikki" Jones');
+  assertEquals(output.entryFragments[1].attributes.officerRole, "Treasurer");
+  assertEquals(
+    output.entryFragments[1].attributes.sourceOancProfileUrl,
+    "https://oanc.dc.gov/anc-profile/anc-4e",
+  );
+  assertEquals(output.entryFragments[2].provisionalId, "dc.ward:4");
+  assertEquals(output.entryFragments[2].kind, "dc.ward");
   assertEquals(output.relationFragments[0], {
     fragmentType: "relation",
     source: oancProfilesSource.id,
@@ -64,11 +84,18 @@ Deno.test("oanc.profiles supports ANCs listed under multiple wards", () => {
         name: "ANC 6/8F",
         profileUrl: "https://oanc.dc.gov/anc-profile/anc-68f",
         wardNumbers: ["6", "8"],
+        officialUrl: "http://anc8f.org/",
+        commissioners: [{
+          smdId: "6/8F01",
+          name: "Nic Wilson",
+        }],
       },
     },
   ]);
 
-  assertEquals(output.findings, []);
+  assertEquals(output.findings.map((finding) => finding.code), [
+    "dc.interpreter.oanc_commissioner_slash_smd_deferred",
+  ]);
   assertEquals(output.entryFragments.map((entry) => entry.provisionalId), [
     "dc.anc:6~2F8F",
     "dc.ward:6",

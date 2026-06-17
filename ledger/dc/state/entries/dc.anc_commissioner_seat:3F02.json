@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3F02",
   "attributes": {
+    "currentHolderName": "Sue Guzman",
+    "officerRole": "Treasurer",
     "sourceAncId": "3F",
     "sourceFirstName": "SUZ",
     "sourceLastName": "GUZMAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3f",
+    "sourcePageLastModified": "2026-06-16T20:55:27.000Z",
     "sourceRepresentativeName": "SUE GUZMAN",
     "sourceSmdId": "3F02"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3F02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3f"
     }
   ],
   "relations": {

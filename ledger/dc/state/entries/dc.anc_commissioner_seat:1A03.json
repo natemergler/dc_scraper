@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1A03",
   "attributes": {
+    "currentHolderName": "Carlo Perri",
     "sourceAncId": "1A",
     "sourceFirstName": "CARLO",
     "sourceLastName": "PERRI",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourcePageLastModified": "2026-06-16T20:51:33.000Z",
     "sourceRepresentativeName": "CARLO PERRI",
     "sourceSmdId": "1A03"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1A03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
     }
   ],
   "relations": {

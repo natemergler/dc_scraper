@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5D08",
   "attributes": {
+    "currentHolderName": "Juanita Holsendorff",
     "sourceAncId": "5D",
     "sourceFirstName": "JUANITA",
     "sourceLastName": "HOLSENDORFF",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5d",
+    "sourcePageLastModified": "2026-06-16T21:58:00.000Z",
     "sourceRepresentativeName": "JUANITA HOLSENDORFF",
     "sourceSmdId": "5D08"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5D08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5d"
     }
   ],
   "relations": {

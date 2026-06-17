@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2G06",
   "attributes": {
+    "currentHolderName": "Rachelle P. Nigro",
+    "officerRole": "Treasurer",
     "sourceAncId": "2G",
     "sourceFirstName": "RACHELLE",
     "sourceLastName": "NIGRO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourcePageLastModified": "2026-06-16T21:57:57.000Z",
     "sourceRepresentativeName": "RACHELLE P. NIGRO",
     "sourceSmdId": "2G06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2G06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2g"
     }
   ],
   "relations": {

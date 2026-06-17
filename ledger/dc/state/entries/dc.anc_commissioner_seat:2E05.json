@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2E05",
   "attributes": {
+    "currentHolderName": "Mimsy Lindner",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "2E",
     "sourceFirstName": "MIMSY",
     "sourceLastName": "LINDNER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2e",
+    "sourcePageLastModified": "2026-06-16T20:15:57.000Z",
     "sourceRepresentativeName": "MIMSY LINDNER",
     "sourceSmdId": "2E05"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2E05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2e"
     }
   ],
   "relations": {

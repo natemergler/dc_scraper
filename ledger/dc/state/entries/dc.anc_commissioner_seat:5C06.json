@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5C06",
   "attributes": {
+    "currentHolderName": "Harry Thomas Jr.",
     "sourceAncId": "5C",
     "sourceFirstName": "HARRY",
     "sourceLastName": "THOMAS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5c",
+    "sourcePageLastModified": "2026-06-16T20:30:21.000Z",
     "sourceRepresentativeName": "HARRY \"TOMMY\" THOMAS JR.",
     "sourceSmdId": "5C06"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5C06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5c"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2G03",
   "attributes": {
+    "currentHolderName": "Nicole Shea",
+    "officerRole": "Secretary",
     "sourceAncId": "2G",
     "sourceFirstName": "NICOLE",
     "sourceLastName": "SHEA",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourcePageLastModified": "2026-06-16T21:57:57.000Z",
     "sourceRepresentativeName": "NICOLE SHEA",
     "sourceSmdId": "2G03"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2G03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2g"
     }
   ],
   "relations": {

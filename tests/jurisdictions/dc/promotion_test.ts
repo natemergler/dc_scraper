@@ -139,6 +139,20 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
         },
       }),
       entryFragment({
+        source: "oanc.profiles",
+        sourceRecordId: "4E",
+        provisionalId: "dc.anc_commissioner_seat:4E01",
+        family: "position",
+        kind: "dc.anc_commissioner_seat",
+        name: "Commissioner Seat for SMD 4E01",
+        attributes: {
+          sourceSmdId: "4E01",
+          currentHolderName: "Aretha Jones",
+          officerRole: "Treasurer",
+          sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
+        },
+      }),
+      entryFragment({
         source: "dccouncil.members",
         sourceRecordId: "ward-4-councilmember-janeese-lewis-george",
         provisionalId: "dc.elected_office:ward-4-councilmember",
@@ -163,6 +177,7 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
   assertEquals(result.state?.entries.has("dc.office:office-one"), true);
   assertEquals(result.state?.entries.has("dc.anc:4E"), true);
   assertEquals(result.state?.entries.has("dc.ward:4"), true);
+  assertEquals(result.state?.entries.has("dc.anc_commissioner_seat:4E01"), true);
   assertEquals(result.state?.entries.has("dc.elected_office:ward-4-councilmember"), true);
 });
 

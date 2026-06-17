@@ -251,6 +251,9 @@ function isDetectorNoise(group: CandidateGroup): boolean {
   if (isCourtDiscoveryUrlGroup(group.entries, group.matchKey)) {
     return true;
   }
+  if (isAncSupportUrlGroup(group.entries, group.matchKey)) {
+    return true;
+  }
   const families = new Set(group.entries.map((entry) => entry.family));
   const kinds = new Set(group.entries.map((entry) => entry.kind));
   const sourceFamilies = new Set(group.entries.flatMap(collectSources));
@@ -311,6 +314,62 @@ function isCourtDiscoveryUrlGroup(entries: Entry[], matchKey: string): boolean {
     }
     const parentRelations = entry.relations["dc.relation:part_of"] ?? [];
     return parentRelations.some((relation) => courtIds.has(relation.to));
+  });
+}
+
+function isAncSupportUrlGroup(entries: Entry[], matchKey: string): boolean {
+  const ancs = entries.filter((entry) => entry.kind === "dc.anc");
+  const smds = entries.filter((entry) => entry.kind === "dc.smd");
+  const seats = entries.filter((entry) => entry.kind === "dc.anc_commissioner_seat");
+  if (
+    ancs.length !== 1 ||
+    smds.length + seats.length === 0 ||
+    ancs.length + smds.length + seats.length !== entries.length
+  ) {
+    return false;
+  }
+
+  const anc = ancs[0];
+  const normalizedMatchKey = normalizeUrl(matchKey);
+  const ancSourceAncId = typeof anc.attributes.sourceAncId === "string"
+    ? anc.attributes.sourceAncId
+    : null;
+  const ancUrls = new Set(
+    [
+      anc.attributes.officialUrl,
+      anc.attributes.webUrl,
+      anc.attributes.sourceOancProfileUrl,
+    ]
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+      .map(normalizeUrl)
+      .filter(Boolean),
+  );
+  if (!ancSourceAncId || !ancUrls.has(normalizedMatchKey)) {
+    return false;
+  }
+
+  const smdsMatch = smds.every((smd) => {
+    const smdSourceAncId = typeof smd.attributes.sourceAncId === "string"
+      ? smd.attributes.sourceAncId
+      : null;
+    const smdWebUrl = typeof smd.attributes.webUrl === "string"
+      ? normalizeUrl(smd.attributes.webUrl)
+      : "";
+    return smdSourceAncId === ancSourceAncId && smdWebUrl === normalizedMatchKey;
+  });
+  if (!smdsMatch) {
+    return false;
+  }
+
+  return seats.every((seat) => {
+    const seatSourceAncId = typeof seat.attributes.sourceAncId === "string"
+      ? seat.attributes.sourceAncId
+      : null;
+    const seatProfileUrl = typeof seat.attributes.sourceOancProfileUrl === "string"
+      ? normalizeUrl(seat.attributes.sourceOancProfileUrl)
+      : "";
+    return seatSourceAncId === ancSourceAncId &&
+      seatProfileUrl === normalizedMatchKey;
   });
 }
 

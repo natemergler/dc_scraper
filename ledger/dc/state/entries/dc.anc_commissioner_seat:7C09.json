@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7C09",
   "attributes": {
+    "currentHolderName": "Carrie N. Brown",
+    "officerRole": "Vice Chairperson/Treasurer",
     "sourceAncId": "7C",
     "sourceFirstName": "CARRIE",
     "sourceLastName": "BROWN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7c",
+    "sourcePageLastModified": "2026-06-16T20:53:13.000Z",
     "sourceRepresentativeName": "CARRIE N. BROWN",
     "sourceSmdId": "7C09"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7C09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7c"
     }
   ],
   "relations": {

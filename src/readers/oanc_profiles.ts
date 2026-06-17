@@ -20,14 +20,30 @@ export interface OancProfileRecordPayload {
   ancId: string;
   name: string;
   profileUrl: string;
+  officialUrl?: string;
   representedNeighborhoods?: string;
   wardNumbers?: string[];
+  commissioners?: OancCommissionerRecordPayload[];
+  pageLastModified?: string;
+}
+
+export interface OancCommissionerRecordPayload {
+  smdId: string;
+  name: string;
+  officerRole?: string;
 }
 
 const INDEX_TOKEN_RE =
   /<h[1-6][^>]*>\s*Ward\s+(\d+)\s*<\/h[1-6]>|<a[^>]*href="([^"]*\/anc-profile\/anc-[^"#?]+)"[^>]*>\s*ANC\s+([^<]+)\s*<\/a>/gi;
 const TAG_RE = /<[^>]+>/g;
 const WHITESPACE_RE = /\s+/g;
+const WEBSITE_LINK_RE = /Website:\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/i;
+const WEBSITE_TEXT_RE = /Website:\s*(https?:\/\/[^\s<]+)/i;
+const COMMISSIONERS_HEADING_RE = />\s*Commissioners\s*</i;
+const TABLE_RE = /<table[^>]*>([\s\S]*?)<\/table>/i;
+const ROW_RE = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+const CELL_RE = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+const EMPHASIS_RE = /<em[^>]*>([\s\S]*?)<\/em>/gi;
 
 export class OancProfilesReader implements Reader<OancProfilesSource> {
   private readonly fetcher: (input: string) => Promise<Response>;
@@ -37,8 +53,8 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
   }
 
   async collect(input: ReaderInput<OancProfilesSource>): Promise<ReaderResult> {
-    const indexHtml = await this.fetchHtml(input.source.id, input.source.indexUrl);
-    const profileLinks = extractProfileLinks(indexHtml);
+    const indexPage = await this.fetchPage(input.source.id, input.source.indexUrl);
+    const profileLinks = extractProfileLinks(indexPage.html);
     const snapshots: ReaderResultSnapshot[] = [
       {
         source: input.source.id,
@@ -57,7 +73,7 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
         break;
       }
       const profile = profileLinks[index];
-      const html = await this.fetchHtml(input.source.id, profile.profileUrl);
+      const page = await this.fetchPage(input.source.id, profile.profileUrl);
       const snapshotKey = `profile-${index}`;
       snapshots.push({
         source: input.source.id,
@@ -66,6 +82,7 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
           source: input.source.id,
           url: profile.profileUrl,
           ancId: profile.ancId,
+          ...(page.lastModified ? { lastModified: page.lastModified } : {}),
         },
       });
       records.push({
@@ -76,7 +93,10 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
           ancId: profile.ancId,
           name: `ANC ${profile.ancId}`,
           profileUrl: profile.profileUrl,
-          representedNeighborhoods: extractRepresentedNeighborhoods(html),
+          officialUrl: extractOfficialUrl(page.html, profile.profileUrl),
+          representedNeighborhoods: extractRepresentedNeighborhoods(page.html),
+          commissioners: extractCommissioners(page.html),
+          ...(page.lastModified ? { pageLastModified: page.lastModified } : {}),
           ...(profile.wardNumbers.length > 0 ? { wardNumbers: profile.wardNumbers } : {}),
         } satisfies OancProfileRecordPayload,
       });
@@ -85,7 +105,10 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
     return { snapshots, records };
   }
 
-  private async fetchHtml(sourceId: string, url: string): Promise<string> {
+  private async fetchPage(
+    sourceId: string,
+    url: string,
+  ): Promise<{ html: string; lastModified?: string }> {
     let response: Response;
     try {
       response = await this.fetcher(url);
@@ -101,7 +124,10 @@ export class OancProfilesReader implements Reader<OancProfilesSource> {
     if (!response.ok) {
       throw new Error(`OANC profile request failed for ${sourceId}: HTTP ${response.status}`);
     }
-    return body;
+    return {
+      html: body,
+      lastModified: normalizeTimestamp(response.headers.get("last-modified")),
+    };
   }
 }
 
@@ -156,6 +182,75 @@ function extractRepresentedNeighborhoods(html: string): string | undefined {
   return match[2].trim();
 }
 
+function extractOfficialUrl(html: string, profileUrl: string): string | undefined {
+  const linked = html.match(WEBSITE_LINK_RE);
+  if (linked) {
+    return resolveAbsoluteHttpUrl(profileUrl, linked[1]);
+  }
+
+  const plainText = html.match(WEBSITE_TEXT_RE);
+  if (plainText) {
+    return resolveAbsoluteHttpUrl(profileUrl, plainText[1]);
+  }
+
+  return undefined;
+}
+
+function extractCommissioners(html: string): OancCommissionerRecordPayload[] | undefined {
+  const table = extractCommissionersTable(html);
+  if (!table) {
+    return undefined;
+  }
+
+  const commissioners = [...table.matchAll(ROW_RE)].flatMap((rowMatch) => {
+    const cells = [...rowMatch[1].matchAll(CELL_RE)].map((cellMatch) => cellMatch[1]);
+    if (cells.length < 2) {
+      return [];
+    }
+
+    const smdId = normalizeCommissionerSmdId(cells[0]);
+    const officerRole = extractOfficerRole(cells[1]);
+    const name = cleanText(cells[1].replace(EMPHASIS_RE, " "));
+    if (!smdId || !name || /^smd$/i.test(smdId)) {
+      return [];
+    }
+
+    return [{
+      smdId,
+      name,
+      ...(officerRole ? { officerRole } : {}),
+    }];
+  });
+
+  return commissioners.length > 0 ? commissioners : undefined;
+}
+
+function extractCommissionersTable(html: string): string | undefined {
+  const headingMatch = html.match(COMMISSIONERS_HEADING_RE);
+  if (!headingMatch || headingMatch.index === undefined) {
+    return undefined;
+  }
+
+  const tail = html.slice(headingMatch.index);
+  const tableMatch = tail.match(TABLE_RE);
+  return tableMatch?.[1];
+}
+
+function normalizeCommissionerSmdId(html: string): string | undefined {
+  const smdId = cleanText(html).toUpperCase();
+  return /^[0-9][0-9A-Z/]+$/.test(smdId) ? smdId : undefined;
+}
+
+function extractOfficerRole(html: string): string | undefined {
+  const roles = [...html.matchAll(EMPHASIS_RE)]
+    .map((match) => cleanText(match[1]))
+    .filter((role) => role.length > 0);
+  if (roles.length === 0) {
+    return undefined;
+  }
+  return [...new Set(roles)].join("; ");
+}
+
 function normalizeAncId(value: string): string | null {
   const normalized = decodeHtml(value).replace(WHITESPACE_RE, "").toUpperCase();
   return /^[0-9][0-9A-Z/]+$/.test(normalized) ? normalized : null;
@@ -167,6 +262,29 @@ function resolveOancUrl(href: string): string | null {
   } catch {
     return null;
   }
+}
+
+function resolveAbsoluteHttpUrl(baseUrl: string, href: string): string | undefined {
+  try {
+    const url = new URL(href, baseUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return undefined;
+    }
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeTimestamp(value: string | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.valueOf())) {
+    return undefined;
+  }
+  return timestamp.toISOString();
 }
 
 function cleanText(value: string): string {

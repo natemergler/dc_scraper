@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2E01",
   "attributes": {
+    "currentHolderName": "Kishan Putta",
     "sourceAncId": "2E",
     "sourceFirstName": "KISHAN",
     "sourceLastName": "PUTTA",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2e",
+    "sourcePageLastModified": "2026-06-16T20:15:57.000Z",
     "sourceRepresentativeName": "KISHAN KUMAR PUTTA",
     "sourceSmdId": "2E01"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2E01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2e"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1B04",
   "attributes": {
+    "currentHolderName": "Aaron Lemon-Strauss",
+    "officerRole": "Treasurer",
     "sourceAncId": "1B",
     "sourceFirstName": "AARON",
     "sourceLastName": "LEMON-STRAUSS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1b",
+    "sourcePageLastModified": "2026-06-16T21:53:40.000Z",
     "sourceRepresentativeName": "AARON LEMON-STRAUSS",
     "sourceSmdId": "1B04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1B04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1b"
     }
   ],
   "relations": {

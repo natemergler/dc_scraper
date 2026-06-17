@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2B05",
   "attributes": {
+    "currentHolderName": "Alex Marshall",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "2B",
     "sourceFirstName": "ALEX",
     "sourceLastName": "MARSHALL",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourcePageLastModified": "2026-06-16T20:06:56.000Z",
     "sourceRepresentativeName": "ALEX MARSHALL",
     "sourceSmdId": "2B05"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2B05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
     }
   ],
   "relations": {

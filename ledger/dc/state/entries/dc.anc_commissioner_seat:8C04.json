@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8C04",
   "attributes": {
+    "currentHolderName": "Kendall Ridley",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "8C",
     "sourceFirstName": "KENDALL",
     "sourceLastName": "RIDLEY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourcePageLastModified": "2026-06-16T21:16:06.000Z",
     "sourceRepresentativeName": "KENDALL RIDLEY",
     "sourceSmdId": "8C04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8C04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
     }
   ],
   "relations": {

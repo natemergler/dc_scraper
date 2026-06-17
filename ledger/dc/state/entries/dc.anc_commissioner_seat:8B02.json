@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8B02",
   "attributes": {
+    "currentHolderName": "Betty Scippio",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "8B",
     "sourceFirstName": "PAUL",
     "sourceLastName": "TRANTHAM",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourcePageLastModified": "2026-06-16T20:57:07.000Z",
     "sourceRepresentativeName": "BETTY SCIPPIO",
     "sourceSmdId": "8B02"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8B02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8b"
     }
   ],
   "relations": {

@@ -126,7 +126,7 @@ export function buildGovGraphProjection(
       category: nodeCategoryForKind(entry.kind),
       kind: entry.kind,
       family: entry.family,
-      description: stringAttribute(entry, "description") ?? stringAttribute(entry, "sourceSummary"),
+      description: publicDescriptionForEntry(entry),
       officialUrl: publicUrlForEntry(entry),
       legalAuthorityIds: authorizedByTargets(entry, entryIndex, excludedNodeIds),
       sourceCitationCount: sourceCitationCount(entry.citations),
@@ -266,6 +266,30 @@ function nodeCategoryForKind(kind: string): GovGraphNodeCategory {
 function stringAttribute(entry: Entry, key: string): string | undefined {
   const value = entry.attributes[key];
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function publicDescriptionForEntry(entry: Entry): string | undefined {
+  const explicitDescription = stringAttribute(entry, "description") ??
+    stringAttribute(entry, "sourceSummary");
+  if (explicitDescription) {
+    return explicitDescription;
+  }
+
+  if (entry.kind === "dc.anc_commissioner_seat") {
+    const currentHolderName = stringAttribute(entry, "currentHolderName");
+    const officerRole = stringAttribute(entry, "officerRole");
+    if (currentHolderName && officerRole) {
+      return `Current commissioner: ${currentHolderName}. Officer role: ${officerRole}.`;
+    }
+    if (currentHolderName) {
+      return `Current commissioner: ${currentHolderName}.`;
+    }
+    if (officerRole) {
+      return `Officer role: ${officerRole}.`;
+    }
+  }
+
+  return undefined;
 }
 
 function publicUrlForEntry(entry: Entry): string | undefined {

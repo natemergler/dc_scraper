@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D07",
   "attributes": {
+    "currentHolderName": "Brett Astmann",
+    "officerRole": "Treasurer",
     "sourceAncId": "7D",
     "sourceFirstName": "BRETT",
     "sourceLastName": "ASTMANN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceRepresentativeName": "BRETT ASTMANN",
     "sourceSmdId": "7D07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

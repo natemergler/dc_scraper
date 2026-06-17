@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1A08",
   "attributes": {
+    "currentHolderName": "Shira Davidson",
+    "officerRole": "Secretary",
     "sourceAncId": "1A",
     "sourceFirstName": "SHIRA",
     "sourceLastName": "DAVIDSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourcePageLastModified": "2026-06-16T20:51:33.000Z",
     "sourceRepresentativeName": "SHIRA DAVIDSON",
     "sourceSmdId": "1A08"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1A08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
     }
   ],
   "relations": {

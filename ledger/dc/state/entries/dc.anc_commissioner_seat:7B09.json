@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7B09",
   "attributes": {
+    "currentHolderName": "Michelle Hammond",
+    "officerRole": "Secretary",
     "sourceAncId": "7B",
     "sourceFirstName": "MICHELLE",
     "sourceLastName": "HAMMOND",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7b",
+    "sourcePageLastModified": "2026-06-16T20:27:46.000Z",
     "sourceRepresentativeName": "MICHELLE HAMMOND",
     "sourceSmdId": "7B09"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7B09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7b"
     }
   ],
   "relations": {

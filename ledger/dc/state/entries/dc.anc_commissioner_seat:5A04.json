@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5A04",
   "attributes": {
+    "currentHolderName": "Jack Hermes",
+    "officerRole": "Vice-Chairperson/Parliamentarian",
     "sourceAncId": "5A",
     "sourceFirstName": "JACK",
     "sourceLastName": "HERMES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5a",
+    "sourcePageLastModified": "2026-06-16T21:17:40.000Z",
     "sourceRepresentativeName": "JACK HERMES",
     "sourceSmdId": "5A04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5A04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5a"
     }
   ],
   "relations": {

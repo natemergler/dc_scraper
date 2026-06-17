@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D06",
   "attributes": {
+    "currentHolderName": "Dominic A. Pacheco",
+    "officerRole": "Secretary",
     "sourceAncId": "7D",
     "sourceFirstName": "DOMINIC",
     "sourceLastName": "PACHECO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceRepresentativeName": "DOMINIC A. PACHECO",
     "sourceSmdId": "7D06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

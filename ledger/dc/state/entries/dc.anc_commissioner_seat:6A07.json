@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6A07",
   "attributes": {
+    "currentHolderName": "Stephen Kolb",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "6A",
     "sourceFirstName": "STEPHEN",
     "sourceLastName": "KOLB",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "sourcePageLastModified": "2026-06-16T20:25:18.000Z",
     "sourceRepresentativeName": "STEPHEN KOLB",
     "sourceSmdId": "6A07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6A07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6a"
     }
   ],
   "relations": {

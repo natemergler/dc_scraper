@@ -5,9 +5,11 @@
   "name": "ANC 2B",
   "attributes": {
     "gisId": "ANCPly_327",
+    "officialUrl": "https://www.dupontcircleanc.net/wordpress/",
     "representedNeighborhoods": "the Dupont Circle and Strivers’ Section neighborhoods",
     "sourceAncId": "2B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourcePageLastModified": "2026-06-16T20:06:56.000Z",
     "sourceWardNumbers": [
       "2"
     ],

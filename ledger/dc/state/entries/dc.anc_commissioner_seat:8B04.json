@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8B04",
   "attributes": {
+    "currentHolderName": "Kimberly Little",
+    "officerRole": "Secretary",
     "sourceAncId": "8B",
     "sourceFirstName": "KIMBERLY",
     "sourceLastName": "LITTLE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourcePageLastModified": "2026-06-16T20:57:07.000Z",
     "sourceRepresentativeName": "KIMBERLY LITTLE",
     "sourceSmdId": "8B04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8B04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8b"
     }
   ],
   "relations": {

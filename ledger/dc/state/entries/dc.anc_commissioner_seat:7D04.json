@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D04",
   "attributes": {
+    "currentHolderName": "Katie Murphy",
     "sourceAncId": "7D",
     "sourceFirstName": "KATIE",
     "sourceLastName": "MURPHY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceRepresentativeName": "KATIE MURPHY",
     "sourceSmdId": "7D04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

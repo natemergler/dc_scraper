@@ -4,13 +4,21 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7D02",
   "attributes": {
+    "currentHolderName": "Vacant",
     "sourceAncId": "7D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
     "sourceSmdId": "7D02"
   },
   "citations": [
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7D02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
     }
   ],
   "relations": {

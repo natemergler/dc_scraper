@@ -4,13 +4,21 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8B01",
   "attributes": {
+    "currentHolderName": "Malcolm Williams",
     "sourceAncId": "8B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourcePageLastModified": "2026-06-16T20:57:07.000Z",
     "sourceSmdId": "8B01"
   },
   "citations": [
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8b"
     }
   ],
   "relations": {

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2E04",
   "attributes": {
+    "currentHolderName": "Peter Sloniewsky",
+    "officerRole": "Treasurer",
     "sourceAncId": "2E",
     "sourceFirstName": "PETER",
     "sourceLastName": "SLONIEWSKY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2e",
+    "sourcePageLastModified": "2026-06-16T20:15:57.000Z",
     "sourceRepresentativeName": "PETER SLONIEWSKY",
     "sourceSmdId": "2E04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2e"
     }
   ],
   "relations": {

@@ -5,9 +5,11 @@
   "name": "ANC 2E",
   "attributes": {
     "gisId": "ANCPly_330",
+    "officialUrl": "http://www.anc2e.com/",
     "representedNeighborhoods": "the Georgetown, Burleith, and Hillandale neighborhoods",
     "sourceAncId": "2E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2e",
+    "sourcePageLastModified": "2026-06-16T20:15:57.000Z",
     "sourceWardNumbers": [
       "2"
     ],

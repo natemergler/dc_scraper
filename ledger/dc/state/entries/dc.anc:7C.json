@@ -5,9 +5,11 @@
   "name": "ANC 7C",
   "attributes": {
     "gisId": "ANCPly_357",
+    "officialUrl": "http://anc7c.org/",
     "representedNeighborhoods": "the Burrville, Capitol View, Deanwood, Grant Park, Hillbrook, Lincoln Heights, and Northeast Boundary neighborhoods",
     "sourceAncId": "7C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7c",
+    "sourcePageLastModified": "2026-06-16T20:53:13.000Z",
     "sourceWardNumbers": [
       "7"
     ],

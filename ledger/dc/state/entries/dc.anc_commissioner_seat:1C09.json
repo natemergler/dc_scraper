@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1C09",
   "attributes": {
+    "currentHolderName": "Katherine Swanson-Palmer",
+    "officerRole": "Secretary",
     "sourceAncId": "1C",
     "sourceFirstName": "KATHERINE",
     "sourceLastName": "SWANSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1c",
+    "sourcePageLastModified": "2026-06-16T21:16:45.000Z",
     "sourceRepresentativeName": "KATHERINE SWANSON",
     "sourceSmdId": "1C09"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1C09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1c"
     }
   ],
   "relations": {
