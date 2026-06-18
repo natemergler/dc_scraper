@@ -3691,6 +3691,57 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(listJson.items[0].id, itemId);
     assertEquals(listJson.items[0].status, "open");
 
+    const dashboardResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+      ])
+    );
+    assertEquals(dashboardResult.code, 0);
+    assertEquals(dashboardResult.output.includes("Civic Ledger Review"), true);
+    assertEquals(dashboardResult.output.includes("Blocking"), true);
+    assertEquals(dashboardResult.output.includes("deno task civic review next"), true);
+
+    const inboxResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "inbox",
+        "--json",
+      ])
+    );
+    assertEquals(inboxResult.code, 0);
+    const inboxJson = JSON.parse(inboxResult.output) as {
+      reviewItemCount: number;
+      items: Array<{ id: string }>;
+    };
+    assertEquals(inboxJson.reviewItemCount, 1);
+    assertEquals(inboxJson.items[0].id, itemId);
+
+    const nextResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "next",
+      ])
+    );
+    assertEquals(nextResult.code, 0);
+    assertEquals(
+      nextResult.output.includes(
+        "Do these similarly named entries represent distinct civic things?",
+      ),
+      true,
+    );
+
     const showResult = await captureConsole(() =>
       runCli([
         "--workspace",

@@ -13,7 +13,9 @@ export async function saveReviewItems(workspaceRoot: string, items: ReviewItem[]
   const expectedFiles = new Set(items.map((item) => reviewItemFileName(item.id)));
   for (const item of [...items].sort((left, right) => left.id.localeCompare(right.id))) {
     const path = join(root, reviewItemFileName(item.id));
-    await Deno.writeTextFile(path, `${JSON.stringify(item, null, 2)}\n`);
+    const tempPath = `${path}.${crypto.randomUUID()}.tmp`;
+    await Deno.writeTextFile(tempPath, `${JSON.stringify(item, null, 2)}\n`);
+    await Deno.rename(tempPath, path);
   }
   for await (const entry of Deno.readDir(root)) {
     if (entry.isFile && entry.name.endsWith(".json") && !expectedFiles.has(entry.name)) {

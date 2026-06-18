@@ -42,6 +42,10 @@ import { findReconciliationCandidates } from "../reconciliation/candidates.ts";
 import {
   generateReviewItems,
   type ReviewItem,
+  reviewItemHasPublicOutputImpact,
+  type ReviewQueue,
+  reviewQueueForItem,
+  reviewQueueLabel,
   type ReviewResolutionType,
 } from "../review/items.ts";
 import { loadReviewItems, saveReviewItems } from "../review/store.ts";
@@ -73,6 +77,7 @@ type WorkspaceCompilation = {
 type ReviewListOptions = CliOptions & {
   json?: boolean;
   status?: string;
+  queue?: string;
 };
 
 type ReviewShowOptions = CliOptions & {
@@ -390,10 +395,7 @@ async function runReviewList(options: ReviewListOptions): Promise<number> {
     cliOptions.workspace,
     cliOptions.stateRoot,
   );
-  const status = options.status;
-  const filtered = status && status !== "all"
-    ? items.filter((item) => item.status === status)
-    : items;
+  const filtered = filterReviewItems(items, options);
 
   if (options.json) {
     console.log(JSON.stringify(
@@ -409,6 +411,73 @@ async function runReviewList(options: ReviewListOptions): Promise<number> {
   }
 
   printReviewList(filtered, items.length);
+  return 0;
+}
+
+function filterReviewItems(items: ReviewItem[], options: ReviewListOptions): ReviewItem[] {
+  const status = options.status;
+  const statusFiltered = status && status !== "all"
+    ? items.filter((item) => item.status === status)
+    : items;
+  const queue = parseReviewQueueFilter(options.queue);
+  if (!queue || queue === "all") {
+    return statusFiltered;
+  }
+  if (queue === "inbox") {
+    return statusFiltered.filter((item) => {
+      const itemQueue = reviewQueueForItem(item);
+      return itemQueue === "blocking" || itemQueue === "actionable";
+    });
+  }
+  return statusFiltered.filter((item) => reviewQueueForItem(item) === queue);
+}
+
+type ReviewQueueFilter = ReviewQueue | "inbox" | "all";
+
+function parseReviewQueueFilter(value: string | undefined): ReviewQueueFilter | undefined {
+  if (!value) {
+    return undefined;
+  }
+  if (
+    value === "inbox" ||
+    value === "all" ||
+    value === "blocking" ||
+    value === "actionable" ||
+    value === "drafted" ||
+    value === "applied" ||
+    value === "deferred"
+  ) {
+    return value;
+  }
+  throw new Error(
+    "review queue must be inbox, blocking, actionable, drafted, applied, deferred, or all",
+  );
+}
+
+async function runReviewDashboard(options: CliOptions): Promise<number> {
+  const cliOptions = validateCliOptions(options);
+  const items = await refreshReviewItemsFromCommittedState(
+    cliOptions.workspace,
+    cliOptions.stateRoot,
+  );
+  printReviewDashboard(items);
+  return 0;
+}
+
+async function runReviewNext(options: CliOptions): Promise<number> {
+  const cliOptions = validateCliOptions(options);
+  const items = await refreshReviewItemsFromCommittedState(
+    cliOptions.workspace,
+    cliOptions.stateRoot,
+  );
+  const next = items.find((item) => reviewQueueForItem(item) === "blocking") ??
+    items.find((item) => reviewQueueForItem(item) === "actionable");
+  if (!next) {
+    console.log("No actionable review items.");
+    printReviewDashboard(items);
+    return 0;
+  }
+  printReviewItem(next);
   return 0;
 }
 
@@ -724,8 +793,8 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
 
   const review = new Command<CliOptions>()
     .description("Review workflow commands.")
-    .action(() => {
-      throw new Error("review requires `list`, `show`, or `resolve`");
+    .action(async (options) => {
+      onExitCode(await runReviewDashboard(validateCliOptions(options)));
     });
 
   review.command("list", "List persisted review items.")
@@ -733,8 +802,23 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
     .option("--status <status:string>", "Filter by open, drafted, applied, or all.", {
       default: "all",
     })
+    .option(
+      "--queue <queue:string>",
+      "Filter by inbox, blocking, actionable, drafted, applied, deferred, or all.",
+    )
     .action(async (options) => {
       onExitCode(await runReviewList(options as ReviewListOptions));
+    });
+
+  review.command("inbox", "List review items that need an operator decision.")
+    .option("--json", "Emit review items as JSON.")
+    .action(async (options) => {
+      onExitCode(await runReviewList({ ...(options as CliOptions), queue: "inbox" }));
+    });
+
+  review.command("next", "Show the next actionable review item.")
+    .action(async (options) => {
+      onExitCode(await runReviewNext(validateCliOptions(options)));
     });
 
   review.command("show <itemId:string>", "Show one review item evidence packet.")
@@ -745,6 +829,15 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
 
   review.command("resolve <itemId:string>", "Write a draft revision for a review resolution.")
     .option("--as <decision:string>", "Resolution type.")
+    .option("--target <entry-id:string>", "Canonical or target entry ID.")
+    .option("--kind <kind:string>", "Kind to use with override-kind.")
+    .option("--rationale <text:string>", "Operator rationale for the draft revision.")
+    .action(async (options, itemId) => {
+      onExitCode(await runReviewResolve(itemId, options as ReviewResolveOptions));
+    });
+
+  review.command("decide <itemId:string>", "Alias for resolve: write a draft review decision.")
+    .option("--as <decision:string>", "Decision type.")
     .option("--target <entry-id:string>", "Canonical or target entry ID.")
     .option("--kind <kind:string>", "Kind to use with override-kind.")
     .option("--rationale <text:string>", "Operator rationale for the draft revision.")
@@ -785,35 +878,152 @@ function printReviewList(items: ReviewItem[], totalCount: number): void {
 
   console.log(
     [
-      "STATUS".padEnd(8),
+      "QUEUE".padEnd(14),
       "SEVERITY".padEnd(8),
       "CATEGORY".padEnd(28),
-      "CLASSIFICATION".padEnd(26),
-      "ID",
+      "QUESTION",
     ].join("  "),
   );
   for (const item of items) {
     console.log(
       [
-        item.status.padEnd(8),
+        reviewQueueLabel(reviewQueueForItem(item)).padEnd(14),
         item.severity.padEnd(8),
         item.category.padEnd(28),
-        item.classification.padEnd(26),
-        item.id,
+        reviewQuestion(item),
       ].join("  "),
     );
+    console.log(`  id: ${item.id}`);
   }
   console.log(`${items.length} shown, ${totalCount} total`);
 }
 
+function printReviewDashboard(items: ReviewItem[]): void {
+  const queueCounts = countReviewQueues(items);
+  const statusCounts = countReviewStatuses(items);
+  const outputImpactingBlockers = items.filter((item) =>
+    item.status === "open" &&
+    item.blocks.releaseReadiness &&
+    reviewItemHasPublicOutputImpact(item)
+  ).length;
+  const stateBlockers =
+    items.filter((item) => item.status === "open" && item.blocks.stateGeneration).length;
+  const next = items.find((item) => reviewQueueForItem(item) === "blocking") ??
+    items.find((item) => reviewQueueForItem(item) === "actionable");
+
+  console.log("Civic Ledger Review");
+  console.log("");
+  console.log("Readiness");
+  console.log(`  ${stateBlockers} state-generation blockers`);
+  console.log(`  ${outputImpactingBlockers} public-output blockers`);
+  console.log("");
+  console.log("Decision queues");
+  for (
+    const queue of ["blocking", "actionable", "drafted", "applied", "deferred"] as ReviewQueue[]
+  ) {
+    console.log(`  ${reviewQueueLabel(queue).padEnd(14)} ${queueCounts.get(queue) ?? 0}`);
+  }
+  console.log("");
+  console.log("Statuses");
+  for (const status of ["open", "drafted", "applied"] as const) {
+    console.log(`  ${status.padEnd(8)} ${statusCounts.get(status) ?? 0}`);
+  }
+  console.log("");
+  if (next) {
+    console.log("Recommended next");
+    console.log(`  deno task civic review next`);
+    console.log(`  ${reviewQuestion(next)}`);
+  } else {
+    console.log("Recommended next");
+    console.log("  No actionable review items. Use review --help or review list --queue deferred.");
+  }
+}
+
+function countReviewQueues(items: ReviewItem[]): Map<ReviewQueue, number> {
+  const counts = new Map<ReviewQueue, number>();
+  for (const item of items) {
+    const queue = reviewQueueForItem(item);
+    counts.set(queue, (counts.get(queue) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function countReviewStatuses(items: ReviewItem[]): Map<ReviewItem["status"], number> {
+  const counts = new Map<ReviewItem["status"], number>();
+  for (const item of items) {
+    counts.set(item.status, (counts.get(item.status) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function reviewQuestion(item: ReviewItem): string {
+  if (item.category === "same_source_duplicate") {
+    return `Are these ${item.sourceFamilies.join("/") || "source"} records duplicates?`;
+  }
+  if (item.category === "source_shadow") {
+    return "Is one source record shadowing a better canonical entry?";
+  }
+  if (item.category === "kind_conflict") {
+    return "Do these similarly named entries represent distinct civic things?";
+  }
+  if (item.category === "identity_conflict" || item.category === "alias_candidate") {
+    return "Should these entries be aliased, preserved, or suppressed?";
+  }
+  if (item.category === "relation_endpoint_missing") {
+    return "Should this relation target be retargeted or suppressed?";
+  }
+  if (item.category === "legal_authority_ambiguous") {
+    return "Does this legal authority evidence support the same civic fact?";
+  }
+  if (item.category === "out_of_scope_candidate") {
+    return "Should this currently deferred source candidate stay out of scope?";
+  }
+  if (item.category === "preserve_distinct_candidate") {
+    return "Was this preserve-distinct decision the right curation choice?";
+  }
+  return item.title;
+}
+
+function reviewWhyFlagged(item: ReviewItem): string {
+  if (item.source.type === "reconciliation_candidate") {
+    return item.source.reason
+      ? `${item.source.reason} detected overlapping evidence across ${
+        item.sourceFamilies.join(", ") || "sources"
+      }.`
+      : "Reconciliation found overlapping evidence.";
+  }
+  if (item.source.type === "finding") {
+    return `Compiler or interpreter finding: ${
+      item.attributesThatConflict.findingCode ?? item.id
+    }.`;
+  }
+  return "Tracked curation revision is shown for audit.";
+}
+
+function reviewSuggestedNext(item: ReviewItem): string {
+  const suggested = item.suggestedResolutions.join(", ");
+  if (item.status === "drafted") {
+    return `Review the draft, then run revision validate and revision apply-draft if it is right. Options: ${suggested}.`;
+  }
+  if (item.status === "applied") {
+    return `Already applied by tracked revision. Options originally included: ${suggested}.`;
+  }
+  if (reviewQueueForItem(item) === "deferred") {
+    return `Leave deferred for now unless this source family is in scope. Options: ${suggested}.`;
+  }
+  return `Decide with review resolve/decide, then validate the draft. Options: ${suggested}.`;
+}
+
 function printReviewItem(item: ReviewItem): void {
-  console.log(item.title);
+  console.log(reviewQuestion(item));
   console.log(`ID: ${item.id}`);
+  console.log(`Queue: ${reviewQueueLabel(reviewQueueForItem(item))}`);
   console.log(`Status: ${item.status}`);
   console.log(`Category: ${item.category}`);
   console.log(`Classification: ${item.classification}`);
   console.log(`Severity: ${item.severity}`);
   console.log(`Confidence: ${item.confidence}`);
+  console.log(`Public output impact: ${reviewItemHasPublicOutputImpact(item) ? "yes" : "no"}`);
   console.log(`Blocks state generation: ${item.blocks.stateGeneration ? "yes" : "no"}`);
   console.log(`Blocks release readiness: ${item.blocks.releaseReadiness ? "yes" : "no"}`);
   console.log(`Suggested resolutions: ${item.suggestedResolutions.join(", ")}`);
@@ -824,8 +1034,15 @@ function printReviewItem(item: ReviewItem): void {
     console.log(`Draft revisions: ${item.draftRevisionIds.join(", ")}`);
   }
   console.log("");
+  console.log("Why flagged:");
+  console.log(reviewWhyFlagged(item));
+  console.log("");
+  console.log("Summary:");
   console.log(item.summary);
   console.log(item.rationale);
+  console.log("");
+  console.log("Suggested next:");
+  console.log(reviewSuggestedNext(item));
 
   if (item.candidateEntries.length > 0) {
     console.log("");
