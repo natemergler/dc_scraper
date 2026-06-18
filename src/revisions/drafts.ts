@@ -210,22 +210,34 @@ export async function loadDraftRevisions(workspaceRoot: string): Promise<DraftRe
 
 export async function loadDraftRevision(
   workspaceRoot: string,
-  draftId: string,
+  draftIdOrPath: string,
 ): Promise<DraftRevision> {
   const drafts = await loadDraftRevisions(workspaceRoot);
-  const draft = drafts.find((candidate) => candidate.id === draftId);
+  const draft = drafts.find((candidate) => draftMatchesRef(candidate, draftIdOrPath));
   if (!draft) {
-    throw new Error(`draft revision not found: ${draftId}`);
+    throw new Error(`draft revision not found: ${draftIdOrPath}`);
   }
   return draft;
+}
+
+function draftMatchesRef(draft: DraftRevision, ref: string): boolean {
+  if (draft.id === ref) {
+    return true;
+  }
+  const name = ref.split(/[\\/]/).pop() ?? ref;
+  const fileName = draftRevisionFileName(draft.id);
+  if (name === fileName) {
+    return true;
+  }
+  return name.endsWith(".json") ? false : `${name}.json` === fileName;
 }
 
 export async function applyDraftRevision(
   workspaceRoot: string,
   revisionRoot: string,
-  draftId: string,
+  draftIdOrPath: string,
 ): Promise<string> {
-  const draft = await loadDraftRevision(workspaceRoot, draftId);
+  const draft = await loadDraftRevision(workspaceRoot, draftIdOrPath);
   const tracked = trackedRevisionFromDraft(draft);
   parseRevisionPayload(`draft ${draft.id}`, tracked);
 
@@ -241,6 +253,7 @@ export async function applyDraftRevision(
   }
 
   await Deno.writeTextFile(path, `${JSON.stringify(tracked, null, 2)}\n`);
+  await Deno.remove(join(draftRevisionRoot(workspaceRoot), draftRevisionFileName(draft.id)));
   return path;
 }
 

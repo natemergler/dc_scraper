@@ -5,6 +5,88 @@ import { assertEquals } from "@std/assert";
 import { runCli } from "../../src/cli/main.ts";
 import { closeWorkspace, initWorkspace, openWorkspace } from "../../src/workspace/workspace.ts";
 
+Deno.test("root, init, status, and sources list guide a fresh operator", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-onboarding-" });
+  const projectRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-onboarding-project-" });
+  const stateRoot = join(projectRoot, "state");
+  const releaseRoot = join(projectRoot, "release");
+
+  try {
+    const initResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "init",
+      ])
+    );
+    assertEquals(initResult.code, 0);
+    assertEquals(initResult.output.includes("Civic Ledger workspace ready"), true);
+    assertEquals(initResult.output.includes("deno task civic sources list"), true);
+
+    const rootStatus = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+      ])
+    );
+    assertEquals(rootStatus.code, 0);
+    assertEquals(rootStatus.output.includes("Civic Ledger Status"), true);
+    assertEquals(rootStatus.output.includes("Sources:   0/"), true);
+    assertEquals(rootStatus.output.includes("Next: deno task civic collect all"), true);
+
+    const sourcesResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "sources",
+        "list",
+        "--json",
+      ])
+    );
+    assertEquals(sourcesResult.code, 0);
+    const sourcesJson = JSON.parse(sourcesResult.output) as {
+      sourceCount: number;
+      sources: Array<{ id: string; family: string; type: string }>;
+    };
+    assertEquals(sourcesJson.sourceCount > 0, true);
+    assertEquals(
+      sourcesJson.sources.some((source) => source.id === "dcgis.agencies"),
+      true,
+    );
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(projectRoot, { recursive: true });
+  }
+});
+
+Deno.test("state generation explains empty fresh workspace", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-empty-workspace-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-empty-state-" });
+
+  try {
+    const code = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(code, 1);
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("collect command persists snapshots and records", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-collect-" });
   const restoreFetch = mockArcGISFetch(
@@ -3801,10 +3883,11 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       stateRoot,
       "revision",
       "apply-draft",
-      draftId,
+      draftFiles[0],
     ]);
     assertEquals(applyCode, 0);
     assertEquals(await exists(join(revisionRoot, `${draftId}.json`)), true);
+    assertEquals(await exists(join(workspace, "draft-revisions", draftFiles[0])), false);
 
     const regenerateCode = await runCli([
       "--workspace",
