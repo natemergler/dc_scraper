@@ -493,9 +493,8 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     await saveReviewItems(workspaceRoot, reviewItems);
 
     await writeCommittedState(result.state, stateRoot);
-    console.log(
-      `state generated with ${result.state.entries.size} entries; ${reviewItems.length} review items`,
-    );
+    console.log(`state generated with ${result.state.entries.size} entries`);
+    console.log(formatReviewQueueSummary(reviewItems));
     return 0;
   } finally {
     closeWorkspace(workspace);
@@ -1247,6 +1246,18 @@ function countReviewStatuses(items: ReviewItem[]): Map<ReviewItem["status"], num
     counts.set(item.status, (counts.get(item.status) ?? 0) + 1);
   }
   return counts;
+}
+
+function formatReviewQueueSummary(items: ReviewItem[]): string {
+  const counts = countReviewQueues(items);
+  const inboxCount = (counts.get("blocking") ?? 0) + (counts.get("actionable") ?? 0);
+  return [
+    `review items: ${items.length}`,
+    `inbox ${inboxCount}`,
+    `blocking ${counts.get("blocking") ?? 0}`,
+    `deferred ${counts.get("deferred") ?? 0}`,
+    `applied ${counts.get("applied") ?? 0}`,
+  ].join("; ");
 }
 
 function reviewQuestion(item: ReviewItem): string {
