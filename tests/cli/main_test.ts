@@ -41,6 +41,8 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
     assertEquals(rootStatus.output.includes("Civic Ledger Status"), true);
     assertEquals(rootStatus.output.includes("Sources:   0/"), true);
     assertEquals(rootStatus.output.includes("Next: deno task civic collect all"), true);
+    assertEquals(rootStatus.output.includes("Operator flow:"), true);
+    assertEquals(rootStatus.output.includes("deno task civic revision validate"), true);
 
     const sourcesResult = await captureConsole(() =>
       runCli([
@@ -61,6 +63,18 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
       sourcesJson.sources.some((source) => source.id === "dcgis.agencies"),
       true,
     );
+
+    const humanSourcesResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "sources",
+        "list",
+      ])
+    );
+    assertEquals(humanSourcesResult.code, 0);
+    assertEquals(humanSourcesResult.output.includes("SCOPE"), true);
+    assertEquals(humanSourcesResult.output.includes("source_coverage.csv"), true);
   } finally {
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(projectRoot, { recursive: true });
@@ -2464,17 +2478,21 @@ Deno.test("export fails when state is empty", async () => {
   const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-export-empty-release-" });
 
   try {
-    const code = await runCli([
-      "--workspace",
-      workspace,
-      "--state-root",
-      stateRoot,
-      "--release-root",
-      releaseRoot,
-      "export",
-    ]);
+    const result = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "export",
+      ])
+    );
 
-    assertEquals(code, 1);
+    assertEquals(result.code, 1);
+    assertEquals(result.output.includes("deno task civic state generate"), true);
+    assertEquals(result.output.includes("deno task civic check"), true);
   } finally {
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(stateRoot, { recursive: true });
@@ -2510,6 +2528,32 @@ Deno.test("export fails when state root is missing files", async () => {
   } finally {
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
+
+Deno.test("check explains missing committed state", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-check-missing-" });
+  const missingStateRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-check-missing-state-",
+  });
+
+  try {
+    await Deno.remove(missingStateRoot, { recursive: true });
+    const result = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        missingStateRoot,
+        "check",
+      ])
+    );
+
+    assertEquals(result.code, 1);
+    assertEquals(result.output.includes("committed state has no entries"), true);
+    assertEquals(result.output.includes("deno task civic state generate"), true);
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
   }
 });
 
@@ -3945,8 +3989,12 @@ async function captureConsole(
   fn: () => Promise<number>,
 ): Promise<{ code: number; output: string }> {
   const originalLog = console.log;
+  const originalError = console.error;
   const output: string[] = [];
   console.log = (...args: unknown[]) => {
+    output.push(args.map((arg) => String(arg)).join(" "));
+  };
+  console.error = (...args: unknown[]) => {
     output.push(args.map((arg) => String(arg)).join(" "));
   };
   try {
@@ -3954,6 +4002,7 @@ async function captureConsole(
     return { code, output: stripAnsi(output.join("\n")) };
   } finally {
     console.log = originalLog;
+    console.error = originalError;
   }
 }
 

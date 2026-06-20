@@ -54,6 +54,29 @@ export interface GovGraphProjection {
   summary: GovGraphSummary;
 }
 
+export interface DcAncSmdStructureRow {
+  ancEntryId: string;
+  ancName: string;
+  ancShortName: string;
+  smdEntryId: string;
+  smdName: string;
+  commissionerSeatEntryId: string;
+  commissionerSeatName: string;
+  currentCommissionerName: string;
+  officerRole: string;
+  relationCitations: CitationValue[];
+}
+
+export interface DcCouncilCommitteeMembershipRow {
+  committeeEntryId: string;
+  committeeName: string;
+  committeeType: string;
+  councilmemberEntryId: string;
+  councilmemberName: string;
+  membershipRole: "chair" | "member";
+  relationCitations: CitationValue[];
+}
+
 const supportedKinds = new Set([
   "dc.agency",
   "dc.office",
@@ -219,6 +242,121 @@ export function buildGovGraphProjection(
       mappedRelationCount,
     },
   };
+}
+
+export function buildDcAncSmdStructureRows(
+  entries: Iterable<Entry>,
+): DcAncSmdStructureRow[] {
+  const entryList = [...entries];
+  const entryIndex = new Map(entryList.map((entry) => [entry.id, entry]));
+  const seatBySmdId = new Map<string, Entry>();
+
+  for (const entry of entryList) {
+    if (entry.kind !== "dc.anc_commissioner_seat") {
+      continue;
+    }
+
+    for (const relation of entry.relations["dc.relation:represents"] ?? []) {
+      const smd = entryIndex.get(relation.to);
+      if (smd?.kind === "dc.smd") {
+        seatBySmdId.set(smd.id, entry);
+      }
+    }
+  }
+
+  const rows: DcAncSmdStructureRow[] = [];
+  for (const anc of entryList) {
+    if (anc.kind !== "dc.anc") {
+      continue;
+    }
+
+    for (const relation of anc.relations["dc.relation:contains"] ?? []) {
+      const smd = entryIndex.get(relation.to);
+      if (smd?.kind !== "dc.smd") {
+        continue;
+      }
+
+      const seat = seatBySmdId.get(smd.id);
+      rows.push({
+        ancEntryId: anc.id,
+        ancName: anc.name,
+        ancShortName: stringAttribute(anc, "shortName") ?? "",
+        smdEntryId: smd.id,
+        smdName: smd.name,
+        commissionerSeatEntryId: seat?.id ?? "",
+        commissionerSeatName: seat?.name ?? "",
+        currentCommissionerName: seat ? stringAttribute(seat, "currentHolderName") ?? "" : "",
+        officerRole: seat ? stringAttribute(seat, "officerRole") ?? "" : "",
+        relationCitations: relation.citations ?? [],
+      });
+    }
+  }
+
+  return rows.sort((left, right) => {
+    if (left.ancEntryId === right.ancEntryId) {
+      return left.smdEntryId.localeCompare(right.smdEntryId);
+    }
+    return left.ancEntryId.localeCompare(right.ancEntryId);
+  });
+}
+
+export function buildDcCouncilCommitteeMembershipRows(
+  entries: Iterable<Entry>,
+): DcCouncilCommitteeMembershipRow[] {
+  const entryList = [...entries];
+  const entryIndex = new Map(entryList.map((entry) => [entry.id, entry]));
+  const rowsByMembership = new Map<string, DcCouncilCommitteeMembershipRow>();
+
+  for (const councilmember of entryList) {
+    if (councilmember.kind !== "dc.councilmember") {
+      continue;
+    }
+
+    for (const relation of councilmember.relations["dc.relation:member_of"] ?? []) {
+      const committee = entryIndex.get(relation.to);
+      if (committee?.kind !== "dc.committee") {
+        continue;
+      }
+
+      rowsByMembership.set(membershipKey(councilmember.id, committee.id), {
+        committeeEntryId: committee.id,
+        committeeName: committee.name,
+        committeeType: stringAttribute(committee, "committeeType") ?? "",
+        councilmemberEntryId: councilmember.id,
+        councilmemberName: councilmember.name,
+        membershipRole: "member",
+        relationCitations: relation.citations ?? [],
+      });
+    }
+
+    for (const relation of councilmember.relations["dc.relation:chairs"] ?? []) {
+      const committee = entryIndex.get(relation.to);
+      if (committee?.kind !== "dc.committee") {
+        continue;
+      }
+
+      rowsByMembership.set(membershipKey(councilmember.id, committee.id), {
+        committeeEntryId: committee.id,
+        committeeName: committee.name,
+        committeeType: stringAttribute(committee, "committeeType") ?? "",
+        councilmemberEntryId: councilmember.id,
+        councilmemberName: councilmember.name,
+        membershipRole: "chair",
+        relationCitations: relation.citations ?? [],
+      });
+    }
+  }
+
+  return [...rowsByMembership.values()].sort((left, right) => {
+    if (left.committeeEntryId === right.committeeEntryId) {
+      return left.councilmemberEntryId.localeCompare(right.councilmemberEntryId);
+    }
+    return left.committeeEntryId.localeCompare(right.committeeEntryId);
+  });
+}
+
+function membershipKey(councilmemberId: string, committeeId: string): string {
+  return `${councilmemberId}::${committeeId}`;
 }
 
 function hasProjectionImpact(item: ReviewItem): boolean {

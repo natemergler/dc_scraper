@@ -95,6 +95,22 @@ type ReviewResolveOptions = CliOptions & {
   rationale?: string;
 };
 
+const OPERATOR_FLOW = [
+  "deno task civic status",
+  "deno task civic revision validate",
+  "deno task civic state generate",
+  "deno task civic check",
+  "deno task civic export",
+];
+
+const ALPHA_ARTIFACT_HINTS = [
+  "entries.csv / relations.csv / citations.csv",
+  "source_coverage.csv",
+  "ledger.sqlite",
+  "dc_board_affiliations.csv / dc_commission_affiliations.csv / dc_authority_affiliations.csv",
+  "dc_anc_smd_structure.csv / dc_council_committee_membership.csv",
+];
+
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
   try {
     let exitCode = 0;
@@ -201,19 +217,35 @@ async function runSourcesList(options: SourceListOptions): Promise<number> {
   console.log([
     "SOURCE".padEnd(28),
     "FAMILY".padEnd(34),
+    "SCOPE".padEnd(30),
     "TYPE",
   ].join("  "));
   for (const source of sources) {
     console.log([
       source.id.padEnd(28),
       source.family.padEnd(34),
+      summarizeForColumn(source.scope, 30),
       source.type,
     ].join("  "));
+    if (source.notes) {
+      console.log(`  notes: ${source.notes}`);
+    }
   }
   console.log("");
   console.log("Collect everything:");
   console.log("  deno task civic collect all");
+  console.log("");
+  console.log("Coverage/export inspection:");
+  console.log("  deno task civic sources list --json");
+  console.log("  deno task civic export   # writes source_coverage.csv in the release root");
   return 0;
+}
+
+function summarizeForColumn(value: string, width: number): string {
+  if (value.length <= width) {
+    return value.padEnd(width);
+  }
+  return `${value.slice(0, width - 1)}…`;
 }
 
 async function runStatus(options: CliOptions): Promise<number> {
@@ -232,12 +264,18 @@ async function runStatus(options: CliOptions): Promise<number> {
   console.log(`State:     ${stateCount} entries`);
   console.log(`Review:    ${reviewCount} persisted items`);
   console.log("");
+  console.log("Operator flow:");
+  for (const step of OPERATOR_FLOW) {
+    console.log(`  ${step}`);
+  }
+  console.log("");
   if (recordCount === 0) {
     console.log("Next: deno task civic collect all");
   } else if (stateCount === 0) {
-    console.log("Next: deno task civic state generate");
+    console.log("Next: deno task civic revision validate, then deno task civic state generate");
   } else {
-    console.log("Next: deno task civic review");
+    console.log("Next: deno task civic check, then deno task civic export");
+    console.log("Review queue: deno task civic review inbox");
   }
   return 0;
 }
@@ -516,7 +554,7 @@ async function runStateIndex(workspaceRoot: string, stateRoot: string): Promise<
 }
 
 async function runCheck(workspaceRoot: string, stateRoot: string): Promise<number> {
-  const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  const loaded = await loadCommittedStateForCli(stateRoot, "check");
 
   const workspace = openWorkspace(workspaceRoot);
   try {
@@ -524,8 +562,12 @@ async function runCheck(workspaceRoot: string, stateRoot: string): Promise<numbe
     if (loaded.state.entries.size > 0) {
       console.log(`check passed with ${loaded.state.entries.size} entries`);
     } else {
-      console.log("check passed with empty state");
+      console.error(
+        "committed state has no entries; run deno task civic state generate before check/export",
+      );
+      return 1;
     }
+    console.log("Next: deno task civic export");
     return 0;
   } finally {
     closeWorkspace(workspace);
@@ -537,9 +579,11 @@ async function runExport(
   stateRoot: string,
   releaseRoot: string,
 ): Promise<number> {
-  const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
+  const loaded = await loadCommittedStateForCli(stateRoot, "export");
   if (loaded.state.entries.size === 0) {
-    throw new Error("state has no entries; run state generate before export");
+    throw new Error(
+      "state has no entries; run deno task civic state generate, then deno task civic check before export",
+    );
   }
 
   const workspace = openWorkspace(workspaceRoot);
@@ -557,9 +601,30 @@ async function runExport(
     console.log(
       `exported ${result.entryCount} entries, ${result.relationCount} relations to ${result.releaseRoot}`,
     );
+    console.log("Alpha artifact highlights:");
+    for (const artifact of ALPHA_ARTIFACT_HINTS) {
+      console.log(`  - ${artifact}`);
+    }
+    console.log(`Inspect source coverage: ${join(result.releaseRoot, "source_coverage.csv")}`);
     return 0;
   } finally {
     closeWorkspace(workspace);
+  }
+}
+
+async function loadCommittedStateForCli(
+  stateRoot: string,
+  commandName: "check" | "export",
+): ReturnType<typeof loadCommittedState> {
+  try {
+    return await loadCommittedState(stateRoot, dcRuntime.kinds);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(
+        `committed state not found at ${stateRoot}; run deno task civic state generate before ${commandName}`,
+      );
+    }
+    throw error;
   }
 }
 
@@ -921,6 +986,9 @@ function compileFromWorkspace(
 function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
   const root = new Command<CliOptions>()
     .name("dc")
+    .description(
+      `Civic Ledger operator CLI. Common flow: ${OPERATOR_FLOW.join(" -> ")}.`,
+    )
     .throwErrors()
     .globalOption("--workspace <path:string>", "Workspace root path.", {
       default: ".civic/workspace",
@@ -947,12 +1015,14 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
     });
 
   const sources = new Command<CliOptions>()
-    .description("Source catalog commands.")
+    .description("Source catalog and source coverage commands.")
     .action(() => {
-      throw new Error("sources requires `list`");
+      throw new Error(
+        "sources requires `list`; try deno task civic sources list --json for coverage metadata",
+      );
     });
 
-  sources.command("list", "List configured source IDs.")
+  sources.command("list", "List configured source IDs and coverage scope.")
     .option("--json", "Emit source metadata as JSON.")
     .action(async (options) => {
       onExitCode(await runSourcesList(options as SourceListOptions));
@@ -975,7 +1045,9 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
   const state = new Command<CliOptions>()
     .description("State management commands.")
     .action(() => {
-      throw new Error("state requires `generate` or `index`");
+      throw new Error(
+        "state requires `generate` or `index`; common flow is revision validate -> state generate -> check -> export",
+      );
     });
 
   state.command("generate", "Compile committed state from workspace records.")
@@ -992,13 +1064,13 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
 
   root.command("state", state);
 
-  root.command("check", "Validate committed state.")
+  root.command("check", "Validate committed state before export.")
     .action(async (options) => {
       const cliOptions = validateCliOptions(options);
       onExitCode(await runCheck(cliOptions.workspace, cliOptions.stateRoot));
     });
 
-  root.command("export", "Export release artifacts from committed state.")
+  root.command("export", "Export alpha release artifacts from committed state.")
     .action(async (options) => {
       const cliOptions = validateCliOptions(options);
       onExitCode(

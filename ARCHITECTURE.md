@@ -307,6 +307,7 @@ dc.smd
 dc.anc_commissioner_seat
 dc.committee
 dc.councilmember
+dc.legal_authority
 ```
 
 ## Kind definitions
@@ -329,6 +330,16 @@ A citation points back to source material.
 It is provenance, not legal authority.
 
 Legal authority is modeled as an `authority` entry.
+
+For the alpha release, legal authority extraction is bounded to explicit source-derived locators for
+D.C. Code sections, Mayor's Orders, and D.C. Laws. Those become `dc.legal_authority` entries with
+authority-family/type attributes preserved, and civic entries link to them with
+`dc.relation:authorized_by`.
+
+The alpha boundary deliberately excludes D.C. Acts, DCMR, U.S.C., CFR, court rules, charter
+provisions, free-text enabling authority, and legal entrypoint catalog pages as legal authorities.
+Those exclusions keep the first release reproducible and citation-derived instead of implying broad
+legal coverage.
 
 State files should usually use inline citation helpers:
 
@@ -403,12 +414,18 @@ A release contains:
 ```text
 generic ledger export
 jurisdiction-specific views
+source coverage report
 manifest
 README
 queryable SQLite package
 ```
 
 Generic exports preserve portability. Jurisdiction views make the release useful.
+
+The current DC alpha views include board, commission, and authority affiliations; ANC/SMD structure;
+Council committee membership; and the bounded legal authority slice described above. Review items,
+findings, conflicts, draft revisions, and unresolved duplicate reports remain operator surfaces, not
+alpha artifact truth.
 
 ## Invariants
 

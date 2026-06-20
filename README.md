@@ -24,20 +24,64 @@ DC is the first jurisdiction. The system should be general enough for other juri
 
 Run the CLI with `deno task civic <command>`.
 
+- `status` shows workspace/source/state/review readiness and the next operator action.
+- `sources list` shows configured sources and coverage scope; add `--json` for machine-readable
+  source coverage metadata.
 - `collect <source-id>` pulls one source into the ignored workspace.
+- `revision validate` validates tracked revisions, draft revisions, and identity aliases.
 - `state generate` rebuilds committed state from workspace records and tracked revisions.
 - `state index` loads committed state back into the workspace SQLite index.
 - `check` validates the committed state in place.
-- `export` builds release artifacts from indexed committed state.
+- `export` builds alpha release artifacts from committed state and refreshes the workspace index.
 
 Typical operator flow:
 
 ```text
-collect -> state generate -> state index -> check -> export
+status -> revision validate -> state generate -> check -> export
 ```
 
-Use `collect` whenever a source refreshes, rerun `state generate` after source or revision changes,
-and treat `check` as the last stop before `export`.
+Use `collect all` whenever you need a full source refresh, or `collect <source-id>` for a targeted
+refresh. Rerun `state generate` after source or revision changes. Treat `revision validate` and
+`check` as the last stops before `export`.
+
+Common loops:
+
+```text
+# fresh or stale workspace
+deno task civic status
+deno task civic sources list
+deno task civic collect all
+
+# before committing state changes
+deno task civic revision validate
+deno task civic state generate
+deno task civic check
+
+# alpha package
+deno task civic export
+```
+
+The alpha export writes generic ledger files, a SQLite package, a manifest, source coverage, and
+DC-specific public views:
+
+```text
+entries.csv
+relations.csv
+citations.csv
+sources.csv
+source_coverage.csv
+ledger.sqlite
+manifest.json
+README.md
+dc_board_affiliations.csv
+dc_commission_affiliations.csv
+dc_authority_affiliations.csv
+dc_anc_smd_structure.csv
+dc_council_committee_membership.csv
+```
+
+Inspect `source_coverage.csv` when you need to explain what each configured source contributes,
+excludes, or only partially covers.
 
 ## Shape
 
@@ -95,6 +139,22 @@ DC Council members            -> person entries with committee membership relati
 ```
 
 Everything else waits until the above path is stable.
+
+## Legal authority alpha boundary
+
+The alpha legal authority slice is intentionally narrow. It derives `dc.legal_authority` entries and
+`dc.relation:authorized_by` links only from explicit locators already present in source-derived
+citations for:
+
+```text
+D.C. Code sections
+Mayor's Orders
+D.C. Laws
+```
+
+It does not yet model D.C. Acts, DCMR, U.S.C., CFR, court rules, charter provisions, free-text
+enabling authority, or legal entrypoint catalog pages as legal authorities. Those remain future
+scope, not missing alpha export files.
 
 ## Docs
 

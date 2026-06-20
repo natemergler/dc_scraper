@@ -5,7 +5,11 @@ import { join } from "@std/path";
 import { type CitationValue, isCitationValue } from "../core/types.ts";
 import type { ReviewItem } from "../review/items.ts";
 import type { Workspace } from "../workspace/workspace.ts";
-import { buildGovGraphProjection } from "./public_projection.ts";
+import {
+  buildDcAncSmdStructureRows,
+  buildDcCouncilCommitteeMembershipRows,
+  buildGovGraphProjection,
+} from "./public_projection.ts";
 
 export interface ExportResult {
   releaseRoot: string;
@@ -17,6 +21,8 @@ export interface ExportResult {
   boardAffiliationCount: number;
   commissionAffiliationCount: number;
   authorityAffiliationCount: number;
+  ancSmdStructureCount: number;
+  councilCommitteeMembershipCount: number;
   govGraphNodeCount: number;
   govGraphEdgeCount: number;
   ledgerSqlitePath: string;
@@ -259,20 +265,20 @@ export async function exportReleaseArtifacts(
     sourceRows,
     recordCountBySource,
   });
-  const govGraph = buildGovGraphProjection(
-    Array.from(entryIndex.entries())
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([id, entry]) => ({
-        id,
-        family: entry.family,
-        kind: entry.kind,
-        name: entry.name,
-        attributes: entry.attributes,
-        citations: entry.citations,
-        relations: entry.relations,
-      })),
-    options.reviewItems ?? [],
-  );
+  const projectedEntries = Array.from(entryIndex.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([id, entry]) => ({
+      id,
+      family: entry.family,
+      kind: entry.kind,
+      name: entry.name,
+      attributes: entry.attributes,
+      citations: entry.citations,
+      relations: entry.relations,
+    }));
+  const govGraph = buildGovGraphProjection(projectedEntries, options.reviewItems ?? []);
+  const ancSmdStructureRows = buildDcAncSmdStructureRows(projectedEntries);
+  const councilCommitteeMembershipRows = buildDcCouncilCommitteeMembershipRows(projectedEntries);
 
   const exportedAt = new Date().toISOString();
 
@@ -337,6 +343,56 @@ export async function exportReleaseArtifacts(
     "agency_name",
     "relation_citations",
   ], sortedAuthorityAffiliations);
+
+  await writeCsv(
+    join(releaseRoot, "dc_anc_smd_structure.csv"),
+    [
+      "anc_entry_id",
+      "anc_name",
+      "anc_short_name",
+      "smd_entry_id",
+      "smd_name",
+      "commissioner_seat_entry_id",
+      "commissioner_seat_name",
+      "current_commissioner_name",
+      "officer_role",
+      "relation_citations",
+    ],
+    ancSmdStructureRows.map((row) => [
+      row.ancEntryId,
+      row.ancName,
+      row.ancShortName,
+      row.smdEntryId,
+      row.smdName,
+      row.commissionerSeatEntryId,
+      row.commissionerSeatName,
+      row.currentCommissionerName,
+      row.officerRole,
+      stableStringify(row.relationCitations),
+    ]),
+  );
+
+  await writeCsv(
+    join(releaseRoot, "dc_council_committee_membership.csv"),
+    [
+      "committee_entry_id",
+      "committee_name",
+      "committee_type",
+      "councilmember_entry_id",
+      "councilmember_name",
+      "membership_role",
+      "relation_citations",
+    ],
+    councilCommitteeMembershipRows.map((row) => [
+      row.committeeEntryId,
+      row.committeeName,
+      row.committeeType,
+      row.councilmemberEntryId,
+      row.councilmemberName,
+      row.membershipRole,
+      stableStringify(row.relationCitations),
+    ]),
+  );
 
   await writeCsv(
     join(releaseRoot, "citations.csv"),
@@ -417,6 +473,8 @@ export async function exportReleaseArtifacts(
       boardAffiliationsCsv: "dc_board_affiliations.csv",
       commissionAffiliationsCsv: "dc_commission_affiliations.csv",
       authorityAffiliationsCsv: "dc_authority_affiliations.csv",
+      ancSmdStructureCsv: "dc_anc_smd_structure.csv",
+      councilCommitteeMembershipCsv: "dc_council_committee_membership.csv",
       govGraphNodesJson: "govgraph_nodes.json",
       govGraphEdgesJson: "govgraph_edges.json",
       govGraphSummaryJson: "govgraph_summary.json",
@@ -435,6 +493,8 @@ export async function exportReleaseArtifacts(
       boardAffiliations: boardAffiliationsOut.length,
       commissionAffiliations: commissionAffiliationsOut.length,
       authorityAffiliations: authorityAffiliationsOut.length,
+      ancSmdStructure: ancSmdStructureRows.length,
+      councilCommitteeMembership: councilCommitteeMembershipRows.length,
       govGraphNodes: govGraph.nodes.length,
       govGraphEdges: govGraph.edges.length,
     },
@@ -447,27 +507,39 @@ export async function exportReleaseArtifacts(
     join(releaseRoot, "README.md"),
     [
       `# Civic Ledger release`,
-      `jurisdiction,${jurisdiction}`,
-      `exported_at,${exportedAt}`,
-      `entries,${entriesOut.length}`,
-      `relations,${relationsOut.length}`,
-      `citations,${citationsOut.length}`,
-      `sources,${sourceRows.length}`,
       "",
-      "Artifacts:",
-      "- entries.csv",
-      "- relations.csv",
-      "- citations.csv",
-      "- sources.csv",
-      "- source_coverage.csv",
-      "- dc_board_affiliations.csv",
-      "- dc_commission_affiliations.csv",
-      "- dc_authority_affiliations.csv",
-      "- govgraph_nodes.json",
-      "- govgraph_edges.json",
-      "- govgraph_summary.json",
-      "- manifest.json",
-      "- ledger.sqlite",
+      "## Release notes",
+      "",
+      "Generated from committed Civic Ledger state.",
+      "Snapshots, records, review items, and workspace databases are not release truth.",
+      "Use `manifest.json` for machine-readable file names and counts.",
+      "",
+      "## Summary",
+      "",
+      `- Jurisdiction: ${jurisdiction}`,
+      `- Exported at: ${exportedAt}`,
+      `- Entries: ${entriesOut.length}`,
+      `- Relations: ${relationsOut.length}`,
+      `- Citations: ${citationsOut.length}`,
+      `- Sources: ${sourceRows.length}`,
+      "",
+      "## Artifacts",
+      "",
+      "- `entries.csv`",
+      "- `relations.csv`",
+      "- `citations.csv`",
+      "- `sources.csv`",
+      "- `source_coverage.csv`",
+      "- `dc_board_affiliations.csv`",
+      "- `dc_commission_affiliations.csv`",
+      "- `dc_authority_affiliations.csv`",
+      "- `dc_anc_smd_structure.csv`",
+      "- `dc_council_committee_membership.csv`",
+      "- `govgraph_nodes.json`",
+      "- `govgraph_edges.json`",
+      "- `govgraph_summary.json`",
+      "- `manifest.json`",
+      "- `ledger.sqlite`",
       "",
     ].join("\n"),
   );
@@ -533,6 +605,31 @@ export async function exportReleaseArtifacts(
         excludes TEXT NOT NULL,
         notes TEXT NOT NULL
       );
+
+      CREATE TABLE dc_anc_smd_structure (
+        anc_entry_id TEXT NOT NULL,
+        anc_name TEXT NOT NULL,
+        anc_short_name TEXT NOT NULL,
+        smd_entry_id TEXT NOT NULL,
+        smd_name TEXT NOT NULL,
+        commissioner_seat_entry_id TEXT NOT NULL,
+        commissioner_seat_name TEXT NOT NULL,
+        current_commissioner_name TEXT NOT NULL,
+        officer_role TEXT NOT NULL,
+        relation_citations TEXT NOT NULL,
+        PRIMARY KEY (anc_entry_id, smd_entry_id)
+      );
+
+      CREATE TABLE dc_council_committee_membership (
+        committee_entry_id TEXT NOT NULL,
+        committee_name TEXT NOT NULL,
+        committee_type TEXT NOT NULL,
+        councilmember_entry_id TEXT NOT NULL,
+        councilmember_name TEXT NOT NULL,
+        membership_role TEXT NOT NULL,
+        relation_citations TEXT NOT NULL,
+        PRIMARY KEY (committee_entry_id, councilmember_entry_id)
+      );
     `);
 
     const insertEntry = ledgerDb.prepare(
@@ -593,6 +690,39 @@ export async function exportReleaseArtifacts(
         source[10],
       );
     }
+
+    const insertAncSmdStructure = ledgerDb.prepare(
+      "INSERT INTO dc_anc_smd_structure (anc_entry_id, anc_name, anc_short_name, smd_entry_id, smd_name, commissioner_seat_entry_id, commissioner_seat_name, current_commissioner_name, officer_role, relation_citations) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of ancSmdStructureRows) {
+      insertAncSmdStructure.run(
+        row.ancEntryId,
+        row.ancName,
+        row.ancShortName,
+        row.smdEntryId,
+        row.smdName,
+        row.commissionerSeatEntryId,
+        row.commissionerSeatName,
+        row.currentCommissionerName,
+        row.officerRole,
+        stableStringify(row.relationCitations),
+      );
+    }
+
+    const insertCouncilCommitteeMembership = ledgerDb.prepare(
+      "INSERT INTO dc_council_committee_membership (committee_entry_id, committee_name, committee_type, councilmember_entry_id, councilmember_name, membership_role, relation_citations) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    for (const row of councilCommitteeMembershipRows) {
+      insertCouncilCommitteeMembership.run(
+        row.committeeEntryId,
+        row.committeeName,
+        row.committeeType,
+        row.councilmemberEntryId,
+        row.councilmemberName,
+        row.membershipRole,
+        stableStringify(row.relationCitations),
+      );
+    }
   } finally {
     ledgerDb.close();
   }
@@ -607,6 +737,8 @@ export async function exportReleaseArtifacts(
     boardAffiliationCount: boardAffiliationsOut.length,
     commissionAffiliationCount: commissionAffiliationsOut.length,
     authorityAffiliationCount: authorityAffiliationsOut.length,
+    ancSmdStructureCount: ancSmdStructureRows.length,
+    councilCommitteeMembershipCount: councilCommitteeMembershipRows.length,
     govGraphNodeCount: govGraph.nodes.length,
     govGraphEdgeCount: govGraph.edges.length,
     ledgerSqlitePath: ledgerPath,
