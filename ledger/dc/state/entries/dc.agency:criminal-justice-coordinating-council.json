@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Criminal Justice Coordinating Council",
   "attributes": {
+    "officialUrl": "https://cjcc.dc.gov",
     "shortName": "Criminal Justice Coordinating Council",
-    "sourceAgencyId": "1013"
+    "sourceAgencyId": "1013",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "criminal-justice-coordinating-council:cjcc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "4"

@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5E03",
   "attributes": {
+    "currentHolderName": "Andrew Waks",
     "sourceAncId": "5E",
     "sourceFirstName": "ANDREW",
     "sourceLastName": "WAKS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5e",
+    "sourcePageLastModified": "2026-06-16T20:35:49.000Z",
     "sourceRepresentativeName": "ANDREW WAKS",
     "sourceSmdId": "5E03"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5E03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5e"
     }
   ],
   "relations": {

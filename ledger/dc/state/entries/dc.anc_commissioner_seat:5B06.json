@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5B06",
   "attributes": {
+    "currentHolderName": "Maya Vizvary",
+    "officerRole": "Treasurer",
     "sourceAncId": "5B",
     "sourceFirstName": "MAYA",
     "sourceLastName": "VIZVARY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourcePageLastModified": "2026-06-16T20:26:27.000Z",
     "sourceRepresentativeName": "MAYA VIZVARY",
     "sourceSmdId": "5B06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5B06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
     }
   ],
   "relations": {

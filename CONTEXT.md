@@ -93,6 +93,41 @@ State is committed, human-visible, Git-diffable, and organized one file per entr
 State can be edited directly as a maintenance workflow, but committed curated state changes must be
 reproducible through revisions.
 
+### alpha release
+
+A reproducible release checkpoint for committed state that is suitable for external evaluation
+without claiming complete civic coverage or product integration.
+
+An alpha release is reproducible from committed state to release artifacts. It does not require a
+fresh live-source collection to reproduce identical state.
+
+Alpha release artifacts are generated distribution outputs. They should be attached to a release or
+regenerated locally, not maintained as committed ledger truth.
+
+An alpha release artifact includes generic ledger files, a SQLite ledger, source coverage, and
+DC-specific views for board affiliations, commission affiliations, authority affiliations, ANC/SMD
+structure, and Council committee membership.
+
+An alpha release artifact presents established state-derived facts. Review items, findings,
+conflicts, draft revisions, and unresolved duplicate reports remain operator/review surfaces rather
+than alpha artifact files.
+
+An alpha release includes a bounded legal authority slice for explicit legal authority locators that
+already appear in source-derived citations.
+
+The alpha legal authority slice includes D.C. Code sections, Mayor's Orders, and D.C. Laws. It
+defers D.C. Acts, DCMR, U.S.C., CFR, court rules, charter provisions, free-text enabling authority,
+and legal entrypoint catalog pages as legal authorities.
+
+Alpha legal authority entries use the single `dc.legal_authority` kind with canonical IDs under
+`dc.legal_authority:*`, while preserving the authority family/type as attributes.
+
+Alpha legal authority links use `dc.relation:authorized_by` from the civic entry to the legal
+authority entry.
+
+Alpha legal authority entries and links are derived from entry citations with explicit in-scope
+legal authority locators.
+
 ### entry
 
 A stable ledger object.
@@ -109,6 +144,11 @@ authority
 
 Jurisdictions define entry kinds inside those families.
 
+### institutional structure
+
+The civic bodies, offices, courts, positions, areas, and relations that define how a jurisdiction is
+organized.
+
 ### relation
 
 A directed connection between entries.
@@ -121,6 +161,11 @@ entry.
 A provenance pointer from an entry, relation, or revision back to source material.
 
 Citation is not legal authority. Legal authority is an `authority` entry.
+
+### legal authority
+
+A legal instrument or legal unit that establishes, authorizes, governs, or otherwise grounds a civic
+fact.
 
 ### finding
 

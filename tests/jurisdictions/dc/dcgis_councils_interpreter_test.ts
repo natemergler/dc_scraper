@@ -20,11 +20,14 @@ Deno.test("dcgis.councils records become council entries and relation", () => {
     },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  assertEquals(output.relationFragments.length, 1);
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 2);
   assertEquals(output.findings, []);
 
-  const [entryFragment] = output.entryFragments;
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.council")!;
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
   assertEquals(entryFragment.fragmentType, "entry");
   assertEquals(entryFragment.source, dcgisCouncilsSource.id);
   assertEquals(entryFragment.sourceRecordId, "row-1");
@@ -32,19 +35,22 @@ Deno.test("dcgis.councils records become council entries and relation", () => {
   assertEquals(entryFragment.kind, "dc.council");
   assertEquals(entryFragment.family, "organization");
   assertEquals(entryFragment.name, "Food Policy Council");
-  assertEquals(entryFragment.citations, [
-    cite(dcgisCouncilsSource.id, "row-1"),
-    cite(dcgisCouncilsSource.id, "row-1", { locator: "D.C. Code § 48-312" }),
-  ]);
+  assertEquals(entryFragment.citations, [cite(dcgisCouncilsSource.id, "row-1")]);
   assertEquals(entryFragment.attributes.shortName, "FPC");
   assertEquals(entryFragment.attributes.sourceCouncilId, "11");
+  assertEquals(authorityFragment?.attributes.locator, "D.C. Code § 48-312");
 
-  const [relationFragment] = output.relationFragments;
-  assertEquals(relationFragment.fragmentType, "relation");
-  assertEquals(relationFragment.from, "dc.council:11");
-  assertEquals(relationFragment.to, "dc.agency:a-1");
-  assertEquals(relationFragment.relationKind, "dc.relation:governs");
-  assertEquals(relationFragment.citations, entryFragment.citations);
+  const governsRelation = output.relationFragments.find((relation) =>
+    relation.relationKind === "dc.relation:governs"
+  );
+  assertEquals(governsRelation?.fragmentType, "relation");
+  assertEquals(governsRelation?.from, "dc.council:11");
+  assertEquals(governsRelation?.to, "dc.agency:a-1");
+  assertEquals(governsRelation?.citations, [cite(dcgisCouncilsSource.id, "row-1")]);
+  const authorityRelation = output.relationFragments.find((relation) =>
+    relation.relationKind === "dc.relation:authorized_by"
+  );
+  assertEquals(authorityRelation?.to, "dc.legal_authority:d-c-code-48-312");
 });
 
 Deno.test("dcgis.councils reports warning when name is missing", () => {

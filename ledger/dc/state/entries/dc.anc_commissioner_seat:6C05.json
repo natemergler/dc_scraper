@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6C05",
   "attributes": {
+    "currentHolderName": "Daniela Mclnerney",
     "sourceAncId": "6C",
     "sourceFirstName": "DANIELA",
     "sourceLastName": "MCINERNEY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourcePageLastModified": "2026-06-16T21:58:01.000Z",
     "sourceRepresentativeName": "DANIELA KELLEY MCINERNEY",
     "sourceSmdId": "6C05"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6C05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
     }
   ],
   "relations": {

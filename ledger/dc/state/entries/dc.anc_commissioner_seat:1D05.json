@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1D05",
   "attributes": {
+    "currentHolderName": "Omar Parbhoo",
+    "officerRole": "Chairperson",
     "sourceAncId": "1D",
     "sourceFirstName": "OMAR",
     "sourceLastName": "PARBHOO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1d",
+    "sourcePageLastModified": "2026-06-16T21:57:54.000Z",
     "sourceRepresentativeName": "OMAR PARBHOO",
     "sourceSmdId": "1D05"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1D05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1d"
     }
   ],
   "relations": {

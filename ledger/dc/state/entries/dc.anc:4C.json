@@ -5,9 +5,14 @@
   "name": "ANC 4C",
   "attributes": {
     "gisId": "ANCPly_342",
+    "officialUrl": "http://anc4c.com/",
     "representedNeighborhoods": "the southern part of the Petworth neighborhood",
     "sourceAncId": "4C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourcePageLastModified": "2026-06-16T21:38:19.000Z",
+    "sourceWardNumbers": [
+      "4"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4c"
   },
   "citations": [

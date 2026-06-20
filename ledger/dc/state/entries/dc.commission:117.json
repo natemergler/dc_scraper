@@ -17,26 +17,36 @@
       "sourceRecordId": "117"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "117",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "real-estate-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "real-estate-commission",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "real-estate-commission",
-      "locator": "D.C. Code § 47-2853.06(h)"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "117",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-h",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-estate-commission",
+            "locator": "D.C. Code § 47-2853.06(h)",
+            "url": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(h)"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -45,11 +55,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "117"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "117",
-            "locator": "D.C. Code § 47-2853.06"
           }
         ]
       },

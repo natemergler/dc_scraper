@@ -4,8 +4,10 @@
   "kind": "dc.commission",
   "name": "District Waterways Advisory Commission",
   "attributes": {
+    "description": "All meeting agendas, minutes, presentations, and recordings (if available) are archived in the District Waterways Advisory Commission document library .",
     "enablingStatute": "Office of District Waterways Management Establishment Act of 2022",
     "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/laws/24-336",
+    "officialUrl": "https://app.box.com/s/t4vj3j8xi0k53hk82ip4g9buiajanlg9",
     "shortName": "District Waterways Advisory Commission",
     "sourceOpenDcSlug": "district-waterways-advisory-commission",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-waterways-advisory-commission"
@@ -14,14 +16,23 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "district-waterways-advisory-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "district-waterways-advisory-commission",
-      "locator": "D.C. Law 24-336"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-24-336",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "district-waterways-advisory-commission",
+            "locator": "D.C. Law 24-336",
+            "url": "https://code.dccouncil.gov/us/dc/council/laws/24-336"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

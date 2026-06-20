@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6A01",
   "attributes": {
+    "currentHolderName": "Scott Burger",
     "sourceAncId": "6A",
     "sourceFirstName": "SCOTT",
     "sourceLastName": "BURGER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "sourcePageLastModified": "2026-06-16T20:25:18.000Z",
     "sourceRepresentativeName": "SCOTT BURGER",
     "sourceSmdId": "6A01"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6A01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6a"
     }
   ],
   "relations": {

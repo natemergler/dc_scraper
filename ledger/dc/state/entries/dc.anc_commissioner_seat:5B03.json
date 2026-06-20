@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5B03",
   "attributes": {
+    "currentHolderName": "Jingwen Sun",
     "sourceAncId": "5B",
     "sourceFirstName": "JINGWEN",
     "sourceLastName": "SUN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourcePageLastModified": "2026-06-16T20:26:27.000Z",
     "sourceRepresentativeName": "JINGWEN SUN",
     "sourceSmdId": "5B03"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5B03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
     }
   ],
   "relations": {

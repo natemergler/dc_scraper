@@ -4,6 +4,7 @@
   "kind": "dc.board",
   "name": "Board of Barber and Cosmetology",
   "attributes": {
+    "description": "The Board meets on the first Monday of each month at 10:30 a.m. at the DCRA headquarters, located at 1100 4th Street SW, Washington, DC 20024. The Board can be reached by phone: (202) 442-4320 or fax: (202) 698-4329.",
     "enablingStatute": "D.C. Code § 47-2853.06(c)",
     "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)",
     "shortName": "Board of Barber and Cosmetology",
@@ -17,26 +18,36 @@
       "sourceRecordId": "32"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "32",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-barber-and-cosmetology"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-barber-and-cosmetology",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-barber-and-cosmetology",
-      "locator": "D.C. Code § 47-2853.06(c)"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "32",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-c",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-barber-and-cosmetology",
+            "locator": "D.C. Code § 47-2853.06(c)",
+            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -45,11 +56,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "32"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "32",
-            "locator": "D.C. Code § 47-2853.06"
           }
         ]
       }

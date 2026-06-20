@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "Commission on Asian and Pacific Islander Affairs",
   "attributes": {
+    "description": "The DC Commission on Asian and Pacific Islander Affairs convenes meetings to discuss current issues affecting the DC Asian American and Pacific Islander (AAPI) community.",
     "enablingStatute": "D.C. Code § 2-1374",
     "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1374.html",
     "shortName": "Commission on Asian and Pacific Islander Affairs",
@@ -14,12 +15,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-asian-and-pacific-islander-affairs"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-asian-and-pacific-islander-affairs",
-      "locator": "D.C. Code § 2-1374"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1374",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-asian-and-pacific-islander-affairs",
+            "locator": "D.C. Code § 2-1374"
+          }
+        ]
+      }
+    ]
+  }
 }

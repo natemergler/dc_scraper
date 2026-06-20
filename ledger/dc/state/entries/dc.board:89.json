@@ -11,12 +11,21 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "89"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "89",
-      "locator": "D.C. Code § 1-711"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-711",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "89",
+            "locator": "D.C. Code § 1-711"
+          }
+        ]
+      }
+    ]
+  }
 }

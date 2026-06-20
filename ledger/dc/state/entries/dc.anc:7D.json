@@ -5,9 +5,14 @@
   "name": "ANC 7D",
   "attributes": {
     "gisId": "ANCPly_358",
+    "officialUrl": "http://7d0761.wixsite.com/anc7d-1",
     "representedNeighborhoods": "the Eastland Gardens, Hill East, Kenilworth, Kingman Park, Mayfair, and River Terrace neighborhoods",
     "sourceAncId": "7D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourcePageLastModified": "2026-06-16T20:53:21.000Z",
+    "sourceWardNumbers": [
+      "7"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7d"
   },
   "citations": [

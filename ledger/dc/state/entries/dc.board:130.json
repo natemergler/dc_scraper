@@ -17,19 +17,34 @@
       "sourceRecordId": "130"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "130",
-      "locator": "D.C. Code § 34-2202.02"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "water-and-sewer-authority-board-directors-wasa"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "water-and-sewer-authority-board-directors-wasa",
-      "locator": "DC Code § 34-2202.04"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-34-2202-02",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "130",
+            "locator": "D.C. Code § 34-2202.02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-34-2202-04",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "water-and-sewer-authority-board-directors-wasa",
+            "locator": "D.C. Code § 34-2202.04"
+          }
+        ]
+      }
+    ]
+  }
 }

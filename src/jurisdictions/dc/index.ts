@@ -11,20 +11,26 @@ import { dcCourtDivisionKind } from "./kinds/court_division.ts";
 import { dcCourtSystemKind } from "./kinds/court_system.ts";
 import { dcCouncilCommitteeKind } from "./kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "./kinds/councilmember.ts";
+import { dcElectedOfficeKind } from "./kinds/elected_office.ts";
+import { dcLegalAuthorityKind } from "./kinds/legal_authority.ts";
 import { dcOfficeKind } from "./kinds/office.ts";
 import { dcLegalSourceKind } from "./kinds/legal_source.ts";
 import { dcSmdKind } from "./kinds/smd.ts";
+import { dcWardKind } from "./kinds/ward.ts";
 import {
   dcAffiliatedWithRelation,
+  dcAuthorizedByRelation,
   dcChairsRelation,
   dcContainsRelation,
   dcGovernsRelation,
+  dcHoldsRelation,
   dcMemberOfRelation,
   dcPartOfRelation,
   dcReportsToRelation,
   dcRepresentsRelation,
 } from "./kinds/relation.ts";
 import { interpretDcgisAgencies } from "./interpreters/dcgis_agencies.ts";
+import { agencyDirectoryBinding } from "./sources/agency_directory.ts";
 import { dcgisAgenciesBinding } from "./sources/dcgis_agencies.ts";
 import { dcgisCommissionsBinding } from "./sources/dcgis_commissions.ts";
 import { dcgisBoardsBinding } from "./sources/dcgis_boards.ts";
@@ -82,13 +88,18 @@ dcKindRegistry.register(dcCourtKind);
 dcKindRegistry.register(dcCourtDivisionKind);
 dcKindRegistry.register(dcCouncilCommitteeKind);
 dcKindRegistry.register(dcCouncilmemberKind);
+dcKindRegistry.register(dcElectedOfficeKind);
+dcKindRegistry.register(dcLegalAuthorityKind);
 dcKindRegistry.register(dcOfficeKind);
 dcKindRegistry.register(dcLegalSourceKind);
 dcKindRegistry.register(dcSmdKind);
+dcKindRegistry.register(dcWardKind);
+dcKindRegistry.registerRelation(dcAuthorizedByRelation);
 dcKindRegistry.registerRelation(dcChairsRelation);
 dcKindRegistry.registerRelation(dcContainsRelation);
 dcKindRegistry.registerRelation(dcAffiliatedWithRelation);
 dcKindRegistry.registerRelation(dcGovernsRelation);
+dcKindRegistry.registerRelation(dcHoldsRelation);
 dcKindRegistry.registerRelation(dcMemberOfRelation);
 dcKindRegistry.registerRelation(dcPartOfRelation);
 dcKindRegistry.registerRelation(dcReportsToRelation);
@@ -101,6 +112,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
   sources: [
     dcgisAncsBinding,
     dcgisAgenciesBinding,
+    agencyDirectoryBinding,
     dcgisBoardsBinding,
     dcgisCommissionsBinding,
     dcgisCouncilsBinding,
@@ -116,6 +128,18 @@ export const dcRuntime: DcJurisdictionRuntime = {
     oancProfilesBinding,
   ],
   sourceCoverage: [
+    {
+      source: "dc.agency_directory",
+      sourceType: "dc.agency_directory",
+      family: "executive_agencies",
+      scope: "Official DC agency list page at dc.gov.",
+      contributes:
+        "Source-backed official URLs for canonical dc.agency entries when directory rows resolve cleanly to the existing agency spine.",
+      excludes:
+        "Contacts, staff directories, program-only rows, logos/images, and unmatched rows that do not safely resolve to canonical agencies.",
+      notes:
+        "The page includes some clusters, campaigns, and program surfaces; this source enriches existing agencies and does not auto-create duplicate agency entries for unmatched rows.",
+    },
     {
       source: "bega.structure",
       sourceType: "bega.structure",
@@ -140,7 +164,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "dccouncil.members",
       family: "council_structure",
       scope: "Official Councilmember roster/profile links.",
-      contributes: "Councilmember entries used by committee membership and chair relations.",
+      contributes:
+        "Councilmember entries, elected office nodes, and ward representation relations from official roster labels.",
       excludes:
         "Personal contact details, biographies beyond names/official profile URLs, newsletters, and campaign material.",
     },
@@ -151,11 +176,11 @@ export const dcRuntime: DcJurisdictionRuntime = {
       scope:
         "DC Courts home, Court of Appeals, Superior Court, and direct Superior Court division links.",
       contributes:
-        "Court system, court, and court division entries with part_of relations when collected.",
+        "Court system, court, and court division entries with part_of relations, official URLs, and bounded source-backed descriptions.",
       excludes:
         "Case search, filings, calendars, judges/staff profiles, contacts, and legal advice.",
       notes:
-        "Live collection from this environment has returned HTTP 403; fixture and CLI coverage exist, but current committed state has no live courts records.",
+        "Live collection from this environment currently returns HTTP 403, so the source falls back to a tracked official-structure seed rooted in dccourts.gov URLs until live collection is available again.",
     },
     {
       source: "dcgis.agencies",
@@ -163,7 +188,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "executive_agencies",
       scope: "DCGIS agency table.",
       contributes:
-        "Core agency entries and agency name lookup context for source-backed relation endpoint resolution.",
+        "Core agency entries, agency name lookup context for source-backed relation endpoint resolution, and authorized_by relations when explicit legal locators are present.",
       excludes: "Contacts, service directories, and non-agency program pages.",
     },
     {
@@ -179,7 +204,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Authority'.",
-      contributes: "Authority entries and governance relations when live rows exist.",
+      contributes:
+        "Authority entries, governing agency relations, and legal authority nodes/authorized_by relations when explicit locators are present.",
       excludes: "Boards, commissions, councils, contacts, and membership rosters.",
       notes:
         "Current live layer has no Authority rows; this is collected-empty source coverage, not a failed source.",
@@ -189,7 +215,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Board'.",
-      contributes: "Board entries, governing agency relations, and legal/provenance citations.",
+      contributes:
+        "Board entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
     },
     {
@@ -198,7 +225,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Commission'.",
       contributes:
-        "Commission entries, governing agency relations, and legal/provenance citations.",
+        "Commission entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes: "Contacts, membership rosters, meeting details, and source-shadow merge decisions.",
     },
     {
@@ -206,7 +233,8 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceType: "arcgis.table",
       family: "public_bodies",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Council'.",
-      contributes: "Council entries, governing agency relations, and legal/provenance citations.",
+      contributes:
+        "Council entries, governing agency relations, and legal authority nodes/authorized_by relations from explicit locators.",
       excludes:
         "Council committees, Councilmember offices, contacts, membership rosters, and source-shadow merge decisions.",
     },
@@ -246,7 +274,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "advisory_neighborhood_commissions",
       scope: "Official OANC ANC index and profile pages.",
       contributes:
-        "ANC profile URLs and represented-neighborhood summaries where conservatively extractable.",
+        "ANC profile URLs, represented-neighborhood summaries, and ward-to-ANC containment relations where conservatively extractable.",
       excludes:
         "Emails, phones, physical addresses, meeting locations, financial document details, commissioner contact fields, and broad person records.",
     },
@@ -256,7 +284,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "public_bodies",
       scope: "Open DC public body index/detail pages.",
       contributes:
-        "Public body entries, legal/provenance citations, duplicate/source-shadow signals, and governing/administering relation candidates.",
+        "Public body entries, legal authority nodes/authorized_by relations from explicit enabling locators, duplicate/source-shadow signals, and governing/administering relation candidates.",
       excludes:
         "Contacts, member lists, meeting pages, local file links, event-title authority noise, and automatic duplicate merges.",
     },

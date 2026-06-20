@@ -5,7 +5,7 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { collectRecordCitations } from "./citations.ts";
+import { buildRecordLegalAuthorityArtifacts } from "./legal_authorities.ts";
 import { dcAgencyCanonicalId } from "./context.ts";
 
 export interface DcgisAgenciesInterpreterResult {
@@ -178,7 +178,13 @@ export function interpretDcgisAgencies(
   for (const agency of parsedAgencies) {
     const { record, sourceRecord, agencyId, agencyName, parentAgencyId, provisionalId } = agency;
     const shortName = parseShortName(sourceRecord, agencyName);
-    const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
+    const legalAuthorityArtifacts = buildRecordLegalAuthorityArtifacts({
+      source: sourceKind,
+      sourceRecordId: record.key,
+      subjectProvisionalId: provisionalId,
+      payload: sourceRecord,
+    });
+    const citations = legalAuthorityArtifacts.entryCitations;
 
     entryFragments.push({
       fragmentType: "entry",
@@ -194,6 +200,8 @@ export function interpretDcgisAgencies(
       },
       citations,
     });
+    entryFragments.push(...legalAuthorityArtifacts.entryFragments);
+    relationFragments.push(...legalAuthorityArtifacts.relationFragments);
 
     if (parentAgencyId && parentAgencyId !== agencyId) {
       const parentProvisionalId = idBySourceAgencyId.get(parentAgencyId);
@@ -214,7 +222,7 @@ export function interpretDcgisAgencies(
         from: provisionalId,
         relationKind,
         to: parentProvisionalId,
-        citations,
+        citations: [cite(sourceKind, record.key)],
       });
     }
   }

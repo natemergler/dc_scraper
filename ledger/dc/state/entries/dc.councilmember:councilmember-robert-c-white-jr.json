@@ -2,8 +2,9 @@
   "id": "dc.councilmember:councilmember-robert-c-white-jr",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "At-Large Councilmember Robert C. White, Jr.",
+  "name": "Robert C. White, Jr.",
   "attributes": {
+    "officeLabel": "At-Large Councilmember",
     "sourceProfileSlug": "councilmember-robert-c-white-jr",
     "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-robert-c-white-jr/"
   },
@@ -42,6 +43,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-robert-c-white-jr"
           }
         ]
       }

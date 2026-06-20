@@ -51,7 +51,7 @@ Deno.test("dcgis.agencies records become agency fragments and relation", () => {
   assertEquals(relationFragment.citations, [cite(dcgisAgenciesSource.id, "row-1")]);
 });
 
-Deno.test("dcgis.agencies records include parsed legal citation locators", () => {
+Deno.test("dcgis.agencies records create legal authority relations from parsed locators", () => {
   const output = interpretDcgisAgencies([{
     source: dcgisAgenciesSource.id,
     snapshotKey: "page-0",
@@ -64,14 +64,20 @@ Deno.test("dcgis.agencies records include parsed legal citation locators", () =>
     },
   }]);
 
-  assertEquals(output.entryFragments.length, 1);
-  const [entryFragment] = output.entryFragments;
+  assertEquals(output.entryFragments.length, 2);
+  assertEquals(output.relationFragments.length, 1);
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.agency")!;
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
   assertEquals(entryFragment.citations, [
     cite(dcgisAgenciesSource.id, "row-3"),
-    cite(dcgisAgenciesSource.id, "row-3", {
-      locator: "D.C. Code § 1-102.5",
-    }),
   ]);
+  assertEquals(authorityFragment?.provisionalId, "dc.legal_authority:d-c-code-1-102-5");
+  assertEquals(authorityFragment?.attributes.authorityType, "dc_code");
+  assertEquals(authorityFragment?.attributes.locator, "D.C. Code § 1-102.5");
+  assertEquals(output.relationFragments[0].relationKind, "dc.relation:authorized_by");
+  assertEquals(output.relationFragments[0].to, "dc.legal_authority:d-c-code-1-102-5");
 });
 
 Deno.test("dcgis.agencies reports canonical ID collisions", () => {

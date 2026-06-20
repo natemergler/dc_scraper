@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5F04",
   "attributes": {
+    "currentHolderName": "Mark Galvan",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "5F",
     "sourceFirstName": "MARK",
     "sourceLastName": "GALVAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5f",
+    "sourcePageLastModified": "2026-06-16T21:58:00.000Z",
     "sourceRepresentativeName": "MARK GALVAN",
     "sourceSmdId": "5F04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5F04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5f"
     }
   ],
   "relations": {

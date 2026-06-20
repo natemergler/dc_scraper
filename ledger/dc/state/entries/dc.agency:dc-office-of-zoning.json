@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "DC Office of Zoning",
   "attributes": {
+    "officialUrl": "https://dcoz.dc.gov",
     "shortName": "Office of Zoning",
-    "sourceAgencyId": "1019"
+    "sourceAgencyId": "1019",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-zoning:dcoz-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "15"

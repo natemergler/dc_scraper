@@ -4,14 +4,52 @@
   "kind": "dc.office",
   "name": "Office of the Deputy Mayor for Health and Human Services",
   "attributes": {
+    "description": "Oversees the District's health and human support service agencies in order to coordinate a comprehensive system of benefits, goods, and services across multiple agencies to ensure that children, youth, and adults, with and without disabilities, can lead healthy, meaningful, and productive lives.",
+    "officialUrl": "http://dmhhs.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services:dmhhs-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "34"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Deputy Mayor for Health and Human Services. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-the-deputy-mayor-for-health-and-human-services"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-the-deputy-mayor-for-health-and-human-services-9v5p5y-dc-office-office-of-the-deputy-mayor-for-nzxg7j",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of the Deputy Mayor for Health and Human Services",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-the-deputy-mayor-for-health-and-human-services",
     "sourceOfficeKey": "office-of-the-deputy-mayor-for-health-and-human-services",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",

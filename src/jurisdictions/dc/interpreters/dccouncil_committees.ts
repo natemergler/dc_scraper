@@ -8,6 +8,7 @@ import {
 import { fileSafeLedgerId } from "./context.ts";
 import { dcCouncilCommitteeKind } from "../kinds/council_committee.ts";
 import { dcCouncilmemberKind } from "../kinds/councilmember.ts";
+import { parseCouncilmemberTitle } from "./dccouncil_member_titles.ts";
 import { type DcInterpreterContext } from "./context.ts";
 
 export interface DCCouncilCommitteesInterpreterResult {
@@ -183,6 +184,17 @@ function makeCouncilmemberEntry(
   profileUrl: string,
   sourceRecordId: string,
 ): EntryFragment {
+  const parsed = parseCouncilmemberTitle(name);
+  const attributes: Record<string, unknown> = {
+    sourceProfileSlug: extractProfileSlug(profileUrl),
+    sourceProfileUrl: profileUrl,
+  };
+  if (parsed.roleLabel) {
+    attributes.officeLabel = parsed.roleLabel;
+  }
+  if (parsed.wardNumber) {
+    attributes.wardNumber = parsed.wardNumber;
+  }
   return {
     fragmentType: "entry",
     source: sourceKind,
@@ -190,11 +202,8 @@ function makeCouncilmemberEntry(
     provisionalId,
     family: dcCouncilmemberKind.family,
     kind: dcCouncilmemberKind.kind,
-    name,
-    attributes: {
-      sourceProfileSlug: extractProfileSlug(profileUrl),
-      sourceProfileUrl: profileUrl,
-    },
+    name: parsed.displayName,
+    attributes,
     citations: [cite(sourceKind, sourceRecordId)],
   };
 }

@@ -17,38 +17,45 @@
       "sourceRecordId": "29"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "29",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-accountancy-0"
     },
     {
       "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-accountancy-0",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-accountancy-0",
-      "locator": "D.C. Official Code § 47-2853.06(b)(1)"
-    },
-    {
-      "source": "open_dc.public_bodies",
       "sourceRecordId": "board-accountancy"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-accountancy",
-      "locator": "D.C. Code § 47-2853.06"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-accountancy",
-      "locator": "D.C. Official Code § 47-2853.06(b)(1)"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "29",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-b-1",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-accountancy-0",
+            "locator": "D.C. Code § 47-2853.06(b)(1)",
+            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-accountancy",
+            "locator": "D.C. Code § 47-2853.06(b)(1)",
+            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(b)(1)"
+          }
+        ]
+      }
+    ]
+  }
 }

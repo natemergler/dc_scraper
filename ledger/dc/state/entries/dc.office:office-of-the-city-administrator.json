@@ -4,14 +4,52 @@
   "kind": "dc.office",
   "name": "Office of the City Administrator",
   "attributes": {
+    "description": "Responsible for the day-to-day management of the District government, setting operational goals, and implementing the legislative actions and policy decisions of the Mayor and DC Council. The City Administrator reports directly to the Mayor and has direct oversight over all executive-reporting agencies. The City Administrator prepares the District's annual operating budget and provides direction to all agencies to ensure they are meeting the needs of District residents.",
+    "officialUrl": "https://oca.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "office-of-the-city-administrator:govops-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "57"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-city-administrator",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the City Administrator. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-the-city-administrator"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-the-city-administrator-xmufeh-dc-office-office-of-the-city-administrat-gn0qow",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of the City Administrator",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-the-city-administrator",
     "sourceOfficeKey": "office-of-the-city-administrator",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-city-administrator",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-city-administrator",

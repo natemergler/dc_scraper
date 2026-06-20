@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Homeland Security and Emergency Management Agency",
   "attributes": {
+    "officialUrl": "https://hsema.dc.gov",
     "shortName": "Homeland Security and Emergency Management Agency",
-    "sourceAgencyId": "1055"
+    "sourceAgencyId": "1055",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "homeland-security-and-emergency-management-agency:hsema-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "50"

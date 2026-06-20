@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-47-825-01a",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 47-825.01a",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-825.01a",
+    "locator": "D.C. Code § 47-825.01a",
+    "shortName": "D.C. Code § 47-825.01a"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "real-property-tax-appeals-commission-rptac",
+      "locator": "D.C. Code § 47-825.01a"
+    }
+  ],
+  "relations": {}
+}

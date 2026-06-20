@@ -17,21 +17,29 @@
       "sourceRecordId": "66"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "66",
-      "locator": "D.C. Code § 3-1441"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-african-american-affairs"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-african-american-affairs",
-      "locator": "D.C. Code § 3-1441"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1441",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "66",
+            "locator": "D.C. Code § 3-1441"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-african-american-affairs",
+            "locator": "D.C. Code § 3-1441"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "66"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "66",
-            "locator": "D.C. Code § 3-1441"
           },
           {
             "source": "open_dc.public_bodies",

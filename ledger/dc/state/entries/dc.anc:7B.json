@@ -5,9 +5,14 @@
   "name": "ANC 7B",
   "attributes": {
     "gisId": "ANCPly_356",
+    "officialUrl": "http://anc7b.com/",
     "representedNeighborhoods": "the Dupont Park, Fairfax Village, Fort Davis Park, Greenway, Hillcrest, Naylor Gardens, Penn Branch, and Randle Highlands neighborhoods",
     "sourceAncId": "7B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7b",
+    "sourcePageLastModified": "2026-06-16T20:27:46.000Z",
+    "sourceWardNumbers": [
+      "7"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7b"
   },
   "citations": [

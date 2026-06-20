@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of the Attorney General",
   "attributes": {
+    "officialUrl": "https://oag.dc.gov",
     "shortName": "Office of the Attorney General",
-    "sourceAgencyId": "1083"
+    "sourceAgencyId": "1083",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-attorney-general:oag-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "55"

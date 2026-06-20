@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1B01",
   "attributes": {
+    "currentHolderName": "Matt Fay",
+    "officerRole": "Secretary",
     "sourceAncId": "1B",
     "sourceFirstName": "MATT",
     "sourceLastName": "FAY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1b",
+    "sourcePageLastModified": "2026-06-16T21:53:40.000Z",
     "sourceRepresentativeName": "MATT FAY",
     "sourceSmdId": "1B01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1b"
     }
   ],
   "relations": {

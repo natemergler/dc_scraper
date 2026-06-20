@@ -4,8 +4,10 @@
   "kind": "dc.board",
   "name": "Advisory Board on Veterans Affairs for the District of Columbia",
   "attributes": {
+    "description": "The Advisory Board serves as an advisory body to the Mayor, the Mayor's Office of Boards and Commissions, the Office of Veterans Affairs (OVA), the Department of Employment Services, the Department of Health, the Department of Human Services, and other District government departments, agencies, and offices on all matters pertaining to veterans in the District of Columbia.",
     "enablingStatute": "Mayor's Order 2001-92 Amended 2002-142",
     "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/49-1004.html",
+    "officialUrl": "http://ova.dc.gov/",
     "shortName": "Advisory Board on Veterans Affairs for the District of Columbia",
     "sourceBoardId": "132",
     "sourceOpenDcSlug": "advisory-board-veterans-affairs-district-columbia",
@@ -17,26 +19,41 @@
       "sourceRecordId": "132"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "132",
-      "locator": "Mayor's Order 2001-92"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "advisory-board-veterans-affairs-district-columbia"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
-      "locator": "D.C. Code § 49-1004"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
-      "locator": "Mayor's Order 2001-92"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-49-1004",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+            "locator": "D.C. Code § 49-1004",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/49-1004.html"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2001-92",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "132",
+            "locator": "Mayor's Order 2001-92"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+            "locator": "Mayor's Order 2001-92"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -45,11 +62,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "132"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "132",
-            "locator": "Mayor's Order 2001-92"
           },
           {
             "source": "open_dc.public_bodies",

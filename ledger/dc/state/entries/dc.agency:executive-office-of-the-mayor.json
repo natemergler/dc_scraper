@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Executive Office of the Mayor",
   "attributes": {
+    "officialUrl": "https://mayor.dc.gov",
     "shortName": "Executive Office of the Mayor",
-    "sourceAgencyId": "1052"
+    "sourceAgencyId": "1052",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "executive-office-of-the-mayor:mayor-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "45"

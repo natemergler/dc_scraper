@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3E03",
   "attributes": {
+    "currentHolderName": "Jonathan Bender",
+    "officerRole": "Chairperson",
     "sourceAncId": "3E",
     "sourceFirstName": "JONATHAN",
     "sourceLastName": "BENDER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3e",
+    "sourcePageLastModified": "2026-06-16T21:57:58.000Z",
     "sourceRepresentativeName": "JONATHAN BENDER",
     "sourceSmdId": "3E03"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3E03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3e"
     }
   ],
   "relations": {

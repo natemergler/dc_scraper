@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-law-22-155",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Law 22-155",
+  "attributes": {
+    "authorityType": "dc_law",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/laws/22-155",
+    "locator": "D.C. Law 22-155",
+    "shortName": "D.C. Law 22-155"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "93",
+      "locator": "D.C. Law 22-155"
+    }
+  ],
+  "relations": {}
+}

@@ -4,6 +4,7 @@ import { compileFragments } from "../../../src/compiler/compile.ts";
 import { cite, type EntryFragment } from "../../../src/core/types.ts";
 import { dcRuntime } from "../../../src/jurisdictions/dc/index.ts";
 import { interpretOpenDCPublicBodies } from "../../../src/jurisdictions/dc/interpreters/open_dc_public_bodies.ts";
+import { agencyDirectorySourceId } from "../../../src/jurisdictions/dc/sources/agency_directory.ts";
 import { openDCPublicBodiesSourceId } from "../../../src/jurisdictions/dc/sources/open_dc_public_bodies.ts";
 
 Deno.test("DC promotion policy promotes valid DCGIS agencies", () => {
@@ -24,6 +25,34 @@ Deno.test("DC promotion policy promotes valid DCGIS agencies", () => {
 
   assertEquals(result.ok, true);
   assertEquals(result.state?.entries.has("dc.agency:a-1"), true);
+});
+
+Deno.test("DC promotion policy promotes agency-directory enrichment fragments", () => {
+  const result = compileFragments({
+    jurisdiction: dcRuntime.jurisdiction,
+    generatedAt: "2026-06-16T00:00:00.000Z",
+    kindRegistry: dcRuntime.kinds,
+    promotionPolicy: dcRuntime.promotionPolicy,
+    fragments: [entryFragment({
+      source: agencyDirectorySourceId,
+      sourceRecordId: "office-of-the-secretary-os:os-dc-gov",
+      provisionalId: "dc.agency:office-of-the-secretary",
+      kind: "dc.agency",
+      name: "Office of the Secretary",
+      attributes: {
+        shortName: "Office of the Secretary",
+        officialUrl: "https://os.dc.gov",
+        sourcePageUrl: "https://dc.gov/page/agency-list",
+      },
+    })],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(result.state?.entries.has("dc.agency:office-of-the-secretary"), true);
+  assertEquals(
+    result.state?.entries.get("dc.agency:office-of-the-secretary")?.attributes.officialUrl,
+    "https://os.dc.gov",
+  );
 });
 
 Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
@@ -67,6 +96,19 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
         attributes: { shortName: "CO1", sourceCouncilId: "co-1" },
       }),
       entryFragment({
+        source: "dcgis.boards",
+        sourceRecordId: "board-legal-1",
+        provisionalId: "dc.legal_authority:d-c-code-1-123",
+        family: "authority",
+        kind: "dc.legal_authority",
+        name: "D.C. Code § 1-123",
+        attributes: {
+          authorityType: "dc_code",
+          locator: "D.C. Code § 1-123",
+          canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
+        },
+      }),
+      entryFragment({
         source: "mayor.executive_structure",
         sourceRecordId: "office-1",
         provisionalId: "dc.office:office-one",
@@ -85,6 +127,44 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
           sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
         },
       }),
+      entryFragment({
+        source: "oanc.profiles",
+        sourceRecordId: "4E",
+        provisionalId: "dc.ward:4",
+        family: "area",
+        kind: "dc.ward",
+        name: "Ward 4",
+        attributes: {
+          wardNumber: "4",
+        },
+      }),
+      entryFragment({
+        source: "oanc.profiles",
+        sourceRecordId: "4E",
+        provisionalId: "dc.anc_commissioner_seat:4E01",
+        family: "position",
+        kind: "dc.anc_commissioner_seat",
+        name: "Commissioner Seat for SMD 4E01",
+        attributes: {
+          sourceSmdId: "4E01",
+          currentHolderName: "Aretha Jones",
+          officerRole: "Treasurer",
+          sourceOancProfileUrl: "https://oanc.dc.gov/anc-profile/anc-4e",
+        },
+      }),
+      entryFragment({
+        source: "dccouncil.members",
+        sourceRecordId: "ward-4-councilmember-janeese-lewis-george",
+        provisionalId: "dc.elected_office:ward-4-councilmember",
+        family: "position",
+        kind: "dc.elected_office",
+        name: "Ward 4 Councilmember",
+        attributes: {
+          officeType: "ward_councilmember",
+          sourceLabel: "Ward 4 Councilmember",
+          wardNumber: "4",
+        },
+      }),
     ],
   });
 
@@ -93,8 +173,12 @@ Deno.test("DC promotion policy promotes valid DCGIS public-body kinds", () => {
   assertEquals(result.state?.entries.has("dc.commission:c-1"), true);
   assertEquals(result.state?.entries.has("dc.authority:au-1"), true);
   assertEquals(result.state?.entries.has("dc.council:co-1"), true);
+  assertEquals(result.state?.entries.has("dc.legal_authority:d-c-code-1-123"), true);
   assertEquals(result.state?.entries.has("dc.office:office-one"), true);
   assertEquals(result.state?.entries.has("dc.anc:4E"), true);
+  assertEquals(result.state?.entries.has("dc.ward:4"), true);
+  assertEquals(result.state?.entries.has("dc.anc_commissioner_seat:4E01"), true);
+  assertEquals(result.state?.entries.has("dc.elected_office:ward-4-councilmember"), true);
 });
 
 Deno.test("DC promotion policy keeps bad Open DC examples out of canonical state", () => {

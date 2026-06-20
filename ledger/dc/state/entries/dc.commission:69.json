@@ -19,19 +19,23 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-climate-change-and-resiliency"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-climate-change-and-resiliency",
-      "locator": "D.C. Code § 8-181.02"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-climate-change-and-resiliency",
-      "locator": "D.C. Official Code § 8-181.02(a)"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-8-181-02-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-climate-change-and-resiliency",
+            "locator": "D.C. Code § 8-181.02(a)",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02#(a)"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

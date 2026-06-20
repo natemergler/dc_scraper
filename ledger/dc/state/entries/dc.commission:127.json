@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "Washington DC Regional Planning Commission on Health and HIV",
   "attributes": {
+    "officialUrl": "http://www.dchealth.dc.gov/cohah",
     "shortName": "Washington DC Regional Planning Commission on Health and HIV",
     "sourceCommissionId": "127",
     "sourceOpenDcSlug": "washington-dc-regional-planning-commission-health-and-hiv",

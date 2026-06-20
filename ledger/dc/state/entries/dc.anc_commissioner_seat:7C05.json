@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7C05",
   "attributes": {
+    "currentHolderName": "Mary Gaffney",
     "sourceAncId": "7C",
     "sourceFirstName": "MARY",
     "sourceLastName": "GAFFNEY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7c",
+    "sourcePageLastModified": "2026-06-16T20:53:13.000Z",
     "sourceRepresentativeName": "MARY L GAFFNEY",
     "sourceSmdId": "7C05"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7C05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7c"
     }
   ],
   "relations": {

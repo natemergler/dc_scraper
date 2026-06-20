@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1E01",
   "attributes": {
+    "currentHolderName": "Brad Howard",
+    "officerRole": "Secretary",
     "sourceAncId": "1E",
     "sourceFirstName": "BRAD",
     "sourceLastName": "HOWARD",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourcePageLastModified": "2026-06-16T20:55:12.000Z",
     "sourceRepresentativeName": "BRAD HOWARD",
     "sourceSmdId": "1E01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1E01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
     }
   ],
   "relations": {

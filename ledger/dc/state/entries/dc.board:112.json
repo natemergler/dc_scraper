@@ -17,21 +17,29 @@
       "sourceRecordId": "112"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "112",
-      "locator": "D.C. Code § 5-1104"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "police-complaints-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "police-complaints-board",
-      "locator": "D.C. Code § 5-1104"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-1104",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "112",
+            "locator": "D.C. Code § 5-1104"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-complaints-board",
+            "locator": "D.C. Code § 5-1104"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

@@ -13,14 +13,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "innovation-and-technology-inclusion-council"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "innovation-and-technology-inclusion-council",
-      "locator": "Mayor's Order 2014-139"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2014-139",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "innovation-and-technology-inclusion-council",
+            "locator": "Mayor's Order 2014-139"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

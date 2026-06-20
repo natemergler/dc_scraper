@@ -17,21 +17,35 @@
       "sourceRecordId": "65"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "65",
-      "locator": "D.C. Code § 2-1393"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-african-affairs"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-african-affairs",
-      "locator": "D.C. Code § 2-1395"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1393",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "65",
+            "locator": "D.C. Code § 2-1393"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1395",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-african-affairs",
+            "locator": "D.C. Code § 2-1395"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +54,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "65"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "65",
-            "locator": "D.C. Code § 2-1393"
           }
         ]
       }

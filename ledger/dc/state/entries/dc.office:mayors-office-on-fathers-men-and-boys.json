@@ -4,6 +4,28 @@
   "kind": "dc.office",
   "name": "Mayor's Office on Fathers, Men, and Boys",
   "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "121"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-fathers-men-and-boys",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office on Fathers, Men, and Boys. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-on-fathers-men-and-boys"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-on-fathers-men-and-boys-ceg7mx-dc-office-mayors-office-on-fathers-men-a-5lelfz",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Mayor's Office on Fathers, Men, and Boys",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "mayors-office-on-fathers-men-and-boys",

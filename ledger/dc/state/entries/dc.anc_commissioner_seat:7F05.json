@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7F05",
   "attributes": {
+    "currentHolderName": "Brittany N. Hughes",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "7F",
     "sourceFirstName": "BRITTANY",
     "sourceLastName": "HUGHES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7f",
+    "sourcePageLastModified": "2026-06-16T20:11:45.000Z",
     "sourceRepresentativeName": "BRITTANY N. HUGHES",
     "sourceSmdId": "7F05"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7F05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7f"
     }
   ],
   "relations": {

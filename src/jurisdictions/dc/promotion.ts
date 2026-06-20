@@ -1,5 +1,6 @@
 import type { EntryFragment } from "../../core/types.ts";
 import type { EntryPromotionDecision, PromotionPolicy } from "../../compiler/promotion.ts";
+import { agencyDirectorySourceId } from "./sources/agency_directory.ts";
 import { dcgisAgenciesSourceId } from "./sources/dcgis_agencies.ts";
 import { dcgisAncsSourceId } from "./sources/dcgis_ancs.ts";
 import { dcgisAuthoritiesSourceId } from "./sources/dcgis_authorities.ts";
@@ -17,17 +18,18 @@ import { dccourtsStructureSourceId } from "./sources/dccourts_structure.ts";
 import { legalEntrypointsSourceId } from "./sources/legal_entrypoints.ts";
 
 const promotedKindsBySource = new Map<string, Set<string>>([
-  [dcgisAgenciesSourceId, new Set(["dc.agency"])],
+  [agencyDirectorySourceId, new Set(["dc.agency"])],
+  [dcgisAgenciesSourceId, new Set(["dc.agency", "dc.legal_authority"])],
   [dcgisAncsSourceId, new Set(["dc.anc"])],
-  [dcgisAuthoritiesSourceId, new Set(["dc.authority"])],
-  [dcgisBoardsSourceId, new Set(["dc.board"])],
-  [dcgisCommissionsSourceId, new Set(["dc.commission"])],
-  [dcgisCouncilsSourceId, new Set(["dc.council"])],
+  [dcgisAuthoritiesSourceId, new Set(["dc.authority", "dc.legal_authority"])],
+  [dcgisBoardsSourceId, new Set(["dc.board", "dc.legal_authority"])],
+  [dcgisCommissionsSourceId, new Set(["dc.commission", "dc.legal_authority"])],
+  [dcgisCouncilsSourceId, new Set(["dc.council", "dc.legal_authority"])],
   [dcgisSmdsSourceId, new Set(["dc.smd", "dc.anc_commissioner_seat"])],
   [dccouncilCommitteesSourceId, new Set(["dc.committee", "dc.councilmember"])],
-  [dccouncilMembersSourceId, new Set(["dc.councilmember"])],
+  [dccouncilMembersSourceId, new Set(["dc.councilmember", "dc.elected_office", "dc.ward"])],
   [mayorExecutiveStructureSourceId, new Set(["dc.office"])],
-  [oancProfilesSourceId, new Set(["dc.anc"])],
+  [oancProfilesSourceId, new Set(["dc.anc", "dc.ward", "dc.anc_commissioner_seat"])],
   [begaStructureSourceId, new Set(["dc.agency", "dc.office"])],
   [dccourtsStructureSourceId, new Set(["dc.court_system", "dc.court", "dc.court_division"])],
   [legalEntrypointsSourceId, new Set(["dc.legal_source"])],
@@ -38,6 +40,7 @@ const openDcPromotableSpecificKinds = new Set([
   "dc.commission",
   "dc.authority",
   "dc.council",
+  "dc.legal_authority",
 ]);
 
 export const dcPromotionPolicy: PromotionPolicy = {
@@ -61,6 +64,9 @@ export const dcPromotionPolicy: PromotionPolicy = {
 
 function decideDcEntryPromotion(fragment: EntryFragment): EntryPromotionDecision {
   if (fragment.source === openDCPublicBodiesSourceId) {
+    if (fragment.kind === "dc.legal_authority") {
+      return { action: "promote" };
+    }
     return decideOpenDcPublicBodyPromotion(fragment);
   }
 

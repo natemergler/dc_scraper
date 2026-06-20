@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8C07",
   "attributes": {
+    "currentHolderName": "Salim Adofo",
+    "officerRole": "Chairperson",
     "sourceAncId": "8C",
     "sourceFirstName": "SALIM",
     "sourceLastName": "ADOFO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourcePageLastModified": "2026-06-16T21:16:06.000Z",
     "sourceRepresentativeName": "SALIM ADOFO",
     "sourceSmdId": "8C07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8C07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
     }
   ],
   "relations": {

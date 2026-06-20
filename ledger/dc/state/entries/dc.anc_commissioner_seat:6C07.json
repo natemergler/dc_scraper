@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6C07",
   "attributes": {
+    "currentHolderName": "Tony T Goodman",
     "sourceAncId": "6C",
     "sourceFirstName": "TONY",
     "sourceLastName": "GOODMAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourcePageLastModified": "2026-06-16T21:58:01.000Z",
     "sourceRepresentativeName": "TONY T. GOODMAN",
     "sourceSmdId": "6C07"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6C07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
     }
   ],
   "relations": {

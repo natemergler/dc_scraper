@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3E06",
   "attributes": {
+    "currentHolderName": "Alexandra Gianino",
     "sourceAncId": "3E",
     "sourceFirstName": "ALEXANDRA",
     "sourceLastName": "GIANINNO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3e",
+    "sourcePageLastModified": "2026-06-16T21:57:58.000Z",
     "sourceRepresentativeName": "ALEXANDRA GIANINNO",
     "sourceSmdId": "3E06"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3E06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3e"
     }
   ],
   "relations": {

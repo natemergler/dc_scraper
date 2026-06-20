@@ -17,21 +17,29 @@
       "sourceRecordId": "35"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "35",
-      "locator": "D.C. Code § 3-1202.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-dentistry"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-dentistry",
-      "locator": "DC Code § 3-1202.01"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-01",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "35",
+            "locator": "D.C. Code § 3-1202.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-dentistry",
+            "locator": "D.C. Code § 3-1202.01"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "35"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "35",
-            "locator": "D.C. Code § 3-1202.01"
           }
         ]
       }

@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2B04",
   "attributes": {
+    "currentHolderName": "Madison Crum",
     "sourceAncId": "2B",
     "sourceFirstName": "MADISON",
     "sourceLastName": "CRUM",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourcePageLastModified": "2026-06-16T20:06:56.000Z",
     "sourceRepresentativeName": "MADISON CRUM",
     "sourceSmdId": "2B04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2B04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
     }
   ],
   "relations": {

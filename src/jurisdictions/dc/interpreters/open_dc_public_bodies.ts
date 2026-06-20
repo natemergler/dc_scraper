@@ -5,12 +5,16 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { parseLegalCitationLocators, parseLegalCitationLocatorsFromUrl } from "./citations.ts";
+import { parseLegalCitationLocators } from "./citations.ts";
 import {
   type DcInterpreterContext,
   normalizeAgencyLookupKey,
   publicBodyLookupKey,
 } from "./context.ts";
+import {
+  buildLegalAuthorityArtifacts,
+  buildOpenDcLegalAuthorityLocatorInputs,
+} from "./legal_authorities.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
 import { dcCouncilKind } from "../kinds/council.ts";
@@ -27,6 +31,8 @@ export interface OpenDCPublicBodyPayload {
   name?: unknown;
   slug?: unknown;
   detailUrl?: unknown;
+  description?: unknown;
+  officialUrl?: unknown;
   enablingStatute?: unknown;
   enablingStatuteUrl?: unknown;
   governingAgency?: unknown;
@@ -37,6 +43,7 @@ export interface OpenDCPublicBodyPayload {
 
 const sourceKind = "open_dc.public_bodies" as const;
 const governsRelationKind = "dc.relation:governs" as const;
+const standardKinds = new Set(["board", "commission", "authority", "council"]);
 
 const nonRelationshipAgencyLabels = new Set<string>([
   "n/a",
@@ -226,6 +233,8 @@ export function interpretOpenDCPublicBodies(
     name: string;
     slug: string;
     detailUrl: string;
+    description?: string;
+    officialUrl?: string;
     enablingStatute?: string;
     enablingStatuteUrl?: string;
     governingAgency?: string;
@@ -263,6 +272,8 @@ export function interpretOpenDCPublicBodies(
     const name = asString(sourceRecord.name);
     const slug = asString(sourceRecord.slug);
     const detailUrl = asString(sourceRecord.detailUrl);
+    const description = asString(sourceRecord.description);
+    const officialUrl = asString(sourceRecord.officialUrl);
     const enablingStatute = asString(sourceRecord.enablingStatute);
     const enablingStatuteUrl = asString(sourceRecord.enablingStatuteUrl);
     const governingAgency = asString(sourceRecord.governingAgency);
@@ -299,6 +310,8 @@ export function interpretOpenDCPublicBodies(
       name,
       slug,
       detailUrl,
+      description: description ?? undefined,
+      officialUrl: officialUrl ?? undefined,
       enablingStatute: enablingStatute ?? undefined,
       enablingStatuteUrl: enablingStatuteUrl ?? undefined,
       governingAgency: governingAgency ?? undefined,
@@ -319,7 +332,6 @@ export function interpretOpenDCPublicBodies(
   }
 
   for (const parsed of parsedRecords) {
-    const standardKinds = new Set(["board", "commission", "authority", "council"]);
     if (!standardKinds.has(parsed.detected)) {
       findings.push({
         kind: "info",
@@ -343,19 +355,21 @@ export function interpretOpenDCPublicBodies(
       });
     }
 
-    const citations = [cite(sourceKind, parsed.record.key)];
-
     const legalLocators = parsed.enablingStatute
       ? parseLegalCitationLocators({ LEGAL_REFERENCE: parsed.enablingStatute })
       : [];
-    const urlLegalLocators = parsed.enablingStatuteUrl
-      ? parseLegalCitationLocatorsFromUrl(parsed.enablingStatuteUrl)
-      : [];
-    const sourceLegalLocators = [...new Set([...legalLocators, ...urlLegalLocators])].sort();
-
-    for (const locator of sourceLegalLocators) {
-      citations.push(cite(sourceKind, parsed.record.key, { locator }));
-    }
+    const legalAuthorityLocatorInputs = buildOpenDcLegalAuthorityLocatorInputs(
+      legalLocators,
+      parsed.enablingStatuteUrl,
+    );
+    const legalAuthorityArtifacts = buildLegalAuthorityArtifacts({
+      source: sourceKind,
+      sourceRecordId: parsed.record.key,
+      subjectProvisionalId: parsed.provisionalId,
+      locatorInputs: legalAuthorityLocatorInputs,
+      emitAuthorities: standardKinds.has(parsed.detected),
+    });
+    const citations = legalAuthorityArtifacts.entryCitations;
 
     const attributes: Record<string, unknown> = {
       shortName: parsed.name,
@@ -369,6 +383,12 @@ export function interpretOpenDCPublicBodies(
     if (parsed.enablingStatuteUrl) {
       attributes.enablingStatuteUrl = parsed.enablingStatuteUrl;
     }
+    if (parsed.description) {
+      attributes.description = parsed.description;
+    }
+    if (parsed.officialUrl) {
+      attributes.officialUrl = parsed.officialUrl;
+    }
 
     entryFragments.push({
       fragmentType: "entry",
@@ -381,6 +401,7 @@ export function interpretOpenDCPublicBodies(
       attributes,
       citations,
     });
+    entryFragments.push(...legalAuthorityArtifacts.entryFragments);
 
     const governingResolution = resolveAgencyRelation(
       parsed.governingAgency ?? "",
@@ -445,8 +466,9 @@ export function interpretOpenDCPublicBodies(
         });
       }
     }
+    relationFragments.push(...legalAuthorityArtifacts.relationFragments);
 
-    if (parsed.enablingStatute && sourceLegalLocators.length === 0) {
+    if (parsed.enablingStatute && legalAuthorityLocatorInputs.length === 0) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_unparsed",

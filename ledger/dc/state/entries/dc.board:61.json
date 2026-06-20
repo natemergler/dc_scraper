@@ -17,21 +17,29 @@
       "sourceRecordId": "61"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "61",
-      "locator": "D.C. Code § 6-641.07"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-zoning-adjustment-bza"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-zoning-adjustment-bza",
-      "locator": "D.C. Code § 6-641.07"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-641-07",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "61",
+            "locator": "D.C. Code § 6-641.07"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-zoning-adjustment-bza",
+            "locator": "D.C. Code § 6-641.07"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "61"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "61",
-            "locator": "D.C. Code § 6-641.07"
           }
         ]
       }

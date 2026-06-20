@@ -4,6 +4,29 @@
   "kind": "dc.office",
   "name": "Mayor's Office of Talent and Appointments",
   "attributes": {
+    "description": "Makes recommendations for outstanding community leaders to serve as appointed leadership staff or members to District boards and commissions.",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "126"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-talent-and-appointments",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of Talent and Appointments. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-of-talent-and-appointments"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-talent-and-appointments-1ko3fba-dc-office-mayors-office-of-talent-and-ap-1ptm0r4",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Mayor's Office of Talent and Appointments",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "mayors-office-of-talent-and-appointments",

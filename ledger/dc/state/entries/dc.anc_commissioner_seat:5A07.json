@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5A07",
   "attributes": {
+    "currentHolderName": "Valeria Sosa Garnica",
+    "officerRole": "Chairperson",
     "sourceAncId": "5A",
     "sourceFirstName": "VALERIA",
     "sourceLastName": "GARNICA",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5a",
+    "sourcePageLastModified": "2026-06-16T21:17:40.000Z",
     "sourceRepresentativeName": "VALERIA SOSA GARNICA",
     "sourceSmdId": "5A07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5A07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5a"
     }
   ],
   "relations": {

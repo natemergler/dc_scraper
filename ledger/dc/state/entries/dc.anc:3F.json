@@ -5,9 +5,14 @@
   "name": "ANC 3F",
   "attributes": {
     "gisId": "ANCPly_339",
+    "officialUrl": "http://anc3f.dc.gov/",
     "representedNeighborhoods": "the Van Ness, North Cleveland Park, Wakefield, and Forest Hills neighborhoods",
     "sourceAncId": "3F",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3f",
+    "sourcePageLastModified": "2026-06-16T20:55:27.000Z",
+    "sourceWardNumbers": [
+      "3"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3f"
   },
   "citations": [

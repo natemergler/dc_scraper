@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-2-1395",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 2-1395",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1395",
+    "locator": "D.C. Code § 2-1395",
+    "shortName": "D.C. Code § 2-1395"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-african-affairs",
+      "locator": "D.C. Code § 2-1395"
+    }
+  ],
+  "relations": {}
+}

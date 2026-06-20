@@ -17,21 +17,29 @@
       "sourceRecordId": "67"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "67",
-      "locator": "D.C. Code § 7-504.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-aging"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-aging",
-      "locator": "DC Code § 7-504.01"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-504-01",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "67",
+            "locator": "D.C. Code § 7-504.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-aging",
+            "locator": "D.C. Code § 7-504.01"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "67"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "67",
-            "locator": "D.C. Code § 7-504.01"
           },
           {
             "source": "open_dc.public_bodies",

@@ -4,6 +4,7 @@
   "kind": "dc.commission",
   "name": "Board of Review for Anti-Deficiency Violations/Intergovernmental Judicial Commission",
   "attributes": {
+    "description": "The purpose of the Board is to advise and make recommendations to the Mayor, the Chief Financial Officer (\"CFO\"), the Inspector General (\"IG\"), and the Council of the District of Columbia (\"Council\") with respect to reported anti-deficiency violations by officers and employees of the government of the District of Columbia.",
     "enablingStatute": "Mayor's Order 2003-156",
     "shortName": "Board of Review for Anti-Deficiency Violations/Intergovernmental Judicial Commission",
     "sourceOpenDcSlug": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
@@ -13,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
-      "locator": "Mayor's Order 2003-156"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2003-156",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
+            "locator": "Mayor's Order 2003-156"
+          }
+        ]
+      }
+    ]
+  }
 }

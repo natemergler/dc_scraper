@@ -5,9 +5,14 @@
   "name": "ANC 2F",
   "attributes": {
     "gisId": "ANCPly_331",
+    "officialUrl": "http://anc2f.org/",
     "representedNeighborhoods": "the Logan Circle, Thomas Circle, Old City, Blagden Alley, Franklin Square, and parts of the Shaw neighborhoods",
     "sourceAncId": "2F",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2f",
+    "sourcePageLastModified": "2026-06-16T20:33:49.000Z",
+    "sourceWardNumbers": [
+      "2"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2f"
   },
   "citations": [

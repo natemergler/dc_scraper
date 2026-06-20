@@ -4,14 +4,52 @@
   "kind": "dc.office",
   "name": "Office of the Deputy Mayor for Education",
   "attributes": {
+    "description": "Oversees the District's education agencies to develop and implement a District-wide education strategy.",
+    "officialUrl": "http://dme.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-education:dme-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "32"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-education",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Deputy Mayor for Education. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-the-deputy-mayor-for-education"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-the-deputy-mayor-for-education-k9bavt-dc-office-office-of-the-deputy-mayor-for-tkbj7k",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of the Deputy Mayor for Education",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-the-deputy-mayor-for-education",
     "sourceOfficeKey": "office-of-the-deputy-mayor-for-education",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-education",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-deputy-mayor-for-education",

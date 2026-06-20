@@ -2,8 +2,9 @@
   "id": "dc.councilmember:at-large-councilmember-christina-henderson",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "At-Large Councilmember Christina Henderson",
+  "name": "Christina Henderson",
   "attributes": {
+    "officeLabel": "At-Large Councilmember",
     "sourceProfileSlug": "at-large-councilmember-christina-henderson",
     "sourceProfileUrl": "https://dccouncil.gov/council/at-large-councilmember-christina-henderson/"
   },
@@ -42,6 +43,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-on-health"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "at-large-councilmember-christina-henderson"
           }
         ]
       }

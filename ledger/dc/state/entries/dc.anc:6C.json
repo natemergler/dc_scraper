@@ -5,9 +5,14 @@
   "name": "ANC 6C",
   "attributes": {
     "gisId": "ANCPly_353",
+    "officialUrl": "http://anc6c.org/",
     "representedNeighborhoods": "the Near Northeast and Stanton Park neighborhoods",
     "sourceAncId": "6C",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourcePageLastModified": "2026-06-16T21:58:01.000Z",
+    "sourceWardNumbers": [
+      "6"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6c"
   },
   "citations": [

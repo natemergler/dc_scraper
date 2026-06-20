@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-50-1604",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 50-1604",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/50-1604",
+    "locator": "D.C. Code § 50-1604",
+    "shortName": "D.C. Code § 50-1604"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "bicycle-advisory-council-bac",
+      "locator": "D.C. Code § 50-1604"
+    }
+  ],
+  "relations": {}
+}

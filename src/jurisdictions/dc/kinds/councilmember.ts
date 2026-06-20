@@ -6,5 +6,7 @@ export const dcCouncilmemberKind = defineEntryKind({
   attributes: {
     sourceProfileSlug: { required: true, type: "string" },
     sourceProfileUrl: { required: true, type: "string" },
+    officeLabel: { required: false, type: "string" },
+    wardNumber: { required: false, type: "string" },
   },
 });

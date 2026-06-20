@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1C03",
   "attributes": {
+    "currentHolderName": "Peter Wood",
+    "officerRole": "Chairperson",
     "sourceAncId": "1C",
     "sourceFirstName": "PETER",
     "sourceLastName": "WOOD",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1c",
+    "sourcePageLastModified": "2026-06-16T21:16:45.000Z",
     "sourceRepresentativeName": "PETER WOOD",
     "sourceSmdId": "1C03"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1C03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1c"
     }
   ],
   "relations": {

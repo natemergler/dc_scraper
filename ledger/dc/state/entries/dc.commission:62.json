@@ -17,19 +17,34 @@
       "sourceRecordId": "62"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "62",
-      "locator": "D.C. Law 22-228"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "combat-sports-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "combat-sports-commission",
-      "locator": "D.C. Code § 3-604"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-604",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "combat-sports-commission",
+            "locator": "D.C. Code § 3-604"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-22-228",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "62",
+            "locator": "D.C. Law 22-228"
+          }
+        ]
+      }
+    ]
+  }
 }

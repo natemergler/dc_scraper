@@ -16,29 +16,44 @@
       "sourceRecordId": "134"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "134",
-      "locator": "D.C. Code § 2-1601"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "134",
-      "locator": "D.C. Code § 2-1608"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "public-defender-service-board-trustees"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "public-defender-service-board-trustees",
-      "locator": "D.C. Code § 2-1601"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "public-defender-service-board-trustees",
-      "locator": "D.C. Code § 2-1608"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1601",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "134",
+            "locator": "D.C. Code § 2-1601"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-defender-service-board-trustees",
+            "locator": "D.C. Code § 2-1601"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1608",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "134",
+            "locator": "D.C. Code § 2-1608"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-defender-service-board-trustees",
+            "locator": "D.C. Code § 2-1608"
+          }
+        ]
+      }
+    ]
+  }
 }

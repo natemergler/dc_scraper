@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Small and Local Business Development",
   "attributes": {
+    "officialUrl": "https://dslbd.dc.gov",
     "shortName": "Department of Small and Local Business Development",
-    "sourceAgencyId": "1046"
+    "sourceAgencyId": "1046",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-small-and-local-business-development:dslbd-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "43"

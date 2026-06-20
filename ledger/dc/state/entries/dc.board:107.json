@@ -17,19 +17,28 @@
       "sourceRecordId": "107"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "107",
-      "locator": "D.C. Code § 9-1006"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa",
-      "locator": "DC Code § 9-1006"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-9-1006",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "107",
+            "locator": "D.C. Code § 9-1006"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa",
+            "locator": "D.C. Code § 9-1006"
+          }
+        ]
+      }
+    ]
+  }
 }

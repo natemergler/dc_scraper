@@ -5,9 +5,14 @@
   "name": "ANC 4E",
   "attributes": {
     "gisId": "ANCPly_344",
+    "officialUrl": "http://www.anc4e.org/",
     "representedNeighborhoods": "the Crestwood and 16th Street Heights neighborhoods",
     "sourceAncId": "4E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4e",
+    "sourcePageLastModified": "2026-06-16T20:56:04.000Z",
+    "sourceWardNumbers": [
+      "4"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4e"
   },
   "citations": [

@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6D01",
   "attributes": {
+    "currentHolderName": "Marquell Washington",
     "sourceAncId": "6D",
     "sourceFirstName": "MARQUELL",
     "sourceLastName": "WASHINGTON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6d",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceRepresentativeName": "MARQUELL MERLIN WASHINGTON",
     "sourceSmdId": "6D01"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6D01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6d"
     }
   ],
   "relations": {

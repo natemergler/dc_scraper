@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Employment Services",
   "attributes": {
+    "officialUrl": "https://does.dc.gov",
     "shortName": "Department of Employment Services",
-    "sourceAgencyId": "1032"
+    "sourceAgencyId": "1032",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-employment-services:does-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "39"

@@ -1,0 +1,24 @@
+{
+  "id": "dc.legal_authority:mayor-s-order-2001-92",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "Mayor's Order 2001-92",
+  "attributes": {
+    "authorityType": "mayors_order",
+    "locator": "Mayor's Order 2001-92",
+    "shortName": "Mayor's Order 2001-92"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "132",
+      "locator": "Mayor's Order 2001-92"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "advisory-board-veterans-affairs-district-columbia",
+      "locator": "Mayor's Order 2001-92"
+    }
+  ],
+  "relations": {}
+}

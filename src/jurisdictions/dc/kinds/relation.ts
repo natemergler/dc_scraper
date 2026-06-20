@@ -12,12 +12,20 @@ export const dcReportsToRelation = defineRelationKind({
   kind: "dc.relation:reports_to",
 });
 
+export const dcAuthorizedByRelation = defineRelationKind({
+  kind: "dc.relation:authorized_by",
+});
+
 export const dcContainsRelation = defineRelationKind({
   kind: "dc.relation:contains",
 });
 
 export const dcRepresentsRelation = defineRelationKind({
   kind: "dc.relation:represents",
+});
+
+export const dcHoldsRelation = defineRelationKind({
+  kind: "dc.relation:holds",
 });
 
 export const dcChairsRelation = defineRelationKind({

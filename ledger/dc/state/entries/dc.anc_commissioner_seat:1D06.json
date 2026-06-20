@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1D06",
   "attributes": {
+    "currentHolderName": "Angela Allison",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "1D",
     "sourceFirstName": "ANGELA",
     "sourceLastName": "ALLISON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1d",
+    "sourcePageLastModified": "2026-06-16T21:57:54.000Z",
     "sourceRepresentativeName": "ANGELA ALLISON",
     "sourceSmdId": "1D06"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1D06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1d"
     }
   ],
   "relations": {

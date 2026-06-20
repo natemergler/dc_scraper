@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Mayor's Office on Returning Citizen Affairs",
   "attributes": {
+    "officialUrl": "https://orca.dc.gov",
     "shortName": "Mayor's Office on Returning Citizen Affairs",
-    "sourceAgencyId": "1066"
+    "sourceAgencyId": "1066",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-on-returning-citizen-affairs:orca-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "76"

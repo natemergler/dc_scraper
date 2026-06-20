@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2F08",
   "attributes": {
+    "currentHolderName": "Brett Beasley",
+    "officerRole": "Secretary",
     "sourceAncId": "2F",
     "sourceFirstName": "BEASLEY",
     "sourceLastName": "BRETT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2f",
+    "sourcePageLastModified": "2026-06-16T20:33:49.000Z",
     "sourceRepresentativeName": "BRETT BEASLEY",
     "sourceSmdId": "2F08"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2F08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2f"
     }
   ],
   "relations": {

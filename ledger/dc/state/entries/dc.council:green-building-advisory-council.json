@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "green-building-advisory-council"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "green-building-advisory-council",
-      "locator": "DC Code § 6-1451.09"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-1451-09",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "green-building-advisory-council",
+            "locator": "D.C. Code § 6-1451.09"
+          }
+        ]
+      }
+    ]
+  }
 }

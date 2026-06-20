@@ -16,21 +16,29 @@
       "sourceRecordId": "77"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "77",
-      "locator": "Mayor's Order 2009-165"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-persons-disabilities"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-persons-disabilities",
-      "locator": "Mayor's Order 2009-165"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2009-165",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "77",
+            "locator": "Mayor's Order 2009-165"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-persons-disabilities",
+            "locator": "Mayor's Order 2009-165"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -39,11 +47,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "77"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "77",
-            "locator": "Mayor's Order 2009-165"
           },
           {
             "source": "open_dc.public_bodies",

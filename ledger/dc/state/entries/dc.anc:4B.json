@@ -5,9 +5,14 @@
   "name": "ANC 4B",
   "attributes": {
     "gisId": "ANCPly_341",
+    "officialUrl": "http://anc4b.org/",
     "representedNeighborhoods": "the Takoma, Lamond Riggs, Manor Park, and part of the Brightwood neighborhoods",
     "sourceAncId": "4B",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4b",
+    "sourcePageLastModified": "2026-06-16T20:36:05.000Z",
+    "sourceWardNumbers": [
+      "4"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4b"
   },
   "citations": [

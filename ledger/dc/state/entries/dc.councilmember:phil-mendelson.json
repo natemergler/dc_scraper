@@ -2,8 +2,9 @@
   "id": "dc.councilmember:phil-mendelson",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "Chairman Phil Mendelson",
+  "name": "Phil Mendelson",
   "attributes": {
+    "officeLabel": "Chairman",
     "sourceProfileSlug": "phil-mendelson",
     "sourceProfileUrl": "https://dccouncil.gov/council/phil-mendelson/"
   },
@@ -26,6 +27,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:council-chairman",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "phil-mendelson"
           }
         ]
       }

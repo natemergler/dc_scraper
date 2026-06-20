@@ -4,6 +4,34 @@
   "kind": "dc.office",
   "name": "Office of the Senior Advisor",
   "attributes": {
+    "description": "Advises the Mayor on the local, regional, federal, and international affairs by providing policy analysis and advancing the legislative agenda. OSA includes three other offices, OPLA, OFRA, and the Office of the Secretary.",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "office-of-the-senior-advisor:osa-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "79"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-senior-advisor",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Senior Advisor. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-the-senior-advisor"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-the-senior-advisor-1mrnxf7-dc-office-office-of-the-senior-advisor-6yhcra",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of the Senior Advisor",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-the-senior-advisor",

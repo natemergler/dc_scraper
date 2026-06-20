@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-3-1202-17",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 3-1202.17",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.17",
+    "locator": "D.C. Code § 3-1202.17",
+    "shortName": "D.C. Code § 3-1202.17"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "43",
+      "locator": "D.C. Code § 3-1202.17"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-marriage-and-family-therapy",
+      "locator": "D.C. Code § 3-1202.17"
+    }
+  ],
+  "relations": {}
+}

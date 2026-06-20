@@ -11,12 +11,21 @@
     {
       "source": "dcgis.commissions",
       "sourceRecordId": "88"
-    },
-    {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "88",
-      "locator": "D.C. Code § 47-462"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-462",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "88",
+            "locator": "D.C. Code § 47-462"
+          }
+        ]
+      }
+    ]
+  }
 }

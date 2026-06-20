@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Health Care Finance",
   "attributes": {
+    "officialUrl": "https://dhcf.dc.gov",
     "shortName": "Department of Health Care Finance",
-    "sourceAgencyId": "1038"
+    "sourceAgencyId": "1038",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-health-care-finance-dhcf:dhcf-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "29"

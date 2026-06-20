@@ -1,0 +1,31 @@
+{
+  "id": "review-preserve-distinct-same-normalized-name-office-of-the-deputy-mayor-for-operations-and-infrastructur-1gz3bnh-dc-office-office-of-the-deputy-mayor-for-1ewfqd4",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+  "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Deputy Mayor for Operations and Infrastructure. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-operations-and-infrastructure:dmoi-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "133"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-operations-and-infrastructure",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:office-of-the-deputy-mayor-for-operations-and-infrastructure"
+      ]
+    }
+  }
+}

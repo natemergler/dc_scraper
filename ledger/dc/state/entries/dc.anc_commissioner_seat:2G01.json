@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2G01",
   "attributes": {
+    "currentHolderName": "Howard Garrett",
+    "officerRole": "Vice Chairperson",
     "sourceAncId": "2G",
     "sourceFirstName": "HOWARD",
     "sourceLastName": "GARRETT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourcePageLastModified": "2026-06-16T21:57:57.000Z",
     "sourceRepresentativeName": "HOWARD GARRETT",
     "sourceSmdId": "2G01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2G01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2g"
     }
   ],
   "relations": {

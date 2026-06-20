@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7E01",
   "attributes": {
+    "currentHolderName": "Dawn Cook",
+    "officerRole": "Treasurer",
     "sourceAncId": "7E",
     "sourceFirstName": "DAWN",
     "sourceLastName": "COOK",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "sourcePageLastModified": "2026-06-16T20:48:07.000Z",
     "sourceRepresentativeName": "DAWN COOK",
     "sourceSmdId": "7E01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7E01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
     }
   ],
   "relations": {

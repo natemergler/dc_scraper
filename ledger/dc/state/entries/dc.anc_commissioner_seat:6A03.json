@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6A03",
   "attributes": {
+    "currentHolderName": "Roberta Shapiro",
+    "officerRole": "Treasurer",
     "sourceAncId": "6A",
     "sourceFirstName": "ROBERTA",
     "sourceLastName": "SHAPIRO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "sourcePageLastModified": "2026-06-16T20:25:18.000Z",
     "sourceRepresentativeName": "ROBERTA SHAPIRO",
     "sourceSmdId": "6A03"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6A03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6a"
     }
   ],
   "relations": {

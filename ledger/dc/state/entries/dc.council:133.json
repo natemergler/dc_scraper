@@ -11,14 +11,22 @@
     {
       "source": "dcgis.councils",
       "sourceRecordId": "133"
-    },
-    {
-      "source": "dcgis.councils",
-      "sourceRecordId": "133",
-      "locator": "D.C. Code § 32-1406"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-32-1406",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "133",
+            "locator": "D.C. Code § 32-1406"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -27,11 +35,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "133"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "133",
-            "locator": "D.C. Code § 32-1406"
           }
         ]
       }

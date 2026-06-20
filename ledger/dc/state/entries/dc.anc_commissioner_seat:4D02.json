@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 4D02",
   "attributes": {
+    "currentHolderName": "Abel Amene",
     "sourceAncId": "4D",
     "sourceFirstName": "ABEL",
     "sourceLastName": "AMENE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4d",
+    "sourcePageLastModified": "2026-06-16T20:55:51.000Z",
     "sourceRepresentativeName": "ABEL AMENE",
     "sourceSmdId": "4D02"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "4D02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4d"
     }
   ],
   "relations": {

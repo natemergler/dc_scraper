@@ -1,0 +1,26 @@
+{
+  "id": "dc.legal_authority:d-c-code-42-1903-08a",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 42-1903.08a",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/42-1903.08a",
+    "locator": "D.C. Code § 42-1903.08a",
+    "shortName": "D.C. Code § 42-1903.08a"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "11",
+      "locator": "D.C. Code § 42-1903.08a"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "condominium-association-advisory-council-caac",
+      "locator": "D.C. Code § 42-1903.08a",
+      "url": "https://code.dccouncil.us/dc/council/code/sections/42-1903.08a.html"
+    }
+  ],
+  "relations": {}
+}

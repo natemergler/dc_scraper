@@ -17,19 +17,28 @@
       "sourceRecordId": "131"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "131",
-      "locator": "D.C. Code § 6-621.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "zoning-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "zoning-commission",
-      "locator": "DC Code § 6-621.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-621-01",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "131",
+            "locator": "D.C. Code § 6-621.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "zoning-commission",
+            "locator": "D.C. Code § 6-621.01"
+          }
+        ]
+      }
+    ]
+  }
 }

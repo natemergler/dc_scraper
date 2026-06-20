@@ -1,0 +1,77 @@
+{
+  "id": "2026-06-16-ward-8-anc-8f-containment",
+  "source": "audited_revision",
+  "targetKind": "relation",
+  "targetId": "dc.ward:8",
+  "target": {
+    "canonicalId": "dc.ward:8",
+    "sourceRefs": [
+      {
+        "source": "dccouncil.members",
+        "sourceRecordId": "councilmember-trayon-white-sr"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ],
+    "kind": "dc.ward",
+    "name": "Ward 8"
+  },
+  "rationale": "Retarget Ward 8 ANC containment to canonical ANC 8F while preserving the OANC 6/8F evidence that the ANC spans Ward 6 and Ward 8.",
+  "evidence": [
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "relations": {
+      "dc.relation:contains": [
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:8B",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "8B"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:8C",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "8C"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:8D",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "8D"
+            }
+          ]
+        },
+        {
+          "kind": "dc.relation:contains",
+          "to": "dc.anc:8F",
+          "citations": [
+            {
+              "source": "oanc.profiles",
+              "sourceRecordId": "6/8F",
+              "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

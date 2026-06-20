@@ -1,0 +1,30 @@
+{
+  "id": "dc.legal_authority:d-c-code-6-1103",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 6-1103",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/6-1103",
+    "locator": "D.C. Code § 6-1103",
+    "shortName": "D.C. Code § 6-1103"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "98",
+      "locator": "D.C. Code § 6-1103"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "higher-education-licensure-commission-helc",
+      "locator": "D.C. Code § 6-1103"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "historic-preservation-review-board-hprb",
+      "locator": "D.C. Code § 6-1103"
+    }
+  ],
+  "relations": {}
+}

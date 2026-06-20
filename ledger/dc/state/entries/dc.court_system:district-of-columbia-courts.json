@@ -1,0 +1,24 @@
+{
+  "id": "dc.court_system:district-of-columbia-courts",
+  "family": "organization",
+  "kind": "dc.court_system",
+  "name": "District of Columbia Courts",
+  "attributes": {
+    "officialUrl": "https://www.dccourts.gov/",
+    "shortName": "District of Columbia Courts",
+    "sourceCourtSystemKey": "district-of-columbia-courts",
+    "sourceDCCourtsKey": "district-of-columbia-courts",
+    "sourceFromSeed": true,
+    "sourceHeading": "District of Columbia Courts",
+    "sourcePageTitle": "DC Courts Homepage | District of Columbia Courts",
+    "sourcePageUrl": "https://www.dccourts.gov/"
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "district-of-columbia-courts",
+      "url": "https://www.dccourts.gov/"
+    }
+  ],
+  "relations": {}
+}

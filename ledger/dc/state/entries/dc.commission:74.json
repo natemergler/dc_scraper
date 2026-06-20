@@ -17,19 +17,34 @@
       "sourceRecordId": "74"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "74",
-      "locator": "D.C. Code § 11-1521"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-judicial-disabilities-and-tenure"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-judicial-disabilities-and-tenure",
-      "locator": "D.C. Code § 1-204.31"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-204-31",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-judicial-disabilities-and-tenure",
+            "locator": "D.C. Code § 1-204.31"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-11-1521",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "74",
+            "locator": "D.C. Code § 11-1521"
+          }
+        ]
+      }
+    ]
+  }
 }

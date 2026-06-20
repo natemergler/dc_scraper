@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3B01",
   "attributes": {
+    "currentHolderName": "Kevin Lavezzo",
+    "officerRole": "Treasurer",
     "sourceAncId": "3B",
     "sourceFirstName": "KEVIN",
     "sourceLastName": "LAVEZZO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3b",
+    "sourcePageLastModified": "2026-06-16T21:57:57.000Z",
     "sourceRepresentativeName": "KEVIN LAVEZZO",
     "sourceSmdId": "3B01"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3b"
     }
   ],
   "relations": {

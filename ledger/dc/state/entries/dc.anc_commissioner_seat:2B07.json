@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2B07",
   "attributes": {
+    "currentHolderName": "Libby Franklin",
+    "officerRole": "Secretary",
     "sourceAncId": "2B",
     "sourceFirstName": "LIBBY",
     "sourceLastName": "FRANKLIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourcePageLastModified": "2026-06-16T20:06:56.000Z",
     "sourceRepresentativeName": "LIBBY FRANKLIN",
     "sourceSmdId": "2B07"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2B07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
     }
   ],
   "relations": {

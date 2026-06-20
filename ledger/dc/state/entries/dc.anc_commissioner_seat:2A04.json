@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 2A04",
   "attributes": {
+    "currentHolderName": "Ed Comer",
+    "officerRole": "Secretary",
     "sourceAncId": "2A",
     "sourceFirstName": "EDWARD",
     "sourceLastName": "COMER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2a",
+    "sourcePageLastModified": "2026-06-16T21:16:45.000Z",
     "sourceRepresentativeName": "EDWARD COMER",
     "sourceSmdId": "2A04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "2A04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2a"
     }
   ],
   "relations": {

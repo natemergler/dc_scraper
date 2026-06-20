@@ -17,21 +17,29 @@
       "sourceRecordId": "113"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "113",
-      "locator": "D.C. Code § 5-107.03"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "police-officers-standards-and-training-board-post"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "police-officers-standards-and-training-board-post",
-      "locator": "D.C. Code § 5-107.03"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-107-03",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "113",
+            "locator": "D.C. Code § 5-107.03"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-officers-standards-and-training-board-post",
+            "locator": "D.C. Code § 5-107.03"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "113"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "113",
-            "locator": "D.C. Code § 5-107.03"
           }
         ]
       },

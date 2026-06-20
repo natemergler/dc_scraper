@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5B05",
   "attributes": {
+    "currentHolderName": "M ónica Martínez Ló pez",
     "sourceAncId": "5B",
     "sourceFirstName": "MONICA",
     "sourceLastName": "LOPEZ",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourcePageLastModified": "2026-06-16T20:26:27.000Z",
     "sourceRepresentativeName": "MONICA MARTINEZ LOPEZ",
     "sourceSmdId": "5B05"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5B05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
     }
   ],
   "relations": {

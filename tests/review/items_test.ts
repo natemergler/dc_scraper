@@ -7,7 +7,12 @@ import {
   type LedgerState,
   type Revision,
 } from "../../src/core/types.ts";
-import { generateReviewItems } from "../../src/review/items.ts";
+import {
+  generateReviewItems,
+  reviewItemBlocksCurrentOutput,
+  reviewItemHasPublicOutputImpact,
+  reviewQueueForItem,
+} from "../../src/review/items.ts";
 import { loadReviewItems, saveReviewItems } from "../../src/review/store.ts";
 
 function entry(overrides: Partial<Entry> & Pick<Entry, "id" | "kind" | "name">): Entry {
@@ -204,4 +209,74 @@ Deno.test("finding review items preserve distinct source evidence", async () => 
   } finally {
     await Deno.remove(workspace, { recursive: true });
   }
+});
+
+Deno.test("relation not promoted findings stay classified as out of scope", () => {
+  const findings: Finding[] = [
+    {
+      kind: "warn",
+      code: "compiler.relation_source_not_promoted",
+      message:
+        "relation source entry was not promoted into baseline: dc.agency:adult-career-pathways-task-force; relation skipped",
+      citation: cite("open_dc.public_bodies", "adult-career-pathways-task-force"),
+    },
+  ];
+
+  const items = generateReviewItems(state([]), findings);
+
+  assertEquals(items.length, 1);
+  assertEquals(items[0].category, "out_of_scope_candidate");
+  assertEquals(items[0].classification, "out_of_scope");
+  assertEquals(items[0].suggestedResolutions, ["suppress"]);
+  assertEquals(reviewQueueForItem(items[0]), "deferred");
+  assertEquals(reviewItemHasPublicOutputImpact(items[0]), false);
+  assertEquals(reviewItemBlocksCurrentOutput(items[0]), false);
+});
+
+Deno.test("review queues separate blocking, actionable, and deferred work", () => {
+  const items = generateReviewItems(
+    state([
+      entry({
+        id: "dc.agency:1052",
+        kind: "dc.agency",
+        name: "Executive Office of the Mayor",
+        citations: [cite("dcgis.agencies", "45")],
+      }),
+      entry({
+        id: "dc.office:executive-office-of-the-mayor",
+        kind: "dc.office",
+        name: "Executive Office of the Mayor",
+        citations: [cite("mayor.executive_structure", "executive-office-of-the-mayor")],
+      }),
+      entry({
+        id: "dc.board:abc-new",
+        kind: "dc.board",
+        name: "Alcoholic Beverage and Cannabis Board",
+        citations: [cite("open_dc.public_bodies", "abc-new")],
+      }),
+      entry({
+        id: "dc.board:abc-old",
+        kind: "dc.board",
+        name: "Alcoholic Beverage and Cannabis Board",
+        citations: [cite("open_dc.public_bodies", "abc-old")],
+      }),
+    ]),
+  );
+
+  const kindConflict = items.find((item) =>
+    item.id === "same_normalized_name:executive-office-of-the-mayor"
+  );
+  const sameSourceDuplicate = items.find((item) =>
+    item.id === "same_normalized_name:alcoholic-beverage-and-cannabis-board"
+  );
+
+  assertEquals(kindConflict?.category, "kind_conflict");
+  assertEquals(reviewQueueForItem(kindConflict!), "blocking");
+  assertEquals(reviewItemHasPublicOutputImpact(kindConflict!), true);
+  assertEquals(reviewItemBlocksCurrentOutput(kindConflict!), true);
+
+  assertEquals(sameSourceDuplicate?.category, "same_source_duplicate");
+  assertEquals(reviewQueueForItem(sameSourceDuplicate!), "actionable");
+  assertEquals(reviewItemHasPublicOutputImpact(sameSourceDuplicate!), true);
+  assertEquals(reviewItemBlocksCurrentOutput(sameSourceDuplicate!), false);
 });

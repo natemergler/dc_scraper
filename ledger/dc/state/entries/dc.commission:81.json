@@ -16,21 +16,29 @@
       "sourceRecordId": "81"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "81",
-      "locator": "Mayor's Order 2013-243"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "commission-martin-luther-king-jr-holiday"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "commission-martin-luther-king-jr-holiday",
-      "locator": "Mayor's Order 2013-243"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2013-243",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "81",
+            "locator": "Mayor's Order 2013-243"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-martin-luther-king-jr-holiday",
+            "locator": "Mayor's Order 2013-243"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -39,11 +47,6 @@
           {
             "source": "dcgis.commissions",
             "sourceRecordId": "81"
-          },
-          {
-            "source": "dcgis.commissions",
-            "sourceRecordId": "81",
-            "locator": "Mayor's Order 2013-243"
           }
         ]
       }

@@ -17,21 +17,29 @@
       "sourceRecordId": "100"
     },
     {
-      "source": "dcgis.commissions",
-      "sourceRecordId": "100",
-      "locator": "D.C. Code § 6-211"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "housing-authority-board-commissioners"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "housing-authority-board-commissioners",
-      "locator": "D.C. Code § 6-211"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-6-211",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "100",
+            "locator": "D.C. Code § 6-211"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-authority-board-commissioners",
+            "locator": "D.C. Code § 6-211"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

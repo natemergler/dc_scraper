@@ -5,9 +5,14 @@
   "name": "ANC 4D",
   "attributes": {
     "gisId": "ANCPly_343",
+    "officialUrl": "http://anc4d.org/",
     "representedNeighborhoods": "the northern part of Petworth and Brightwood Park neighborhoods",
     "sourceAncId": "4D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4d",
+    "sourcePageLastModified": "2026-06-16T20:55:51.000Z",
+    "sourceWardNumbers": [
+      "4"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4d"
   },
   "citations": [

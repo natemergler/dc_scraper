@@ -5,9 +5,14 @@
   "name": "ANC 5E",
   "attributes": {
     "gisId": "ANCPly_349",
+    "officialUrl": "https://www.anc5edc.org/",
     "representedNeighborhoods": "the Bates, Bloomingdale, Stronghold, and Truxton Circle neighborhoods",
     "sourceAncId": "5E",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5e",
+    "sourcePageLastModified": "2026-06-16T20:35:49.000Z",
+    "sourceWardNumbers": [
+      "5"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5e"
   },
   "citations": [

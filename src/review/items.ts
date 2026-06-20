@@ -45,6 +45,8 @@ export type ReviewResolutionType =
 
 export type ReviewStatus = "open" | "drafted" | "applied";
 
+export type ReviewQueue = "blocking" | "actionable" | "drafted" | "applied" | "deferred";
+
 export interface ReviewAffectedRef {
   fragmentIds: string[];
   baselineIds: string[];
@@ -265,6 +267,47 @@ export function validateReviewItem(value: unknown, path = "review item"): Review
 
 export function reviewItemFileName(id: string): string {
   return `${stableReviewIdSegment(id, 120)}.json`;
+}
+
+export function reviewItemHasPublicOutputImpact(item: ReviewItem): boolean {
+  return item.affected.stateIds.length > 0 || item.affected.relationEndpoints.length > 0;
+}
+
+export function reviewItemBlocksCurrentOutput(item: ReviewItem): boolean {
+  return item.status === "open" &&
+    (item.blocks.stateGeneration ||
+      (item.blocks.releaseReadiness && reviewItemHasPublicOutputImpact(item)));
+}
+
+export function reviewQueueForItem(item: ReviewItem): ReviewQueue {
+  if (item.status === "applied") {
+    return "applied";
+  }
+  if (item.status === "drafted") {
+    return "drafted";
+  }
+  if (reviewItemBlocksCurrentOutput(item)) {
+    return "blocking";
+  }
+  if (item.classification === "out_of_scope" || item.category === "out_of_scope_candidate") {
+    return "deferred";
+  }
+  return "actionable";
+}
+
+export function reviewQueueLabel(queue: ReviewQueue): string {
+  switch (queue) {
+    case "blocking":
+      return "Blocking";
+    case "actionable":
+      return "Needs decision";
+    case "drafted":
+      return "Drafted";
+    case "applied":
+      return "Applied";
+    case "deferred":
+      return "Deferred";
+  }
 }
 
 export function stableReviewKey(value: string): string {
@@ -588,14 +631,14 @@ function classificationFromCandidate(
 }
 
 function categoryFromFinding(finding: Finding): ReviewCategory | null {
+  if (finding.code.includes("not_promoted") || finding.code.includes("promotion")) {
+    return "out_of_scope_candidate";
+  }
   if (finding.code.includes("relation_target") || finding.code.includes("relation_source")) {
     return "relation_endpoint_missing";
   }
   if (finding.code.includes("legal")) {
     return "legal_authority_ambiguous";
-  }
-  if (finding.code.includes("not_promoted") || finding.code.includes("promotion")) {
-    return "out_of_scope_candidate";
   }
   if (finding.code.includes("missing") || finding.code.includes("invalid")) {
     return "incomplete_entry";

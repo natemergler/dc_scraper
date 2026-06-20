@@ -11,24 +11,44 @@
     {
       "source": "dcgis.boards",
       "sourceRecordId": "121"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "121",
-      "locator": "D.C. Law 19-18"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "121",
-      "locator": "D.C. Official Code § 5-1501.11"
-    },
-    {
-      "source": "dcgis.boards",
-      "sourceRecordId": "121",
-      "locator": "Mayor's Order 2013-225"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-1501-11",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "D.C. Code § 5-1501.11"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-19-18",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "D.C. Law 19-18"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2013-225",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "121",
+            "locator": "Mayor's Order 2013-225"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -37,21 +57,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "121"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "121",
-            "locator": "D.C. Law 19-18"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "121",
-            "locator": "D.C. Official Code § 5-1501.11"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "121",
-            "locator": "Mayor's Order 2013-225"
           }
         ]
       }

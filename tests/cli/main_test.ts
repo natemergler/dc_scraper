@@ -5,6 +5,88 @@ import { assertEquals } from "@std/assert";
 import { runCli } from "../../src/cli/main.ts";
 import { closeWorkspace, initWorkspace, openWorkspace } from "../../src/workspace/workspace.ts";
 
+Deno.test("root, init, status, and sources list guide a fresh operator", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-onboarding-" });
+  const projectRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-onboarding-project-" });
+  const stateRoot = join(projectRoot, "state");
+  const releaseRoot = join(projectRoot, "release");
+
+  try {
+    const initResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "init",
+      ])
+    );
+    assertEquals(initResult.code, 0);
+    assertEquals(initResult.output.includes("Civic Ledger workspace ready"), true);
+    assertEquals(initResult.output.includes("deno task civic sources list"), true);
+
+    const rootStatus = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+      ])
+    );
+    assertEquals(rootStatus.code, 0);
+    assertEquals(rootStatus.output.includes("Civic Ledger Status"), true);
+    assertEquals(rootStatus.output.includes("Sources:   0/"), true);
+    assertEquals(rootStatus.output.includes("Next: deno task civic collect all"), true);
+
+    const sourcesResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "sources",
+        "list",
+        "--json",
+      ])
+    );
+    assertEquals(sourcesResult.code, 0);
+    const sourcesJson = JSON.parse(sourcesResult.output) as {
+      sourceCount: number;
+      sources: Array<{ id: string; family: string; type: string }>;
+    };
+    assertEquals(sourcesJson.sourceCount > 0, true);
+    assertEquals(
+      sourcesJson.sources.some((source) => source.id === "dcgis.agencies"),
+      true,
+    );
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(projectRoot, { recursive: true });
+  }
+});
+
+Deno.test("state generation explains empty fresh workspace", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-empty-workspace-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-empty-state-" });
+
+  try {
+    const code = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(code, 1);
+  } finally {
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("collect command persists snapshots and records", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-collect-" });
   const restoreFetch = mockArcGISFetch(
@@ -399,6 +481,12 @@ Deno.test("state generation can compile Council committees and councilmembers to
       committeeEntryFiles.includes("dc.councilmember:councilmember-trayon-white-sr.json"),
       true,
     );
+    assertEquals(
+      committeeEntryFiles.includes("dc.elected_office:at-large-councilmember.json"),
+      true,
+    );
+    assertEquals(committeeEntryFiles.includes("dc.elected_office:council-chairman.json"), true);
+    assertEquals(committeeEntryFiles.includes("dc.ward:8.json"), true);
 
     const committeeEntry = JSON.parse(
       await Deno.readTextFile(
@@ -436,6 +524,10 @@ Deno.test("state generation can compile Council committees and councilmembers to
       chairEntry.relations["dc.relation:member_of"][0]?.to,
       "dc.committee:committee-of-the-whole",
     );
+    assertEquals(
+      chairEntry.relations["dc.relation:holds"][0]?.to,
+      "dc.elected_office:council-chairman",
+    );
 
     const ward8Entry = JSON.parse(
       await Deno.readTextFile(
@@ -449,6 +541,11 @@ Deno.test("state generation can compile Council committees and councilmembers to
       ward8Entry.relations["dc.relation:member_of"][0]?.to,
       "dc.committee:committee-of-the-whole",
     );
+    assertEquals(
+      ward8Entry.relations["dc.relation:holds"][0]?.to,
+      "dc.elected_office:ward-8-councilmember",
+    );
+    assertEquals(ward8Entry.relations["dc.relation:represents"][0]?.to, "dc.ward:8");
 
     const indexCode = await runCli([
       "--workspace",
@@ -462,8 +559,8 @@ Deno.test("state generation can compile Council committees and councilmembers to
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "state_entries"), 8);
-    assertEquals(countRows(db, "state_relations"), 11);
+    assertEquals(countRows(db, "state_entries"), 16);
+    assertEquals(countRows(db, "state_relations"), 23);
     closeWorkspace(db);
 
     const checkCode = await runCli([
@@ -487,20 +584,26 @@ Deno.test("state generation can compile Council committees and councilmembers to
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 8);
-    assertEquals(manifest.counts.relations, 11);
+    assertEquals(manifest.counts.entries, 16);
+    assertEquals(manifest.counts.relations, 23);
     assertEquals(manifest.counts.relationKinds["dc.relation:chairs"], 2);
     assertEquals(manifest.counts.relationKinds["dc.relation:member_of"], 9);
+    assertEquals(manifest.counts.relationKinds["dc.relation:holds"], 6);
+    assertEquals(manifest.counts.relationKinds["dc.relation:represents"], 6);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
     assertEquals(entriesCsv.includes("dc.committee:committee-of-the-whole"), true);
     assertEquals(entriesCsv.includes("dc.councilmember:phil-mendelson"), true);
+    assertEquals(entriesCsv.includes("dc.elected_office:council-chairman"), true);
+    assertEquals(entriesCsv.includes("dc.ward:8"), true);
     assertEquals(entriesCsv.includes("Committee of the Whole"), true);
     assertEquals(entriesCsv.includes("Trayon White"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:chairs"), true);
+    assertEquals(relationsCsv.includes("dc.relation:holds"), true);
     assertEquals(relationsCsv.includes("dc.relation:member_of"), true);
+    assertEquals(relationsCsv.includes("dc.relation:represents"), true);
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });
@@ -2227,6 +2330,9 @@ Deno.test("export command indexes committed state and writes release artifacts",
       "dc_board_affiliations.csv",
       "dc_commission_affiliations.csv",
       "dc_authority_affiliations.csv",
+      "govgraph_nodes.json",
+      "govgraph_edges.json",
+      "govgraph_summary.json",
       "manifest.json",
       "ledger.sqlite",
       "README.md",
@@ -2244,6 +2350,8 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(manifest.counts.boardAffiliations, 1);
     assertEquals(manifest.counts.commissionAffiliations, 1);
     assertEquals(manifest.counts.authorityAffiliations, 1);
+    assertEquals(manifest.counts.govGraphNodes, 5);
+    assertEquals(manifest.counts.govGraphEdges, 3);
 
     const affiliations = await Deno.readTextFile(join(releaseRoot, "dc_board_affiliations.csv"));
     assertEquals(affiliations.includes("dc.board:b-1"), true);
@@ -2259,6 +2367,15 @@ Deno.test("export command indexes committed state and writes release artifacts",
     );
     assertEquals(authorityAffiliations.includes("dc.authority:au-1"), true);
     assertEquals(authorityAffiliations.includes("dc.agency:agency-one"), true);
+
+    const govGraphEdges = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_edges.json")),
+    ) as Array<Record<string, unknown>>;
+    assertEquals(govGraphEdges.length, 3);
+    assertEquals(
+      govGraphEdges.every((edge) => edge.verb === "administered_by"),
+      true,
+    );
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
@@ -2597,6 +2714,10 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(stateEntries.includes("dc.agency:climate-task-force.json"), false);
     assertEquals(stateEntries.includes("dc.board:board-accountancy.json"), true);
     assertEquals(stateEntries.includes("dc.agency:department-of-public-works.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-1-123.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-law-10-50.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-1-200.json"), true);
+    assertEquals(stateEntries.includes("dc.legal_authority:d-c-code-47-2853-06-b-1.json"), true);
     assertEquals(stateEntries.includes("dc.agency:meetings.json"), false);
 
     const advisoryEntry = JSON.parse(
@@ -2607,6 +2728,13 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(
       advisoryEntry.relations["dc.relation:governs"]?.[0]?.to,
       "dc.agency:department-of-public-works",
+    );
+    assertEquals(
+      advisoryEntry.relations["dc.relation:authorized_by"]?.map((relation) => relation.to).sort(),
+      [
+        "dc.legal_authority:d-c-code-1-123",
+        "dc.legal_authority:d-c-law-10-50",
+      ],
     );
 
     const waterAuthorityEntry = JSON.parse(
@@ -2631,10 +2759,10 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
 
     const db = openWorkspace(workspace);
     initWorkspace(db);
-    assertEquals(countRows(db, "fragments"), 7);
+    assertEquals(countRows(db, "fragments"), 15);
     assertEquals(countRows(db, "baselines"), 1);
-    assertEquals(countRows(db, "state_entries"), 5);
-    assertEquals(countRows(db, "state_relations"), 1);
+    assertEquals(countRows(db, "state_entries"), 9);
+    assertEquals(countRows(db, "state_relations"), 5);
     const baselineRow = db.db.prepare(
       "SELECT payload FROM baselines ORDER BY id DESC LIMIT 1",
     ).get() as { payload: string } | undefined;
@@ -2669,8 +2797,9 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(exportCode, 0);
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
-    assertEquals(manifest.counts.entries, 5);
-    assertEquals(manifest.counts.relations, 1);
+    assertEquals(manifest.counts.entries, 9);
+    assertEquals(manifest.counts.relations, 5);
+    assertEquals(manifest.counts.relationKinds["dc.relation:authorized_by"], 4);
     assertEquals(manifest.counts.relationKinds["dc.relation:governs"], 1);
 
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
@@ -2680,9 +2809,12 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(entriesCsv.includes("Climate Task Force"), false);
     assertEquals(entriesCsv.includes("Board of Accountancy"), true);
     assertEquals(entriesCsv.includes("Department of Public Works"), true);
+    assertEquals(entriesCsv.includes("D.C. Law 10-50"), true);
+    assertEquals(entriesCsv.includes("D.C. Code § 1-123"), true);
 
     const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:governs"), true);
+    assertEquals(relationsCsv.includes("dc.relation:authorized_by"), true);
     assertEquals(relationsCsv.includes("dc.board:advisory-board"), true);
     assertEquals(relationsCsv.includes("dc.agency:department-of-public-works"), true);
   } finally {
@@ -3026,6 +3158,46 @@ Deno.test("CLI flow with dccourts.structure produces courts and division part_of
   }
 });
 
+Deno.test("CLI flow with dccourts.structure falls back to seeded official structure on 403", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-seeded-" });
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-dccourts-seeded-state-" });
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch =
+    (async () => new Response("blocked", { status: 403 })) as typeof globalThis.fetch;
+
+  try {
+    const collectCode = await runCli([
+      "--workspace",
+      workspace,
+      "collect",
+      "dccourts.structure",
+    ]);
+    assertEquals(collectCode, 0);
+
+    const generateCode = await runCli([
+      "--workspace",
+      workspace,
+      "--state-root",
+      stateRoot,
+      "state",
+      "generate",
+    ]);
+    assertEquals(generateCode, 0);
+
+    const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
+    assertEquals(stateEntries.includes("dc.court_system:district-of-columbia-courts.json"), true);
+    assertEquals(stateEntries.includes("dc.court:court-of-appeals.json"), true);
+    assertEquals(stateEntries.includes("dc.court:superior-court.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:civil-division.json"), true);
+    assertEquals(stateEntries.includes("dc.court_division:tax-division.json"), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
 Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-legal-state-" });
@@ -3171,8 +3343,19 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
         <head><title>Organizational Charts | mayor</title></head>
         <body>
           <h1>Organizational Charts for Agencies and Offices Under the Mayor's Authority</h1>
-          <p>Phone: (202) 727-2643</p>
-          <p>Email: mayor@example.com</p>
+          <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+            <div class="field-items">
+              <div class="field-item even" property="content:encoded">
+                <p><strong><a href="/sites/default/files/dc/sites/mayormb/page_content/attachments/OCA080921.pdf">Executive Office of the Mayor (EOM)</a>:</strong></p>
+                <ul>
+                  <li><strong>Office of Communications</strong>: Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.</li>
+                  <li><strong>Mayor's Office of Community Relations and Services (MOCRS)</strong>: Serves as the Mayor's primary constituent services organization by providing rapid and complete responses to constituent requests, complaints, and questions.</li>
+                </ul>
+                <p>Phone: (202) 727-2643</p>
+                <p>Email: mayor@example.com</p>
+              </div>
+            </div>
+          </div>
         </body>
       </html>
       `,
@@ -3182,7 +3365,16 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
       `
       <html>
         <head><title>Executive Branch | mayor</title></head>
-        <body><h1>Executive Branch</h1></body>
+        <body>
+          <h1>Executive Branch</h1>
+          <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+            <div class="field-items">
+              <div class="field-item even" property="content:encoded">
+                <p><strong><a href="https://mayor.dc.gov" title="Executive Office of the Mayor">Executive Office of the Mayor</a></strong></p>
+              </div>
+            </div>
+          </div>
+        </body>
       </html>
       `,
     ],
@@ -3240,13 +3432,27 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
       ),
     ) as {
       kind: string;
+      attributes: Record<string, unknown>;
       relations: Record<string, Array<{ kind: string; to: string }>>;
     };
     assertEquals(communicationsEntry.kind, "dc.office");
     assertEquals(
+      communicationsEntry.attributes.description,
+      "Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.",
+    );
+    assertEquals(
       communicationsEntry.relations["dc.relation:part_of"][0]?.to,
       "dc.office:executive-office-of-the-mayor",
     );
+
+    const eomEntry = JSON.parse(
+      await Deno.readTextFile(
+        join(stateRoot, "entries", "dc.office:executive-office-of-the-mayor.json"),
+      ),
+    ) as {
+      attributes: Record<string, unknown>;
+    };
+    assertEquals(eomEntry.attributes.officialUrl, "https://mayor.dc.gov/");
 
     const indexCode = await runCli([
       "--workspace",
@@ -3313,8 +3519,26 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
           <h1>ANC 4E</h1>
           <p>Email: 4e@example.com</p>
           <p>Phone: (202) 727-9945</p>
+          <p>Website: <a href="https://anc4e.example">anc4e.example</a></p>
           <p>Advisory Neighborhood Commission 4E represents the Crestwood and 16th Street Heights neighborhoods.</p>
           <p>Meeting Location: Virtual</p>
+          <div class="font-heavy">Commissioners</div>
+          <div>
+            <div class="uk-overflow-auto">
+              <table class="uk-table uk-table-striped">
+                <thead><tr><th>SMD</th><th>Name</th><th>Address</th><th>Phone</th><th>Email</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>4E01</td>
+                    <td><div>Aretha "Nikki" Jones</div><div><em>Treasurer</em></div></td>
+                    <td>Washington, DC 20011</td>
+                    <td>(202) 390-2229</td>
+                    <td><a href="mailto:4e01@example.com">4e01@example.com</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <a href="/financials">Financials</a>
         </body>
       </html>
@@ -3335,7 +3559,12 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     }
     return new Response(html, {
       status: 200,
-      headers: { "content-type": "text/html" },
+      headers: {
+        "content-type": "text/html",
+        ...(key.includes("/anc-profile/")
+          ? { "last-modified": "Tue, 16 Jun 2026 21:58:02 GMT" }
+          : {}),
+      },
     });
   }) as typeof globalThis.fetch;
 
@@ -3371,6 +3600,16 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
       ancEntry.attributes.representedNeighborhoods,
       "the Crestwood and 16th Street Heights neighborhoods",
     );
+    assertEquals(ancEntry.attributes.officialUrl, "https://anc4e.example/");
+    assertEquals(ancEntry.attributes.sourcePageLastModified, "2026-06-16T21:58:02.000Z");
+
+    const seatEntry = JSON.parse(
+      await Deno.readTextFile(join(stateRoot, "entries", "dc.anc_commissioner_seat:4E01.json")),
+    ) as {
+      attributes: Record<string, unknown>;
+    };
+    assertEquals(seatEntry.attributes.currentHolderName, 'Aretha "Nikki" Jones');
+    assertEquals(seatEntry.attributes.officerRole, "Treasurer");
 
     const indexCode = await runCli([
       "--workspace",
@@ -3405,9 +3644,19 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
     assertEquals(entriesCsv.includes("Crestwood and 16th Street Heights"), true);
     assertEquals(entriesCsv.includes("4e@example.com"), false);
+    assertEquals(entriesCsv.includes("4e01@example.com"), false);
     assertEquals(entriesCsv.includes("(202) 727-9945"), false);
+    assertEquals(entriesCsv.includes("(202) 390-2229"), false);
     assertEquals(entriesCsv.includes("Meeting Location"), false);
     assertEquals(entriesCsv.includes("Financials"), false);
+
+    const govGraphNodes = JSON.parse(
+      await Deno.readTextFile(join(releaseRoot, "govgraph_nodes.json")),
+    ) as Array<{ id: string; description?: string }>;
+    assertEquals(
+      govGraphNodes.find((node) => node.id === "dc.anc_commissioner_seat:4E01")?.description,
+      'Current commissioner: Aretha "Nikki" Jones. Officer role: Treasurer.',
+    );
   } finally {
     globalThis.fetch = originalFetch;
     await Deno.remove(workspace, { recursive: true });
@@ -3524,6 +3773,57 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(listJson.items[0].id, itemId);
     assertEquals(listJson.items[0].status, "open");
 
+    const dashboardResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+      ])
+    );
+    assertEquals(dashboardResult.code, 0);
+    assertEquals(dashboardResult.output.includes("Civic Ledger Review"), true);
+    assertEquals(dashboardResult.output.includes("Blocking"), true);
+    assertEquals(dashboardResult.output.includes("deno task civic review next"), true);
+
+    const inboxResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "inbox",
+        "--json",
+      ])
+    );
+    assertEquals(inboxResult.code, 0);
+    const inboxJson = JSON.parse(inboxResult.output) as {
+      reviewItemCount: number;
+      items: Array<{ id: string }>;
+    };
+    assertEquals(inboxJson.reviewItemCount, 1);
+    assertEquals(inboxJson.items[0].id, itemId);
+
+    const nextResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "next",
+      ])
+    );
+    assertEquals(nextResult.code, 0);
+    assertEquals(
+      nextResult.output.includes(
+        "Do these similarly named entries represent distinct civic things?",
+      ),
+      true,
+    );
+
     const showResult = await captureConsole(() =>
       runCli([
         "--workspace",
@@ -3583,10 +3883,11 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       stateRoot,
       "revision",
       "apply-draft",
-      draftId,
+      draftFiles[0],
     ]);
     assertEquals(applyCode, 0);
     assertEquals(await exists(join(revisionRoot, `${draftId}.json`)), true);
+    assertEquals(await exists(join(workspace, "draft-revisions", draftFiles[0])), false);
 
     const regenerateCode = await runCli([
       "--workspace",

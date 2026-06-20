@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 8F04",
   "attributes": {
+    "currentHolderName": "Edward Daniels",
+    "officerRole": "Secretary",
     "sourceAncId": "8F",
     "sourceFirstName": "EDWARD",
     "sourceLastName": "DANIELS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceRepresentativeName": "EDWARD DANIELS",
     "sourceSmdId": "8F04"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "8F04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
     }
   ],
   "relations": {

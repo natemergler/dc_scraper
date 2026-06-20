@@ -8,6 +8,7 @@ import { interpretMayorExecutiveStructure } from "../../../src/jurisdictions/dc/
 import { normalizeAgencyLookupKey } from "../../../src/jurisdictions/dc/interpreters/context.ts";
 
 const sourceUrl = mayorExecutiveStructureSource.pages[0].url;
+const executiveBranchUrl = mayorExecutiveStructureSource.pages[1].url;
 
 Deno.test("mayor.executive_structure records become offices and source-backed hierarchy relations", () => {
   const agencyLookup = new Map<string, string>([
@@ -15,27 +16,40 @@ Deno.test("mayor.executive_structure records become offices and source-backed hi
   ]);
   const output = interpretMayorExecutiveStructure(
     [
-      record("executive-office-of-the-mayor", "Executive Office of the Mayor", "office"),
+      record("executive-office-of-the-mayor", "Executive Office of the Mayor", "office", {
+        officialUrl: "https://mayor.dc.gov/",
+        sourcePageUrls: [sourceUrl, executiveBranchUrl],
+      }),
       record(
         "office-of-the-city-administrator",
         "Office of the City Administrator",
         "office",
-        "executive-office-of-the-mayor",
-        "part_of",
+        {
+          parentKey: "executive-office-of-the-mayor",
+          relationKind: "part_of",
+          description:
+            "Responsible for the day-to-day management of the District government, setting operational goals, and implementing the legislative actions and policy decisions of the Mayor and DC Council.",
+          officialUrl: "https://oca.dc.gov/",
+          sourcePageUrls: [sourceUrl, executiveBranchUrl],
+        },
       ),
       record(
         "office-of-the-deputy-mayor-for-operations-and-infrastructure",
         "Office of the Deputy Mayor for Operations and Infrastructure",
         "office",
-        "executive-office-of-the-mayor",
-        "part_of",
+        {
+          parentKey: "executive-office-of-the-mayor",
+          relationKind: "part_of",
+        },
       ),
       record(
         "district-department-of-transportation",
         "District Department of Transportation",
         "agency_ref",
-        "office-of-the-deputy-mayor-for-operations-and-infrastructure",
-        "reports_to",
+        {
+          parentKey: "office-of-the-deputy-mayor-for-operations-and-infrastructure",
+          relationKind: "reports_to",
+        },
       ),
     ],
     { agencyLookup },
@@ -51,8 +65,23 @@ Deno.test("mayor.executive_structure records become offices and source-backed hi
   assertEquals(eom.attributes.shortName, "Executive Office of the Mayor");
   assertEquals(eom.attributes.sourceOfficeKey, "executive-office-of-the-mayor");
   assertEquals(eom.attributes.sourcePageUrl, sourceUrl);
+  assertEquals(eom.attributes.officialUrl, "https://mayor.dc.gov/");
+  assertEquals(eom.attributes.sourcePageUrls, [sourceUrl, executiveBranchUrl]);
+  assertEquals(eom.citations, [
+    cite(mayorExecutiveStructureSource.id, "executive-office-of-the-mayor", {
+      url: sourceUrl,
+    }),
+    cite(mayorExecutiveStructureSource.id, "executive-office-of-the-mayor", {
+      url: executiveBranchUrl,
+    }),
+  ]);
 
   assertEquals(oca.provisionalId, "dc.office:office-of-the-city-administrator");
+  assertEquals(
+    oca.attributes.description,
+    "Responsible for the day-to-day management of the District government, setting operational goals, and implementing the legislative actions and policy decisions of the Mayor and DC Council.",
+  );
+  assertEquals(oca.attributes.officialUrl, "https://oca.dc.gov/");
   assertEquals(
     dmoi.provisionalId,
     "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
@@ -110,8 +139,10 @@ Deno.test("mayor.executive_structure reports unresolved agency refs without crea
       "department-of-example",
       "Department of Example",
       "agency_ref",
-      "executive-office-of-the-mayor",
-      "reports_to",
+      {
+        parentKey: "executive-office-of-the-mayor",
+        relationKind: "reports_to",
+      },
     ),
   ]);
 
@@ -164,8 +195,13 @@ function record(
   key: string,
   name: string,
   entryKind: "office" | "agency_ref",
-  parentKey?: string,
-  relationKind?: "part_of" | "reports_to",
+  options?: {
+    parentKey?: string;
+    relationKind?: "part_of" | "reports_to";
+    sourcePageUrls?: string[];
+    description?: string;
+    officialUrl?: string;
+  },
 ) {
   return {
     source: mayorExecutiveStructureSource.id,
@@ -175,11 +211,14 @@ function record(
       key,
       name,
       sourceUrl,
+      sourcePageUrls: options?.sourcePageUrls,
       entryKind,
-      parentKey,
-      relationKind,
+      parentKey: options?.parentKey,
+      relationKind: options?.relationKind,
       pageTitle: "Organizational Charts | mayor",
       heading: "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+      description: options?.description,
+      officialUrl: options?.officialUrl,
     },
   };
 }

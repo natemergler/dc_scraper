@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "workforce-investment-council-wic"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "workforce-investment-council-wic",
-      "locator": "Mayor's Order 2011-114"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2011-114",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "workforce-investment-council-wic",
+            "locator": "Mayor's Order 2011-114"
+          }
+        ]
+      }
+    ]
+  }
 }

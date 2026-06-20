@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6E05",
   "attributes": {
+    "currentHolderName": "Ahmad Abu-Khalaf",
+    "officerRole": "Chairperson",
     "sourceAncId": "6E",
     "sourceFirstName": "AHMAD",
     "sourceLastName": "ABU-KHALAF",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceRepresentativeName": "AHMAD ABU-KHALAF",
     "sourceSmdId": "6E05"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6E05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6e"
     }
   ],
   "relations": {

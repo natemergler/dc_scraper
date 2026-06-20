@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7E03",
   "attributes": {
+    "currentHolderName": "Gail Perkins",
     "sourceAncId": "7E",
     "sourceFirstName": "GAIL",
     "sourceLastName": "PERKINS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "sourcePageLastModified": "2026-06-16T20:48:07.000Z",
     "sourceRepresentativeName": "GAIL PERKINS",
     "sourceSmdId": "7E03"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7E03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
     }
   ],
   "relations": {

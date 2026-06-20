@@ -21,11 +21,14 @@ export interface MayorExecutiveStructurePayload {
   key?: unknown;
   name?: unknown;
   sourceUrl?: unknown;
+  sourcePageUrls?: unknown;
   entryKind?: unknown;
   parentKey?: unknown;
   relationKind?: unknown;
   pageTitle?: unknown;
   heading?: unknown;
+  description?: unknown;
+  officialUrl?: unknown;
 }
 
 const sourceKind = "mayor.executive_structure" as const;
@@ -72,11 +75,14 @@ export function interpretMayorExecutiveStructure(
     key: string;
     name: string;
     sourceUrl: string;
+    sourcePageUrls?: string[];
     entryKind: "office" | "agency_ref";
     parentKey?: string;
     relationKind?: "dc.relation:part_of" | "dc.relation:reports_to";
     pageTitle?: string;
     heading?: string;
+    description?: string;
+    officialUrl?: string;
   }> = [];
 
   for (const record of records) {
@@ -103,6 +109,7 @@ export function interpretMayorExecutiveStructure(
     const key = asString(sourceRecord.key);
     const name = asString(sourceRecord.name);
     const sourceUrl = asString(sourceRecord.sourceUrl);
+    const sourcePageUrls = asStringArray(sourceRecord.sourcePageUrls);
     const sourceEntryKind = asString(sourceRecord.entryKind);
     const relationKind = relationKindForSourceValue(asString(sourceRecord.relationKind));
 
@@ -130,6 +137,9 @@ export function interpretMayorExecutiveStructure(
       relationKind: relationKind ?? undefined,
       pageTitle: asString(sourceRecord.pageTitle) ?? undefined,
       heading: asString(sourceRecord.heading) ?? undefined,
+      description: asString(sourceRecord.description) ?? undefined,
+      officialUrl: asString(sourceRecord.officialUrl) ?? undefined,
+      sourcePageUrls: sourcePageUrls.length > 1 ? sourcePageUrls : undefined,
     };
     parsedRecords.push(parsed);
 
@@ -149,11 +159,20 @@ export function interpretMayorExecutiveStructure(
       sourceMayorExecutiveStructureKey: parsed.key,
       sourcePageUrl: parsed.sourceUrl,
     };
+    if (parsed.sourcePageUrls) {
+      attributes.sourcePageUrls = parsed.sourcePageUrls;
+    }
     if (parsed.pageTitle) {
       attributes.sourcePageTitle = parsed.pageTitle;
     }
     if (parsed.heading) {
       attributes.sourceHeading = parsed.heading;
+    }
+    if (parsed.description) {
+      attributes.description = parsed.description;
+    }
+    if (parsed.officialUrl) {
+      attributes.officialUrl = parsed.officialUrl;
     }
 
     entryFragments.push({
@@ -165,7 +184,7 @@ export function interpretMayorExecutiveStructure(
       kind: officeKind,
       name: parsed.name,
       attributes,
-      citations: [cite(sourceKind, parsed.record.key, { url: parsed.sourceUrl })],
+      citations: entryCitationsFor(parsed.record.key, parsed.sourceUrl, parsed.sourcePageUrls),
     });
   }
 
@@ -233,4 +252,36 @@ export function interpretMayorExecutiveStructure(
   }
 
   return { entryFragments, relationFragments, findings };
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap((item) => {
+    const normalized = asString(item);
+    return normalized ? [normalized] : [];
+  });
+}
+
+function entryCitationsFor(
+  sourceRecordId: string,
+  sourceUrl: string,
+  sourcePageUrls?: string[],
+) {
+  const urls = uniqueStrings([sourceUrl, ...(sourcePageUrls ?? [])]);
+  return urls.map((url) => cite(sourceKind, sourceRecordId, { url }));
+}
+
+function uniqueStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const value of values) {
+    if (!value || seen.has(value)) {
+      continue;
+    }
+    seen.add(value);
+    unique.push(value);
+  }
+  return unique;
 }

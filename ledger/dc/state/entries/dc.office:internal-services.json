@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Internal Services",
   "attributes": {
+    "description": "A division of OCA, led by the Assistant City Administrator, which oversees the District agencies that provide services directly to the District government.",
     "shortName": "Internal Services",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "internal-services",

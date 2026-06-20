@@ -17,21 +17,29 @@
       "sourceRecordId": "123"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "123",
-      "locator": "D.C. Code § 8-1774.03"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "sustainable-energy-utility-advisory-board-seu-advisory-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "sustainable-energy-utility-advisory-board-seu-advisory-board",
-      "locator": "DC Code § 8-1774.03"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-8-1774-03",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "123",
+            "locator": "D.C. Code § 8-1774.03"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "sustainable-energy-utility-advisory-board-seu-advisory-board",
+            "locator": "D.C. Code § 8-1774.03"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "123"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "123",
-            "locator": "D.C. Code § 8-1774.03"
           }
         ]
       }

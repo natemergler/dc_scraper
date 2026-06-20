@@ -5,7 +5,7 @@ import {
   type Finding,
   type RelationFragment,
 } from "../../../core/types.ts";
-import { collectRecordCitations } from "./citations.ts";
+import { buildRecordLegalAuthorityArtifacts } from "./legal_authorities.ts";
 import {
   dcAgencyReferenceId,
   type DcInterpreterContext,
@@ -151,7 +151,13 @@ export function interpretDcgisBoards(
 
     const provisionalId = makeBoardProvisionalId(boardId);
     const shortName = parseShortName(sourceRecord, boardName);
-    const citations = collectRecordCitations(sourceKind, record.key, sourceRecord);
+    const legalAuthorityArtifacts = buildRecordLegalAuthorityArtifacts({
+      source: sourceKind,
+      sourceRecordId: record.key,
+      subjectProvisionalId: provisionalId,
+      payload: sourceRecord,
+    });
+    const citations = legalAuthorityArtifacts.entryCitations;
 
     entryFragments.push({
       fragmentType: "entry",
@@ -167,6 +173,8 @@ export function interpretDcgisBoards(
       },
       citations,
     });
+    entryFragments.push(...legalAuthorityArtifacts.entryFragments);
+    relationFragments.push(...legalAuthorityArtifacts.relationFragments);
 
     const parentAgencyId = parseAgencyId(sourceRecord, context);
     if (parentAgencyId) {
@@ -177,7 +185,7 @@ export function interpretDcgisBoards(
         from: provisionalId,
         relationKind,
         to: makeAgencyProvisionalId(parentAgencyId),
-        citations,
+        citations: [cite(sourceKind, record.key)],
       });
     }
   }

@@ -4,6 +4,7 @@
   "kind": "dc.board",
   "name": "Alcoholic Beverage and Cannabis Board (ABC Board)",
   "attributes": {
+    "description": "Report website problems to: Drupal development webmaster",
     "shortName": "Alcoholic Beverage and Cannabis Board (ABC Board)",
     "sourceOpenDcSlug": "alcoholic-beverage-control-board-abc-board",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/alcoholic-beverage-control-board-abc-board"

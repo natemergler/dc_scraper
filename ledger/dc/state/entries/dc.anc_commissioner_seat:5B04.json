@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 5B04",
   "attributes": {
+    "currentHolderName": "Ra Amin",
     "sourceAncId": "5B",
     "sourceFirstName": "RA",
     "sourceLastName": "AMIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourcePageLastModified": "2026-06-16T20:26:27.000Z",
     "sourceRepresentativeName": "RA AMIN",
     "sourceSmdId": "5B04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "5B04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
     }
   ],
   "relations": {

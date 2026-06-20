@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Buildings",
   "attributes": {
+    "officialUrl": "https://dob.dc.gov",
     "shortName": "Department of Buildings",
-    "sourceAgencyId": "1181"
+    "sourceAgencyId": "1181",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-buildings:dob-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "158"

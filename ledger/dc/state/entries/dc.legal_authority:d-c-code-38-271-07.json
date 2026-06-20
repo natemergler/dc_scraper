@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-38-271-07",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 38-271.07",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/38-271.07",
+    "locator": "D.C. Code § 38-271.07",
+    "shortName": "D.C. Code § 38-271.07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "7",
+      "locator": "D.C. Code § 38-271.07"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-early-childhood-development-coordinating-council-secdc",
+      "locator": "D.C. Code § 38-271.07"
+    }
+  ],
+  "relations": {}
+}

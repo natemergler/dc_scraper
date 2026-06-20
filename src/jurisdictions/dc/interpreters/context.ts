@@ -1,6 +1,7 @@
 export interface DcInterpreterContext {
   agencyLookup?: Map<string, string>;
   agencyIdLookup?: Map<string, string>;
+  agencyNameLookup?: Map<string, string>;
   publicBodyLookup?: Map<string, { provisionalId: string; sourceRecordId: string }>;
   councilmemberLookup?: Map<string, { provisionalId: string; sourceRecordId: string }>;
 }

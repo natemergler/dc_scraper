@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Disability Rights",
   "attributes": {
+    "officialUrl": "https://odr.dc.gov",
     "shortName": "Office of Disability Rights",
-    "sourceAgencyId": "1072"
+    "sourceAgencyId": "1072",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-disability-rights:odr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "63"

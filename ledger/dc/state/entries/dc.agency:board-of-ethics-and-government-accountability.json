@@ -4,6 +4,7 @@
   "kind": "dc.agency",
   "name": "Board of Ethics and Government Accountability",
   "attributes": {
+    "officialUrl": "https://bega.dc.gov",
     "revisionReviews": [
       {
         "canonicalEntryId": "dc.agency:board-of-ethics-and-government-accountability",
@@ -28,13 +29,18 @@
     "sourceAgencyId": "1138",
     "sourceBegaStructureKey": "board-of-ethics-and-government-accountability",
     "sourcePageTitle": "About BEGA | bega",
-    "sourcePageUrl": "https://bega.dc.gov/node/61616/"
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
     {
       "source": "bega.structure",
       "sourceRecordId": "board-of-ethics-and-government-accountability",
       "url": "https://bega.dc.gov/node/61616/"
+    },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "board-of-ethics-and-government-accountability:bega-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
     },
     {
       "source": "dcgis.agencies",

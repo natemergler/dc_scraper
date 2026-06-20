@@ -196,6 +196,11 @@ export function saveSnapshot(workspace: Workspace, snapshot: SnapshotInput): num
   return row.id;
 }
 
+export function replaceSourceData(workspace: Workspace, source: string): void {
+  workspace.db.run("DELETE FROM records WHERE source = ?", [source]);
+  workspace.db.run("DELETE FROM snapshots WHERE source = ?", [source]);
+}
+
 export function saveRecords(workspace: Workspace, records: RecordInput[]): void {
   for (const record of records) {
     const payload = JSON.stringify(record.payload);

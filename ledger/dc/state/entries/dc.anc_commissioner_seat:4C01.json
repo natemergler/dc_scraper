@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 4C01",
   "attributes": {
+    "currentHolderName": "Emily Winternitz",
     "sourceAncId": "4C",
     "sourceFirstName": "EMILY",
     "sourceLastName": "WINTERNITZ",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourcePageLastModified": "2026-06-16T21:38:19.000Z",
     "sourceRepresentativeName": "EMILY WINTERNITZ",
     "sourceSmdId": "4C01"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "4C01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
     }
   ],
   "relations": {

@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Office of Communications",
   "attributes": {
+    "description": "Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.",
     "shortName": "Office of Communications",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-communications",

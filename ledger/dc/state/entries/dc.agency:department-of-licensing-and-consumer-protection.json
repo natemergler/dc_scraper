@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Licensing and Consumer Protection",
   "attributes": {
+    "officialUrl": "https://dlcp.dc.gov",
     "shortName": "Department of Licensing and Consumer Protection",
-    "sourceAgencyId": "1180"
+    "sourceAgencyId": "1180",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-licensing-and-consumer-protection:dlcp-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "157"

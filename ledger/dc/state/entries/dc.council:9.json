@@ -17,24 +17,29 @@
       "sourceRecordId": "9"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "9",
-      "locator": "D.C. Code § 4-752.01"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "interagency-council-homelessness-ich"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "interagency-council-homelessness-ich",
-      "locator": "D.C. Code § 4-752.01"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "interagency-council-homelessness-ich",
-      "locator": "DC Code § 4-752.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-4-752-01",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "9",
+            "locator": "D.C. Code § 4-752.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "interagency-council-homelessness-ich",
+            "locator": "D.C. Code § 4-752.01",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/4-752.01.html"
+          }
+        ]
+      }
+    ]
+  }
 }

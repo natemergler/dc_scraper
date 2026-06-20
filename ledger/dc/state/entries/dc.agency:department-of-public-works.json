@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Department of Public Works",
   "attributes": {
+    "officialUrl": "https://dpw.dc.gov",
     "shortName": "Department of Public Works",
-    "sourceAgencyId": "1045"
+    "sourceAgencyId": "1045",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-public-works:dpw-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "42"

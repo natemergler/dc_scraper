@@ -4,14 +4,52 @@
   "kind": "dc.office",
   "name": "Office of the Deputy Mayor for Planning and Economic Development",
   "attributes": {
+    "description": "Oversees District agencies involved in the coordination, planning, supervision, and execution of economic development efforts with the goal of creating and preserving affordable housing, creating jobs, and increasing tax revenue.",
+    "officialUrl": "http://dmped.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development-dmped:dmped-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "35"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of the Deputy Mayor for Planning and Economic Development. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-the-deputy-mayor-for-planning-and-economic-development"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-the-deputy-mayor-for-planning-and-economic-develo-1oamvxe-dc-office-office-of-the-deputy-mayor-for-ysghif",
+        "source": "review_cli"
+      }
+    ],
     "shortName": "Office of the Deputy Mayor for Planning and Economic Development",
     "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
     "sourceMayorExecutiveStructureKey": "office-of-the-deputy-mayor-for-planning-and-economic-development",
     "sourceOfficeKey": "office-of-the-deputy-mayor-for-planning-and-economic-development",
     "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
-    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
   },
   "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
     {
       "source": "mayor.executive_structure",
       "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development",

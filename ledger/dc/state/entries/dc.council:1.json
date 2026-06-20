@@ -15,16 +15,24 @@
       "sourceRecordId": "1"
     },
     {
-      "source": "dcgis.councils",
-      "sourceRecordId": "1",
-      "locator": "D.C. Code § 49-1101.20"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "district-columbia-educational-opportunity-military-children-state-council"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-49-1101-20",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "1",
+            "locator": "D.C. Code § 49-1101.20"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -33,11 +41,6 @@
           {
             "source": "dcgis.councils",
             "sourceRecordId": "1"
-          },
-          {
-            "source": "dcgis.councils",
-            "sourceRecordId": "1",
-            "locator": "D.C. Code § 49-1101.20"
           },
           {
             "source": "open_dc.public_bodies",

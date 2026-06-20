@@ -14,12 +14,21 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors",
-      "locator": "DC Code § 13-38"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-13-38",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors",
+            "locator": "D.C. Code § 13-38"
+          }
+        ]
+      }
+    ]
+  }
 }

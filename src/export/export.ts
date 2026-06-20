@@ -3,7 +3,9 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 
 import { type CitationValue, isCitationValue } from "../core/types.ts";
+import type { ReviewItem } from "../review/items.ts";
 import type { Workspace } from "../workspace/workspace.ts";
+import { buildGovGraphProjection } from "./public_projection.ts";
 
 export interface ExportResult {
   releaseRoot: string;
@@ -15,6 +17,8 @@ export interface ExportResult {
   boardAffiliationCount: number;
   commissionAffiliationCount: number;
   authorityAffiliationCount: number;
+  govGraphNodeCount: number;
+  govGraphEdgeCount: number;
   ledgerSqlitePath: string;
 }
 
@@ -52,6 +56,7 @@ export interface ExportReleaseOptions {
   jurisdiction: string;
   releaseRoot: string;
   sourceCatalog?: SourceCoverageCatalogItem[];
+  reviewItems?: ReviewItem[];
 }
 
 export async function exportReleaseArtifacts(
@@ -87,9 +92,13 @@ export async function exportReleaseArtifacts(
   const entryIndex = new Map<
     string,
     {
+      family: string;
       kind: string;
       name: string;
       shortName: string;
+      attributes: Record<string, unknown>;
+      citations: CitationValue[];
+      relations: Record<string, Array<{ kind: string; to: string; citations: CitationValue[] }>>;
     }
   >();
 
@@ -110,9 +119,13 @@ export async function exportReleaseArtifacts(
     ]);
 
     entryIndex.set(row.entry_id, {
+      family: String(payload.family ?? ""),
       kind: String(payload.kind ?? ""),
       name: String(payload.name ?? ""),
       shortName: typeof attributes.shortName === "string" ? attributes.shortName : "",
+      attributes,
+      citations,
+      relations: {},
     });
 
     for (const citation of citations) {
@@ -129,6 +142,17 @@ export async function exportReleaseArtifacts(
     relationKindCounts.set(row.relation_kind, previousKindCount + 1);
 
     const citations = parseCitationArray(safeJsonParse(row.citations, []));
+    const indexedEntry = entryIndex.get(row.from_entry_id);
+    if (indexedEntry) {
+      const relationsForKind = indexedEntry.relations[row.relation_kind] ?? [];
+      relationsForKind.push({
+        kind: row.relation_kind,
+        to: row.to_entry_id,
+        citations,
+      });
+      indexedEntry.relations[row.relation_kind] = relationsForKind;
+    }
+
     relationsOut.push([
       row.from_entry_id,
       row.relation_kind,
@@ -235,6 +259,20 @@ export async function exportReleaseArtifacts(
     sourceRows,
     recordCountBySource,
   });
+  const govGraph = buildGovGraphProjection(
+    Array.from(entryIndex.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([id, entry]) => ({
+        id,
+        family: entry.family,
+        kind: entry.kind,
+        name: entry.name,
+        attributes: entry.attributes,
+        citations: entry.citations,
+        relations: entry.relations,
+      })),
+    options.reviewItems ?? [],
+  );
 
   const exportedAt = new Date().toISOString();
 
@@ -350,6 +388,21 @@ export async function exportReleaseArtifacts(
     "notes",
   ], sourceCoverageRows);
 
+  await Deno.writeTextFile(
+    join(releaseRoot, "govgraph_nodes.json"),
+    JSON.stringify(govGraph.nodes, null, 2) + "\n",
+  );
+
+  await Deno.writeTextFile(
+    join(releaseRoot, "govgraph_edges.json"),
+    JSON.stringify(govGraph.edges, null, 2) + "\n",
+  );
+
+  await Deno.writeTextFile(
+    join(releaseRoot, "govgraph_summary.json"),
+    JSON.stringify(govGraph.summary, null, 2) + "\n",
+  );
+
   const manifestPath = join(releaseRoot, "manifest.json");
   const manifest = {
     schemaVersion: 1,
@@ -364,6 +417,9 @@ export async function exportReleaseArtifacts(
       boardAffiliationsCsv: "dc_board_affiliations.csv",
       commissionAffiliationsCsv: "dc_commission_affiliations.csv",
       authorityAffiliationsCsv: "dc_authority_affiliations.csv",
+      govGraphNodesJson: "govgraph_nodes.json",
+      govGraphEdgesJson: "govgraph_edges.json",
+      govGraphSummaryJson: "govgraph_summary.json",
       ledgerSqlite: "ledger.sqlite",
       readme: "README.md",
     },
@@ -379,7 +435,10 @@ export async function exportReleaseArtifacts(
       boardAffiliations: boardAffiliationsOut.length,
       commissionAffiliations: commissionAffiliationsOut.length,
       authorityAffiliations: authorityAffiliationsOut.length,
+      govGraphNodes: govGraph.nodes.length,
+      govGraphEdges: govGraph.edges.length,
     },
+    govGraph: govGraph.summary,
   };
 
   await Deno.writeTextFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
@@ -404,6 +463,9 @@ export async function exportReleaseArtifacts(
       "- dc_board_affiliations.csv",
       "- dc_commission_affiliations.csv",
       "- dc_authority_affiliations.csv",
+      "- govgraph_nodes.json",
+      "- govgraph_edges.json",
+      "- govgraph_summary.json",
       "- manifest.json",
       "- ledger.sqlite",
       "",
@@ -545,6 +607,8 @@ export async function exportReleaseArtifacts(
     boardAffiliationCount: boardAffiliationsOut.length,
     commissionAffiliationCount: commissionAffiliationsOut.length,
     authorityAffiliationCount: authorityAffiliationsOut.length,
+    govGraphNodeCount: govGraph.nodes.length,
+    govGraphEdgeCount: govGraph.edges.length,
     ledgerSqlitePath: ledgerPath,
   };
 }

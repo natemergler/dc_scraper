@@ -17,21 +17,29 @@
       "sourceRecordId": "58"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "58",
-      "locator": "D.C. Code § 3-1202.12"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-social-work"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-social-work",
-      "locator": "DC Code § 3-1202.12"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-12",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "58",
+            "locator": "D.C. Code § 3-1202.12"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-social-work",
+            "locator": "D.C. Code § 3-1202.12"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "58"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "58",
-            "locator": "D.C. Code § 3-1202.12"
           }
         ]
       }

@@ -14,17 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-academy-hope-adult-public-charter-school"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-academy-hope-adult-public-charter-school",
-      "locator": "D.C. Code § 38-1802.05"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-academy-hope-adult-public-charter-school",
-      "locator": "D.C. Official Code § 38-1802.05"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1802-05",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-academy-hope-adult-public-charter-school",
+            "locator": "D.C. Code § 38-1802.05",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1802.05"
+          }
+        ]
+      }
+    ]
+  }
 }

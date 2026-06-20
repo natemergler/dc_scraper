@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-3-1202-21",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 3-1202.21",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.21",
+    "locator": "D.C. Code § 3-1202.21",
+    "shortName": "D.C. Code § 3-1202.21"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "60",
+      "locator": "D.C. Code § 3-1202.21"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-veterinary-medicine",
+      "locator": "D.C. Code § 3-1202.21"
+    }
+  ],
+  "relations": {}
+}

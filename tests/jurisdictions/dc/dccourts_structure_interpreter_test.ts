@@ -17,6 +17,7 @@ Deno.test("dccourts.structure records become court entries and part_of fragments
         key: "district-of-columbia-courts",
         url: "https://www.dccourts.gov/",
         entryKind: "court_system",
+        fromSeed: true,
       },
     },
     {
@@ -29,6 +30,9 @@ Deno.test("dccourts.structure records become court entries and part_of fragments
         url: "https://www.dccourts.gov/court-of-appeals",
         entryKind: "court",
         parentName: "District of Columbia Courts",
+        summary:
+          "The District of Columbia Court of Appeals is the highest court of the District of Columbia.",
+        fromSeed: true,
       },
     },
     {
@@ -41,6 +45,8 @@ Deno.test("dccourts.structure records become court entries and part_of fragments
         url: "https://www.dccourts.gov/superior-court",
         entryKind: "court",
         parentName: "District of Columbia Courts",
+        summary:
+          "The Superior Court is the court of general jurisdiction over nearly all local legal matters.",
       },
     },
     {
@@ -66,13 +72,24 @@ Deno.test("dccourts.structure records become court entries and part_of fragments
   assertEquals(root.provisionalId, "dc.court_system:district-of-columbia-courts");
   assertEquals(root.kind, "dc.court_system");
   assertEquals(root.attributes.sourceCourtSystemKey, "district-of-columbia-courts");
+  assertEquals(root.attributes.officialUrl, "https://www.dccourts.gov/");
+  assertEquals(root.attributes.sourceFromSeed, true);
 
   assertEquals(appeals.provisionalId, "dc.court:court-of-appeals");
   assertEquals(appeals.kind, "dc.court");
   assertEquals(appeals.attributes.sourceCourtKey, "court-of-appeals");
+  assertEquals(
+    appeals.attributes.description,
+    "The District of Columbia Court of Appeals is the highest court of the District of Columbia.",
+  );
+  assertEquals(appeals.attributes.sourceFromSeed, true);
 
   assertEquals(superior.provisionalId, "dc.court:superior-court");
   assertEquals(superior.kind, "dc.court");
+  assertEquals(
+    superior.attributes.description,
+    "The Superior Court is the court of general jurisdiction over nearly all local legal matters.",
+  );
 
   assertEquals(civil.provisionalId, "dc.court_division:civil-division");
   assertEquals(civil.kind, "dc.court_division");

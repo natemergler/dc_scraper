@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of the Senior Advisor",
   "attributes": {
+    "officialUrl": "https://osa.dc.gov",
     "shortName": "Office of the Senior Advisor",
-    "sourceAgencyId": "1096"
+    "sourceAgencyId": "1096",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-senior-advisor:osa-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "79"

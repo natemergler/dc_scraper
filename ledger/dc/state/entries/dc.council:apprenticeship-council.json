@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "apprenticeship-council"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "apprenticeship-council",
-      "locator": "D.C. Code § 32-1402"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-32-1402",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "apprenticeship-council",
+            "locator": "D.C. Code § 32-1402"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

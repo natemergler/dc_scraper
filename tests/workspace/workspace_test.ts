@@ -5,6 +5,7 @@ import {
   indexState,
   initWorkspace,
   openWorkspace,
+  replaceSourceData,
   saveBaseline,
   saveFinding,
   saveFragments,
@@ -86,6 +87,50 @@ Deno.test("saveSnapshot/saveRecords/saveFragments/saveFinding insert rows", () =
   assertEquals(countRows(workspace, "records"), 1);
   assertEquals(countRows(workspace, "fragments"), 1);
   assertEquals(countRows(workspace, "findings"), 1);
+
+  closeWorkspace(workspace);
+  Deno.removeSync(workspaceRoot, { recursive: true });
+});
+
+Deno.test("replaceSourceData removes stale rows for one source only", () => {
+  const workspaceRoot = joinTempDir();
+  const workspace = openWorkspace(workspaceRoot);
+  initWorkspace(workspace);
+
+  const snapshotOne = saveSnapshot(workspace, {
+    source: "dc.agency_directory",
+    key: "index",
+    payload: { total: 2 },
+  });
+  const snapshotTwo = saveSnapshot(workspace, {
+    source: "dcgis.agencies",
+    key: "index",
+    payload: { total: 1 },
+  });
+
+  saveRecords(workspace, [{
+    source: "dc.agency_directory",
+    snapshotId: snapshotOne,
+    key: "old-row",
+    payload: { directoryName: "Old Row" },
+  }, {
+    source: "dcgis.agencies",
+    snapshotId: snapshotTwo,
+    key: "agency-row",
+    payload: { id: "agency-1" },
+  }]);
+
+  replaceSourceData(workspace, "dc.agency_directory");
+
+  const remainingSources = workspace.db.prepare(
+    "SELECT source, COUNT(*) AS count FROM records GROUP BY source ORDER BY source",
+  ).all() as Array<{ source: string; count: number }>;
+  const remainingSnapshots = workspace.db.prepare(
+    "SELECT source, COUNT(*) AS count FROM snapshots GROUP BY source ORDER BY source",
+  ).all() as Array<{ source: string; count: number }>;
+
+  assertEquals(remainingSources, [{ source: "dcgis.agencies", count: 1 }]);
+  assertEquals(remainingSnapshots, [{ source: "dcgis.agencies", count: 1 }]);
 
   closeWorkspace(workspace);
   Deno.removeSync(workspaceRoot, { recursive: true });

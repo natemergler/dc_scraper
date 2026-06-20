@@ -4,16 +4,22 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 7E07",
   "attributes": {
+    "currentHolderName": "Vacant",
+    "officerRole": "Secretary",
     "sourceAncId": "7E",
-    "sourceFirstName": "CELETE",
-    "sourceLastName": "KATO",
-    "sourceRepresentativeName": "CELETE KATO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "sourcePageLastModified": "2026-06-16T20:48:07.000Z",
     "sourceSmdId": "7E07"
   },
   "citations": [
     {
       "source": "dcgis.smds",
       "sourceRecordId": "7E07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
     }
   ],
   "relations": {

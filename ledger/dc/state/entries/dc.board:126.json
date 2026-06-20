@@ -17,19 +17,28 @@
       "sourceRecordId": "126"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "126",
-      "locator": "D.C. Code § 10-1202.05"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "washington-convention-and-sports-authority-board-directors-events-dc"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "washington-convention-and-sports-authority-board-directors-events-dc",
-      "locator": "DC Code § 10-1202.05"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-10-1202-05",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "126",
+            "locator": "D.C. Code § 10-1202.05"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "washington-convention-and-sports-authority-board-directors-events-dc",
+            "locator": "D.C. Code § 10-1202.05"
+          }
+        ]
+      }
+    ]
+  }
 }

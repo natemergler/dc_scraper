@@ -1,0 +1,76 @@
+{
+  "id": "dc.ward:8",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 8",
+  "attributes": {
+    "wardNumber": "8"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "councilmember-trayon-white-sr"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8D"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:8B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "8B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:8C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "8C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:8D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "8D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:8F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "6/8F",
+            "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+          }
+        ]
+      }
+    ]
+  }
+}

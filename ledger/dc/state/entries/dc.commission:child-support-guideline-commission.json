@@ -14,12 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "child-support-guideline-commission"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "child-support-guideline-commission",
-      "locator": "D.C. Code § 16-916.01"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-16-916-01",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "child-support-guideline-commission",
+            "locator": "D.C. Code § 16-916.01",
+            "url": "https://code.dccouncil.us/dc/council/code/sections/16-916.01.html"
+          }
+        ]
+      }
+    ]
+  }
 }

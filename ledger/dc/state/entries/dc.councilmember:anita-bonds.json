@@ -2,8 +2,9 @@
   "id": "dc.councilmember:anita-bonds",
   "family": "person",
   "kind": "dc.councilmember",
-  "name": "At-Large Councilmember Anita Bonds",
+  "name": "Anita Bonds",
   "attributes": {
+    "officeLabel": "At-Large Councilmember",
     "sourceProfileSlug": "anita-bonds",
     "sourceProfileUrl": "https://dccouncil.gov/council/anita-bonds/"
   },
@@ -42,6 +43,18 @@
           {
             "source": "dccouncil.committees",
             "sourceRecordId": "committee-on-executive-administration-and-labor"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "anita-bonds"
           }
         ]
       }

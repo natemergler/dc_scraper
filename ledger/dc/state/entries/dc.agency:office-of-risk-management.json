@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Risk Management",
   "attributes": {
+    "officialUrl": "https://orm.dc.gov",
     "shortName": "Office of Risk Management",
-    "sourceAgencyId": "1082"
+    "sourceAgencyId": "1082",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-risk-management:orm-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "77"

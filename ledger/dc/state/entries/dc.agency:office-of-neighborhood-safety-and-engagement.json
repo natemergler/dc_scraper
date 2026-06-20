@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of Neighborhood Safety and Engagement",
   "attributes": {
+    "officialUrl": "http://onse.dc.gov",
     "shortName": "Office of Neighborhood Safety and Engagement",
-    "sourceAgencyId": "1155"
+    "sourceAgencyId": "1155",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-neighborhood-safety-and-engagement-onse:onse-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "134"

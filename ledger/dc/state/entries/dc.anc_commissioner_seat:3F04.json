@@ -4,9 +4,12 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 3F04",
   "attributes": {
+    "currentHolderName": "Claudette David",
     "sourceAncId": "3F",
     "sourceFirstName": "CLAUDETTE",
     "sourceLastName": "DAVID",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3f",
+    "sourcePageLastModified": "2026-06-16T20:55:27.000Z",
     "sourceRepresentativeName": "CLAUDETTE DAVID",
     "sourceSmdId": "3F04"
   },
@@ -14,6 +17,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "3F04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3f"
     }
   ],
   "relations": {

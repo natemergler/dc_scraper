@@ -13,22 +13,43 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "department-forensic-sciences-science-advisory-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
-      "locator": "D.C. Law 19-18"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
-      "locator": "D.C. Official Code § 5-1501.11"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "department-forensic-sciences-science-advisory-board",
-      "locator": "Mayor's Order 2013-225"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-1501-11",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+            "locator": "D.C. Code § 5-1501.11"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-19-18",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+            "locator": "D.C. Law 19-18"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2013-225",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "department-forensic-sciences-science-advisory-board",
+            "locator": "Mayor's Order 2013-225"
+          }
+        ]
+      }
+    ]
+  }
 }

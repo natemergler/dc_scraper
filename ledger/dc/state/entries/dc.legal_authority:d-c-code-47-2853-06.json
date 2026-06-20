@@ -1,0 +1,55 @@
+{
+  "id": "dc.legal_authority:d-c-code-47-2853-06",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 47-2853.06",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
+    "locator": "D.C. Code § 47-2853.06",
+    "shortName": "D.C. Code § 47-2853.06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "29",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "30",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "32",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "39",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "40",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "53",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "55",
+      "locator": "D.C. Code § 47-2853.06"
+    },
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "117",
+      "locator": "D.C. Code § 47-2853.06"
+    }
+  ],
+  "relations": {}
+}

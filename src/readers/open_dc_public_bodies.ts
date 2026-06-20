@@ -21,6 +21,8 @@ export interface OpenDCPublicBodyRecordPayload {
   name: string;
   slug: string;
   detailUrl: string;
+  description?: string;
+  officialUrl?: string;
   enablingStatute?: string;
   enablingStatuteUrl?: string;
   governingAgency?: string;
@@ -46,6 +48,7 @@ const DRUPAL_FIELD_WITH_LINK_RE =
   /<div class="field-label">\s*([^<]+?):?(?:&nbsp;)?\s*<\/div>\s*<div class="field-items">\s*<div class="field-item[^"]*">\s*<a\s+href="([^"]+)"[^>]*>(.*?)<\/a>\s*<\/div>/gs;
 const DRUPAL_FIELD_RE =
   /<div class="field-label">\s*([^<]+?):?(?:&nbsp;)?\s*<\/div>\s*<div class="field-items">\s*<div class="field-item[^"]*">(.*?)<\/div>/gs;
+const PARAGRAPH_RE = /<p[^>]*>([\s\S]*?)<\/p>/gi;
 
 export class OpenDCPublicBodiesReader implements Reader<OpenDCPublicBodiesSource> {
   private readonly fetcher: (input: string) => Promise<Response>;
@@ -94,6 +97,8 @@ export class OpenDCPublicBodiesReader implements Reader<OpenDCPublicBodiesSource
           name: body.name,
           slug: body.slug,
           detailUrl: body.detailUrl,
+          description: detailFields.description,
+          officialUrl: detailFields.officialUrl,
           enablingStatute: detailFields.enablingStatute,
           enablingStatuteUrl: detailFields.enablingStatuteUrl,
           governingAgency: detailFields.governingAgency,
@@ -147,6 +152,8 @@ export class OpenDCPublicBodiesReader implements Reader<OpenDCPublicBodiesSource
             name: body.name,
             slug: body.slug,
             detailUrl: body.detailUrl,
+            description: detailFields.description,
+            officialUrl: detailFields.officialUrl,
             enablingStatute: detailFields.enablingStatute,
             enablingStatuteUrl: detailFields.enablingStatuteUrl,
             governingAgency: detailFields.governingAgency,
@@ -235,6 +242,8 @@ function resolveFieldAlias(normalized: string): string {
 }
 
 function parseDetailPage(html: string): {
+  description?: string;
+  officialUrl?: string;
   enablingStatute?: string;
   enablingStatuteUrl?: string;
   governingAgency?: string;
@@ -304,8 +313,17 @@ function parseDetailPage(html: string): {
 
   const enablingStatuteField = fields["enabling statute or mayoral order"];
   const enablingStatute = sanitizeEnablingStatuteText(enablingStatuteField?.text);
+  const paragraphBeforeMembersHtml = extractLastParagraphBeforeMembersHtml(html);
+  const officialUrl = extractOfficialUrl(
+    fields["public body website"]?.text,
+    fields["public body website"]?.url,
+  ) ?? extractOfficialUrl(fields["agency website"]?.text, fields["agency website"]?.url) ??
+    extractOfficialUrlFromHtml(paragraphBeforeMembersHtml);
+  const description = extractDescription(paragraphBeforeMembersHtml);
 
   return {
+    description,
+    officialUrl,
     enablingStatute,
     enablingStatuteUrl: enablingStatute ? enablingStatuteField?.url : undefined,
     governingAgency: extractAgencyName(fields["governing agency or agency acronym"]?.text),
@@ -341,6 +359,83 @@ function sanitizeEnablingStatuteText(text?: string): string | undefined {
     return undefined;
   }
   return text;
+}
+
+function extractOfficialUrl(text?: string, url?: string): string | undefined {
+  const candidate = sanitizeSourceUrl(url ?? text ?? "");
+  if (!candidate) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return undefined;
+    }
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function extractOfficialUrlFromHtml(fragment?: string): string | undefined {
+  if (!fragment) {
+    return undefined;
+  }
+
+  const hrefMatch = fragment.match(/<a\s+href="([^"]+)"/i);
+  if (hrefMatch) {
+    return extractOfficialUrl(undefined, hrefMatch[1]);
+  }
+
+  const text = decodeHtml(stripTags(fragment)).replace(WHITESPACE_RE, " ").trim();
+  const urlMatch = text.match(/https?:\/\/\S+/i);
+  if (!urlMatch) {
+    return undefined;
+  }
+
+  return extractOfficialUrl(urlMatch[0]);
+}
+
+function extractDescription(fragment?: string): string | undefined {
+  if (!fragment) {
+    return undefined;
+  }
+
+  return sanitizeDescriptionText(
+    decodeHtml(stripTags(fragment)).replace(WHITESPACE_RE, " ").trim(),
+  );
+}
+
+function extractLastParagraphBeforeMembersHtml(html: string): string | undefined {
+  const membersMatch = html.match(
+    /(?:<h3[^>]*>\s*Members\s*<\/h3>|<div class="field-label">\s*Members:&nbsp;\s*<\/div>|<h2>\s*Meetings\s*<\/h2>)/i,
+  );
+  const boundaryIndex = membersMatch?.index ?? html.length;
+  const relevantHtml = html.slice(0, boundaryIndex);
+  const paragraphs = [...relevantHtml.matchAll(PARAGRAPH_RE)];
+  if (paragraphs.length === 0) {
+    return undefined;
+  }
+  return paragraphs.at(-1)?.[1];
+}
+
+function sanitizeDescriptionText(text?: string): string | undefined {
+  if (!text) {
+    return undefined;
+  }
+
+  if (
+    /^this website requires a browser feature called javascript/i.test(text) ||
+    /^point of contact:/i.test(text) ||
+    /^public body website:/i.test(text) ||
+    /^agency website:/i.test(text)
+  ) {
+    return undefined;
+  }
+
+  const description = text.replace(/\s+Learn more about [^.]+\.?$/i, "").trim();
+  return description.length >= 40 ? description : undefined;
 }
 
 function decodeRepeatedly(value: string): string {

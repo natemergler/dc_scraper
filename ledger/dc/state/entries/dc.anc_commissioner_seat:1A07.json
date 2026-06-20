@@ -4,13 +4,24 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1A07",
   "attributes": {
+    "currentHolderName": "Shane D. McCarthy",
     "sourceAncId": "1A",
+    "sourceFirstName": "SHANE",
+    "sourceLastName": "MCCARTHY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourcePageLastModified": "2026-06-16T20:51:33.000Z",
+    "sourceRepresentativeName": "SHANE MCCARTYH",
     "sourceSmdId": "1A07"
   },
   "citations": [
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1A07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
     }
   ],
   "relations": {

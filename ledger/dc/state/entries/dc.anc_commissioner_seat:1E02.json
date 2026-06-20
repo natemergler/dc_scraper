@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 1E02",
   "attributes": {
+    "currentHolderName": "Audra Grant",
+    "officerRole": "Vice-Chairperson",
     "sourceAncId": "1E",
     "sourceFirstName": "AUDRA",
     "sourceLastName": "GRANT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourcePageLastModified": "2026-06-16T20:55:12.000Z",
     "sourceRepresentativeName": "AUDRA GRANT",
     "sourceSmdId": "1E02"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "1E02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
     }
   ],
   "relations": {

@@ -5,9 +5,14 @@
   "name": "ANC 3D",
   "attributes": {
     "gisId": "ANCPly_337",
+    "officialUrl": "http://anc3d.org/",
     "representedNeighborhoods": "the Berkley, Foxhall, Kent, Palisades, Spring Valley, and Wesley Heights neighborhoods",
     "sourceAncId": "3D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3d",
+    "sourcePageLastModified": "2026-06-16T20:29:30.000Z",
+    "sourceWardNumbers": [
+      "3"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3d"
   },
   "citations": [

@@ -4,9 +4,13 @@
   "kind": "dc.anc_commissioner_seat",
   "name": "Commissioner Seat for SMD 6E08",
   "attributes": {
+    "currentHolderName": "Dale Prince",
+    "officerRole": "Treasurer",
     "sourceAncId": "6E",
     "sourceFirstName": "DALE",
     "sourceLastName": "PRINCE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceRepresentativeName": "DALE PRINCE",
     "sourceSmdId": "6E08"
   },
@@ -14,6 +18,11 @@
     {
       "source": "dcgis.smds",
       "sourceRecordId": "6E08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6e"
     }
   ],
   "relations": {

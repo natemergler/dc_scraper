@@ -17,19 +17,28 @@
       "sourceRecordId": "120"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "120",
-      "locator": "Mayor's Order 2016-134"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board",
-      "locator": "Mayor's Order 2016-134"
     }
   ],
-  "relations": {}
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2016-134",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "120",
+            "locator": "Mayor's Order 2016-134"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+            "locator": "Mayor's Order 2016-134"
+          }
+        ]
+      }
+    ]
+  }
 }

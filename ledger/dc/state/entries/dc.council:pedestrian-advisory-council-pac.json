@@ -14,14 +14,22 @@
     {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "pedestrian-advisory-council-pac"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "pedestrian-advisory-council-pac",
-      "locator": "DC Code § 50-1931"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-50-1931",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "pedestrian-advisory-council-pac",
+            "locator": "D.C. Code § 50-1931"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",

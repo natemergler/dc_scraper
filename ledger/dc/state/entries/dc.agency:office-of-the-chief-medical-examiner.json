@@ -4,10 +4,17 @@
   "kind": "dc.agency",
   "name": "Office of the Chief Medical Examiner",
   "attributes": {
+    "officialUrl": "https://ocme.dc.gov",
     "shortName": "Office of the Chief Medical Examiner",
-    "sourceAgencyId": "1085"
+    "sourceAgencyId": "1085",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
   },
   "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-chief-medical-examiner:ocme-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
     {
       "source": "dcgis.agencies",
       "sourceRecordId": "59"

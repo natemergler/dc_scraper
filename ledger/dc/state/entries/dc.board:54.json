@@ -17,21 +17,29 @@
       "sourceRecordId": "54"
     },
     {
-      "source": "dcgis.boards",
-      "sourceRecordId": "54",
-      "locator": "D.C. Code § 3-1202.11"
-    },
-    {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "board-psychology"
-    },
-    {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "board-psychology",
-      "locator": "DC Code § 3-1202.11"
     }
   ],
   "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-11",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "54",
+            "locator": "D.C. Code § 3-1202.11"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-psychology",
+            "locator": "D.C. Code § 3-1202.11"
+          }
+        ]
+      }
+    ],
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
@@ -40,11 +48,6 @@
           {
             "source": "dcgis.boards",
             "sourceRecordId": "54"
-          },
-          {
-            "source": "dcgis.boards",
-            "sourceRecordId": "54",
-            "locator": "D.C. Code § 3-1202.11"
           }
         ]
       }
