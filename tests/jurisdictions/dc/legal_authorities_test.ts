@@ -103,6 +103,26 @@ Deno.test("legal authority artifacts keep out-of-scope locators as citations onl
   ]);
 });
 
+Deno.test("legal authority artifacts reject implausible DC Code section roots", () => {
+  const artifacts = buildLegalAuthorityArtifacts({
+    source: "open_dc.public_bodies",
+    sourceRecordId: "humanities-council-washington-dc",
+    subjectProvisionalId: "dc.council:humanities-council-washington-dc",
+    locatorInputs: [
+      { locator: "D.C. Code § 1993-200" },
+    ],
+  });
+
+  assertEquals(artifacts.entryFragments, []);
+  assertEquals(artifacts.relationFragments, []);
+  assertEquals(artifacts.entryCitations, [
+    cite("open_dc.public_bodies", "humanities-council-washington-dc"),
+    cite("open_dc.public_bodies", "humanities-council-washington-dc", {
+      locator: "D.C. Code § 1993-200",
+    }),
+  ]);
+});
+
 Deno.test("open dc legal authority locator inputs ignore catalog URLs without explicit locators", () => {
   assertEquals(
     buildOpenDcLegalAuthorityLocatorInputs(

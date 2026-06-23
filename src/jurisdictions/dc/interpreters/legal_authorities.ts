@@ -188,6 +188,9 @@ function classifyLegalAuthorityLocator(rawLocator: string): ClassifiedLegalAutho
   );
   if (dcCodeMatch?.[1]) {
     const section = dcCodeMatch[1].trim();
+    if (!isPlausibleDcCodeSection(section)) {
+      return null;
+    }
     const canonicalLocator = `D.C. Code § ${section}`;
     const sectionRoot = section.replace(/(?:\([^)]+\))+$/g, "");
     return {
@@ -222,6 +225,15 @@ function classifyLegalAuthorityLocator(rawLocator: string): ClassifiedLegalAutho
   }
 
   return null;
+}
+
+function isPlausibleDcCodeSection(section: string): boolean {
+  const titleMatch = section.match(/^(\d+)-/);
+  if (!titleMatch?.[1]) {
+    return false;
+  }
+  const titleNumber = Number(titleMatch[1]);
+  return Number.isInteger(titleNumber) && titleNumber >= 1 && titleNumber <= 99;
 }
 
 function mergeCitationLists(
