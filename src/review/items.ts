@@ -47,6 +47,37 @@ export type ReviewStatus = "open" | "drafted" | "applied";
 
 export type ReviewQueue = "blocking" | "actionable" | "drafted" | "applied" | "deferred";
 
+export const reviewCategoryDescriptions: Record<ReviewCategory, string> = {
+  identity_conflict:
+    "Same-name or shared-evidence candidates may represent the same civic entity and need an explicit identity decision.",
+  kind_conflict:
+    "Duplicate-looking names cross kinds or families and need explicit identity review.",
+  source_shadow:
+    "One source appears to shadow another civic body, so curation preserves or suppresses deliberately.",
+  alias_candidate:
+    "Source evidence may support an alias or previous ID, but the canonical mapping needs a tracked revision.",
+  same_source_duplicate:
+    "One source emitted duplicate-looking records that need suppression, aliasing, or preserve-distinct review.",
+  relation_endpoint_missing:
+    "A relation endpoint was not promoted or was retargeted, with the decision kept reviewable.",
+  legal_authority_ambiguous:
+    "Legal locator evidence is too ambiguous to promote without a narrower authority decision.",
+  source_stale_or_failed:
+    "A stale or failed source fragment is treated as an ingestion bug, not a release blocker.",
+  incomplete_entry:
+    "A source-derived entry or finding is missing required data and cannot be safely promoted as-is.",
+  out_of_scope_candidate:
+    "Source-derived candidates are parked because they are outside alpha scope or unsafe to promote.",
+  preserve_distinct_candidate:
+    "Similar entries are preserved as distinct until source evidence supports a merge.",
+};
+
+export interface DeferredReviewGroup {
+  category: string;
+  label: string;
+  items: ReviewItem[];
+}
+
 export interface ReviewAffectedRef {
   fragmentIds: string[];
   baselineIds: string[];
@@ -289,7 +320,10 @@ export function reviewQueueForItem(item: ReviewItem): ReviewQueue {
   if (reviewItemBlocksCurrentOutput(item)) {
     return "blocking";
   }
-  if (item.classification === "out_of_scope" || item.category === "out_of_scope_candidate") {
+  if (
+    item.classification === "out_of_scope" || item.category === "out_of_scope_candidate" ||
+    item.category === "source_stale_or_failed"
+  ) {
     return "deferred";
   }
   return "actionable";
@@ -308,6 +342,50 @@ export function reviewQueueLabel(queue: ReviewQueue): string {
     case "deferred":
       return "Deferred";
   }
+}
+
+export function groupDeferredReviewItems(items: ReviewItem[]): DeferredReviewGroup[] {
+  const groups = new Map<string, DeferredReviewGroup>();
+  for (const item of items) {
+    const label = deferredReviewGroupLabel(item);
+    const key = `${item.category}\0${label}`;
+    const group = groups.get(key) ?? { category: item.category, label, items: [] };
+    group.items.push(item);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((left, right) =>
+    right.items.length - left.items.length ||
+    left.category.localeCompare(right.category) ||
+    left.label.localeCompare(right.label)
+  );
+}
+
+const DEFERRED_REVIEW_GROUP_DESCRIPTIONS: Record<string, string> = {
+  "out_of_scope_candidate/dc.promotion.opendc_specific_public_body_promoted":
+    "Open DC supplied a more specific public-body page, but the corresponding body is already represented by a promoted ledger entry; the source stays reviewable instead of becoming a duplicate.",
+  "out_of_scope_candidate/dc.promotion.opendc_public_body_review_required":
+    "Open DC supplied a public-body candidate that alpha cannot safely promote, merge, or suppress without a tracked source-backed decision.",
+  "out_of_scope_candidate/compiler.relation_source_not_promoted":
+    "A relation cited an endpoint candidate that was not promoted into alpha state, so the relation is deferred instead of emitted with a missing endpoint.",
+  "source_stale_or_failed/dc.interpreter.opendc_stale_or_failed_duplicate":
+    "A stale or failed Open DC duplicate fragment was suppressed as a source ingestion bug, not treated as a civic entity or release blocker.",
+};
+
+export function deferredReviewGroupDescription(
+  category: string,
+  label: string,
+): string | undefined {
+  return DEFERRED_REVIEW_GROUP_DESCRIPTIONS[`${category}/${label}`];
+}
+
+function deferredReviewGroupLabel(item: ReviewItem): string {
+  if (item.source.type === "finding") {
+    const code = item.attributesThatConflict.findingCode;
+    if (typeof code === "string" && code.length > 0) {
+      return code;
+    }
+  }
+  return item.sourceFamilies.join(", ") || item.classification;
 }
 
 export function stableReviewKey(value: string): string {
@@ -401,7 +479,7 @@ function reviewItemFromFinding(finding: Finding, generatedAt: string): ReviewIte
     id,
     category,
     classification: classificationFromFinding(finding, category),
-    severity: finding.kind === "conflict" ? "high" : "medium",
+    severity: severityFromFinding(finding, category),
     confidence: "medium",
     status: "open",
     title: `${humanCategory(category)}: ${finding.code}`,
@@ -423,7 +501,8 @@ function reviewItemFromFinding(finding: Finding, generatedAt: string): ReviewIte
     suggestedResolutions: suggestedResolutionsFor(category),
     blocks: {
       stateGeneration: finding.kind === "conflict",
-      releaseReadiness: true,
+      releaseReadiness: category !== "source_stale_or_failed" &&
+        category !== "out_of_scope_candidate",
     },
     draftRevisionIds: [],
     trackedRevisionIds: [],
@@ -592,6 +671,9 @@ function categoryFromCandidate(candidate: ReconciliationCandidatePacket): Review
   if (candidate.risks.includes("kind_conflict") || candidate.risks.includes("family_conflict")) {
     return "kind_conflict";
   }
+  if (isOpenDcStaleSameSourceDuplicate(candidate)) {
+    return "source_stale_or_failed";
+  }
   if (candidate.reviewCategory === "same_source_duplicate") {
     return "same_source_duplicate";
   }
@@ -623,7 +705,7 @@ function classificationFromCandidate(
   if (
     candidate.sourceFamilies.length === 1 &&
     candidate.sourceFamilies[0] === "open_dc" &&
-    category === "same_source_duplicate"
+    (category === "same_source_duplicate" || category === "source_stale_or_failed")
   ) {
     return "source_ingestion_bug";
   }
@@ -631,6 +713,9 @@ function classificationFromCandidate(
 }
 
 function categoryFromFinding(finding: Finding): ReviewCategory | null {
+  if (finding.code.includes("stale_or_failed")) {
+    return "source_stale_or_failed";
+  }
   if (finding.code.includes("not_promoted") || finding.code.includes("promotion")) {
     return "out_of_scope_candidate";
   }
@@ -647,6 +732,13 @@ function categoryFromFinding(finding: Finding): ReviewCategory | null {
     return "identity_conflict";
   }
   return null;
+}
+
+function severityFromFinding(finding: Finding, category: ReviewCategory): ReviewSeverity {
+  if (category === "source_stale_or_failed") {
+    return "low";
+  }
+  return finding.kind === "conflict" ? "high" : "medium";
 }
 
 function classificationFromFinding(
@@ -688,9 +780,69 @@ function suggestedResolutionsFor(category: ReviewCategory): ReviewResolutionType
     case "preserve_distinct_candidate":
       return ["preserve-distinct", "source-shadow", "alias"];
     case "source_stale_or_failed":
+      return ["suppress", "source-shadow"];
     case "incomplete_entry":
       return ["suppress", "override-kind"];
   }
+}
+
+function isOpenDcStaleSameSourceDuplicate(candidate: ReconciliationCandidatePacket): boolean {
+  if (candidate.reviewCategory !== "same_source_duplicate") {
+    return false;
+  }
+  if (candidate.sourceFamilies.length !== 1 || candidate.sourceFamilies[0] !== "open_dc") {
+    return false;
+  }
+  if (!candidate.entries.every((entry) => entry.sources.includes("open_dc.public_bodies"))) {
+    return false;
+  }
+
+  const staleEntries = candidate.entries.filter(isWeakOpenDcPublicBodyEntry);
+  if (staleEntries.length === 0) {
+    return false;
+  }
+
+  return candidate.entries.some((entry) =>
+    !staleEntries.some((staleEntry) => staleEntry.id === entry.id) &&
+    hasSubstantiveOpenDcEvidence(entry)
+  );
+}
+
+function isWeakOpenDcPublicBodyEntry(entry: ReconciliationCandidateEntry): boolean {
+  if (Object.keys(entry.relations).length > 0) {
+    return false;
+  }
+
+  const attributeKeys = Object.keys(entry.attributes);
+  if (!attributeKeys.every(isWeakOpenDcAttributeKey)) {
+    return false;
+  }
+
+  const description = entry.attributes.description;
+  return description === undefined || isWeakOpenDcDescription(description);
+}
+
+function isWeakOpenDcAttributeKey(key: string): boolean {
+  return key === "description" || key === "shortName" || key === "sourceOpenDcSlug" ||
+    key === "sourceOpenDcUrl";
+}
+
+function isWeakOpenDcDescription(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const description = value.trim().toLowerCase();
+  return description.startsWith("report website problems to:") ||
+    description.startsWith("this website requires a browser feature called javascript");
+}
+
+function hasSubstantiveOpenDcEvidence(entry: ReconciliationCandidateEntry): boolean {
+  return Object.keys(entry.relations).length > 0 || hasLegalAuthorityAttributes(entry) ||
+    typeof entry.attributes.officialUrl === "string";
+}
+
+function hasLegalAuthorityAttributes(entry: ReconciliationCandidateEntry): boolean {
+  return Object.keys(entry.attributes).some((key) => /^(?:enabling|legal)/i.test(key));
 }
 
 function summarizeCandidate(candidate: ReconciliationCandidatePacket): string {

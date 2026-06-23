@@ -4,9 +4,11 @@
   "kind": "dc.anc",
   "name": "ANC 8F",
   "attributes": {
+    "description": "DCGIS identifies this Advisory Neighborhood Commission as ANC 8F. OANC presents the public profile and ward listing as ANC 6/8F spanning Wards 6 and 8; alpha keeps the DCGIS canonical ID/name while preserving the OANC display label as source evidence.",
     "gisId": "ANCPly_366",
     "officialUrl": "http://anc8f.org/",
     "sourceAncId": "8F",
+    "sourceOancDisplayName": "ANC 6/8F",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
     "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
     "sourceWardNumbers": [

@@ -446,6 +446,95 @@ Deno.test("open_dc.public_bodies reports likely duplicate bodies when normalized
   );
 });
 
+Deno.test("open_dc.public_bodies sanitizes contact prose from record descriptions", () => {
+  const output = interpretOpenDCPublicBodies([
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-0",
+      key: "common-lottery-board",
+      payload: {
+        name: "Common Lottery Board",
+        slug: "common-lottery-board",
+        detailUrl: "https://www.open-dc.gov/public-bodies/common-lottery-board/",
+        description:
+          "My School DC is governed by the Common Lottery Board. For additional information, email info.myschooldc@dc.gov.",
+      },
+    },
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-0",
+      key: "board-professional-engineering",
+      payload: {
+        name: "Board of Professional Engineering",
+        slug: "board-professional-engineering",
+        detailUrl: "https://www.open-dc.gov/public-bodies/board-professional-engineering/",
+        description:
+          "All Board correspondence should be sent to Ms. Avis B. Pearson, Board Administrator avis.pearson@dc.gov",
+      },
+    },
+  ]);
+
+  const lotteryBoard = output.entryFragments.find((fragment) =>
+    fragment.provisionalId === "dc.board:common-lottery-board"
+  );
+  const engineeringBoard = output.entryFragments.find((fragment) =>
+    fragment.provisionalId === "dc.board:board-professional-engineering"
+  );
+
+  assertEquals(
+    lotteryBoard?.attributes.description,
+    "My School DC is governed by the Common Lottery Board.",
+  );
+  assertEquals("description" in (engineeringBoard?.attributes ?? {}), false);
+});
+
+Deno.test("open_dc.public_bodies suppresses weak stale duplicate slug fragments", () => {
+  const output = interpretOpenDCPublicBodies([
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "page-0",
+      key: "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+      payload: {
+        name: "St. Elizabeths East Redevelopment Initiative Advisory Board",
+        slug: "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+        detailUrl:
+          "https://www.open-dc.gov/public-bodies/saint-elizabeths-east-redevelopment-initiative-advisory-board/",
+        officialUrl: "https://mayor.dc.gov/page/st-elizabeths-east-redevelopment",
+        fromSupplementalIndex: false,
+      },
+    },
+    {
+      source: openDCPublicBodiesSource.id,
+      snapshotKey: "supplemental-page-0",
+      key: "st-elizabeths-east-redevelopment-initiative-advisory-board",
+      payload: {
+        name: "St. Elizabeths East Redevelopment Initiative Advisory Board",
+        slug: "st-elizabeths-east-redevelopment-initiative-advisory-board",
+        detailUrl:
+          "https://www.open-dc.gov/public-bodies/st-elizabeths-east-redevelopment-initiative-advisory-board/",
+        fromSupplementalIndex: true,
+      },
+    },
+  ]);
+
+  const boardFragments = output.entryFragments.filter((fragment) => fragment.kind === "dc.board");
+  assertEquals(boardFragments.length, 1);
+  assertEquals(
+    boardFragments[0].sourceRecordId,
+    "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+  );
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_stale_or_failed_duplicate" &&
+      isCitationValue(finding.citation) &&
+      "sourceRecordId" in finding.citation &&
+      finding.citation.sourceRecordId ===
+        "st-elizabeths-east-redevelopment-initiative-advisory-board"
+    ),
+    true,
+  );
+});
+
 Deno.test("open_dc.public_bodies parses legal citations from enabling statute", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,

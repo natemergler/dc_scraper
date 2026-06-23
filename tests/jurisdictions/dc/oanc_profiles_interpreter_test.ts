@@ -44,10 +44,7 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
     "the Crestwood and 16th Street Heights neighborhoods",
   );
   assertEquals(output.entryFragments[0].attributes.officialUrl, "https://anc4e.example/");
-  assertEquals(
-    output.entryFragments[0].attributes.sourcePageLastModified,
-    "2026-06-16T21:58:02.000Z",
-  );
+  assertEquals(output.entryFragments[0].attributes.sourcePageLastModified, undefined);
   assertEquals(output.entryFragments[0].attributes.sourceWardNumbers, ["4"]);
   assertEquals(output.entryFragments[0].citations, [
     cite(oancProfilesSource.id, "4E", { url: "https://oanc.dc.gov/anc-profile/anc-4e" }),
@@ -60,6 +57,7 @@ Deno.test("oanc.profiles records enrich existing ANC entries", () => {
     output.entryFragments[1].attributes.sourceOancProfileUrl,
     "https://oanc.dc.gov/anc-profile/anc-4e",
   );
+  assertEquals(output.entryFragments[1].attributes.sourcePageLastModified, undefined);
   assertEquals(output.entryFragments[2].provisionalId, "dc.ward:4");
   assertEquals(output.entryFragments[2].kind, "dc.ward");
   assertEquals(output.relationFragments[0], {

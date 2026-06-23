@@ -144,10 +144,6 @@ export function interpretOancProfiles(
     if (wardNumbers.length > 0) {
       attributes.sourceWardNumbers = wardNumbers;
     }
-    const pageLastModified = asString(sourceRecord.pageLastModified);
-    if (pageLastModified) {
-      attributes.sourcePageLastModified = pageLastModified;
-    }
     const ancCitations = [cite(sourceKind, record.key, { url: profileUrl })];
     const wardCitations = [cite(sourceKind, record.key)];
 
@@ -189,7 +185,6 @@ export function interpretOancProfiles(
           currentHolderName: commissioner.name,
           ...(commissioner.officerRole ? { officerRole: commissioner.officerRole } : {}),
           sourceOancProfileUrl: profileUrl,
-          ...(pageLastModified ? { sourcePageLastModified: pageLastModified } : {}),
         },
         citations: ancCitations,
       });

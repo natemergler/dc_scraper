@@ -492,6 +492,102 @@ Deno.test("OpenDCPublicBodiesReader excludes contact, members, meetings data", a
   assertEquals(payloadKeys.includes("email"), false);
 });
 
+Deno.test("OpenDCPublicBodiesReader suppresses Drupal webmaster footer descriptions", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("stale-board")) {
+        return new Response(
+          `<html><body><p>Report website problems to: Drupal development webmaster</p></body></html>`,
+          { status: 200 },
+        );
+      }
+      return new Response(`<a href="/public-bodies/stale-board/">Stale Board</a>`, {
+        status: 200,
+      });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records[0].payload.description, undefined);
+});
+
+Deno.test("OpenDCPublicBodiesReader strips contact sentences from descriptions", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("lottery-board")) {
+        return new Response(
+          `<html><body><p>My School DC is governed by the Common Lottery Board. For additional information, email info.myschooldc@dc.gov.</p></body></html>`,
+          { status: 200 },
+        );
+      }
+      return new Response(`<a href="/public-bodies/lottery-board/">Lottery Board</a>`, {
+        status: 200,
+      });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(
+    result.records[0].payload.description,
+    "My School DC is governed by the Common Lottery Board.",
+  );
+});
+
+Deno.test("OpenDCPublicBodiesReader suppresses correspondence-only descriptions", async () => {
+  const source: OpenDCPublicBodiesSource = {
+    id: "open_dc.public_bodies",
+    jurisdiction: "dc",
+    type: "open_dc.public_bodies",
+    indexUrl: "https://www.open-dc.gov/public-bodies/",
+  };
+
+  const reader = new OpenDCPublicBodiesReader({
+    fetcher: async (url) => {
+      if (url.includes("engineering-board")) {
+        return new Response(
+          `<html><body><p>All Board correspondence should be sent to Ms. Avis B. Pearson, Board Administrator avis.pearson@dc.gov</p></body></html>`,
+          { status: 200 },
+        );
+      }
+      return new Response(`<a href="/public-bodies/engineering-board/">Engineering Board</a>`, {
+        status: 200,
+      });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source,
+    limit: 1,
+  });
+
+  assertEquals(result.records[0].payload.description, undefined);
+});
+
 Deno.test("OpenDCPublicBodiesReader deduplicates slugs", async () => {
   const duplicateIndex = `
     <a href="https://www.open-dc.gov/public-bodies/advisory-board/">Advisory Board</a>

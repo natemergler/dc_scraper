@@ -5,13 +5,25 @@
   "name": "ANC 3/4G",
   "attributes": {
     "gisId": "ANCPly_333",
+    "officialUrl": "http://anc3g.dc.gov/",
+    "representedNeighborhoods": "the Chevy Chase, Barnaby Woods, and Hawthorne neighborhoods",
     "sourceAncId": "3/4G",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-34g",
+    "sourceWardNumbers": [
+      "3",
+      "4"
+    ],
     "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3/4g"
   },
   "citations": [
     {
       "source": "dcgis.ancs",
       "sourceRecordId": "3/4G"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3/4G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-34g"
     }
   ],
   "relations": {

@@ -40,9 +40,74 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
     assertEquals(rootStatus.code, 0);
     assertEquals(rootStatus.output.includes("Civic Ledger Status"), true);
     assertEquals(rootStatus.output.includes("Sources:   0/"), true);
+    assertEquals(
+      rootStatus.output.includes("Coverage:  "),
+      true,
+    );
+    assertEquals(rootStatus.output.includes("rows; collected 0, collected_empty 0"), true);
+    assertEquals(rootStatus.output.includes("Review:    0 persisted items"), true);
     assertEquals(rootStatus.output.includes("Next: deno task civic collect all"), true);
     assertEquals(rootStatus.output.includes("Operator flow:"), true);
     assertEquals(rootStatus.output.includes("deno task civic revision validate"), true);
+    assertEquals(
+      rootStatus.output.includes(`deno task civic release verify ${releaseRoot}`),
+      true,
+    );
+
+    const statusJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "status",
+        "--json",
+      ])
+    );
+    assertEquals(statusJsonResult.code, 0);
+    const statusJson = JSON.parse(statusJsonResult.output) as {
+      workspace: string;
+      stateRoot: string;
+      releaseRoot: string;
+      sourceCount: number;
+      collectedSourceCount: number;
+      sourceCoverageCount: number;
+      sourceCoverageStatusCounts: Record<string, number>;
+      sourceCoverageReleaseStatusCounts: Record<string, number>;
+      recordCount: number;
+      stateEntryCount: number;
+      reviewItemCount: number;
+      reviewQueueCounts: Record<string, number>;
+      nextAction: string;
+      operatorFlow: string[];
+    };
+    assertEquals(statusJson.workspace, workspace);
+    assertEquals(statusJson.stateRoot, stateRoot);
+    assertEquals(statusJson.releaseRoot, releaseRoot);
+    assertEquals(statusJson.sourceCount > 0, true);
+    assertEquals(statusJson.collectedSourceCount, 0);
+    assertEquals(statusJson.sourceCoverageCount > statusJson.sourceCount, true);
+    assertEquals(statusJson.sourceCoverageStatusCounts.collected, 0);
+    assertEquals(statusJson.sourceCoverageStatusCounts.collected_empty, 0);
+    assertEquals(
+      statusJson.sourceCoverageStatusCounts.not_collected,
+      statusJson.sourceCoverageCount,
+    );
+    assertEquals(statusJson.sourceCoverageReleaseStatusCounts.inventory_only > 0, true);
+    assertEquals(statusJson.sourceCoverageReleaseStatusCounts.not_collected > 0, true);
+    assertEquals(statusJson.recordCount, 0);
+    assertEquals(statusJson.stateEntryCount, 0);
+    assertEquals(statusJson.reviewItemCount, 0);
+    assertEquals(statusJson.reviewQueueCounts.blocking, 0);
+    assertEquals(statusJson.reviewQueueCounts.deferred, 0);
+    assertEquals(statusJson.nextAction, "deno task civic collect all");
+    assertEquals(statusJson.operatorFlow.includes("deno task civic state generate"), true);
+    assertEquals(
+      statusJson.operatorFlow.includes(`deno task civic release verify ${releaseRoot}`),
+      true,
+    );
 
     const sourcesResult = await captureConsole(() =>
       runCli([
@@ -57,12 +122,81 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
     const sourcesJson = JSON.parse(sourcesResult.output) as {
       sourceCount: number;
       sources: Array<{ id: string; family: string; type: string }>;
+      sourceCoverageCount: number;
+      sourceCoverageFamilyCount: number;
+      sourceCoverageFamilyRollup: Array<{
+        family: string;
+        rows: number;
+        collectionStatuses: Record<string, number>;
+        releaseStatuses: Record<string, number>;
+      }>;
+      sourceCoverage: Array<{
+        source: string;
+        sourceType: string;
+        family: string;
+        publisher?: string;
+        accessMethod?: string;
+        sourceUrl?: string;
+        catalogConfidence?: string;
+        collectionStatus: string;
+        readerStatus: string;
+        interpreterStatus: string;
+        releaseStatus: string;
+        snapshotCount: number;
+        recordCount: number;
+        citationCount: number;
+      }>;
+      sourceCoverageStatusCounts: Record<string, number>;
+      sourceCoverageReleaseStatusCounts: Record<string, number>;
     };
     assertEquals(sourcesJson.sourceCount > 0, true);
     assertEquals(
       sourcesJson.sources.some((source) => source.id === "dcgis.agencies"),
       true,
     );
+    assertEquals(sourcesJson.sourceCoverageCount > sourcesJson.sourceCount, true);
+    assertEquals(sourcesJson.sourceCoverageStatusCounts.collected, 0);
+    assertEquals(sourcesJson.sourceCoverageStatusCounts.collected_empty, 0);
+    assertEquals(
+      sourcesJson.sourceCoverageStatusCounts.not_collected,
+      sourcesJson.sourceCoverageCount,
+    );
+    assertEquals(sourcesJson.sourceCoverageReleaseStatusCounts.inventory_only > 0, true);
+    assertEquals(sourcesJson.sourceCoverageReleaseStatusCounts.not_collected > 0, true);
+    assertEquals(
+      sourcesJson.sourceCoverageFamilyCount,
+      sourcesJson.sourceCoverageFamilyRollup.length,
+    );
+    const legalFamilyRollup = sourcesJson.sourceCoverageFamilyRollup.find((rollup) =>
+      rollup.family === "legal_provenance"
+    );
+    assertEquals(
+      Object.values(legalFamilyRollup?.collectionStatuses ?? {}).reduce(
+        (total, count) => total + count,
+        0,
+      ),
+      legalFamilyRollup?.rows,
+    );
+    assertEquals((legalFamilyRollup?.collectionStatuses.not_collected ?? 0) > 0, true);
+    assertEquals((legalFamilyRollup?.releaseStatuses.inventory_only ?? 0) > 0, true);
+    const openDataCoverage = sourcesJson.sourceCoverage.find((coverage) =>
+      coverage.source === "inventory.open_data_catalog"
+    );
+    assertEquals(openDataCoverage?.sourceType, "inventory.backlog");
+    assertEquals(
+      openDataCoverage?.publisher,
+      "Office of the Chief Technology Officer / District of Columbia",
+    );
+    assertEquals(openDataCoverage?.accessMethod, "ArcGIS Hub catalog");
+    assertEquals(openDataCoverage?.sourceUrl, "https://opendata.dc.gov/");
+    assertEquals(openDataCoverage?.catalogConfidence, "high");
+    assertEquals(openDataCoverage?.collectionStatus, "not_collected");
+    assertEquals(openDataCoverage?.readerStatus, "inventory_only");
+    assertEquals(openDataCoverage?.interpreterStatus, "not_wired");
+    assertEquals(openDataCoverage?.releaseStatus, "inventory_only");
+    assertEquals(openDataCoverage?.snapshotCount, 0);
+    assertEquals(openDataCoverage?.recordCount, 0);
+    assertEquals(openDataCoverage?.citationCount, 0);
 
     const humanSourcesResult = await captureConsole(() =>
       runCli([
@@ -74,8 +208,126 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
     );
     assertEquals(humanSourcesResult.code, 0);
     assertEquals(humanSourcesResult.output.includes("SCOPE"), true);
+    assertEquals(humanSourcesResult.output.includes("STATUS"), true);
+    assertEquals(humanSourcesResult.output.includes("not_collected"), true);
+    assertEquals(humanSourcesResult.output.includes("Coverage rows:"), true);
+    assertEquals(humanSourcesResult.output.includes("release:"), true);
+    assertEquals(humanSourcesResult.output.includes("Family coverage:"), true);
+    assertEquals(humanSourcesResult.output.includes("source_inventory"), true);
+    assertEquals(humanSourcesResult.output.includes("legal_provenance"), true);
+    assertEquals(humanSourcesResult.output.includes("Inventory-only backlog rows:"), true);
+    assertEquals(humanSourcesResult.output.includes("inventory.open_data_catalog"), true);
+    assertEquals(humanSourcesResult.output.includes("inventory.budget_finance"), true);
+    assertEquals(humanSourcesResult.output.includes("inventory_only"), true);
+    assertEquals(humanSourcesResult.output.includes("publisher/access/sourceUrl/confidence"), true);
     assertEquals(humanSourcesResult.output.includes("source_coverage.csv"), true);
   } finally {
+    await Deno.remove(workspace, { recursive: true });
+    await Deno.remove(projectRoot, { recursive: true });
+  }
+});
+
+Deno.test("status color can be forced for human output without coloring JSON", async () => {
+  const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-color-" });
+  const projectRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-color-project-" });
+  const stateRoot = join(projectRoot, "state");
+
+  const previousColor = Deno.env.get("CIVIC_LEDGER_COLOR");
+  const previousNoColor = Deno.env.get("NO_COLOR");
+
+  try {
+    Deno.env.set("CIVIC_LEDGER_COLOR", "always");
+    Deno.env.delete("NO_COLOR");
+
+    const colorResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "status",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(colorResult.code, 0);
+    assertEquals(colorResult.output.includes("\x1b["), true);
+    assertEquals(colorResult.output.includes("\x1b[33mnot_collected\x1b[39m"), true);
+    assertEquals(colorResult.output.includes("\x1b[31mnot_collected\x1b[39m"), false);
+
+    const jsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "status",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(jsonResult.code, 0);
+    assertEquals(jsonResult.output.includes("\x1b["), false);
+    JSON.parse(jsonResult.output);
+
+    const sourcesColorResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "sources",
+          "list",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(sourcesColorResult.code, 0);
+    assertEquals(sourcesColorResult.output.includes("\x1b["), true);
+
+    const sourcesJsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "sources",
+          "list",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(sourcesJsonResult.code, 0);
+    assertEquals(sourcesJsonResult.output.includes("\x1b["), false);
+    JSON.parse(sourcesJsonResult.output);
+
+    Deno.env.set("CIVIC_LEDGER_COLOR", "never");
+    const plainResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "status",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(plainResult.code, 0);
+    assertEquals(plainResult.output.includes("\x1b["), false);
+  } finally {
+    if (previousColor === undefined) {
+      Deno.env.delete("CIVIC_LEDGER_COLOR");
+    } else {
+      Deno.env.set("CIVIC_LEDGER_COLOR", previousColor);
+    }
+    if (previousNoColor === undefined) {
+      Deno.env.delete("NO_COLOR");
+    } else {
+      Deno.env.set("NO_COLOR", previousNoColor);
+    }
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(projectRoot, { recursive: true });
   }
@@ -586,16 +838,26 @@ Deno.test("state generation can compile Council committees and councilmembers to
     ]);
     assertEquals(checkCode, 0);
 
-    const exportCode = await runCli([
-      "--workspace",
-      workspace,
-      "--state-root",
-      stateRoot,
-      "--release-root",
-      releaseRoot,
-      "export",
-    ]);
-    assertEquals(exportCode, 0);
+    const exportResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "export",
+      ])
+    );
+    assertEquals(exportResult.code, 0);
+    assertEquals(exportResult.output.includes("GovGraph projection: 16 nodes"), true);
+    assertEquals(exportResult.output.includes("blocking review items 0"), true);
+    assertEquals(exportResult.output.includes("Alpha artifact highlights:"), true);
+    assertEquals(exportResult.output.includes("manifest.json / README.md"), true);
+    assertEquals(
+      exportResult.output.includes("govgraph_nodes.json / govgraph_edges.json"),
+      true,
+    );
 
     const manifest = JSON.parse(await Deno.readTextFile(join(releaseRoot, "manifest.json")));
     assertEquals(manifest.counts.entries, 16);
@@ -629,6 +891,7 @@ Deno.test("state generation can compile Council committees and councilmembers to
 Deno.test("state commands generate index check committed state", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-output-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-state-release-" });
   const responses = [
     {
       features: [
@@ -767,10 +1030,56 @@ Deno.test("state commands generate index check committed state", async () => {
       "check",
     ]);
     assertEquals(checkCode, 0);
+
+    const statusResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "status",
+      ])
+    );
+    assertEquals(statusResult.code, 0);
+    assertEquals(
+      statusResult.output.includes(
+        `Next: deno task civic check, then deno task civic export, then deno task civic release verify ${releaseRoot}`,
+      ),
+      true,
+    );
+
+    const statusJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "status",
+        "--json",
+      ])
+    );
+    assertEquals(statusJsonResult.code, 0);
+    const statusJson = JSON.parse(statusJsonResult.output) as {
+      nextAction: string;
+      operatorFlow: string[];
+    };
+    assertEquals(
+      statusJson.nextAction,
+      `deno task civic check, then deno task civic export, then deno task civic release verify ${releaseRoot}`,
+    );
+    assertEquals(
+      statusJson.operatorFlow.includes(`deno task civic release verify ${releaseRoot}`),
+      true,
+    );
   } finally {
     restoreFetch();
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(stateRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
   }
 });
 
@@ -2325,16 +2634,22 @@ Deno.test("export command indexes committed state and writes release artifacts",
     ]);
     assertEquals(authorityGenerateCode, 0);
 
-    const exportCode = await runCli([
-      "--workspace",
-      workspace,
-      "--state-root",
-      stateRoot,
-      "--release-root",
-      releaseRoot,
-      "export",
-    ]);
-    assertEquals(exportCode, 0);
+    const exportResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "--release-root",
+        releaseRoot,
+        "export",
+      ])
+    );
+    assertEquals(exportResult.code, 0);
+    assertEquals(
+      exportResult.output.includes(`Verify release: deno task civic release verify ${releaseRoot}`),
+      true,
+    );
 
     const expectedFiles = [
       "entries.csv",
@@ -2400,6 +2715,125 @@ Deno.test("export command indexes committed state and writes release artifacts",
     } finally {
       ledgerDb.close();
     }
+
+    const verifyResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "verify",
+      ])
+    );
+    assertEquals(verifyResult.code, 0);
+    assertEquals(verifyResult.output.includes("release verified:"), true);
+    assertEquals(verifyResult.output.includes("manifest.json"), true);
+    assertEquals(
+      verifyResult.output.includes(
+        "schema version, release identity, artifact counts, kind rollups, zero blocking review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
+      ),
+      true,
+    );
+
+    const verifyJsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--release-root",
+          releaseRoot,
+          "release",
+          "verify",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(verifyJsonResult.code, 0);
+    assertEquals(verifyJsonResult.output.includes("\x1b["), false);
+    const verifyJson = JSON.parse(verifyJsonResult.output) as {
+      releaseRoot: string;
+      manifestPath: string;
+      valid: boolean;
+      checkedFileCount: number;
+      errors: string[];
+    };
+    assertEquals(verifyJson.releaseRoot, releaseRoot);
+    assertEquals(verifyJson.manifestPath, join(releaseRoot, "manifest.json"));
+    assertEquals(verifyJson.valid, true);
+    assertEquals(verifyJson.checkedFileCount > 0, true);
+    assertEquals(verifyJson.errors, []);
+
+    const previousColor = Deno.env.get("CIVIC_LEDGER_COLOR");
+    const previousNoColor = Deno.env.get("NO_COLOR");
+    try {
+      Deno.env.set("CIVIC_LEDGER_COLOR", "always");
+      Deno.env.delete("NO_COLOR");
+      const colorVerifyResult = await captureConsole(
+        () =>
+          runCli([
+            "--release-root",
+            releaseRoot,
+            "release",
+            "verify",
+          ]),
+        { stripAnsi: false },
+      );
+      assertEquals(colorVerifyResult.code, 0);
+      assertEquals(colorVerifyResult.output.includes("\x1b["), true);
+    } finally {
+      if (previousColor === undefined) {
+        Deno.env.delete("CIVIC_LEDGER_COLOR");
+      } else {
+        Deno.env.set("CIVIC_LEDGER_COLOR", previousColor);
+      }
+      if (previousNoColor === undefined) {
+        Deno.env.delete("NO_COLOR");
+      } else {
+        Deno.env.set("NO_COLOR", previousNoColor);
+      }
+    }
+
+    const positionalVerifyResult = await captureConsole(() =>
+      runCli([
+        "release",
+        "verify",
+        releaseRoot,
+      ])
+    );
+    assertEquals(positionalVerifyResult.code, 0);
+
+    await Deno.writeTextFile(join(releaseRoot, "sources.csv"), "tampered\n");
+    const failedVerifyResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "verify",
+      ])
+    );
+    assertEquals(failedVerifyResult.code, 1);
+    assertEquals(failedVerifyResult.output.includes("release verification failed"), true);
+    assertEquals(failedVerifyResult.output.includes("sha256 mismatch for sourcesCsv"), true);
+
+    const failedVerifyJsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--release-root",
+          releaseRoot,
+          "release",
+          "verify",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(failedVerifyJsonResult.code, 1);
+    assertEquals(failedVerifyJsonResult.output.includes("\x1b["), false);
+    const failedVerifyJson = JSON.parse(failedVerifyJsonResult.output) as {
+      valid: boolean;
+      errors: string[];
+    };
+    assertEquals(failedVerifyJson.valid, false);
+    assertEquals(
+      failedVerifyJson.errors.some((error) => error.includes("sha256 mismatch for sourcesCsv")),
+      true,
+    );
   } finally {
     restoreFetch();
     await Deno.remove(workspace, { recursive: true });
@@ -2592,6 +3026,79 @@ Deno.test("CLI task tolerates task separator before help", async () => {
   assertEquals(stdout.includes("Usage: dc"), true);
 });
 
+Deno.test("review list help explains committed-state refresh", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "review",
+      "list",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("Refresh from committed state"), true);
+});
+
+Deno.test("README documents review show source URL summaries", async () => {
+  const readme = await Deno.readTextFile(new URL("../../README.md", import.meta.url));
+  const normalizedReadme = readme.replaceAll(/\s+/g, " ");
+
+  assertEquals(normalizedReadme.includes("`review show <item-id> --json`"), true);
+  assertEquals(normalizedReadme.includes("URL summaries"), true);
+  assertEquals(normalizedReadme.includes("raw payloads"), true);
+});
+
+Deno.test("README documents release verify JSON output", async () => {
+  const readme = await Deno.readTextFile(new URL("../../README.md", import.meta.url));
+  const normalizedReadme = readme.replaceAll(/\s+/g, " ");
+
+  assertEquals(normalizedReadme.includes("`release verify [release-root]`"), true);
+  assertEquals(normalizedReadme.includes("add `--json`"), true);
+  assertEquals(normalizedReadme.includes("machine-readable validity"), true);
+  assertEquals(normalizedReadme.includes("error details"), true);
+});
+
+Deno.test("release verify help explains manifest contract checks", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "release",
+      "verify",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
+
+  assertEquals(output.code, 0);
+  assertEquals(
+    stdout.includes(
+      "release identity, payload metadata, source coverage statuses, review category posture, zero blockers, and manifest contracts",
+    ),
+    true,
+  );
+  assertEquals(stdout.includes("Emit release verification result as JSON"), true);
+});
+
 Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entries and relations", async () => {
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-opendc-flow-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-opendc-flow-state-" });
@@ -2750,6 +3257,406 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       "generate",
     ]);
     assertEquals(generateCode, 0);
+
+    const statusAfterGenerate = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "status",
+      ])
+    );
+    assertEquals(statusAfterGenerate.code, 0);
+    assertEquals(
+      statusAfterGenerate.output.includes(
+        "Review:    5 persisted items (blocking 0, actionable 0, drafted 0, applied 0, deferred 5)",
+      ),
+      true,
+    );
+    assertEquals(
+      statusAfterGenerate.output.includes("Review queue: deno task civic review deferred"),
+      true,
+    );
+
+    const previousColor = Deno.env.get("CIVIC_LEDGER_COLOR");
+    const previousNoColor = Deno.env.get("NO_COLOR");
+    try {
+      Deno.env.set("CIVIC_LEDGER_COLOR", "always");
+      Deno.env.delete("NO_COLOR");
+      const colorStatusAfterGenerate = await captureConsole(
+        () =>
+          runCli([
+            "--workspace",
+            workspace,
+            "--state-root",
+            stateRoot,
+            "status",
+          ]),
+        { stripAnsi: false },
+      );
+      assertEquals(colorStatusAfterGenerate.code, 0);
+      assertEquals(
+        colorStatusAfterGenerate.output.includes(
+          "Review queue: \x1b[36mdeno task civic review deferred\x1b[39m",
+        ),
+        true,
+      );
+    } finally {
+      if (previousColor === undefined) {
+        Deno.env.delete("CIVIC_LEDGER_COLOR");
+      } else {
+        Deno.env.set("CIVIC_LEDGER_COLOR", previousColor);
+      }
+      if (previousNoColor === undefined) {
+        Deno.env.delete("NO_COLOR");
+      } else {
+        Deno.env.set("NO_COLOR", previousNoColor);
+      }
+    }
+
+    const deferredJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "deferred",
+        "--json",
+      ])
+    );
+    assertEquals(deferredJsonResult.code, 0);
+    const deferredJson = JSON.parse(deferredJsonResult.output) as {
+      reviewItemCount: number;
+      deferredReviewItemCount: number;
+      totalReviewItemCount: number;
+      groupCount: number;
+      shownGroupCount: number;
+      limit: number | null;
+      groups: Array<{
+        category: string;
+        label: string;
+        count: number;
+        sampleItemId: string;
+        sampleSummary: string;
+        sampleSourceRecords: Array<{
+          source: string;
+          sourceRecordId: string;
+          found: boolean;
+          urls: string[];
+        }>;
+        inspectCommand: string;
+        description: string | null;
+      }>;
+    };
+    assertEquals(deferredJson.reviewItemCount, 5);
+    assertEquals(deferredJson.deferredReviewItemCount, 5);
+    assertEquals(deferredJson.totalReviewItemCount, 5);
+    assertEquals(deferredJson.groupCount, deferredJson.groups.length);
+    assertEquals(deferredJson.shownGroupCount, deferredJson.groups.length);
+    assertEquals(deferredJson.limit, null);
+    const openDcDeferredGroup = deferredJson.groups.find((group) =>
+      group.category === "out_of_scope_candidate" &&
+      group.label === "dc.promotion.opendc_public_body_review_required"
+    );
+    if (!openDcDeferredGroup) {
+      throw new Error("expected Open DC deferred review group");
+    }
+    assertEquals(openDcDeferredGroup.count > 0, true);
+    assertEquals(openDcDeferredGroup.sampleItemId.length > 0, true);
+    assertEquals(openDcDeferredGroup.sampleSummary.includes("was not promoted because"), true);
+    assertEquals(
+      openDcDeferredGroup.sampleSourceRecords.some((record) =>
+        record.source === "open_dc.public_bodies" &&
+        record.found &&
+        record.urls.some((url) => url.includes("open-dc.gov/public-bodies/"))
+      ),
+      true,
+    );
+    assertEquals(
+      openDcDeferredGroup.inspectCommand.includes(
+        `review show ${openDcDeferredGroup.sampleItemId}`,
+      ),
+      true,
+    );
+    assertEquals(
+      openDcDeferredGroup.description?.includes("alpha cannot safely promote"),
+      true,
+    );
+
+    const deferredShowJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "show",
+        openDcDeferredGroup.sampleItemId,
+        "--json",
+      ])
+    );
+    assertEquals(deferredShowJsonResult.code, 0);
+    const deferredShowJson = JSON.parse(deferredShowJsonResult.output) as {
+      sourceRecordSummaries: Array<{
+        source: string;
+        sourceRecordId: string;
+        found: boolean;
+        urls: string[];
+      }>;
+      sourceRecords: Array<{
+        source: string;
+        sourceRecordId: string;
+        found: boolean;
+        payload?: Record<string, unknown>;
+      }>;
+    };
+    assertEquals(
+      deferredShowJson.sourceRecordSummaries.some((record) =>
+        record.source === "open_dc.public_bodies" &&
+        record.found &&
+        record.urls.some((url) => url.includes("open-dc.gov/public-bodies/"))
+      ),
+      true,
+    );
+    assertEquals(
+      deferredShowJson.sourceRecords.some((record) =>
+        record.source === "open_dc.public_bodies" &&
+        record.found &&
+        typeof record.payload?.detailUrl === "string"
+      ),
+      true,
+    );
+
+    const deferredShowHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "show",
+        openDcDeferredGroup.sampleItemId,
+      ])
+    );
+    assertEquals(deferredShowHumanResult.code, 0);
+    assertEquals(deferredShowHumanResult.output.includes("Source records:"), true);
+    assertEquals(
+      deferredShowHumanResult.output.includes("open-dc.gov/public-bodies/"),
+      true,
+    );
+
+    const limitedDeferredGroupsJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "deferred",
+        "--json",
+        "--limit",
+        "1",
+      ])
+    );
+    assertEquals(limitedDeferredGroupsJsonResult.code, 0);
+    const limitedDeferredGroupsJson = JSON.parse(limitedDeferredGroupsJsonResult.output) as {
+      deferredReviewItemCount: number;
+      groupCount: number;
+      shownGroupCount: number;
+      limit: number | null;
+      groups: unknown[];
+    };
+    assertEquals(limitedDeferredGroupsJson.deferredReviewItemCount, 5);
+    assertEquals(limitedDeferredGroupsJson.limit, 1);
+    assertEquals(limitedDeferredGroupsJson.shownGroupCount, 1);
+    assertEquals(limitedDeferredGroupsJson.groups.length, 1);
+    assertEquals(
+      limitedDeferredGroupsJson.groupCount > limitedDeferredGroupsJson.shownGroupCount,
+      true,
+    );
+
+    const deferredHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "deferred",
+      ])
+    );
+    assertEquals(deferredHumanResult.code, 0);
+    assertEquals(
+      deferredHumanResult.output.includes(
+        "why: Open DC supplied a public-body candidate that alpha cannot safely promote",
+      ),
+      true,
+    );
+    assertEquals(deferredHumanResult.output.includes("sample summary:"), true);
+    assertEquals(deferredHumanResult.output.includes("sample sources:"), true);
+    assertEquals(deferredHumanResult.output.includes("open-dc.gov/public-bodies/"), true);
+    assertEquals(deferredHumanResult.output.includes("inspect: deno task civic review show"), true);
+
+    const limitedDeferredGroupsHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "deferred",
+        "--limit",
+        "1",
+      ])
+    );
+    assertEquals(limitedDeferredGroupsHumanResult.code, 0);
+    assertEquals(
+      limitedDeferredGroupsHumanResult.output.includes("1 shown deferred groups"),
+      true,
+    );
+
+    const openListDefaultJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--status",
+        "open",
+        "--json",
+      ])
+    );
+    assertEquals(openListDefaultJsonResult.code, 0);
+    const openListDefaultJson = JSON.parse(openListDefaultJsonResult.output) as {
+      reviewItemCount: number;
+      totalReviewItemCount: number;
+      filter: {
+        status: string;
+        queue: string;
+        defaultQueueApplied: boolean;
+        statusMatchedReviewItemCount: number;
+        queueMatchedReviewItemCount: number;
+        deferredMatchedReviewItemCount: number;
+      };
+      reviewQueueCounts: Record<string, number>;
+      statusFilteredReviewQueueCounts: Record<string, number>;
+      items: unknown[];
+    };
+    assertEquals(openListDefaultJson.reviewItemCount, 0);
+    assertEquals(openListDefaultJson.totalReviewItemCount, 5);
+    assertEquals(openListDefaultJson.filter.status, "open");
+    assertEquals(openListDefaultJson.filter.queue, "inbox");
+    assertEquals(openListDefaultJson.filter.defaultQueueApplied, true);
+    assertEquals(openListDefaultJson.filter.statusMatchedReviewItemCount, 5);
+    assertEquals(openListDefaultJson.filter.queueMatchedReviewItemCount, 0);
+    assertEquals(openListDefaultJson.filter.deferredMatchedReviewItemCount, 5);
+    assertEquals(openListDefaultJson.reviewQueueCounts.deferred, 5);
+    assertEquals(openListDefaultJson.statusFilteredReviewQueueCounts.deferred, 5);
+    assertEquals(openListDefaultJson.items.length, 0);
+
+    const openListDefaultHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--status",
+        "open",
+      ])
+    );
+    assertEquals(openListDefaultHumanResult.code, 0);
+    assertEquals(
+      openListDefaultHumanResult.output.includes("Filter: status=open, queue=inbox"),
+      true,
+    );
+    assertEquals(
+      openListDefaultHumanResult.output.includes(
+        "5 item(s) matched status before queue filtering.",
+      ),
+      true,
+    );
+    assertEquals(openListDefaultHumanResult.output.includes("--queue deferred"), true);
+
+    const limitedDeferredJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--queue",
+        "deferred",
+        "--status",
+        "open",
+        "--limit",
+        "3",
+        "--json",
+      ])
+    );
+    assertEquals(limitedDeferredJsonResult.code, 0);
+    const limitedDeferredJson = JSON.parse(limitedDeferredJsonResult.output) as {
+      reviewItemCount: number;
+      filter: {
+        queue: string;
+        limit: number | null;
+        queueMatchedReviewItemCount: number;
+        shownReviewItemCount: number;
+      };
+      items: unknown[];
+    };
+    assertEquals(limitedDeferredJson.reviewItemCount, 3);
+    assertEquals(limitedDeferredJson.filter.queue, "deferred");
+    assertEquals(limitedDeferredJson.filter.limit, 3);
+    assertEquals(limitedDeferredJson.filter.queueMatchedReviewItemCount, 5);
+    assertEquals(limitedDeferredJson.filter.shownReviewItemCount, 3);
+    assertEquals(limitedDeferredJson.items.length, 3);
+
+    const limitedDeferredHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--queue",
+        "deferred",
+        "--status",
+        "open",
+        "--limit",
+        "3",
+      ])
+    );
+    assertEquals(limitedDeferredHumanResult.code, 0);
+    assertEquals(limitedDeferredHumanResult.output.includes("3 shown, 5 matching, 5 total"), true);
+    assertEquals(limitedDeferredHumanResult.output.includes("Use --queue all"), false);
+
+    const limitedAllQueueHumanResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--queue",
+        "all",
+        "--status",
+        "open",
+        "--limit",
+        "3",
+      ])
+    );
+    assertEquals(limitedAllQueueHumanResult.code, 0);
+    assertEquals(limitedAllQueueHumanResult.output.includes("3 shown, 5 matching, 5 total"), true);
+    assertEquals(limitedAllQueueHumanResult.output.includes("Use --queue all"), false);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
     assertEquals(stateEntries.includes("dc.board:advisory-board.json"), true);
@@ -3645,7 +4552,7 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
       "the Crestwood and 16th Street Heights neighborhoods",
     );
     assertEquals(ancEntry.attributes.officialUrl, "https://anc4e.example/");
-    assertEquals(ancEntry.attributes.sourcePageLastModified, "2026-06-16T21:58:02.000Z");
+    assertEquals(ancEntry.attributes.sourcePageLastModified, undefined);
 
     const seatEntry = JSON.parse(
       await Deno.readTextFile(join(stateRoot, "entries", "dc.anc_commissioner_seat:4E01.json")),
@@ -3654,6 +4561,7 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     };
     assertEquals(seatEntry.attributes.currentHolderName, 'Aretha "Nikki" Jones');
     assertEquals(seatEntry.attributes.officerRole, "Treasurer");
+    assertEquals(seatEntry.attributes.sourcePageLastModified, undefined);
 
     const indexCode = await runCli([
       "--workspace",
@@ -3765,6 +4673,8 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
   const restoreFetch = () => {
     globalThis.fetch = originalFetch;
   };
+  const previousColor = Deno.env.get("CIVIC_LEDGER_COLOR");
+  const previousNoColor = Deno.env.get("NO_COLOR");
 
   try {
     const collectCode = await runCli([
@@ -3811,11 +4721,24 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(listResult.code, 0);
     const listJson = JSON.parse(listResult.output) as {
       reviewItemCount: number;
-      items: Array<{ id: string; status: string }>;
+      items: Array<{
+        id: string;
+        status: string;
+        publicOutputImpact: boolean;
+        blocksCurrentOutput: boolean;
+        blocks: { releaseReadiness: boolean };
+        queue: string;
+        queueLabel: string;
+      }>;
     };
     assertEquals(listJson.reviewItemCount, 1);
     assertEquals(listJson.items[0].id, itemId);
     assertEquals(listJson.items[0].status, "open");
+    assertEquals(listJson.items[0].publicOutputImpact, true);
+    assertEquals(listJson.items[0].blocksCurrentOutput, true);
+    assertEquals(listJson.items[0].blocks.releaseReadiness, true);
+    assertEquals(listJson.items[0].queue, "blocking");
+    assertEquals(listJson.items[0].queueLabel, "Blocking");
 
     const dashboardResult = await captureConsole(() =>
       runCli([
@@ -3830,6 +4753,54 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(dashboardResult.output.includes("Civic Ledger Review"), true);
     assertEquals(dashboardResult.output.includes("Blocking"), true);
     assertEquals(dashboardResult.output.includes("deno task civic review next"), true);
+
+    Deno.env.set("CIVIC_LEDGER_COLOR", "always");
+    Deno.env.delete("NO_COLOR");
+    const colorDashboardResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "review",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(colorDashboardResult.code, 0);
+    assertEquals(colorDashboardResult.output.includes("\x1b["), true);
+
+    const colorListResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "review",
+          "list",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(colorListResult.code, 0);
+    assertEquals(colorListResult.output.includes("\x1b["), true);
+
+    const colorListJsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "review",
+          "list",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(colorListJsonResult.code, 0);
+    assertEquals(colorListJsonResult.output.includes("\x1b["), false);
+    JSON.parse(colorListJsonResult.output);
 
     const inboxResult = await captureConsole(() =>
       runCli([
@@ -3867,6 +4838,32 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       ),
       true,
     );
+    assertEquals(nextResult.output.includes("Blocks current output: yes"), true);
+    assertEquals(nextResult.output.includes("Release blocker if open: yes"), true);
+
+    const nextJsonResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "next",
+        "--json",
+      ])
+    );
+    assertEquals(nextJsonResult.code, 0);
+    const nextJson = JSON.parse(nextJsonResult.output) as {
+      reviewItemCount: number;
+      reviewQueueCounts: Record<string, number>;
+      next: { id: string; queue: string; queueLabel: string } | null;
+    };
+    assertEquals(nextJson.reviewItemCount, 1);
+    assertEquals(nextJson.reviewQueueCounts.blocking, 1);
+    assertEquals(nextJson.reviewQueueCounts.actionable, 0);
+    assertEquals(nextJson.next?.id, itemId);
+    assertEquals(nextJson.next?.queue, "blocking");
+    assertEquals(nextJson.next?.queueLabel, "Blocking");
 
     const showResult = await captureConsole(() =>
       runCli([
@@ -3883,10 +4880,36 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     assertEquals(showResult.code, 0);
     const showJson = JSON.parse(showResult.output) as {
       id: string;
+      queue: string;
+      queueLabel: string;
+      publicOutputImpact: boolean;
+      blocksCurrentOutput: boolean;
       suggestedResolutions: string[];
+      sourceRecords: Array<{
+        source: string;
+        sourceRecordId: string;
+        found: boolean;
+        snapshotKey?: string;
+        payload?: Record<string, unknown>;
+      }>;
     };
     assertEquals(showJson.id, itemId);
+    assertEquals(showJson.queue, "blocking");
+    assertEquals(showJson.queueLabel, "Blocking");
+    assertEquals(showJson.publicOutputImpact, true);
+    assertEquals(showJson.blocksCurrentOutput, true);
     assertEquals(showJson.suggestedResolutions.includes("preserve-distinct"), true);
+    assertEquals(showJson.sourceRecords.length, 2);
+    const sourceRecordsById = new Map(
+      showJson.sourceRecords.map((record) => [`${record.source}:${record.sourceRecordId}`, record]),
+    );
+    assertEquals(sourceRecordsById.get("dcgis.agencies:1")?.found, true);
+    assertEquals(
+      sourceRecordsById.get("dcgis.agencies:1")?.payload?.AGENCY_NAME,
+      "Shared Agency",
+    );
+    assertEquals(sourceRecordsById.get("dcgis.boards:2")?.found, true);
+    assertEquals(sourceRecordsById.get("dcgis.boards:2")?.payload?.BOARD_NAME, "Shared Agency");
 
     const resolveCode = await runCli([
       "--workspace",
@@ -3947,8 +4970,85 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
       await Deno.readTextFile(join(stateRoot, "entries", "dc.agency:shared-agency.json")),
     ) as { attributes: { revisionReviews?: unknown[] } };
     assertEquals(Array.isArray(agency.attributes.revisionReviews), true);
+
+    const appliedListResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "list",
+        "--queue",
+        "applied",
+        "--json",
+      ])
+    );
+    assertEquals(appliedListResult.code, 0);
+    const appliedListJson = JSON.parse(appliedListResult.output) as {
+      reviewItemCount: number;
+      items: Array<{
+        id: string;
+        status: string;
+        publicOutputImpact: boolean;
+        blocksCurrentOutput: boolean;
+        blocks: { releaseReadiness: boolean };
+        queue: string;
+        queueLabel: string;
+      }>;
+    };
+    assertEquals(appliedListJson.reviewItemCount, 2);
+    const appliedConflict = appliedListJson.items.find((item) => item.id === itemId);
+    assertEquals(appliedConflict?.status, "applied");
+    assertEquals(appliedConflict?.publicOutputImpact, true);
+    assertEquals(appliedConflict?.blocks.releaseReadiness, true);
+    assertEquals(appliedConflict?.blocksCurrentOutput, false);
+    assertEquals(appliedConflict?.queue, "applied");
+    assertEquals(appliedConflict?.queueLabel, "Applied");
+
+    const quietNextResult = await captureConsole(() =>
+      runCli([
+        "--workspace",
+        workspace,
+        "--state-root",
+        stateRoot,
+        "review",
+        "next",
+      ])
+    );
+    assertEquals(quietNextResult.code, 0);
+    const reviewHeadingIndex = quietNextResult.output.indexOf("Civic Ledger Review");
+    const noActionIndex = quietNextResult.output.indexOf("No actionable review items.");
+    assertEquals(reviewHeadingIndex >= 0, true);
+    assertEquals(noActionIndex > reviewHeadingIndex, true);
+
+    const colorQuietNextResult = await captureConsole(
+      () =>
+        runCli([
+          "--workspace",
+          workspace,
+          "--state-root",
+          stateRoot,
+          "review",
+          "next",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(colorQuietNextResult.code, 0);
+    assertEquals(colorQuietNextResult.output.includes("Blocking       \x1b[32m0"), true);
+    assertEquals(colorQuietNextResult.output.includes("Blocking       \x1b[36m0"), false);
   } finally {
     restoreFetch();
+    if (previousColor === undefined) {
+      Deno.env.delete("CIVIC_LEDGER_COLOR");
+    } else {
+      Deno.env.set("CIVIC_LEDGER_COLOR", previousColor);
+    }
+    if (previousNoColor === undefined) {
+      Deno.env.delete("NO_COLOR");
+    } else {
+      Deno.env.set("NO_COLOR", previousNoColor);
+    }
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(projectRoot, { recursive: true });
   }
@@ -3987,6 +5087,7 @@ function stripAnsi(input: string): string {
 
 async function captureConsole(
   fn: () => Promise<number>,
+  options: { stripAnsi?: boolean } = {},
 ): Promise<{ code: number; output: string }> {
   const originalLog = console.log;
   const originalError = console.error;
@@ -3999,7 +5100,8 @@ async function captureConsole(
   };
   try {
     const code = await fn();
-    return { code, output: stripAnsi(output.join("\n")) };
+    const joined = output.join("\n");
+    return { code, output: options.stripAnsi === false ? joined : stripAnsi(joined) };
   } finally {
     console.log = originalLog;
     console.error = originalError;

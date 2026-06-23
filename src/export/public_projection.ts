@@ -1,14 +1,13 @@
 import type { CitationValue, Entry } from "../core/types.ts";
+import {
+  type DcPublicNodeCategory,
+  dcPublicNodeCategory,
+  dcPublicNodeKinds,
+} from "../jurisdictions/dc/kinds/entity.ts";
+import { dcPublicRelationVerb, dcRawRelationVerb } from "../jurisdictions/dc/kinds/relation.ts";
 import type { ReviewCategory, ReviewItem } from "../review/items.ts";
 
-export type GovGraphNodeCategory =
-  | "executive"
-  | "legislative"
-  | "public_body"
-  | "neighborhood"
-  | "judicial"
-  | "representation"
-  | "legal_authority";
+export type GovGraphNodeCategory = DcPublicNodeCategory;
 
 export type GovGraphPublicStatus = "published";
 
@@ -40,12 +39,22 @@ export interface GovGraphEdge {
 
 export interface GovGraphSummary {
   nodeCount: number;
+  nodeKindCounts: Record<string, number>;
+  nodeCategoryCounts: Record<string, number>;
   edgeCount: number;
+  edgeVerbCounts: Record<string, number>;
   excludedNodeCount: number;
   excludedEdgeCount: number;
   blockedReviewItemCount: number;
   blockedReviewCountsByCategory: Partial<Record<ReviewCategory, number>>;
   mappedRelationCount: number;
+  mappedRelationCounts: MappedRelationCount[];
+}
+
+export interface MappedRelationCount {
+  relationKind: string;
+  verb: string;
+  count: number;
 }
 
 export interface GovGraphProjection {
@@ -77,32 +86,7 @@ export interface DcCouncilCommitteeMembershipRow {
   relationCitations: CitationValue[];
 }
 
-const supportedKinds = new Set([
-  "dc.agency",
-  "dc.office",
-  "dc.board",
-  "dc.commission",
-  "dc.authority",
-  "dc.council",
-  "dc.committee",
-  "dc.councilmember",
-  "dc.elected_office",
-  "dc.ward",
-  "dc.anc",
-  "dc.smd",
-  "dc.anc_commissioner_seat",
-  "dc.court_system",
-  "dc.court",
-  "dc.court_division",
-  "dc.legal_authority",
-]);
-
-const administrativeHomeKinds = new Set([
-  "dc.board",
-  "dc.commission",
-  "dc.authority",
-  "dc.council",
-]);
+const supportedKinds = new Set(dcPublicNodeKinds());
 
 export function buildGovGraphProjection(
   entries: Iterable<Entry>,
@@ -164,6 +148,7 @@ export function buildGovGraphProjection(
   const edges: GovGraphEdge[] = [];
   let excludedEdgeCount = 0;
   let mappedRelationCount = 0;
+  const mappedRelationCounts = new Map<string, MappedRelationCount>();
 
   for (const entry of entryList) {
     if (!supportedKinds.has(entry.kind)) {
@@ -200,8 +185,16 @@ export function buildGovGraphProjection(
           continue;
         }
 
-        if (mapped.verb !== rawVerbFromRelationKind(relation.kind)) {
+        if (mapped.verb !== dcRawRelationVerb(relation.kind)) {
           mappedRelationCount += 1;
+          const mappingKey = `${relation.kind}\u0000${mapped.verb}`;
+          const current = mappedRelationCounts.get(mappingKey) ?? {
+            relationKind: relation.kind,
+            verb: mapped.verb,
+            count: 0,
+          };
+          current.count += 1;
+          mappedRelationCounts.set(mappingKey, current);
         }
 
         edges.push({
@@ -228,18 +221,30 @@ export function buildGovGraphProjection(
   });
 
   const supportedNodeCount = entryList.filter((entry) => supportedKinds.has(entry.kind)).length;
+  const nodeKindCounts = countSorted(nodes.map((node) => node.kind));
+  const nodeCategoryCounts = countSorted(nodes.map((node) => node.category));
+  const edgeVerbCounts = countSorted(edges.map((edge) => edge.verb));
 
   return {
     nodes,
     edges,
     summary: {
       nodeCount: nodes.length,
+      nodeKindCounts,
+      nodeCategoryCounts,
       edgeCount: edges.length,
+      edgeVerbCounts,
       excludedNodeCount: supportedNodeCount - nodes.length,
       excludedEdgeCount,
       blockedReviewItemCount: blockingItems.length,
       blockedReviewCountsByCategory,
       mappedRelationCount,
+      mappedRelationCounts: [...mappedRelationCounts.values()].sort((left, right) => {
+        if (left.relationKind === right.relationKind) {
+          return left.verb.localeCompare(right.verb);
+        }
+        return left.relationKind.localeCompare(right.relationKind);
+      }),
     },
   };
 }
@@ -373,34 +378,7 @@ function slugFromLedgerId(ledgerId: string): string {
 }
 
 function nodeCategoryForKind(kind: string): GovGraphNodeCategory {
-  switch (kind) {
-    case "dc.agency":
-    case "dc.office":
-      return "executive";
-    case "dc.council":
-    case "dc.committee":
-      return "legislative";
-    case "dc.board":
-    case "dc.commission":
-    case "dc.authority":
-      return "public_body";
-    case "dc.anc":
-    case "dc.smd":
-    case "dc.anc_commissioner_seat":
-      return "neighborhood";
-    case "dc.court_system":
-    case "dc.court":
-    case "dc.court_division":
-      return "judicial";
-    case "dc.councilmember":
-    case "dc.elected_office":
-    case "dc.ward":
-      return "representation";
-    case "dc.legal_authority":
-      return "legal_authority";
-    default:
-      return "public_body";
-  }
+  return dcPublicNodeCategory(kind) ?? "public_body";
 }
 
 function stringAttribute(entry: Entry, key: string): string | undefined {
@@ -436,6 +414,7 @@ function publicOfficialUrlForEntry(entry: Entry): string | undefined {
   const candidates = [
     stringAttribute(entry, "officialUrl"),
     stringAttribute(entry, "webUrl"),
+    entry.kind === "dc.legal_authority" ? stringAttribute(entry, "canonicalUrl") : undefined,
   ];
 
   return candidates.find((candidate) => candidate && candidate.length > 0);
@@ -474,8 +453,14 @@ function relationCount(entry: Entry): number {
   return Object.values(entry.relations).reduce((count, relations) => count + relations.length, 0);
 }
 
-function rawVerbFromRelationKind(relationKind: string): string {
-  return relationKind.split(":").at(-1) ?? relationKind;
+function countSorted(values: Iterable<string>): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return Object.fromEntries(
+    [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)),
+  );
 }
 
 function mapPublicRelation(
@@ -483,31 +468,10 @@ function mapPublicRelation(
   relationKind: string,
   toEntry: Entry,
 ): { verb: string } | undefined {
-  switch (relationKind) {
-    case "dc.relation:contains":
-    case "dc.relation:reports_to":
-    case "dc.relation:authorized_by":
-    case "dc.relation:represents":
-    case "dc.relation:holds":
-    case "dc.relation:chairs":
-    case "dc.relation:member_of":
-    case "dc.relation:part_of":
-    case "dc.relation:oversees":
-    case "dc.relation:advises":
-    case "dc.relation:appoints":
-    case "dc.relation:elects":
-    case "dc.relation:established_by":
-    case "dc.relation:affiliated_with":
-      return { verb: rawVerbFromRelationKind(relationKind) };
-    case "dc.relation:governs":
-      if (
-        administrativeHomeKinds.has(fromEntry.kind) &&
-        (toEntry.kind === "dc.agency" || toEntry.kind === "dc.office")
-      ) {
-        return { verb: "administered_by" };
-      }
-      return undefined;
-    default:
-      return undefined;
-  }
+  const verb = dcPublicRelationVerb({
+    relationKind,
+    fromKind: fromEntry.kind,
+    toKind: toEntry.kind,
+  });
+  return verb ? { verb } : undefined;
 }

@@ -28,7 +28,15 @@ import { LegalEntrypointsReader } from "../readers/legal_entrypoints.ts";
 import { MayorExecutiveStructureReader } from "../readers/mayor_executive_structure.ts";
 import { OancProfilesReader } from "../readers/oanc_profiles.ts";
 import { dcRuntime } from "../jurisdictions/dc/index.ts";
-import { exportReleaseArtifacts } from "../export/export.ts";
+import {
+  exportReleaseArtifacts,
+  SOURCE_COVERAGE_COLLECTION_STATUSES,
+  type SourceCoverageCollectionStatus,
+  sourceCoverageCollectionStatus,
+  sourceCoveragePipelineStatuses,
+  type SourceCoverageReleaseStatus,
+  verifyReleaseArtifacts,
+} from "../export/export.ts";
 import { buildIdentityAliasResolver, loadIdentityAliases } from "../identity/aliases.ts";
 import { loadRevisions } from "../revisions/load.ts";
 import {
@@ -40,8 +48,11 @@ import {
 } from "../revisions/drafts.ts";
 import { findReconciliationCandidates } from "../reconciliation/candidates.ts";
 import {
+  deferredReviewGroupDescription,
   generateReviewItems,
+  groupDeferredReviewItems,
   type ReviewItem,
+  reviewItemBlocksCurrentOutput,
   reviewItemHasPublicOutputImpact,
   type ReviewQueue,
   reviewQueueForItem,
@@ -78,6 +89,37 @@ type SourceListOptions = CliOptions & {
   json?: boolean;
 };
 
+type StatusOptions = CliOptions & {
+  json?: boolean;
+};
+
+type ReleaseVerifyOptions = {
+  json?: boolean;
+};
+
+type AnsiStyle = "green" | "yellow" | "red" | "cyan";
+
+const ANSI_STYLES: Record<AnsiStyle, [string, string]> = {
+  green: ["\x1b[32m", "\x1b[39m"],
+  yellow: ["\x1b[33m", "\x1b[39m"],
+  red: ["\x1b[31m", "\x1b[39m"],
+  cyan: ["\x1b[36m", "\x1b[39m"],
+};
+
+const REVIEW_QUEUE_SUMMARY_ORDER: ReviewQueue[] = [
+  "blocking",
+  "actionable",
+  "drafted",
+  "applied",
+  "deferred",
+];
+
+interface WorkspaceCoverageStats {
+  snapshotCount: number;
+  recordCount: number;
+  citationCount: number;
+}
+
 type ReviewListOptions = CliOptions & {
   json?: boolean;
   status?: string;
@@ -88,6 +130,29 @@ type ReviewShowOptions = CliOptions & {
   json?: boolean;
 };
 
+interface ReviewSourceRecordEvidence {
+  source: string;
+  sourceRecordId: string;
+  found: boolean;
+  snapshotKey?: string;
+  payload?: Record<string, unknown>;
+}
+
+interface ReviewSourceRecordSummary {
+  source: string;
+  sourceRecordId: string;
+  found: boolean;
+  urls: string[];
+}
+
+type ReviewNextOptions = CliOptions & {
+  json?: boolean;
+};
+
+type ReviewDeferredOptions = CliOptions & {
+  json?: boolean;
+};
+
 type ReviewResolveOptions = CliOptions & {
   as?: string;
   target?: string;
@@ -95,20 +160,27 @@ type ReviewResolveOptions = CliOptions & {
   rationale?: string;
 };
 
-const OPERATOR_FLOW = [
-  "deno task civic status",
-  "deno task civic revision validate",
-  "deno task civic state generate",
-  "deno task civic check",
-  "deno task civic export",
-];
+const OPERATOR_FLOW = operatorFlowForReleaseRoot("releases/latest");
+
+function operatorFlowForReleaseRoot(releaseRoot: string): string[] {
+  return [
+    "deno task civic status",
+    "deno task civic revision validate",
+    "deno task civic state generate",
+    "deno task civic check",
+    "deno task civic export",
+    `deno task civic release verify ${releaseRoot}`,
+  ];
+}
 
 const ALPHA_ARTIFACT_HINTS = [
   "entries.csv / relations.csv / citations.csv",
   "source_coverage.csv",
+  "manifest.json / README.md",
   "ledger.sqlite",
   "dc_board_affiliations.csv / dc_commission_affiliations.csv / dc_authority_affiliations.csv",
   "dc_anc_smd_structure.csv / dc_council_committee_membership.csv",
+  "govgraph_nodes.json / govgraph_edges.json / govgraph_summary.json",
 ];
 
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
@@ -206,9 +278,56 @@ async function runInit(options: CliOptions): Promise<number> {
 }
 
 async function runSourcesList(options: SourceListOptions): Promise<number> {
+  const cliOptions = validateCliOptions(options);
   const sources = dcRuntime.sources.map((binding) => sourceSummary(binding.source.id));
+  const coverageStats = loadWorkspaceCoverageStats(cliOptions.workspace);
+  const coverageStatusCounts = countSourceCoverageStatuses(coverageStats);
+  const coverageReleaseStatusCounts = countSourceCoverageReleaseStatuses(coverageStats);
   if (options.json) {
-    console.log(JSON.stringify({ sourceCount: sources.length, sources }, null, 2));
+    const sourceCoverage = dcRuntime.sourceCoverage.map((coverage) => {
+      const stats = coverageStats.get(coverage.source);
+      const pipelineStatuses = sourceCoveragePipelineStatuses({
+        catalogItem: coverage,
+        snapshotCount: stats?.snapshotCount ?? 0,
+        recordCount: stats?.recordCount ?? 0,
+        citationCount: stats?.citationCount ?? 0,
+      });
+      return {
+        source: coverage.source,
+        sourceType: coverage.sourceType,
+        family: coverage.family,
+        publisher: coverage.publisher,
+        accessMethod: coverage.accessMethod,
+        sourceUrl: coverage.sourceUrl,
+        catalogConfidence: coverage.catalogConfidence,
+        collectionStatus: collectionStatusForCoverage(stats),
+        readerStatus: pipelineStatuses.readerStatus,
+        interpreterStatus: pipelineStatuses.interpreterStatus,
+        releaseStatus: pipelineStatuses.releaseStatus,
+        snapshotCount: stats?.snapshotCount ?? 0,
+        recordCount: stats?.recordCount ?? 0,
+        citationCount: stats?.citationCount ?? 0,
+        scope: coverage.scope,
+        contributes: coverage.contributes,
+        excludes: coverage.excludes,
+        notes: coverage.notes,
+      };
+    });
+    const sourceCoverageFamilyRollup = sourceCoverageFamilyRollupJson(coverageStats);
+    console.log(JSON.stringify(
+      {
+        sourceCount: sources.length,
+        sources,
+        sourceCoverageCount: sourceCoverage.length,
+        sourceCoverageFamilyCount: sourceCoverageFamilyRollup.length,
+        sourceCoverageStatusCounts: Object.fromEntries(coverageStatusCounts),
+        sourceCoverageReleaseStatusCounts: Object.fromEntries(coverageReleaseStatusCounts),
+        sourceCoverageFamilyRollup,
+        sourceCoverage,
+      },
+      null,
+      2,
+    ));
     return 0;
   }
 
@@ -216,13 +335,17 @@ async function runSourcesList(options: SourceListOptions): Promise<number> {
   console.log("");
   console.log([
     "SOURCE".padEnd(28),
+    "STATUS".padEnd(16),
     "FAMILY".padEnd(34),
     "SCOPE".padEnd(30),
     "TYPE",
   ].join("  "));
+  const color = cliColorEnabled();
   for (const source of sources) {
+    const status = collectionStatusForCoverage(coverageStats.get(source.id));
     console.log([
       source.id.padEnd(28),
+      colorize(status.padEnd(16), styleForStatus(status, 1), color),
       source.family.padEnd(34),
       summarizeForColumn(source.scope, 30),
       source.type,
@@ -231,6 +354,18 @@ async function runSourcesList(options: SourceListOptions): Promise<number> {
       console.log(`  notes: ${source.notes}`);
     }
   }
+  console.log("");
+  console.log("Coverage rows:");
+  console.log(
+    `  collection: ${dcRuntime.sourceCoverage.length} total; ${
+      formatSourceCoverageStatusCounts(coverageStatusCounts, color)
+    }`,
+  );
+  console.log(
+    `  release: ${formatSourceCoverageReleaseStatusCounts(coverageReleaseStatusCounts, color)}`,
+  );
+  printSourceCoverageFamilyRollup(coverageStats, color);
+  printInventoryOnlyCoverageRows(coverageStats, color);
   console.log("");
   console.log("Collect everything:");
   console.log("  deno task civic collect all");
@@ -241,6 +376,146 @@ async function runSourcesList(options: SourceListOptions): Promise<number> {
   return 0;
 }
 
+function printSourceCoverageFamilyRollup(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+  color: boolean,
+): void {
+  const rows = buildSourceCoverageFamilyRollup(coverageStats);
+  if (rows.length === 0) {
+    return;
+  }
+
+  console.log("");
+  console.log("Family coverage:");
+  console.log([
+    "FAMILY".padEnd(34),
+    "ROWS".padEnd(6),
+    "COVERAGE",
+  ].join("  "));
+  for (const row of rows) {
+    console.log([
+      row.family.padEnd(34),
+      String(row.rows).padEnd(6),
+      `collection: ${formatNonZeroStatusCounts(row.collectionStatuses, color)}`,
+    ].join("  "));
+    console.log([
+      "".padEnd(34),
+      "".padEnd(6),
+      `release: ${formatNonZeroStatusCounts(row.releaseStatuses, color)}`,
+    ].join("  "));
+  }
+}
+
+function buildSourceCoverageFamilyRollup(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+): Array<{
+  family: string;
+  rows: number;
+  collectionStatuses: Map<string, number>;
+  releaseStatuses: Map<string, number>;
+}> {
+  const byFamily = new Map<
+    string,
+    {
+      family: string;
+      rows: number;
+      collectionStatuses: Map<string, number>;
+      releaseStatuses: Map<string, number>;
+    }
+  >();
+
+  for (const coverage of dcRuntime.sourceCoverage) {
+    const stats = coverageStats.get(coverage.source);
+    const collectionStatus = collectionStatusForCoverage(stats);
+    const releaseStatus = sourceCoveragePipelineStatuses({
+      catalogItem: coverage,
+      snapshotCount: stats?.snapshotCount ?? 0,
+      recordCount: stats?.recordCount ?? 0,
+      citationCount: stats?.citationCount ?? 0,
+    }).releaseStatus;
+    const row = byFamily.get(coverage.family) ?? {
+      family: coverage.family,
+      rows: 0,
+      collectionStatuses: new Map<string, number>(),
+      releaseStatuses: new Map<string, number>(),
+    };
+    row.rows += 1;
+    incrementStatusCount(row.collectionStatuses, collectionStatus);
+    incrementStatusCount(row.releaseStatuses, releaseStatus);
+    byFamily.set(coverage.family, row);
+  }
+
+  return [...byFamily.values()].sort((left, right) => left.family.localeCompare(right.family));
+}
+
+function sourceCoverageFamilyRollupJson(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+): Array<{
+  family: string;
+  rows: number;
+  collectionStatuses: Record<string, number>;
+  releaseStatuses: Record<string, number>;
+}> {
+  return buildSourceCoverageFamilyRollup(coverageStats).map((row) => ({
+    family: row.family,
+    rows: row.rows,
+    collectionStatuses: Object.fromEntries(row.collectionStatuses),
+    releaseStatuses: Object.fromEntries(row.releaseStatuses),
+  }));
+}
+
+function incrementStatusCount(counts: Map<string, number>, status: string): void {
+  counts.set(status, (counts.get(status) ?? 0) + 1);
+}
+
+function formatNonZeroStatusCounts(counts: Map<string, number>, color: boolean): string {
+  return [...counts.entries()]
+    .filter(([, count]) => count > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([status, count]) => formatStatusCount(status, count, color))
+    .join(", ");
+}
+
+function printInventoryOnlyCoverageRows(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+  color: boolean,
+): void {
+  const rows = dcRuntime.sourceCoverage
+    .map((coverage) => {
+      const stats = coverageStats.get(coverage.source);
+      const statuses = sourceCoveragePipelineStatuses({
+        catalogItem: coverage,
+        snapshotCount: stats?.snapshotCount ?? 0,
+        recordCount: stats?.recordCount ?? 0,
+        citationCount: stats?.citationCount ?? 0,
+      });
+      return { coverage, statuses };
+    })
+    .filter(({ statuses }) => statuses.releaseStatus === "inventory_only");
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  console.log("");
+  console.log("Inventory-only backlog rows:");
+  console.log([
+    "SOURCE".padEnd(36),
+    "FAMILY".padEnd(26),
+    "RELEASE".padEnd(16),
+    "SCOPE",
+  ].join("  "));
+  for (const { coverage, statuses } of rows) {
+    console.log([
+      coverage.source.padEnd(36),
+      coverage.family.padEnd(26),
+      colorize(statuses.releaseStatus.padEnd(16), styleForStatus(statuses.releaseStatus, 1), color),
+      summarizeForColumn(coverage.scope, 48),
+    ].join("  "));
+  }
+  console.log("Use --json for publisher/access/sourceUrl/confidence details.");
+}
+
 function summarizeForColumn(value: string, width: number): string {
   if (value.length <= width) {
     return value.padEnd(width);
@@ -248,42 +523,123 @@ function summarizeForColumn(value: string, width: number): string {
   return `${value.slice(0, width - 1)}…`;
 }
 
-async function runStatus(options: CliOptions): Promise<number> {
+async function runStatus(options: StatusOptions): Promise<number> {
   const cliOptions = validateCliOptions(options);
   const sourceStats = loadWorkspaceSourceStats(cliOptions.workspace);
   const collected = sourceStats.filter((source) => source.snapshotCount > 0).length;
   const recordCount = sourceStats.reduce((total, source) => total + source.recordCount, 0);
+  const coverageStats = loadWorkspaceCoverageStats(cliOptions.workspace);
+  const coverageStatusCounts = countSourceCoverageStatuses(coverageStats);
+  const coverageReleaseStatusCounts = countSourceCoverageReleaseStatuses(coverageStats);
   const stateCount = await countCommittedStateEntries(cliOptions.stateRoot);
-  const reviewCount = await countPersistedReviewItems(cliOptions.workspace);
+  const reviewItems = await loadReviewItems(cliOptions.workspace);
+  const nextAction = statusNextAction(recordCount, stateCount, cliOptions.releaseRoot);
+  const operatorFlow = operatorFlowForReleaseRoot(cliOptions.releaseRoot);
 
+  if (options.json) {
+    console.log(
+      JSON.stringify(
+        {
+          workspace: cliOptions.workspace,
+          stateRoot: cliOptions.stateRoot,
+          releaseRoot: cliOptions.releaseRoot,
+          sourceCount: sourceStats.length,
+          collectedSourceCount: collected,
+          sourceCoverageCount: dcRuntime.sourceCoverage.length,
+          sourceCoverageStatusCounts: Object.fromEntries(coverageStatusCounts),
+          sourceCoverageReleaseStatusCounts: Object.fromEntries(coverageReleaseStatusCounts),
+          recordCount,
+          stateEntryCount: stateCount,
+          reviewItemCount: reviewItems.length,
+          reviewQueueCounts: reviewQueueCountsObject(reviewItems),
+          nextAction,
+          operatorFlow,
+        },
+        null,
+        2,
+      ),
+    );
+    return 0;
+  }
+
+  const color = cliColorEnabled();
   console.log("Civic Ledger Status");
   console.log("");
   console.log(`Workspace: ${cliOptions.workspace}`);
-  console.log(`Sources:   ${collected}/${sourceStats.length} collected`);
+  console.log(
+    `Sources:   ${
+      colorize(
+        `${collected}/${sourceStats.length} collected`,
+        collected === sourceStats.length ? "green" : collected === 0 ? "red" : "yellow",
+        color,
+      )
+    }`,
+  );
+  console.log(
+    `Coverage:  ${dcRuntime.sourceCoverage.length} rows; ${
+      formatSourceCoverageStatusCounts(coverageStatusCounts, color)
+    }`,
+  );
+  console.log(
+    `Release:   ${formatSourceCoverageReleaseStatusCounts(coverageReleaseStatusCounts, color)}`,
+  );
   console.log(`Records:   ${recordCount}`);
-  console.log(`State:     ${stateCount} entries`);
-  console.log(`Review:    ${reviewCount} persisted items`);
+  console.log(
+    `State:     ${colorize(`${stateCount} entries`, stateCount > 0 ? "green" : "yellow", color)}`,
+  );
+  console.log(`Review:    ${formatPersistedReviewSummary(reviewItems, color)}`);
   console.log("");
   console.log("Operator flow:");
-  for (const step of OPERATOR_FLOW) {
+  for (const step of operatorFlow) {
     console.log(`  ${step}`);
   }
   console.log("");
-  if (recordCount === 0) {
-    console.log("Next: deno task civic collect all");
-  } else if (stateCount === 0) {
-    console.log("Next: deno task civic revision validate, then deno task civic state generate");
-  } else {
-    console.log("Next: deno task civic check, then deno task civic export");
-    console.log("Review queue: deno task civic review inbox");
+  console.log(`Next: ${colorize(nextAction, "cyan", color)}`);
+  if (recordCount > 0 && stateCount > 0) {
+    console.log(statusReviewQueueHint(reviewItems, color));
   }
   return 0;
+}
+
+function statusReviewQueueHint(reviewItems: ReviewItem[], color: boolean): string {
+  const queueCounts = countReviewQueues(reviewItems);
+  const inboxCount = (queueCounts.get("blocking") ?? 0) + (queueCounts.get("actionable") ?? 0);
+  if (inboxCount > 0) {
+    return `Review queue: ${colorize("deno task civic review inbox", "cyan", color)}`;
+  }
+  if ((queueCounts.get("drafted") ?? 0) > 0) {
+    return `Review queue: ${
+      colorize("deno task civic review list --queue drafted", "cyan", color)
+    }`;
+  }
+  if ((queueCounts.get("deferred") ?? 0) > 0) {
+    return `Review queue: ${colorize("deno task civic review deferred", "cyan", color)}`;
+  }
+  return `Review queue: ${colorize("no active review items", "green", color)}`;
+}
+
+function statusNextAction(
+  recordCount: number,
+  stateEntryCount: number,
+  releaseRoot: string,
+): string {
+  if (recordCount === 0) {
+    return "deno task civic collect all";
+  }
+  if (stateEntryCount === 0) {
+    return "deno task civic revision validate, then deno task civic state generate";
+  }
+  return `deno task civic check, then deno task civic export, then deno task civic release verify ${releaseRoot}`;
 }
 
 function sourceSummary(sourceId: string): {
   id: string;
   type: string;
   family: string;
+  publisher?: string;
+  accessMethod?: string;
+  sourceUrl?: string;
+  catalogConfidence?: string;
   scope: string;
   notes?: string;
 } {
@@ -296,6 +652,10 @@ function sourceSummary(sourceId: string): {
     id: sourceId,
     type: binding.source.type,
     family: coverage?.family ?? "uncategorized",
+    publisher: coverage?.publisher,
+    accessMethod: coverage?.accessMethod,
+    sourceUrl: coverage?.sourceUrl,
+    catalogConfidence: coverage?.catalogConfidence,
     scope: coverage?.scope ?? "",
     notes: coverage?.notes,
   };
@@ -332,6 +692,215 @@ function loadWorkspaceSourceStats(workspaceRoot: string): Array<{
   }
 }
 
+function loadWorkspaceCoverageStats(workspaceRoot: string): Map<string, WorkspaceCoverageStats> {
+  const workspace = openWorkspace(workspaceRoot);
+  try {
+    initWorkspace(workspace);
+    const stats = new Map<string, WorkspaceCoverageStats>();
+    for (const coverage of dcRuntime.sourceCoverage) {
+      const snapshotRow = workspace.db.prepare(
+        "SELECT COUNT(*) AS count FROM snapshots WHERE source = ?",
+      ).get([coverage.source]) as { count: number };
+      const recordRow = workspace.db.prepare(
+        "SELECT COUNT(*) AS count FROM records WHERE source = ?",
+      ).get([coverage.source]) as { count: number };
+      stats.set(coverage.source, {
+        snapshotCount: Number(snapshotRow.count),
+        recordCount: Number(recordRow.count),
+        citationCount: 0,
+      });
+    }
+
+    const entryRows = workspace.db.prepare("SELECT payload FROM state_entries").all() as Array<{
+      payload: string;
+    }>;
+    for (const row of entryRows) {
+      const parsed = safeJsonObject(row.payload);
+      addCitationCounts(parsed.citations, stats);
+    }
+
+    const relationRows = workspace.db.prepare("SELECT citations FROM state_relations")
+      .all() as Array<
+        { citations: string | null }
+      >;
+    for (const row of relationRows) {
+      addCitationCounts(safeJsonArray(row.citations), stats);
+    }
+
+    return stats;
+  } finally {
+    closeWorkspace(workspace);
+  }
+}
+
+function collectionStatusForCoverage(
+  stats: WorkspaceCoverageStats | undefined,
+): SourceCoverageCollectionStatus {
+  return sourceCoverageCollectionStatus({
+    snapshotCount: stats?.snapshotCount ?? 0,
+    recordCount: stats?.recordCount ?? 0,
+  });
+}
+
+function countSourceCoverageStatuses(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+): Map<SourceCoverageCollectionStatus, number> {
+  const counts = new Map<SourceCoverageCollectionStatus, number>(
+    SOURCE_COVERAGE_COLLECTION_STATUSES.map((status) => [status, 0]),
+  );
+  for (const coverage of dcRuntime.sourceCoverage) {
+    const status = collectionStatusForCoverage(coverageStats.get(coverage.source));
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function countSourceCoverageReleaseStatuses(
+  coverageStats: Map<string, WorkspaceCoverageStats>,
+): Map<SourceCoverageReleaseStatus, number> {
+  const counts = new Map<SourceCoverageReleaseStatus, number>();
+  for (const coverage of dcRuntime.sourceCoverage) {
+    const stats = coverageStats.get(coverage.source);
+    const status = sourceCoveragePipelineStatuses({
+      catalogItem: coverage,
+      snapshotCount: stats?.snapshotCount ?? 0,
+      recordCount: stats?.recordCount ?? 0,
+      citationCount: stats?.citationCount ?? 0,
+    }).releaseStatus;
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  }
+  return new Map([...counts.entries()].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function formatSourceCoverageStatusCounts(
+  counts: Map<SourceCoverageCollectionStatus, number>,
+  color = false,
+): string {
+  return SOURCE_COVERAGE_COLLECTION_STATUSES
+    .map((status) => formatStatusCount(status, counts.get(status) ?? 0, color))
+    .join(", ");
+}
+
+function formatSourceCoverageReleaseStatusCounts(
+  counts: Map<SourceCoverageReleaseStatus, number>,
+  color = false,
+): string {
+  return [...counts.entries()].map(([status, count]) => formatStatusCount(status, count, color))
+    .join(", ");
+}
+
+function formatStatusCount(status: string, count: number, color: boolean): string {
+  return `${colorize(status, styleForStatus(status, count), color)} ${count}`;
+}
+
+function styleForStatus(status: string, count: number): AnsiStyle {
+  if (count === 0) {
+    return "cyan";
+  }
+  switch (status) {
+    case "collected":
+    case "exported":
+    case "applied":
+      return "green";
+    case "collected_empty":
+    case "inventory_only":
+    case "not_collected":
+    case "deferred":
+    case "drafted":
+    case "open":
+      return "yellow";
+    case "blocking":
+    case "actionable":
+      return "red";
+    default:
+      return "cyan";
+  }
+}
+
+function styleForReviewCount(status: string, count: number): AnsiStyle {
+  if (count === 0) {
+    return "green";
+  }
+  return styleForStatus(status, count);
+}
+
+function styleForSeverity(severity: string): AnsiStyle {
+  switch (severity) {
+    case "high":
+      return "red";
+    case "medium":
+      return "yellow";
+    default:
+      return "cyan";
+  }
+}
+
+function colorize(value: string, style: AnsiStyle, enabled = cliColorEnabled()): string {
+  if (!enabled) {
+    return value;
+  }
+  const [open, close] = ANSI_STYLES[style];
+  return `${open}${value}${close}`;
+}
+
+function cliColorEnabled(): boolean {
+  const mode = Deno.env.get("CIVIC_LEDGER_COLOR")?.toLowerCase();
+  if (mode === "always") {
+    return true;
+  }
+  if (mode === "never" || Deno.env.has("NO_COLOR")) {
+    return false;
+  }
+  return Deno.stdout.isTerminal();
+}
+
+function safeJsonObject(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function safeJsonArray(value: string | null): unknown[] {
+  if (!value) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addCitationCounts(
+  citations: unknown,
+  stats: Map<string, WorkspaceCoverageStats>,
+): void {
+  if (!Array.isArray(citations)) {
+    return;
+  }
+  for (const citation of citations) {
+    if (!citation || typeof citation !== "object" || Array.isArray(citation)) {
+      continue;
+    }
+    const source = (citation as Record<string, unknown>).source;
+    if (typeof source !== "string" || source.length === 0) {
+      continue;
+    }
+    let sourceStats = stats.get(source);
+    if (!sourceStats) {
+      sourceStats = { snapshotCount: 0, recordCount: 0, citationCount: 0 };
+      stats.set(source, sourceStats);
+    }
+    sourceStats.citationCount += 1;
+  }
+}
+
 function countWorkspaceRecords(workspace: Workspace): number {
   const row = workspace.db.prepare("SELECT COUNT(*) AS count FROM records").get() as {
     count: number;
@@ -343,18 +912,6 @@ async function countCommittedStateEntries(stateRoot: string): Promise<number> {
   try {
     const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
     return loaded.state.entries.size;
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      return 0;
-    }
-    throw error;
-  }
-}
-
-async function countPersistedReviewItems(workspaceRoot: string): Promise<number> {
-  try {
-    const items = await loadReviewItems(workspaceRoot);
-    return items.length;
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
       return 0;
@@ -598,18 +1155,88 @@ async function runExport(
       sourceCatalog: dcRuntime.sourceCoverage,
       reviewItems,
     });
+    const color = cliColorEnabled();
     console.log(
-      `exported ${result.entryCount} entries, ${result.relationCount} relations to ${result.releaseRoot}`,
+      `${colorize("exported", "green", color)} ${
+        colorize(String(result.entryCount), "green", color)
+      } entries, ${colorize(String(result.relationCount), "green", color)} relations to ${
+        colorize(result.releaseRoot, "cyan", color)
+      }`,
     );
-    console.log("Alpha artifact highlights:");
+    console.log(
+      `GovGraph projection: ${colorize(String(result.govGraphNodeCount), "green", color)} nodes, ${
+        colorize(String(result.govGraphEdgeCount), "green", color)
+      } edges; excluded ${
+        colorize(
+          String(result.govGraphExcludedNodeCount),
+          result.govGraphExcludedNodeCount === 0 ? "green" : "yellow",
+          color,
+        )
+      } nodes, ${
+        colorize(
+          String(result.govGraphExcludedEdgeCount),
+          result.govGraphExcludedEdgeCount === 0 ? "green" : "yellow",
+          color,
+        )
+      } edges; blocking review items ${
+        colorize(
+          String(result.govGraphBlockedReviewItemCount),
+          result.govGraphBlockedReviewItemCount === 0 ? "green" : "red",
+          color,
+        )
+      }`,
+    );
+    console.log(colorize("Alpha artifact highlights:", "cyan", color));
     for (const artifact of ALPHA_ARTIFACT_HINTS) {
       console.log(`  - ${artifact}`);
     }
-    console.log(`Inspect source coverage: ${join(result.releaseRoot, "source_coverage.csv")}`);
+    console.log(
+      `Inspect source coverage: ${
+        colorize(join(result.releaseRoot, "source_coverage.csv"), "cyan", color)
+      }`,
+    );
+    console.log(
+      `Verify release: ${
+        colorize(`deno task civic release verify ${result.releaseRoot}`, "cyan", color)
+      }`,
+    );
     return 0;
   } finally {
     closeWorkspace(workspace);
   }
+}
+
+async function runReleaseVerify(
+  releaseRoot: string,
+  options: ReleaseVerifyOptions = {},
+): Promise<number> {
+  const result = await verifyReleaseArtifacts(releaseRoot);
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return result.valid ? 0 : 1;
+  }
+
+  const color = cliColorEnabled();
+  if (result.valid) {
+    console.log(
+      `${colorize("release verified", "green", color)}: ${
+        colorize(String(result.checkedFileCount), "green", color)
+      } payload files match ${colorize(result.manifestPath, "cyan", color)}; ${
+        colorize(
+          "schema version, release identity, artifact counts, kind rollups, zero blocking review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
+          "green",
+          color,
+        )
+      }`,
+    );
+    return 0;
+  }
+
+  console.error(`${colorize("release verification failed", "red", color)} for ${releaseRoot}:`);
+  for (const error of result.errors) {
+    console.error(`  - ${error}`);
+  }
+  return 1;
 }
 
 async function loadCommittedStateForCli(
@@ -641,14 +1268,18 @@ async function runReviewList(options: ReviewListOptions): Promise<number> {
     cliOptions.workspace,
     cliOptions.stateRoot,
   );
-  const filtered = filterReviewItems(items, options);
+  const filterResult = filterReviewItems(items, options);
+  const shownItems = limitReviewItems(filterResult.filtered, cliOptions.limit);
 
   if (options.json) {
     console.log(JSON.stringify(
       {
-        reviewItemCount: filtered.length,
+        reviewItemCount: shownItems.length,
         totalReviewItemCount: items.length,
-        items: filtered,
+        filter: reviewListFilterJson(filterResult, items.length, cliOptions.limit),
+        reviewQueueCounts: reviewQueueCountsObject(items),
+        statusFilteredReviewQueueCounts: reviewQueueCountsObject(filterResult.statusFiltered),
+        items: shownItems.map(reviewListJsonItem),
       },
       null,
       2,
@@ -656,26 +1287,89 @@ async function runReviewList(options: ReviewListOptions): Promise<number> {
     return 0;
   }
 
-  printReviewList(filtered, items.length);
+  printReviewList(shownItems, items.length, filterResult);
   return 0;
 }
 
-function filterReviewItems(items: ReviewItem[], options: ReviewListOptions): ReviewItem[] {
-  const status = options.status;
+function reviewListJsonItem(item: ReviewItem): ReviewItem & {
+  publicOutputImpact: boolean;
+  blocksCurrentOutput: boolean;
+  queue: ReviewQueue;
+  queueLabel: string;
+} {
+  const queue = reviewQueueForItem(item);
+  return {
+    ...item,
+    publicOutputImpact: reviewItemHasPublicOutputImpact(item),
+    blocksCurrentOutput: reviewItemBlocksCurrentOutput(item),
+    queue,
+    queueLabel: reviewQueueLabel(queue),
+  };
+}
+
+interface ReviewListFilterResult {
+  filtered: ReviewItem[];
+  statusFiltered: ReviewItem[];
+  status: ReviewListOptions["status"] | "all";
+  queue: ReviewQueueFilter;
+  defaultQueueApplied: boolean;
+}
+
+function filterReviewItems(
+  items: ReviewItem[],
+  options: ReviewListOptions,
+): ReviewListFilterResult {
+  const status = options.status ?? "all";
   const statusFiltered = status && status !== "all"
     ? items.filter((item) => item.status === status)
     : items;
-  const queue = parseReviewQueueFilter(options.queue ?? "inbox");
+  const defaultQueueApplied = options.queue === undefined;
+  const queue = parseReviewQueueFilter(options.queue ?? "inbox") ?? "inbox";
+  let filtered: ReviewItem[];
   if (queue === "all") {
-    return statusFiltered;
-  }
-  if (queue === "inbox") {
-    return statusFiltered.filter((item) => {
+    filtered = statusFiltered;
+  } else if (queue === "inbox") {
+    filtered = statusFiltered.filter((item) => {
       const itemQueue = reviewQueueForItem(item);
       return itemQueue === "blocking" || itemQueue === "actionable";
     });
+  } else {
+    filtered = statusFiltered.filter((item) => reviewQueueForItem(item) === queue);
   }
-  return statusFiltered.filter((item) => reviewQueueForItem(item) === queue);
+  return {
+    filtered,
+    statusFiltered,
+    status,
+    queue,
+    defaultQueueApplied,
+  };
+}
+
+function reviewListFilterJson(
+  filter: ReviewListFilterResult,
+  totalReviewItemCount: number,
+  limit?: number,
+): Record<string, unknown> {
+  const deferredAfterStatus =
+    filter.statusFiltered.filter((item) => reviewQueueForItem(item) === "deferred").length;
+  return {
+    status: filter.status,
+    queue: filter.queue,
+    defaultQueueApplied: filter.defaultQueueApplied,
+    totalReviewItemCount,
+    statusMatchedReviewItemCount: filter.statusFiltered.length,
+    queueMatchedReviewItemCount: filter.filtered.length,
+    shownReviewItemCount: limit === undefined ? filter.filtered.length : Math.min(
+      filter.filtered.length,
+      limit,
+    ),
+    limit: limit ?? null,
+    deferredMatchedReviewItemCount: deferredAfterStatus,
+  };
+}
+
+function limitReviewItems(items: ReviewItem[], limit?: number): ReviewItem[] {
+  return limit === undefined ? items : items.slice(0, limit);
 }
 
 type ReviewQueueFilter = ReviewQueue | "inbox" | "all";
@@ -710,7 +1404,7 @@ async function runReviewDashboard(options: CliOptions): Promise<number> {
   return 0;
 }
 
-async function runReviewNext(options: CliOptions): Promise<number> {
+async function runReviewNext(options: ReviewNextOptions): Promise<number> {
   const cliOptions = validateCliOptions(options);
   const items = await refreshReviewItemsFromCommittedState(
     cliOptions.workspace,
@@ -718,8 +1412,21 @@ async function runReviewNext(options: CliOptions): Promise<number> {
   );
   const next = items.find((item) => reviewQueueForItem(item) === "blocking") ??
     items.find((item) => reviewQueueForItem(item) === "actionable");
+
+  if (options.json) {
+    console.log(JSON.stringify(
+      {
+        reviewItemCount: items.length,
+        reviewQueueCounts: reviewQueueCountsObject(items),
+        next: next ? reviewListJsonItem(next) : null,
+      },
+      null,
+      2,
+    ));
+    return 0;
+  }
+
   if (!next) {
-    console.log("No actionable review items.");
     printReviewDashboard(items);
     return 0;
   }
@@ -727,14 +1434,61 @@ async function runReviewNext(options: CliOptions): Promise<number> {
   return 0;
 }
 
-async function runReviewDeferred(options: CliOptions): Promise<number> {
+async function runReviewDeferred(options: ReviewDeferredOptions): Promise<number> {
   const cliOptions = validateCliOptions(options);
   const items = await refreshReviewItemsFromCommittedState(
     cliOptions.workspace,
     cliOptions.stateRoot,
   );
   const deferred = items.filter((item) => reviewQueueForItem(item) === "deferred");
-  printDeferredReviewSummary(deferred, items.length);
+  const groups = groupDeferredReviewItems(deferred);
+  const shownGroups = cliOptions.limit === undefined ? groups : groups.slice(0, cliOptions.limit);
+  const sampleEvidenceByItemId = new Map<string, ReviewSourceRecordSummary[]>();
+  for (const group of shownGroups) {
+    const sample = group.items[0];
+    if (sample) {
+      sampleEvidenceByItemId.set(
+        sample.id,
+        summarizeReviewSourceRecords(loadReviewSourceRecords(cliOptions.workspace, sample)),
+      );
+    }
+  }
+
+  if (options.json) {
+    console.log(JSON.stringify(
+      {
+        reviewItemCount: deferred.length,
+        deferredReviewItemCount: deferred.length,
+        totalReviewItemCount: items.length,
+        groupCount: groups.length,
+        shownGroupCount: shownGroups.length,
+        limit: cliOptions.limit ?? null,
+        groups: shownGroups.map((group) => ({
+          category: group.category,
+          label: group.label,
+          count: group.items.length,
+          sampleItemId: group.items[0]?.id ?? null,
+          sampleSummary: group.items[0]?.summary ?? null,
+          sampleSourceRecords: group.items[0]
+            ? sampleEvidenceByItemId.get(group.items[0].id) ?? []
+            : [],
+          inspectCommand: group.items[0] ? reviewShowCommand(group.items[0].id) : null,
+          description: deferredReviewGroupDescription(group.category, group.label) ?? null,
+        })),
+      },
+      null,
+      2,
+    ));
+    return 0;
+  }
+
+  printDeferredReviewSummary(
+    deferred,
+    items.length,
+    shownGroups,
+    groups.length,
+    sampleEvidenceByItemId,
+  );
   return 0;
 }
 
@@ -749,13 +1503,145 @@ async function runReviewShow(itemId: string, options: ReviewShowOptions): Promis
     throw new Error(`review item not found: ${itemId}`);
   }
 
+  const sourceRecords = loadReviewSourceRecords(cliOptions.workspace, item);
   if (options.json) {
-    console.log(JSON.stringify(item, null, 2));
+    console.log(JSON.stringify(reviewShowJsonItem(item, sourceRecords), null, 2));
     return 0;
   }
 
-  printReviewItem(item);
+  printReviewItem(item, sourceRecords);
   return 0;
+}
+
+function reviewShowJsonItem(
+  item: ReviewItem,
+  sourceRecords: ReviewSourceRecordEvidence[],
+): ReviewItem & {
+  queue: ReviewQueue;
+  queueLabel: string;
+  sourceRecordSummaries: ReviewSourceRecordSummary[];
+  sourceRecords: ReviewSourceRecordEvidence[];
+} {
+  return {
+    ...reviewListJsonItem(item),
+    sourceRecordSummaries: summarizeReviewSourceRecords(sourceRecords),
+    sourceRecords,
+  };
+}
+
+function loadReviewSourceRecords(
+  workspaceRoot: string,
+  item: ReviewItem,
+): ReviewSourceRecordEvidence[] {
+  const refs = sourceRecordRefsForReviewItem(item);
+  if (refs.length === 0) {
+    return [];
+  }
+
+  const workspace = openWorkspace(workspaceRoot);
+  try {
+    initWorkspace(workspace);
+    const recordsBySource = new Map<string, ReturnType<typeof loadRecords>>();
+    return refs.map((ref) => {
+      const records = recordsBySource.get(ref.source) ?? loadRecords(workspace, ref.source);
+      recordsBySource.set(ref.source, records);
+      const record = records.find((candidate) => candidate.key === ref.sourceRecordId);
+      if (!record) {
+        return {
+          source: ref.source,
+          sourceRecordId: ref.sourceRecordId,
+          found: false,
+        };
+      }
+      return {
+        source: ref.source,
+        sourceRecordId: ref.sourceRecordId,
+        found: true,
+        snapshotKey: record.snapshotKey,
+        payload: record.payload,
+      };
+    });
+  } finally {
+    closeWorkspace(workspace);
+  }
+}
+
+function summarizeReviewSourceRecords(
+  records: ReviewSourceRecordEvidence[],
+): ReviewSourceRecordSummary[] {
+  return records.map((record) => ({
+    source: record.source,
+    sourceRecordId: record.sourceRecordId,
+    found: record.found,
+    urls: record.found ? sourceRecordUrls(record.payload).slice(0, 3) : [],
+  }));
+}
+
+function sourceRecordUrls(payload: Record<string, unknown> | undefined): string[] {
+  if (!payload) {
+    return [];
+  }
+
+  const urls: string[] = [];
+  for (
+    const key of [
+      "detailUrl",
+      "sourceUrl",
+      "sourcePageUrl",
+      "sourcePageUrls",
+      "profileUrl",
+      "officialUrl",
+      "url",
+      "enablingStatuteUrl",
+    ]
+  ) {
+    collectUrlValue(payload[key], urls);
+  }
+  return [...new Set(urls)].sort();
+}
+
+function collectUrlValue(value: unknown, urls: string[]): void {
+  if (typeof value === "string" && isHttpUrl(value)) {
+    urls.push(value);
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectUrlValue(item, urls);
+    }
+  }
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function sourceRecordRefsForReviewItem(
+  item: ReviewItem,
+): Array<{ source: string; sourceRecordId: string }> {
+  const refs = new Map<string, { source: string; sourceRecordId: string }>();
+  for (const citation of [...item.sourceRefs, ...item.citations]) {
+    if (
+      "source" in citation && typeof citation.source === "string" &&
+      typeof citation.sourceRecordId === "string"
+    ) {
+      const key = `${citation.source}\0${citation.sourceRecordId}`;
+      refs.set(key, {
+        source: citation.source,
+        sourceRecordId: citation.sourceRecordId,
+      });
+    }
+  }
+  return [...refs.values()].sort((left, right) =>
+    left.source.localeCompare(right.source) ||
+    left.sourceRecordId.localeCompare(right.sourceRecordId)
+  );
 }
 
 async function runReviewResolve(
@@ -1010,8 +1896,9 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
     });
 
   root.command("status", "Show workspace, source, state, and review readiness.")
+    .option("--json", "Emit status metadata as JSON.")
     .action(async (options) => {
-      onExitCode(await runStatus(validateCliOptions(options)));
+      onExitCode(await runStatus(options));
     });
 
   const sources = new Command<CliOptions>()
@@ -1078,6 +1965,26 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
       );
     });
 
+  const release = new Command<CliOptions>()
+    .description("Release artifact commands.")
+    .action(() => {
+      throw new Error(
+        "release requires `verify`; try deno task civic release verify releases/latest",
+      );
+    });
+
+  release.command(
+    "verify [releaseRoot:string]",
+    "Verify release identity, payload metadata, source coverage statuses, review category posture, zero blockers, and manifest contracts.",
+  )
+    .option("--json", "Emit release verification result as JSON.")
+    .action(async (options, releaseRootArg?: string) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runReleaseVerify(releaseRootArg ?? cliOptions.releaseRoot, options));
+    });
+
+  root.command("release", release);
+
   const reconcile = new Command<CliOptions>()
     .description("Reconciliation review commands.")
     .action(() => {
@@ -1093,12 +2000,12 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
   root.command("reconcile", reconcile);
 
   const review = new Command<CliOptions>()
-    .description("Review workflow commands.")
+    .description("Review workflow commands; read commands refresh items from committed state.")
     .action(async (options) => {
       onExitCode(await runReviewDashboard(validateCliOptions(options)));
     });
 
-  review.command("list", "List persisted review items.")
+  review.command("list", "Refresh from committed state and list persisted review items.")
     .option("--json", "Emit review items as JSON.")
     .option("--status <status:string>", "Filter by open, drafted, applied, or all.", {
       default: "all",
@@ -1111,24 +2018,32 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
       onExitCode(await runReviewList(options as ReviewListOptions));
     });
 
-  review.command("inbox", "List review items that need an operator decision.")
+  review.command("inbox", "Refresh from committed state and list operator-decision review items.")
     .option("--json", "Emit review items as JSON.")
     .action(async (options) => {
       onExitCode(await runReviewList({ ...(options as CliOptions), queue: "inbox" }));
     });
 
-  review.command("next", "Show the next actionable review item.")
+  review.command("next", "Refresh from committed state and show the next actionable review item.")
+    .option("--json", "Emit the next review item as JSON.")
     .action(async (options) => {
-      onExitCode(await runReviewNext(validateCliOptions(options)));
+      onExitCode(await runReviewNext(options as ReviewNextOptions));
     });
 
-  review.command("deferred", "Summarize parked, non-blocking review items by group.")
+  review.command(
+    "deferred",
+    "Refresh from committed state and summarize parked review items by group.",
+  )
+    .option("--json", "Emit deferred review groups as JSON.")
     .action(async (options) => {
-      onExitCode(await runReviewDeferred(validateCliOptions(options)));
+      onExitCode(await runReviewDeferred(options as ReviewDeferredOptions));
     });
 
-  review.command("show <itemId:string>", "Show one review item evidence packet.")
-    .option("--json", "Emit the full review item packet as JSON.")
+  review.command(
+    "show <itemId:string>",
+    "Refresh from committed state and show one review item evidence packet.",
+  )
+    .option("--json", "Emit the review item plus matching source records as JSON.")
     .action(async (options, itemId) => {
       onExitCode(await runReviewShow(itemId, options as ReviewShowOptions));
     });
@@ -1176,9 +2091,36 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
   return root;
 }
 
-function printReviewList(items: ReviewItem[], totalCount: number): void {
+function printReviewList(
+  items: ReviewItem[],
+  totalCount: number,
+  filter?: ReviewListFilterResult,
+): void {
+  const color = cliColorEnabled();
+  const matchingCount = filter?.filtered.length ?? items.length;
   if (items.length === 0) {
+    if (matchingCount > 0) {
+      console.log(`0 shown, ${matchingCount} matching, ${totalCount} total`);
+      console.log("Increase --limit to show matching review items.");
+      return;
+    }
     console.log(`no matching review items (${totalCount} total)`);
+    if (filter) {
+      console.log(`Filter: status=${filter.status}, queue=${filter.queue}`);
+      if (filter.statusFiltered.length > 0) {
+        console.log(
+          `${filter.statusFiltered.length} item(s) matched status before queue filtering.`,
+        );
+      }
+      const hiddenDeferredCount = filter.statusFiltered.filter((item) =>
+        reviewQueueForItem(item) === "deferred"
+      ).length;
+      if (hiddenDeferredCount > 0 && filter.queue !== "deferred" && filter.queue !== "all") {
+        console.log(
+          `${hiddenDeferredCount} deferred item(s) are outside this queue; use --queue deferred, --queue all, or review deferred.`,
+        );
+      }
+    }
     return;
   }
 
@@ -1191,21 +2133,64 @@ function printReviewList(items: ReviewItem[], totalCount: number): void {
     ].join("  "),
   );
   for (const item of items) {
+    const queue = reviewQueueForItem(item);
     console.log(
       [
-        reviewQueueLabel(reviewQueueForItem(item)).padEnd(14),
-        item.severity.padEnd(8),
+        colorize(reviewQueueLabel(queue).padEnd(14), styleForStatus(queue, 1), color),
+        colorize(item.severity.padEnd(8), styleForSeverity(item.severity), color),
         item.category.padEnd(28),
         reviewQuestion(item),
       ].join("  "),
     );
     console.log(`  id: ${item.id}`);
   }
-  console.log(`${items.length} shown, ${items.length} matching, ${totalCount} total`);
-  console.log("Use --queue all to include applied and deferred items.");
+  console.log(`${items.length} shown, ${matchingCount} matching, ${totalCount} total`);
+  const hiddenQueueHint = reviewListHiddenQueueHint(filter);
+  if (hiddenQueueHint) {
+    console.log(hiddenQueueHint);
+  }
 }
 
-function printDeferredReviewSummary(items: ReviewItem[], totalCount: number): void {
+function reviewListHiddenQueueHint(filter: ReviewListFilterResult | undefined): string | null {
+  if (!filter || filter.queue === "all") {
+    return null;
+  }
+
+  const hiddenQueues = new Set<ReviewQueue>();
+  for (const item of filter.statusFiltered) {
+    const itemQueue = reviewQueueForItem(item);
+    if (filter.queue === "inbox" && (itemQueue === "blocking" || itemQueue === "actionable")) {
+      continue;
+    }
+    if (itemQueue !== filter.queue) {
+      hiddenQueues.add(itemQueue);
+    }
+  }
+
+  const hiddenLabels = (["applied", "deferred"] as const).filter((queue) =>
+    hiddenQueues.has(queue)
+  );
+  if (hiddenLabels.length === 0) {
+    return null;
+  }
+  return `Use --queue all to include ${formatList(hiddenLabels)} items.`;
+}
+
+function formatList(values: string[]): string {
+  if (values.length <= 1) {
+    return values[0] ?? "";
+  }
+  return `${values.slice(0, -1).join(", ")} and ${values[values.length - 1]}`;
+}
+
+function printDeferredReviewSummary(
+  items: ReviewItem[],
+  totalCount: number,
+  groups = groupDeferredReviewItems(items),
+  totalGroupCount = groups.length,
+  sampleEvidenceByItemId: Map<string, ReviewSourceRecordSummary[]> = new Map(),
+): void {
+  const color = cliColorEnabled();
   console.log("Deferred Review Items");
   console.log("");
   console.log(
@@ -1217,52 +2202,55 @@ function printDeferredReviewSummary(items: ReviewItem[], totalCount: number): vo
     return;
   }
 
-  const groups = groupDeferredReviewItems(items);
   console.log(["COUNT".padEnd(5), "CATEGORY".padEnd(28), "SOURCE/FINDING"].join("  "));
   for (const group of groups) {
     console.log([
-      String(group.items.length).padEnd(5),
-      group.category.padEnd(28),
+      colorize(String(group.items.length).padEnd(5), "yellow", color),
+      colorize(group.category.padEnd(28), "yellow", color),
       group.label,
     ].join("  "));
-    console.log(`  sample: ${group.items[0].id}`);
+    const sample = group.items[0];
+    console.log(`  sample: ${sample.id}`);
+    console.log(`  sample summary: ${sample.summary}`);
+    const sampleEvidence = sampleEvidenceByItemId.get(sample.id) ?? [];
+    if (sampleEvidence.length > 0) {
+      console.log(`  sample sources: ${formatSourceRecordSummaries(sampleEvidence)}`);
+    }
+    console.log(`  inspect: ${reviewShowCommand(sample.id)}`);
+    const description = deferredReviewGroupDescription(group.category, group.label);
+    if (description) {
+      console.log(`  why: ${description}`);
+    }
   }
   console.log("");
-  console.log(`${items.length} deferred, ${totalCount} total review items`);
+  if (groups.length < totalGroupCount) {
+    console.log(`${groups.length} shown deferred groups, ${totalGroupCount} total groups`);
+  }
+  console.log(
+    `${colorize(String(items.length), "yellow", color)} deferred, ${totalCount} total review items`,
+  );
   console.log("Inspect one with: deno task civic review show <item-id>");
 }
 
-function groupDeferredReviewItems(items: ReviewItem[]): Array<{
-  category: string;
-  label: string;
-  items: ReviewItem[];
-}> {
-  const groups = new Map<string, { category: string; label: string; items: ReviewItem[] }>();
-  for (const item of items) {
-    const label = deferredReviewGroupLabel(item);
-    const key = `${item.category}\0${label}`;
-    const group = groups.get(key) ?? { category: item.category, label, items: [] };
-    group.items.push(item);
-    groups.set(key, group);
-  }
-  return [...groups.values()].sort((left, right) =>
-    right.items.length - left.items.length ||
-    left.category.localeCompare(right.category) ||
-    left.label.localeCompare(right.label)
-  );
+function formatSourceRecordSummaries(records: ReviewSourceRecordSummary[]): string {
+  return records.map((record) => {
+    const ref = `${record.source}:${record.sourceRecordId}`;
+    if (!record.found) {
+      return `${ref} (not found)`;
+    }
+    if (record.urls.length === 0) {
+      return ref;
+    }
+    return `${ref} (${record.urls.join(", ")})`;
+  }).join("; ");
 }
 
-function deferredReviewGroupLabel(item: ReviewItem): string {
-  if (item.source.type === "finding") {
-    const code = item.attributesThatConflict.findingCode;
-    if (typeof code === "string" && code.length > 0) {
-      return code;
-    }
-  }
-  return item.sourceFamilies.join(", ") || item.classification;
+function reviewShowCommand(itemId: string): string {
+  return `deno task civic review show ${itemId}`;
 }
 
 function printReviewDashboard(items: ReviewItem[]): void {
+  const color = cliColorEnabled();
   const queueCounts = countReviewQueues(items);
   const statusCounts = countReviewStatuses(items);
   const outputImpactingBlockers = items.filter((item) =>
@@ -1278,19 +2266,39 @@ function printReviewDashboard(items: ReviewItem[]): void {
   console.log("Civic Ledger Review");
   console.log("");
   console.log("Readiness");
-  console.log(`  ${stateBlockers} state-generation blockers`);
-  console.log(`  ${outputImpactingBlockers} public-output blockers`);
+  console.log(
+    `  ${
+      colorize(String(stateBlockers), stateBlockers > 0 ? "red" : "green", color)
+    } state-generation blockers`,
+  );
+  console.log(
+    `  ${
+      colorize(
+        String(outputImpactingBlockers),
+        outputImpactingBlockers > 0 ? "red" : "green",
+        color,
+      )
+    } public-output blockers`,
+  );
   console.log("");
   console.log("Decision queues");
   for (
     const queue of ["blocking", "actionable", "drafted", "applied", "deferred"] as ReviewQueue[]
   ) {
-    console.log(`  ${reviewQueueLabel(queue).padEnd(14)} ${queueCounts.get(queue) ?? 0}`);
+    const count = queueCounts.get(queue) ?? 0;
+    console.log(
+      `  ${reviewQueueLabel(queue).padEnd(14)} ${
+        colorize(String(count), styleForReviewCount(queue, count), color)
+      }`,
+    );
   }
   console.log("");
   console.log("Statuses");
   for (const status of ["open", "drafted", "applied"] as const) {
-    console.log(`  ${status.padEnd(8)} ${statusCounts.get(status) ?? 0}`);
+    const count = statusCounts.get(status) ?? 0;
+    console.log(
+      `  ${status.padEnd(8)} ${colorize(String(count), styleForReviewCount(status, count), color)}`,
+    );
   }
   console.log("");
   if (next) {
@@ -1299,7 +2307,11 @@ function printReviewDashboard(items: ReviewItem[]): void {
     console.log(`  ${reviewQuestion(next)}`);
   } else {
     console.log("Recommended next");
-    console.log("  No actionable review items. Use review deferred for parked work.");
+    console.log(
+      `  ${
+        colorize("No actionable review items.", "green", color)
+      } Use review deferred for parked work.`,
+    );
   }
 }
 
@@ -1310,6 +2322,13 @@ function countReviewQueues(items: ReviewItem[]): Map<ReviewQueue, number> {
     counts.set(queue, (counts.get(queue) ?? 0) + 1);
   }
   return counts;
+}
+
+function reviewQueueCountsObject(items: ReviewItem[]): Record<ReviewQueue, number> {
+  const counts = countReviewQueues(items);
+  return Object.fromEntries(
+    REVIEW_QUEUE_SUMMARY_ORDER.map((queue) => [queue, counts.get(queue) ?? 0]),
+  ) as Record<ReviewQueue, number>;
 }
 
 function countReviewStatuses(items: ReviewItem[]): Map<ReviewItem["status"], number> {
@@ -1330,6 +2349,21 @@ function formatReviewQueueSummary(items: ReviewItem[]): string {
     `deferred ${counts.get("deferred") ?? 0}`,
     `applied ${counts.get("applied") ?? 0}`,
   ].join("; ");
+}
+
+function formatPersistedReviewSummary(items: ReviewItem[], color = false): string {
+  if (items.length === 0) {
+    return "0 persisted items";
+  }
+
+  const counts = countReviewQueues(items);
+  const queueSummary = REVIEW_QUEUE_SUMMARY_ORDER
+    .map((queue) => {
+      const count = counts.get(queue) ?? 0;
+      return `${colorize(queue, styleForReviewCount(queue, count), color)} ${count}`;
+    })
+    .join(", ");
+  return `${items.length} persisted items (${queueSummary})`;
 }
 
 function reviewQuestion(item: ReviewItem): string {
@@ -1390,7 +2424,10 @@ function reviewSuggestedNext(item: ReviewItem): string {
   return `Decide with review decide, then validate the draft. Options: ${suggested}.`;
 }
 
-function printReviewItem(item: ReviewItem): void {
+function printReviewItem(
+  item: ReviewItem,
+  sourceRecords: ReviewSourceRecordEvidence[] = [],
+): void {
   console.log(reviewQuestion(item));
   console.log(`ID: ${item.id}`);
   console.log(`Queue: ${reviewQueueLabel(reviewQueueForItem(item))}`);
@@ -1400,8 +2437,9 @@ function printReviewItem(item: ReviewItem): void {
   console.log(`Severity: ${item.severity}`);
   console.log(`Confidence: ${item.confidence}`);
   console.log(`Public output impact: ${reviewItemHasPublicOutputImpact(item) ? "yes" : "no"}`);
+  console.log(`Blocks current output: ${reviewItemBlocksCurrentOutput(item) ? "yes" : "no"}`);
   console.log(`Blocks state generation: ${item.blocks.stateGeneration ? "yes" : "no"}`);
-  console.log(`Blocks release readiness: ${item.blocks.releaseReadiness ? "yes" : "no"}`);
+  console.log(`Release blocker if open: ${item.blocks.releaseReadiness ? "yes" : "no"}`);
   console.log(`Suggested resolutions: ${item.suggestedResolutions.join(", ")}`);
   if (item.trackedRevisionIds.length > 0) {
     console.log(`Tracked revisions: ${item.trackedRevisionIds.join(", ")}`);
@@ -1448,6 +2486,19 @@ function printReviewItem(item: ReviewItem): void {
     console.log("Evidence:");
     for (const citation of item.citations) {
       console.log(`- ${formatCitation(citation)}`);
+    }
+  }
+
+  if (sourceRecords.length > 0) {
+    console.log("");
+    console.log("Source records:");
+    for (const record of sourceRecords) {
+      const suffix = record.found
+        ? `snapshot ${record.snapshotKey ?? "unknown"}`
+        : "missing from workspace records";
+      const urls = record.found ? sourceRecordUrls(record.payload).slice(0, 3) : [];
+      const urlSuffix = urls.length > 0 ? `; urls: ${urls.join(", ")}` : "";
+      console.log(`- ${record.source}:${record.sourceRecordId} (${suffix}${urlSuffix})`);
     }
   }
 }

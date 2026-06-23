@@ -13,6 +13,10 @@
     },
     {
       "source": "oanc.profiles",
+      "sourceRecordId": "3/4G"
+    },
+    {
+      "source": "oanc.profiles",
       "sourceRecordId": "4B"
     },
     {
@@ -30,6 +34,16 @@
   ],
   "relations": {
     "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3~2F4G",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3/4G"
+          }
+        ]
+      },
       {
         "kind": "dc.relation:contains",
         "to": "dc.anc:4B",

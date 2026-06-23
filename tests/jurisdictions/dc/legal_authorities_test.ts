@@ -119,3 +119,34 @@ Deno.test("open dc legal authority locator inputs ignore catalog URLs without ex
     [],
   );
 });
+
+Deno.test("open dc legal authority locator inputs merge matching text and official URL evidence", () => {
+  const url = "https://code.dccouncil.us/dc/council/code/sections/50-1831.html";
+  const locatorInputs = buildOpenDcLegalAuthorityLocatorInputs(
+    ["D.C. Official Code § 50-1831"],
+    url,
+  );
+
+  assertEquals(locatorInputs, [
+    { locator: "D.C. Official Code § 50-1831", url },
+  ]);
+
+  const artifacts = buildLegalAuthorityArtifacts({
+    source: "open_dc.public_bodies",
+    sourceRecordId: "body-1",
+    subjectProvisionalId: "dc.board:test-board",
+    locatorInputs,
+  });
+
+  assertEquals(artifacts.entryFragments.length, 1);
+  assertEquals(artifacts.entryFragments[0].provisionalId, "dc.legal_authority:d-c-code-50-1831");
+  assertEquals(artifacts.entryFragments[0].attributes.locator, "D.C. Code § 50-1831");
+  assertEquals(artifacts.entryFragments[0].citations, [
+    cite("open_dc.public_bodies", "body-1", {
+      locator: "D.C. Code § 50-1831",
+      url,
+    }),
+  ]);
+  assertEquals(artifacts.relationFragments.length, 1);
+  assertEquals(artifacts.relationFragments[0].to, "dc.legal_authority:d-c-code-50-1831");
+});

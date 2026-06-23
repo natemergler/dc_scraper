@@ -1,4 +1,5 @@
 import { type ReaderResultRecord } from "../../../readers/types.ts";
+import { sanitizeOpenDCPublicBodyDescriptionText } from "../../../readers/open_dc_public_bodies.ts";
 import {
   cite,
   type EntryFragment,
@@ -39,6 +40,24 @@ export interface OpenDCPublicBodyPayload {
   governingAgencyAcronym?: unknown;
   administeringAgency?: unknown;
   fromSupplementalIndex?: unknown;
+}
+
+interface ParsedOpenDcPublicBodyRecord {
+  record: ReaderResultRecord;
+  name: string;
+  slug: string;
+  detailUrl: string;
+  description?: string;
+  officialUrl?: string;
+  enablingStatute?: string;
+  enablingStatuteUrl?: string;
+  governingAgency?: string;
+  governingAgencyAcronym?: string;
+  administeringAgency?: string;
+  fromSupplementalIndex: boolean;
+  detected: string;
+  provisionalId: string;
+  normalizedName: string;
 }
 
 const sourceKind = "open_dc.public_bodies" as const;
@@ -228,23 +247,7 @@ export function interpretOpenDCPublicBodies(
   const entryFragments: EntryFragment[] = [];
   const relationFragments: RelationFragment[] = [];
   const findings: Finding[] = [];
-  const parsedRecords: Array<{
-    record: ReaderResultRecord;
-    name: string;
-    slug: string;
-    detailUrl: string;
-    description?: string;
-    officialUrl?: string;
-    enablingStatute?: string;
-    enablingStatuteUrl?: string;
-    governingAgency?: string;
-    governingAgencyAcronym?: string;
-    administeringAgency?: string;
-    fromSupplementalIndex: boolean;
-    detected: string;
-    provisionalId: string;
-    normalizedName: string;
-  }> = [];
+  const parsedRecords: ParsedOpenDcPublicBodyRecord[] = [];
   const normalizedNameToSlugs = new Map<string, Set<string>>();
 
   for (const record of records) {
@@ -272,7 +275,9 @@ export function interpretOpenDCPublicBodies(
     const name = asString(sourceRecord.name);
     const slug = asString(sourceRecord.slug);
     const detailUrl = asString(sourceRecord.detailUrl);
-    const description = asString(sourceRecord.description);
+    const description = sanitizeOpenDCPublicBodyDescriptionText(
+      asString(sourceRecord.description) ?? undefined,
+    );
     const officialUrl = asString(sourceRecord.officialUrl);
     const enablingStatute = asString(sourceRecord.enablingStatute);
     const enablingStatuteUrl = asString(sourceRecord.enablingStatuteUrl);
@@ -310,7 +315,7 @@ export function interpretOpenDCPublicBodies(
       name,
       slug,
       detailUrl,
-      description: description ?? undefined,
+      description,
       officialUrl: officialUrl ?? undefined,
       enablingStatute: enablingStatute ?? undefined,
       enablingStatuteUrl: enablingStatuteUrl ?? undefined,
@@ -331,7 +336,23 @@ export function interpretOpenDCPublicBodies(
     slugSet.add(slug);
   }
 
+  const staleDuplicateRecords = staleDuplicateRecordsFor(parsedRecords);
+  for (const staleDuplicate of staleDuplicateRecords.values()) {
+    const origin = staleDuplicate.fromSupplementalIndex ? "supplemental index" : "primary index";
+    findings.push({
+      kind: "info",
+      code: "dc.interpreter.opendc_stale_or_failed_duplicate",
+      message:
+        `Open DC public body "${staleDuplicate.name}" slug ${staleDuplicate.slug} from ${origin} has no substantive details and duplicates a substantive Open DC slug; entry fragment suppressed`,
+      citation: cite(sourceKind, staleDuplicate.record.key),
+    });
+  }
+
   for (const parsed of parsedRecords) {
+    if (staleDuplicateRecords.has(parsed.record.key)) {
+      continue;
+    }
+
     if (!standardKinds.has(parsed.detected)) {
       findings.push({
         kind: "info",
@@ -480,4 +501,37 @@ export function interpretOpenDCPublicBodies(
   }
 
   return { entryFragments, relationFragments, findings };
+}
+
+function staleDuplicateRecordsFor(
+  parsedRecords: ParsedOpenDcPublicBodyRecord[],
+): Map<string, ParsedOpenDcPublicBodyRecord> {
+  const recordsByNormalizedName = new Map<string, ParsedOpenDcPublicBodyRecord[]>();
+  for (const parsed of parsedRecords) {
+    const records = recordsByNormalizedName.get(parsed.normalizedName) ?? [];
+    records.push(parsed);
+    recordsByNormalizedName.set(parsed.normalizedName, records);
+  }
+
+  const staleRecords = new Map<string, ParsedOpenDcPublicBodyRecord>();
+  for (const records of recordsByNormalizedName.values()) {
+    if (records.length <= 1 || !records.some(hasSubstantiveOpenDcPublicBodyDetails)) {
+      continue;
+    }
+
+    for (const record of records) {
+      if (!hasSubstantiveOpenDcPublicBodyDetails(record)) {
+        staleRecords.set(record.record.key, record);
+      }
+    }
+  }
+  return staleRecords;
+}
+
+function hasSubstantiveOpenDcPublicBodyDetails(record: ParsedOpenDcPublicBodyRecord): boolean {
+  return Boolean(
+    record.description || record.officialUrl || record.enablingStatute ||
+      record.enablingStatuteUrl ||
+      record.governingAgency || record.governingAgencyAcronym || record.administeringAgency,
+  );
 }

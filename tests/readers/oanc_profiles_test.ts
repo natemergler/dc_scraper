@@ -70,6 +70,62 @@ const HTML_BY_URL = new Map<string, string>([
   ],
 ]);
 
+const SPLIT_CARD_HTML_BY_URL = new Map<string, string>([
+  [
+    "https://oanc.dc.gov/landing-page/ancs-ward",
+    `
+    <html>
+      <body>
+        <h2>Ward 3</h2>
+        <div class="anc-item">
+          <a href="/anc-profile/anc-3c"><img src="/anc3c.png" alt="Avatar"></a>
+          <div>
+            <a href="https://anc3c.dc.gov/Commissioner-Directory" title="ANC 3C">ANC 3C</a>
+          </div>
+        </div>
+        <div class="anc-item">
+          <a href="https://anc3g.dc.gov/"><img src="/anc34g.png" alt="Avatar"></a>
+          <div>
+            <a href="https://anc3g.dc.gov/Commissioner-Directory" title="ANC 3/4G">ANC 3/4G</a>
+          </div>
+        </div>
+        <h2>Ward 4</h2>
+        <div class="anc-item">
+          <a href="/anc-profile/anc-34g"><img src="/anc34g.png" alt="Avatar"></a>
+          <div>
+            <a href="https://anc3g.dc.gov/Commissioner-Directory" title="ANC 3/4G">ANC 3/4G</a>
+          </div>
+        </div>
+      </body>
+    </html>
+    `,
+  ],
+  [
+    "https://oanc.dc.gov/anc-profile/anc-3c",
+    `
+    <html>
+      <body>
+        <h1>ANC 3C</h1>
+        <p>Website: https://anc3c.dc.gov/</p>
+        <p>Advisory Neighborhood Commission 3C represents the Cleveland Park and Woodley Park neighborhoods.</p>
+      </body>
+    </html>
+    `,
+  ],
+  [
+    "https://oanc.dc.gov/anc-profile/anc-34g",
+    `
+    <html>
+      <body>
+        <h1>ANC 3/4G</h1>
+        <p>Website: http://anc3g.dc.gov/</p>
+        <p>Advisory Neighborhood Commission 3/4G represents the Chevy Chase, Barnaby Woods, and Hawthorne neighborhoods.</p>
+      </body>
+    </html>
+    `,
+  ],
+]);
+
 Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood summaries only", async () => {
   const reader = new OancProfilesReader({
     fetcher: async (url) => {
@@ -137,4 +193,33 @@ Deno.test("OancProfilesReader respects record limit", async () => {
 
   assertEquals(result.snapshots.length, 2);
   assertEquals(result.records.map((record) => record.key), ["4E"]);
+});
+
+Deno.test("OancProfilesReader collects split cards with external label links", async () => {
+  const reader = new OancProfilesReader({
+    fetcher: async (url) => {
+      const html = SPLIT_CARD_HTML_BY_URL.get(url);
+      if (!html) {
+        return new Response("missing fixture", { status: 404 });
+      }
+      return new Response(html, { status: 200 });
+    },
+  });
+
+  const result = await reader.collect({
+    workspace: { root: "/tmp/workspace" },
+    source: oancProfilesSource,
+  });
+
+  const records = new Map(result.records.map((record) => [record.key, record]));
+  const anc3c = records.get("3C");
+  const anc34g = records.get("3/4G");
+
+  assertEquals(result.records.length, 2);
+  assertEquals(anc3c?.payload.profileUrl, "https://oanc.dc.gov/anc-profile/anc-3c");
+  assertEquals(anc3c?.payload.wardNumbers, ["3"]);
+  assertEquals(anc3c?.payload.officialUrl, "https://anc3c.dc.gov/");
+  assertEquals(anc34g?.payload.profileUrl, "https://oanc.dc.gov/anc-profile/anc-34g");
+  assertEquals(anc34g?.payload.wardNumbers, ["3", "4"]);
+  assertEquals(anc34g?.payload.officialUrl, "http://anc3g.dc.gov/");
 });

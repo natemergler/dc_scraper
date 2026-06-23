@@ -34,6 +34,8 @@ export interface OpenDCPublicBodyRecordPayload {
 const PUBLIC_BODY_LINK_RE = /<a[^>]*href="([^"]*\/public-bodies\/[^"#?]+)"[^>]*>([^<]+)<\/a>/gi;
 const TAG_RE = /<[^>]+>/g;
 const WHITESPACE_RE = /\s+/g;
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+const PHONE_RE = /(?:\(?202\)?[-. ]?)?[0-9]{3}[-. ]?[0-9]{4}/;
 
 const VIEW_STATUTE_WITH_LINK_RE =
   /<div class="views-field[^"]*views-field-field-statute-mayors-order[^"]*"[^>]*>\s*<span class="field-content"><a\s+href="([^"]+)"[^>]*>(.*?)<\/a><\/span>\s*<\/div>/gs;
@@ -402,7 +404,7 @@ function extractDescription(fragment?: string): string | undefined {
     return undefined;
   }
 
-  return sanitizeDescriptionText(
+  return sanitizeOpenDCPublicBodyDescriptionText(
     decodeHtml(stripTags(fragment)).replace(WHITESPACE_RE, " ").trim(),
   );
 }
@@ -420,7 +422,7 @@ function extractLastParagraphBeforeMembersHtml(html: string): string | undefined
   return paragraphs.at(-1)?.[1];
 }
 
-function sanitizeDescriptionText(text?: string): string | undefined {
+export function sanitizeOpenDCPublicBodyDescriptionText(text?: string): string | undefined {
   if (!text) {
     return undefined;
   }
@@ -429,12 +431,34 @@ function sanitizeDescriptionText(text?: string): string | undefined {
     /^this website requires a browser feature called javascript/i.test(text) ||
     /^point of contact:/i.test(text) ||
     /^public body website:/i.test(text) ||
-    /^agency website:/i.test(text)
+    /^agency website:/i.test(text) ||
+    /^report website problems to:/i.test(text)
   ) {
     return undefined;
   }
 
-  const description = text.replace(/\s+Learn more about [^.]+\.?$/i, "").trim();
+  const withoutContactSentences = text
+    .replace(/\bAll (?:Board )?correspondence should be sent to[^.]*\.?/gi, "")
+    .replace(/\bFor additional information,\s*email\s+[^.]*\.?/gi, "")
+    .replace(
+      /\bFor questions[^.]*\b(?:phone|fax|email|contact|\(?202\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4})[^.]*\.?/gi,
+      "",
+    )
+    .replace(/\bThe Board can be reached by phone:[^.]*\.?/gi, "")
+    .replace(/\b(?:phone|fax|email):?\s*[A-Za-z0-9._%+@() -]+\b\.?/gi, "")
+    .replace(EMAIL_RE, "")
+    .replace(PHONE_RE, "")
+    .replace(WHITESPACE_RE, " ")
+    .replace(/\s+\./g, ".")
+    .replace(/(?:\.\s*){2,}/g, ". ")
+    .trim();
+
+  if (/\b(phone|fax|email|correspondence)\b/i.test(withoutContactSentences)) {
+    return undefined;
+  }
+
+  const description = withoutContactSentences.replace(/\s+Learn more about [^.]+\.?$/i, "")
+    .trim();
   return description.length >= 40 ? description : undefined;
 }
 

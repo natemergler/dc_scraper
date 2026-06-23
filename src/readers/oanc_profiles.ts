@@ -33,8 +33,10 @@ export interface OancCommissionerRecordPayload {
   officerRole?: string;
 }
 
-const INDEX_TOKEN_RE =
-  /<h[1-6][^>]*>\s*Ward\s+(\d+)\s*<\/h[1-6]>|<a[^>]*href="([^"]*\/anc-profile\/anc-[^"#?]+)"[^>]*>\s*ANC\s+([^<]+)\s*<\/a>/gi;
+const INDEX_TOKEN_RE = /<h[1-6][^>]*>\s*Ward\s+(\d+)\s*<\/h[1-6]>|<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+const ANC_LABEL_TITLE_RE = /title=(?:"|')\s*ANC\s+([^"']+)(?:"|')/i;
+const ANC_LABEL_TEXT_RE = /\bANC\s+([0-9][0-9A-Z/]+)\b/i;
+const HREF_RE = /\bhref=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i;
 const TAG_RE = /<[^>]+>/g;
 const WHITESPACE_RE = /\s+/g;
 const WEBSITE_LINK_RE = /Website:\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/i;
@@ -135,6 +137,7 @@ function extractProfileLinks(
   html: string,
 ): Array<{ ancId: string; profileUrl: string; wardNumbers: string[] }> {
   const byAncId = new Map<string, { profileUrl: string; wardNumbers: Set<string> }>();
+  const wardNumbersByAncId = new Map<string, Set<string>>();
   let currentWardNumber: string | null = null;
 
   for (const match of html.matchAll(INDEX_TOKEN_RE)) {
@@ -143,9 +146,30 @@ function extractProfileLinks(
       continue;
     }
 
-    const profileUrl = resolveOancUrl(match[2]);
-    const ancId = normalizeAncId(match[3]);
-    if (!profileUrl || !ancId) {
+    const anchorAttributes = match[2] ?? "";
+    const anchorBody = match[3] ?? "";
+    const contextStart = match.index ?? 0;
+    const context = html.slice(contextStart, contextStart + 700);
+    const ancId = normalizeAncId(
+      extractAncLabel(`${anchorAttributes}>${anchorBody}`) ?? extractAncLabel(context) ?? "",
+    );
+    if (!ancId) {
+      continue;
+    }
+
+    if (currentWardNumber) {
+      let wardNumbers = wardNumbersByAncId.get(ancId);
+      if (!wardNumbers) {
+        wardNumbers = new Set<string>();
+        wardNumbersByAncId.set(ancId, wardNumbers);
+      }
+      wardNumbers.add(currentWardNumber);
+      byAncId.get(ancId)?.wardNumbers.add(currentWardNumber);
+    }
+
+    const href = extractHref(anchorAttributes);
+    const profileUrl = href && href.includes("/anc-profile/anc-") ? resolveOancUrl(href) : null;
+    if (!profileUrl) {
       continue;
     }
 
@@ -153,12 +177,9 @@ function extractProfileLinks(
     if (!entry) {
       entry = {
         profileUrl,
-        wardNumbers: new Set<string>(),
+        wardNumbers: new Set(wardNumbersByAncId.get(ancId) ?? []),
       };
       byAncId.set(ancId, entry);
-    }
-    if (currentWardNumber) {
-      entry.wardNumbers.add(currentWardNumber);
     }
   }
 
@@ -169,6 +190,21 @@ function extractProfileLinks(
       wardNumbers: [...value.wardNumbers].sort(),
     }))
     .sort((left, right) => left.ancId.localeCompare(right.ancId));
+}
+
+function extractHref(html: string): string | null {
+  const match = html.match(HREF_RE);
+  return match?.[1] ?? match?.[2] ?? match?.[3] ?? null;
+}
+
+function extractAncLabel(html: string): string | null {
+  const titleMatch = html.match(ANC_LABEL_TITLE_RE);
+  if (titleMatch) {
+    return titleMatch[1];
+  }
+
+  const textMatch = cleanText(html).match(ANC_LABEL_TEXT_RE);
+  return textMatch?.[1] ?? null;
 }
 
 function extractRepresentedNeighborhoods(html: string): string | undefined {

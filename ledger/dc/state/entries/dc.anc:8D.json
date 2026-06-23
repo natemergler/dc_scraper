@@ -5,11 +5,10 @@
   "name": "ANC 8D",
   "attributes": {
     "gisId": "ANCPly_364",
-    "officialUrl": "https://www.anc8d.org/",
+    "officialUrl": "https://anc8d.dc.gov/Commissioner-Directory",
     "representedNeighborhoods": "the Bellevue neighborhood",
     "sourceAncId": "8D",
     "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8d",
-    "sourcePageLastModified": "2026-06-16T21:58:04.000Z",
     "sourceWardNumbers": [
       "8"
     ],

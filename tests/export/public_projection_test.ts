@@ -46,6 +46,11 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
           to: "dc.agency:a-1",
           citations: [sourceCitation("dcgis.boards", "b-1")],
         }],
+        "dc.relation:oversees": [{
+          kind: "dc.relation:oversees",
+          to: "dc.agency:a-1",
+          citations: [sourceCitation("dcgis.boards", "b-1")],
+        }],
       },
     },
     {
@@ -53,7 +58,9 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
       family: "authority",
       kind: "dc.legal_authority",
       name: "D.C. Code 1-1",
-      attributes: {},
+      attributes: {
+        canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-1",
+      },
       citations: [sourceCitation("legal.entrypoints", "law-1")],
       relations: {},
     },
@@ -138,6 +145,10 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
     "https://agency.example",
   );
   assertEquals(
+    projection.nodes.find((node) => node.id === "dc.legal_authority:law-1")?.officialUrl,
+    "https://code.dccouncil.gov/us/dc/council/code/sections/1-1",
+  );
+  assertEquals(
     projection.nodes.find((node) => node.id === "dc.board:b-1")?.officialUrl,
     undefined,
   );
@@ -165,13 +176,35 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
   }]);
 
   assertEquals(projection.summary.nodeCount, 5);
+  assertEquals(projection.summary.nodeKindCounts, {
+    "dc.agency": 1,
+    "dc.anc_commissioner_seat": 1,
+    "dc.board": 1,
+    "dc.legal_authority": 1,
+    "dc.smd": 1,
+  });
+  assertEquals(projection.summary.nodeCategoryCounts, {
+    executive: 1,
+    legal_authority: 1,
+    neighborhood: 2,
+    public_body: 1,
+  });
   assertEquals(projection.summary.edgeCount, 2);
+  assertEquals(projection.summary.edgeVerbCounts, {
+    administered_by: 1,
+    authorized_by: 1,
+  });
   assertEquals(projection.summary.excludedNodeCount, 1);
-  assertEquals(projection.summary.excludedEdgeCount, 1);
+  assertEquals(projection.summary.excludedEdgeCount, 2);
   assertEquals(projection.summary.blockedReviewItemCount, 1);
   assertEquals(projection.summary.blockedReviewCountsByCategory.identity_conflict, 1);
   assertEquals(projection.summary.blockedReviewCountsByCategory.out_of_scope_candidate, undefined);
   assertEquals(projection.summary.mappedRelationCount, 1);
+  assertEquals(projection.summary.mappedRelationCounts, [{
+    relationKind: "dc.relation:governs",
+    verb: "administered_by",
+    count: 1,
+  }]);
 });
 
 Deno.test("buildDcAncSmdStructureRows projects ANC to SMD and commissioner seat structure", () => {
