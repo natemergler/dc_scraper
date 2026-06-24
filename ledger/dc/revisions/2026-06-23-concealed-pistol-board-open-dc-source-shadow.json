@@ -1,0 +1,35 @@
+{
+  "id": "2026-06-23-concealed-pistol-board-open-dc-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.board:concealed-pistol-licensing-review-board",
+  "rationale": "Treat the Open DC Concealed Pistol Licensing Review Board row as a source shadow of canonical DCGIS board 83 for this alpha. Both rows identify the same board and cite D.C. Code § 7-2509.08; the Open DC label omits the parenthetical acronym but does not represent a separate civic body.",
+  "evidence": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "83",
+      "locator": "D.C. Code § 7-2509.08"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "83"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "concealed-pistol-licensing-review-board",
+      "locator": "D.C. Code § 7-2509.08",
+      "url": "https://code.dccouncil.us/us/dc/council/code/sections/7-2509.08.html"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "concealed-pistol-licensing-review-board"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.board:83"
+    }
+  }
+}
