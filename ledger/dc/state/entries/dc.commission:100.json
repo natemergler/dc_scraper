@@ -5,7 +5,7 @@
   "name": "Housing Authority Board of Commissioners",
   "attributes": {
     "enablingStatute": "D.C. Code § 6-211",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-211.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/6-211",
     "shortName": "Housing Authority Board of Commissioners",
     "sourceCommissionId": "100",
     "sourceOpenDcSlug": "housing-authority-board-commissioners",

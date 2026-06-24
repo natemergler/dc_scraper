@@ -5,7 +5,7 @@
   "name": "Family Support Council",
   "attributes": {
     "enablingStatute": "D.C. Official Code § 7–761.12",
-    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-761.12.html#:~:text=Code%20of%20the%20District%20of%20Columbia%20%C2%A7%207%E2%80%93761.12.,their%20family%20members%20with%20intellectual%20and%20developmental%20disabilities",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-761.12",
     "shortName": "Family Support Council",
     "sourceOpenDcSlug": "family-support-council",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/family-support-council"
@@ -26,7 +26,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "family-support-council",
             "locator": "D.C. Code § 7-761.12",
-            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-761.12.html#:~:text=Code%20of%20the%20District%20of%20Columbia%20%C2%A7%207%E2%80%93761.12.,their%20family%20members%20with%20intellectual%20and%20developmental%20disabilities"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-761.12"
           }
         ]
       }

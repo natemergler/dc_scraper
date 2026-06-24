@@ -67,12 +67,12 @@ export function buildOpenDcLegalAuthorityLocatorInputs(
   if (enablingStatuteUrl) {
     const urlLocators = parseLegalCitationLocatorsFromUrl(enablingStatuteUrl);
     for (const locator of urlLocators) {
-      const urlInput = { locator, url: enablingStatuteUrl };
+      const urlInput = { locator, url: canonicalLegalAuthorityUrl(locator, enablingStatuteUrl) };
       const matchKey = findMergeableLocatorKey(merged, urlInput);
       if (matchKey) {
         const existing = merged.get(matchKey);
         if (existing && !existing.url) {
-          existing.url = enablingStatuteUrl;
+          existing.url = urlInput.url;
         }
         continue;
       }
@@ -81,6 +81,19 @@ export function buildOpenDcLegalAuthorityLocatorInputs(
   }
 
   return [...merged.values()].sort((left, right) => left.locator.localeCompare(right.locator));
+}
+
+export function canonicalOpenDcLegalAuthorityUrl(
+  textLocators: string[],
+  enablingStatuteUrl?: string,
+): string | undefined {
+  if (!enablingStatuteUrl) {
+    return undefined;
+  }
+
+  const locatorInputs = buildOpenDcLegalAuthorityLocatorInputs(textLocators, enablingStatuteUrl);
+  return locatorInputs.find((input) => input.url)?.url ??
+    canonicalLegalAuthorityUrl(textLocators[0] ?? "", enablingStatuteUrl);
 }
 
 export function buildLegalAuthorityArtifacts(
@@ -183,6 +196,19 @@ function findMergeableLocatorKey(
   return existing.has(candidate.locator) ? candidate.locator : null;
 }
 
+function canonicalLegalAuthorityUrl(locator: string, sourceUrl: string): string {
+  const classified = classifyLegalAuthorityLocator(locator);
+  if (classified?.canonicalUrl) {
+    return classified.canonicalUrl;
+  }
+
+  return sourceUrl
+    .replace(/^http:\/\//i, "https://")
+    .replace("code.dccouncil.us/dc/council/", "code.dccouncil.gov/us/dc/council/")
+    .replace("code.dccouncil.us/us/dc/council/", "code.dccouncil.gov/us/dc/council/")
+    .replace(/\.html(?=($|#|\?))/i, "");
+}
+
 export function isRejectedLegalAuthorityLocator(rawLocator: string): boolean {
   const locator = rawLocator.trim().replace(/\s+/g, " ");
   const dcCodeMatch = locator.match(
@@ -232,6 +258,8 @@ function classifyLegalAuthorityLocator(rawLocator: string): ClassifiedLegalAutho
       authorityType: "mayors_order",
       locator: canonicalLocator,
       provisionalId: `${legalAuthorityKind}:${stableKey(canonicalLocator)}`,
+      canonicalUrl:
+        `https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=${orderNumber}`,
     };
   }
 

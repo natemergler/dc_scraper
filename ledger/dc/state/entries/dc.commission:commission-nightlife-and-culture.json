@@ -5,7 +5,7 @@
   "name": "Commission on Nightlife and Culture",
   "attributes": {
     "enablingStatute": "D.C. Official Code § 3-664",
-    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/3-664.html#",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-664",
     "officialUrl": "https://communityaffairs.dc.gov/monc",
     "shortName": "Commission on Nightlife and Culture",
     "sourceOpenDcSlug": "commission-nightlife-and-culture",
@@ -27,7 +27,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "commission-nightlife-and-culture",
             "locator": "D.C. Code § 3-664",
-            "url": "https://code.dccouncil.us/dc/council/code/sections/3-664.html#"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/3-664"
           }
         ]
       }
@@ -35,7 +35,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-of-nightlife-and-culture",
+        "to": "dc.office:mayors-office-of-nightlife-and-culture",
         "citations": [
           {
             "source": "open_dc.public_bodies",

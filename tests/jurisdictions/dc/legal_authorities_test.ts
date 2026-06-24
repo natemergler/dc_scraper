@@ -24,6 +24,7 @@ Deno.test("legal authority artifacts emit entries and authorized_by relations fo
       kind: fragment.kind,
       authorityType: fragment.attributes.authorityType,
       locator: fragment.attributes.locator,
+      canonicalUrl: fragment.attributes.canonicalUrl,
     })),
     [
       {
@@ -32,6 +33,7 @@ Deno.test("legal authority artifacts emit entries and authorized_by relations fo
         kind: "dc.legal_authority",
         authorityType: "dc_code",
         locator: "D.C. Code § 1-123(a)",
+        canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/1-123",
       },
       {
         id: "dc.legal_authority:d-c-law-24-176",
@@ -39,6 +41,7 @@ Deno.test("legal authority artifacts emit entries and authorized_by relations fo
         kind: "dc.legal_authority",
         authorityType: "dc_law",
         locator: "D.C. Law 24-176",
+        canonicalUrl: "https://code.dccouncil.gov/us/dc/council/laws/24-176",
       },
       {
         id: "dc.legal_authority:mayor-s-order-2024-034",
@@ -46,6 +49,8 @@ Deno.test("legal authority artifacts emit entries and authorized_by relations fo
         kind: "dc.legal_authority",
         authorityType: "mayors_order",
         locator: "Mayor's Order 2024-034",
+        canonicalUrl:
+          "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2024-034",
       },
     ],
   );
@@ -138,14 +143,15 @@ Deno.test("open dc legal authority locator inputs ignore catalog URLs without ex
 });
 
 Deno.test("open dc legal authority locator inputs merge matching text and official URL evidence", () => {
-  const url = "https://code.dccouncil.us/dc/council/code/sections/50-1831.html";
+  const staleUrl = "https://code.dccouncil.us/dc/council/code/sections/50-1831.html";
+  const canonicalUrl = "https://code.dccouncil.gov/us/dc/council/code/sections/50-1831";
   const locatorInputs = buildOpenDcLegalAuthorityLocatorInputs(
     ["D.C. Official Code § 50-1831"],
-    url,
+    staleUrl,
   );
 
   assertEquals(locatorInputs, [
-    { locator: "D.C. Official Code § 50-1831", url },
+    { locator: "D.C. Official Code § 50-1831", url: canonicalUrl },
   ]);
 
   const artifacts = buildLegalAuthorityArtifacts({
@@ -161,7 +167,7 @@ Deno.test("open dc legal authority locator inputs merge matching text and offici
   assertEquals(artifacts.entryFragments[0].citations, [
     cite("open_dc.public_bodies", "body-1", {
       locator: "D.C. Code § 50-1831",
-      url,
+      url: canonicalUrl,
     }),
   ]);
   assertEquals(artifacts.relationFragments.length, 1);

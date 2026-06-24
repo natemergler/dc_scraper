@@ -14,6 +14,12 @@
       "source": "dcgis.councils",
       "sourceRecordId": "19",
       "locator": "D.C. Code § 48-312"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "food-policy-council",
+      "locator": "D.C. Code § 48-312",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/48-312"
     }
   ],
   "relations": {}

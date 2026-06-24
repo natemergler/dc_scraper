@@ -1,0 +1,22 @@
+{
+  "id": "2026-06-24-ofra-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:office-of-federal-and-regional-affairs",
+  "rationale": "Same-name DCGIS agency row is a source shadow of the Mayor organizational-chart office node, which carries the current executive hierarchy.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "65" },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-federal-and-regional-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:office-of-federal-and-regional-affairs"
+    }
+  }
+}

@@ -5,7 +5,7 @@
   "name": "Contract Appeals Board (CAB)",
   "attributes": {
     "enablingStatute": "DC Code § 2-360.01",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-360.01.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-360.01",
     "shortName": "Contract Appeals Board (CAB)",
     "sourceBoardId": "85",
     "sourceOpenDcSlug": "contract-appeals-board-cab",

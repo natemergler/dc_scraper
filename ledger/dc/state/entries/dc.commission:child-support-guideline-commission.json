@@ -5,7 +5,7 @@
   "name": "Child Support Guideline Commission",
   "attributes": {
     "enablingStatute": "D.C. Code § 16–916.01",
-    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/16-916.01.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/16-916.01",
     "shortName": "Child Support Guideline Commission",
     "sourceOpenDcSlug": "child-support-guideline-commission",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/child-support-guideline-commission"
@@ -26,7 +26,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "child-support-guideline-commission",
             "locator": "D.C. Code § 16-916.01",
-            "url": "https://code.dccouncil.us/dc/council/code/sections/16-916.01.html"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/16-916.01"
           }
         ]
       }

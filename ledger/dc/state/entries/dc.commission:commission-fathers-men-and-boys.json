@@ -6,7 +6,7 @@
   "attributes": {
     "description": "CFMB is charged with addressing fatherlessness, disparities in education, economic opportunity, health and wellbeing, and public safety. As such, the Commission serves as an advisory body to the Mayor, City Council, and the community on these issues that adversely affect fathers, men, and boys.",
     "enablingStatute": "D.C. Official Code § 3–731",
-    "enablingStatuteUrl": "https://code.dccouncil.us/dc/council/code/sections/3-731.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-731",
     "shortName": "Commission on Fathers, Men and Boys",
     "sourceOpenDcSlug": "commission-fathers-men-and-boys",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-fathers-men-and-boys"
@@ -27,7 +27,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "commission-fathers-men-and-boys",
             "locator": "D.C. Code § 3-731",
-            "url": "https://code.dccouncil.us/dc/council/code/sections/3-731.html"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/3-731"
           }
         ]
       }

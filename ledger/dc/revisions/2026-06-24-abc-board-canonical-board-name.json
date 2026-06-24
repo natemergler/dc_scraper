@@ -1,0 +1,27 @@
+{
+  "id": "2026-06-24-abc-board-canonical-board-name",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.board:26",
+  "rationale": "Live ABCA official board page identifies the current board facet as the Alcoholic Beverage and Cannabis Board. Keep the separate ABCA agency node for the agency and correct the surviving board node so the Open DC ABC Board shadow suppression does not leave the board misnamed as the agency.",
+  "evidence": [
+    { "source": "dcgis.boards", "sourceRecordId": "26", "locator": "D.C. Code § 25-201" },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board",
+      "url": "https://www.open-dc.gov/public-bodies/alcoholic-beverage-and-cannabis-board-abc-board"
+    },
+    {
+      "source": "operator_live_official_audit",
+      "sourceRecordId": "2026-06-24-abca-abc-board",
+      "url": "https://abca.dc.gov/page/abc-board"
+    }
+  ],
+  "patch": {
+    "name": "Alcoholic Beverage and Cannabis Board",
+    "attributes": {
+      "shortName": "Alcoholic Beverage and Cannabis Board",
+      "officialUrl": "https://abca.dc.gov/page/abc-board"
+    }
+  }
+}

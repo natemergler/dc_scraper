@@ -1,0 +1,22 @@
+{
+  "id": "2026-06-24-office-open-government-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:office-of-open-government",
+  "rationale": "Applied review recheck found the DCGIS agency row to be a same-entity shadow of the BEGA structure office. The office entry carries the current BEGA hierarchy, so suppress the duplicate agency row.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "70" },
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "office-of-open-government",
+      "url": "https://www.open-dc.gov/office-open-government"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:office-of-open-government"
+    }
+  }
+}

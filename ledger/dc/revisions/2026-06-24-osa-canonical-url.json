@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-osa-canonical-url",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-senior-advisor",
+  "rationale": "Preserve live official URL from the suppressed agency-directory shadow on the canonical Mayor office entry.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-senior-advisor:osa-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-senior-advisor",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": { "attributes": { "officialUrl": "https://osa.dc.gov" } }
+}

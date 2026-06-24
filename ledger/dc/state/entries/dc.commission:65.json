@@ -5,7 +5,7 @@
   "name": "Commission on African Affairs",
   "attributes": {
     "enablingStatute": "D.C. Code § 2-1395",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1395.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1395",
     "shortName": "Commission on African Affairs",
     "sourceCommissionId": "65",
     "sourceOpenDcSlug": "commission-african-affairs",
@@ -49,7 +49,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-on-african-affairs",
+        "to": "dc.office:mayors-office-on-african-affairs",
         "citations": [
           {
             "source": "dcgis.commissions",

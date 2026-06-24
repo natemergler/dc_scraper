@@ -6,7 +6,7 @@
   "attributes": {
     "description": "The Board meets on the first Monday of each month at 10:30 a.m. at the DCRA headquarters, located at 1100 4th Street SW, Washington, DC 20024.",
     "enablingStatute": "D.C. Code § 47-2853.06(c)",
-    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
     "shortName": "Board of Barber and Cosmetology",
     "sourceBoardId": "32",
     "sourceOpenDcSlug": "board-barber-and-cosmetology",
@@ -43,7 +43,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "board-barber-and-cosmetology",
             "locator": "D.C. Code § 47-2853.06(c)",
-            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(c)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
           }
         ]
       }

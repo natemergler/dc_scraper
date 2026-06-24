@@ -5,8 +5,8 @@
   "name": "Opioid Fatality Review Board",
   "attributes": {
     "description": "The purpose of the Board is to assist the District's efforts to prevent opioid overdose deaths and inform prevention and intervention efforts by reviewing opioid deaths in the District and making recommendations to improve the activities and response of government agencies, private organizations, individuals, and the community.",
-    "enablingStatute": "Mayor's Order 2019-026: Establishment – Opioid Fatality Review Board",
-    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/NoticeDetail.aspx?noticeId=N0082955",
+    "enablingStatute": "Mayor's Order 2019-024: Establishment - Opioid Fatality Review Board",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2019-024",
     "shortName": "Opioid Fatality Review Board",
     "sourceOpenDcSlug": "opioid-fatality-review-board",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/opioid-fatality-review-board"
@@ -21,12 +21,12 @@
     "dc.relation:authorized_by": [
       {
         "kind": "dc.relation:authorized_by",
-        "to": "dc.legal_authority:mayor-s-order-2019-026",
+        "to": "dc.legal_authority:mayor-s-order-2019-024",
         "citations": [
           {
             "source": "open_dc.public_bodies",
             "sourceRecordId": "opioid-fatality-review-board",
-            "locator": "Mayor's Order 2019-026"
+            "locator": "Mayor's Order 2019-024"
           }
         ]
       }

@@ -5,7 +5,7 @@
   "name": "Board of Professional Engineering",
   "attributes": {
     "enablingStatute": "D.C. Code § 47-2853.06(e)",
-    "enablingStatuteUrl": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(e)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
     "shortName": "Board of Professional Engineering",
     "sourceBoardId": "53",
     "sourceOpenDcSlug": "board-professional-engineering",
@@ -42,7 +42,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "board-professional-engineering",
             "locator": "D.C. Code § 47-2853.06(e)",
-            "url": "https://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(e)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
           }
         ]
       }

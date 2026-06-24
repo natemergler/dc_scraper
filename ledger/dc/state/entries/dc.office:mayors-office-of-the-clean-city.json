@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office of the Clean City",
   "attributes": {
+    "officialUrl": "https://cleancity.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

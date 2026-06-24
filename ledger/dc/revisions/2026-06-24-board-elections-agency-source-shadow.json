@@ -1,0 +1,19 @@
+{
+  "id": "2026-06-24-board-elections-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:board-of-elections",
+  "rationale": "Applied preserve-distinct review was rechecked against live/audited evidence and does not support two public nodes. The board public-body record carries the legal authority and current public-body facet, while the DCGIS agency row is a same-entity administrative shadow.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "119" },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-elections",
+      "locator": "D.C. Code § 1-1001.03"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": { "decision": "source_shadow", "canonicalEntryId": "dc.board:board-elections" }
+  }
+}

@@ -5,7 +5,7 @@
   "name": "Office of the Deputy Mayor for Education",
   "attributes": {
     "description": "Oversees the District's education agencies to develop and implement a District-wide education strategy.",
-    "officialUrl": "http://dme.dc.gov/",
+    "officialUrl": "https://dme.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

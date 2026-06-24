@@ -6,7 +6,7 @@
   "attributes": {
     "description": "The Board meets on the first Thursday of each month at 1:00 p.m. at the Department of Licensing and Consumer Protection located at 1100 4th Street, SW, Washington, D.C. 20024. Due to the public health emergency, all board meetings are currently being held virtually.",
     "enablingStatute": "D.C. Code § 47–2853.06(f)",
-    "enablingStatuteUrl": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(f)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
     "shortName": "Board of Funeral Directors",
     "sourceBoardId": "39",
     "sourceOpenDcSlug": "board-funeral-directors",
@@ -43,7 +43,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "board-funeral-directors",
             "locator": "D.C. Code § 47-2853.06(f)",
-            "url": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(f)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
           }
         ]
       }

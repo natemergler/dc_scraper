@@ -23,7 +23,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:office-of-the-secretary",
+        "to": "dc.office:office-of-the-secretary",
         "citations": [
           {
             "source": "dcgis.boards",

@@ -5,6 +5,7 @@
   "name": "Office of the Senior Advisor",
   "attributes": {
     "description": "Advises the Mayor on the local, regional, federal, and international affairs by providing policy analysis and advancing the legislative agenda. OSA includes three other offices, OPLA, OFRA, and the Office of the Secretary.",
+    "officialUrl": "https://osa.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

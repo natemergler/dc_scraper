@@ -36,7 +36,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:office-of-the-deputy-mayor-for-education",
+        "to": "dc.office:office-of-the-deputy-mayor-for-education",
         "citations": [
           {
             "source": "dcgis.councils",

@@ -5,7 +5,7 @@
   "name": "Office of the Deputy Mayor for Health and Human Services",
   "attributes": {
     "description": "Oversees the District's health and human support service agencies in order to coordinate a comprehensive system of benefits, goods, and services across multiple agencies to ensure that children, youth, and adults, with and without disabilities, can lead healthy, meaningful, and productive lives.",
-    "officialUrl": "http://dmhhs.dc.gov/",
+    "officialUrl": "https://dmhhs.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

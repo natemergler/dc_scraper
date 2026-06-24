@@ -5,7 +5,7 @@
   "name": "Board of Zoning Adjustment (BZA)",
   "attributes": {
     "enablingStatute": "D.C. Code § 6-641.07",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-641.07.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/6-641.07",
     "shortName": "Board of Zoning Adjustment (BZA)",
     "sourceBoardId": "61",
     "sourceOpenDcSlug": "board-zoning-adjustment-bza",

@@ -5,7 +5,7 @@
   "name": "Zoning Commission",
   "attributes": {
     "enablingStatute": "DC Code § 6-621.01",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/6-621.01.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/6-621.01",
     "shortName": "Zoning Commission",
     "sourceCommissionId": "131",
     "sourceOpenDcSlug": "zoning-commission",

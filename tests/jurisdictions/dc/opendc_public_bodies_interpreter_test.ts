@@ -589,6 +589,70 @@ Deno.test("open_dc.public_bodies drops implausible Code locator evidence", () =>
   );
 });
 
+Deno.test("open_dc.public_bodies corrects audited stale Open DC legal locators", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "food-policy-council",
+    payload: {
+      name: "Food Policy Council",
+      slug: "food-policy-council",
+      detailUrl: "https://www.open-dc.gov/public-bodies/food-policy-council/",
+      enablingStatute: "D.C. Official Code § 48-314.05",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/48-314.05",
+    },
+  }]);
+
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.council")!;
+  const authorityFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
+  assertEquals(entryFragment.attributes.enablingStatute, "D.C. Code § 48-312");
+  assertEquals(
+    entryFragment.attributes.enablingStatuteUrl,
+    "https://code.dccouncil.gov/us/dc/council/code/sections/48-312",
+  );
+  assertEquals(authorityFragment?.provisionalId, "dc.legal_authority:d-c-code-48-312");
+  assertEquals(output.relationFragments[0].to, "dc.legal_authority:d-c-code-48-312");
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_enabling_statute_corrected"
+    ),
+    true,
+  );
+});
+
+Deno.test("open_dc.public_bodies suppresses audited ambiguous legal authority evidence", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "metropolitan-washington-airports-authority-board-directors-mwaa",
+    payload: {
+      name: "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+      slug: "metropolitan-washington-airports-authority-board-directors-mwaa",
+      detailUrl:
+        "https://www.open-dc.gov/public-bodies/metropolitan-washington-airports-authority-board-directors-mwaa/",
+      enablingStatute: "DC Code § 9-1006",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/9-1006",
+    },
+  }]);
+
+  const entryFragment = output.entryFragments.find((fragment) => fragment.kind === "dc.board")!;
+  assertEquals(Object.hasOwn(entryFragment.attributes, "enablingStatute"), false);
+  assertEquals(Object.hasOwn(entryFragment.attributes, "enablingStatuteUrl"), false);
+  assertEquals(
+    output.entryFragments.some((fragment) => fragment.kind === "dc.legal_authority"),
+    false,
+  );
+  assertEquals(output.relationFragments, []);
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_enabling_statute_suppressed"
+    ),
+    true,
+  );
+});
+
 Deno.test("open_dc.public_bodies preserves mayoral order authority text as evidence and locator citation", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,
@@ -615,7 +679,7 @@ Deno.test("open_dc.public_bodies preserves mayoral order authority text as evide
   );
   assertEquals(
     entryFragment.attributes.enablingStatuteUrl,
-    "https://www.open-dc.gov/mayors-order-2020-123",
+    "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2020-123",
   );
   assertEquals(
     entryFragment.citations,
@@ -647,11 +711,15 @@ Deno.test("open_dc.public_bodies derives Code locator citations from official Co
   }]);
 
   assertEquals(output.entryFragments.length, 1);
+  assertEquals(
+    output.entryFragments[0].attributes.enablingStatuteUrl,
+    "https://code.dccouncil.gov/us/dc/council/code/sections/50-1831",
+  );
   assertEquals(output.entryFragments[0].citations, [
     cite(openDCPublicBodiesSource.id, "major-crash-review-task-force"),
     cite(openDCPublicBodiesSource.id, "major-crash-review-task-force", {
       locator: "D.C. Code § 50-1831",
-      url: "https://code.dccouncil.us/dc/council/code/sections/50-1831.html",
+      url: "https://code.dccouncil.gov/us/dc/council/code/sections/50-1831",
     }),
   ]);
   assertEquals(

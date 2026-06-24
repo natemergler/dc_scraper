@@ -15,6 +15,7 @@ import {
 import {
   buildLegalAuthorityArtifacts,
   buildOpenDcLegalAuthorityLocatorInputs,
+  canonicalOpenDcLegalAuthorityUrl,
   isRejectedLegalAuthorityLocator,
 } from "./legal_authorities.ts";
 import { dcBoardKind } from "../kinds/board.ts";
@@ -61,9 +62,70 @@ interface ParsedOpenDcPublicBodyRecord {
   normalizedName: string;
 }
 
+interface OpenDcLegalAuthorityCorrection {
+  enablingStatute?: string;
+  enablingStatuteUrl?: string;
+  suppressLegalAuthority?: boolean;
+  rationale: string;
+}
+
 const sourceKind = "open_dc.public_bodies" as const;
 const governsRelationKind = "dc.relation:governs" as const;
 const standardKinds = new Set(["board", "commission", "authority", "council"]);
+
+const legalAuthorityCorrections = new Map<string, OpenDcLegalAuthorityCorrection>([
+  [
+    "opioid-fatality-review-board",
+    {
+      enablingStatute: "Mayor's Order 2019-024: Establishment - Opioid Fatality Review Board",
+      enablingStatuteUrl:
+        "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2019-024",
+      rationale:
+        "live D.C. Register shows Mayor's Order 2019-026 is a Financial Literacy Council appointment; 2019-024 establishes the Opioid Fatality Review Board",
+    },
+  ],
+  [
+    "dc-commission-poverty",
+    {
+      enablingStatute: "D.C. Code § 3-641.02",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/3-641.02",
+      rationale: "live D.C. Code section 3-641 404s; section 3-641.02 is the establishment section",
+    },
+  ],
+  [
+    "food-policy-council",
+    {
+      enablingStatute: "D.C. Code § 48-312",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/48-312",
+      rationale: "live D.C. Code section 48-314.05 404s; section 48-312 establishes the council",
+    },
+  ],
+  [
+    "district-columbia-taxicab-commission-dctc",
+    {
+      enablingStatute: "D.C. Code § 50-301.04",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/50-301.04",
+      rationale:
+        "live D.C. Code section 50-304 404s as prior codification; section 50-301.04 is the current official section",
+    },
+  ],
+  [
+    "dc-children-and-youth-investment-trust-corporation-board-directors",
+    {
+      suppressLegalAuthority: true,
+      rationale:
+        "Open DC locator D.C. Code § 13-38 does not resolve as a live D.C. Code section; official search surfaces D.C. Law 13-38, so the authority evidence is ambiguous",
+    },
+  ],
+  [
+    "metropolitan-washington-airports-authority-board-directors-mwaa",
+    {
+      suppressLegalAuthority: true,
+      rationale:
+        "Open DC locator D.C. Code § 9-1006 does not resolve as a live D.C. Code section and needs a future human replacement decision",
+    },
+  ],
+]);
 
 const nonRelationshipAgencyLabels = new Set<string>([
   "n/a",
@@ -377,15 +439,39 @@ export function interpretOpenDCPublicBodies(
       });
     }
 
-    const legalLocators = parsed.enablingStatute
-      ? parseLegalCitationLocators({ LEGAL_REFERENCE: parsed.enablingStatute })
+    const legalAuthorityCorrection = legalAuthorityCorrections.get(parsed.slug);
+    if (legalAuthorityCorrection) {
+      findings.push({
+        kind: "info",
+        code: legalAuthorityCorrection.suppressLegalAuthority
+          ? "dc.interpreter.opendc_enabling_statute_suppressed"
+          : "dc.interpreter.opendc_enabling_statute_corrected",
+        message:
+          `Open DC public body "${parsed.name}" legal authority evidence adjusted: ${legalAuthorityCorrection.rationale}`,
+        citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
+      });
+    }
+
+    const correctedEnablingStatute = legalAuthorityCorrection?.suppressLegalAuthority
+      ? undefined
+      : legalAuthorityCorrection?.enablingStatute ?? parsed.enablingStatute;
+    const correctedEnablingStatuteUrl = legalAuthorityCorrection?.suppressLegalAuthority
+      ? undefined
+      : legalAuthorityCorrection?.enablingStatuteUrl ?? parsed.enablingStatuteUrl;
+
+    const legalLocators = correctedEnablingStatute
+      ? parseLegalCitationLocators({ LEGAL_REFERENCE: correctedEnablingStatute })
       : [];
     const legalAuthorityLocatorInputs = buildOpenDcLegalAuthorityLocatorInputs(
       legalLocators,
-      parsed.enablingStatuteUrl,
+      correctedEnablingStatuteUrl,
     );
     const releaseLegalAuthorityLocatorInputs = legalAuthorityLocatorInputs.filter((input) =>
       !isRejectedLegalAuthorityLocator(input.locator)
+    );
+    const canonicalEnablingStatuteUrl = canonicalOpenDcLegalAuthorityUrl(
+      legalLocators,
+      correctedEnablingStatuteUrl,
     );
     const legalAuthorityArtifacts = buildLegalAuthorityArtifacts({
       source: sourceKind,
@@ -402,11 +488,11 @@ export function interpretOpenDCPublicBodies(
       sourceOpenDcUrl: parsed.detailUrl,
     };
 
-    if (parsed.enablingStatute && releaseLegalAuthorityLocatorInputs.length > 0) {
-      attributes.enablingStatute = parsed.enablingStatute;
+    if (correctedEnablingStatute && releaseLegalAuthorityLocatorInputs.length > 0) {
+      attributes.enablingStatute = correctedEnablingStatute;
     }
-    if (parsed.enablingStatuteUrl && releaseLegalAuthorityLocatorInputs.length > 0) {
-      attributes.enablingStatuteUrl = parsed.enablingStatuteUrl;
+    if (canonicalEnablingStatuteUrl && releaseLegalAuthorityLocatorInputs.length > 0) {
+      attributes.enablingStatuteUrl = canonicalEnablingStatuteUrl;
     }
     if (parsed.description) {
       attributes.description = parsed.description;
@@ -493,23 +579,23 @@ export function interpretOpenDCPublicBodies(
     }
     relationFragments.push(...legalAuthorityArtifacts.relationFragments);
 
-    if (parsed.enablingStatute && legalAuthorityLocatorInputs.length === 0) {
+    if (correctedEnablingStatute && legalAuthorityLocatorInputs.length === 0) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_unparsed",
         message:
-          `Could not parse legal citation from enabling statute: "${parsed.enablingStatute}"`,
+          `Could not parse legal citation from enabling statute: "${correctedEnablingStatute}"`,
         citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
       });
     } else if (
-      parsed.enablingStatute && legalAuthorityLocatorInputs.length > 0 &&
+      correctedEnablingStatute && legalAuthorityLocatorInputs.length > 0 &&
       releaseLegalAuthorityLocatorInputs.length === 0
     ) {
       findings.push({
         kind: "info",
         code: "dc.interpreter.opendc_enabling_statute_rejected",
         message:
-          `Rejected implausible legal citation from enabling statute: "${parsed.enablingStatute}"`,
+          `Rejected implausible legal citation from enabling statute: "${correctedEnablingStatute}"`,
         citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
       });
     }

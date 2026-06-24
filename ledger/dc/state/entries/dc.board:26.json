@@ -2,8 +2,9 @@
   "id": "dc.board:26",
   "family": "organization",
   "kind": "dc.board",
-  "name": "Alcoholic Beverage and Cannabis Administration",
+  "name": "Alcoholic Beverage and Cannabis Board",
   "attributes": {
+    "officialUrl": "https://abca.dc.gov/page/abc-board",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",
@@ -35,7 +36,7 @@
         "source": "review_cli"
       }
     ],
-    "shortName": "Alcoholic Beverage and Cannabis Administration",
+    "shortName": "Alcoholic Beverage and Cannabis Board",
     "sourceBoardId": "26"
   },
   "citations": [

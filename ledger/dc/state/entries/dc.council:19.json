@@ -5,8 +5,8 @@
   "name": "Food Policy Council",
   "attributes": {
     "description": "The DC Food Policy Council is a coalition of stakeholders and government representatives who have come together to identify regulatory burdens on the local food economy, collect and analyze data on the food economy and food equity, promote positive food policies, and guide organizations and individuals involved in the food economy. The act establishes a Food Policy Director in the DC Office of Planning who will promote food policy in the District, attract new participants to the local food economy, assist individuals already participating in the local food economy, and achieve the food goals identified in the Sustainable DC Plan.",
-    "enablingStatute": "D.C. Official Code § 48-314.05",
-    "enablingStatuteUrl": "http://www.dcfoodpolicy.org",
+    "enablingStatute": "D.C. Code § 48-312",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/48-312",
     "officialUrl": "http://planning.dc.gov/",
     "shortName": "Food Policy Council",
     "sourceCouncilId": "19",
@@ -33,17 +33,12 @@
             "source": "dcgis.councils",
             "sourceRecordId": "19",
             "locator": "D.C. Code § 48-312"
-          }
-        ]
-      },
-      {
-        "kind": "dc.relation:authorized_by",
-        "to": "dc.legal_authority:d-c-code-48-314-05",
-        "citations": [
+          },
           {
             "source": "open_dc.public_bodies",
             "sourceRecordId": "food-policy-council",
-            "locator": "D.C. Code § 48-314.05"
+            "locator": "D.C. Code § 48-312",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/48-312"
           }
         ]
       }

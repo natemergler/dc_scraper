@@ -5,7 +5,7 @@
   "name": "Real Estate Commission",
   "attributes": {
     "enablingStatute": "D.C. Code § 47-2853.06(h)",
-    "enablingStatuteUrl": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(h)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
     "shortName": "Real Estate Commission",
     "sourceCommissionId": "117",
     "sourceOpenDcSlug": "real-estate-commission",
@@ -42,7 +42,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "real-estate-commission",
             "locator": "D.C. Code § 47-2853.06(h)",
-            "url": "http://code.dccouncil.us/us/dc/council/code/sections/47-2853.06#(h)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
           }
         ]
       }

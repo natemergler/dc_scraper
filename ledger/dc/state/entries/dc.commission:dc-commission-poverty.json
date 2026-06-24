@@ -5,8 +5,8 @@
   "name": "D.C. Commission on Poverty",
   "attributes": {
     "description": "The legislative requirements are HERE. If you are interested in applying to join the Commission, please visit the application page. Please note that applicants must be DC residents.",
-    "enablingStatute": "D.C. Official Code § 3-641",
-    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/titles/3/chapters/6A-i",
+    "enablingStatute": "D.C. Code § 3-641.02",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-641.02",
     "shortName": "D.C. Commission on Poverty",
     "sourceOpenDcSlug": "dc-commission-poverty",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-commission-poverty"
@@ -21,12 +21,13 @@
     "dc.relation:authorized_by": [
       {
         "kind": "dc.relation:authorized_by",
-        "to": "dc.legal_authority:d-c-code-3-641",
+        "to": "dc.legal_authority:d-c-code-3-641-02",
         "citations": [
           {
             "source": "open_dc.public_bodies",
             "sourceRecordId": "dc-commission-poverty",
-            "locator": "D.C. Code § 3-641"
+            "locator": "D.C. Code § 3-641.02",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/3-641.02"
           }
         ]
       }

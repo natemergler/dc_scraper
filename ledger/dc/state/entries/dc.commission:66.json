@@ -5,7 +5,7 @@
   "name": "Commission on African-American Affairs",
   "attributes": {
     "enablingStatute": "D.C. Code § 3-1441",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1441.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1441",
     "shortName": "Commission on African-American Affairs",
     "sourceCommissionId": "66",
     "sourceOpenDcSlug": "commission-african-american-affairs",
@@ -43,7 +43,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-on-african-american-affairs",
+        "to": "dc.office:mayors-office-on-african-american-affairs",
         "citations": [
           {
             "source": "dcgis.commissions",

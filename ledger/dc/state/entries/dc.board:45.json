@@ -5,7 +5,7 @@
   "name": "Board of Medicine",
   "attributes": {
     "enablingStatute": "DC Code § 3-1202.03",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-1202.03.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.03",
     "shortName": "Board of Medicine",
     "sourceBoardId": "45",
     "sourceOpenDcSlug": "board-medicine",

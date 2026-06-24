@@ -9,7 +9,7 @@
     "source": "dc.agency_directory",
     "snapshotCount": 1,
     "recordCount": 113,
-    "citationCount": 73
+    "citationCount": 59
   },
   {
     "source": "dccouncil.committees",
@@ -33,7 +33,7 @@
     "source": "dcgis.agencies",
     "snapshotCount": 1,
     "recordCount": 112,
-    "citationCount": 114
+    "citationCount": 87
   },
   {
     "source": "dcgis.ancs",
@@ -51,7 +51,7 @@
     "source": "dcgis.boards",
     "snapshotCount": 1,
     "recordCount": 63,
-    "citationCount": 225
+    "citationCount": 223
   },
   {
     "source": "dcgis.commissions",
@@ -63,7 +63,7 @@
     "source": "dcgis.councils",
     "snapshotCount": 1,
     "recordCount": 23,
-    "citationCount": 66
+    "citationCount": 65
   },
   {
     "source": "dcgis.smds",
@@ -213,6 +213,6 @@
     "source": "open_dc.public_bodies",
     "snapshotCount": 234,
     "recordCount": 233,
-    "citationCount": 483
+    "citationCount": 479
   }
 ]

@@ -5,7 +5,7 @@
   "name": "Police Complaints Board",
   "attributes": {
     "enablingStatute": "DC Code D.C. Code § 5-1104",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/5-1104.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/5-1104",
     "shortName": "Police Complaints Board",
     "sourceBoardId": "112",
     "sourceOpenDcSlug": "police-complaints-board",

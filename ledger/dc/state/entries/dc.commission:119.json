@@ -5,7 +5,7 @@
   "name": "Rental Housing Commission",
   "attributes": {
     "enablingStatute": "DC Code § 42-3502.02",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/42-3502.02.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/42-3502.02",
     "shortName": "Rental Housing Commission",
     "sourceCommissionId": "119",
     "sourceOpenDcSlug": "rental-housing-commission",

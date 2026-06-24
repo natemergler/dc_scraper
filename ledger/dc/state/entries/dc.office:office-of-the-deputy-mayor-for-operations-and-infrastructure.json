@@ -5,7 +5,7 @@
   "name": "Office of the Deputy Mayor for Operations and Infrastructure",
   "attributes": {
     "description": "Oversees the District government's infrastructure and government services agencies to provide a safe, reliable, and robust multimodal transportation network in the District and to develop innovative ways to provide faster, more transparent, and customer-friendly government services for residents, non-residents, and businesses.",
-    "officialUrl": "http://dmoi.dc.gov/",
+    "officialUrl": "https://dmoi.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-cjcc-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:criminal-justice-coordinating-council",
+  "rationale": "Applied preserve-distinct review was rechecked and the agency row does not support a distinct public entity from the Criminal Justice Coordinating Council public-body record. Preserve the official site on the canonical council entry and suppress the administrative shadow.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "criminal-justice-coordinating-council:cjcc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    { "source": "dcgis.agencies", "sourceRecordId": "4" },
+    { "source": "dcgis.councils", "sourceRecordId": "21", "locator": "D.C. Code § 22-4232" }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": { "decision": "source_shadow", "canonicalEntryId": "dc.council:21" }
+  }
+}

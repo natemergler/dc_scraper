@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-dmped-canonical-url",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
+  "rationale": "Normalize canonical Deputy Mayor office official URL to HTTPS from live agency-directory evidence.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development-dmped:dmped-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-planning-and-economic-development",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": { "attributes": { "officialUrl": "https://dmped.dc.gov" } }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-mwaa-ambiguous-code-authority-remove",
+  "source": "operator_audit",
+  "targetKind": "relation",
+  "targetId": "dc.board:107",
+  "rationale": "Live legal audit found D.C. Code § 9-1006 does not resolve as a current official section page. The MWAA board chapter still exists, but the exact modern locator needs a future human replacement decision, so do not publish this ambiguous authorized_by edge as confirmed release evidence.",
+  "evidence": [
+    { "source": "dcgis.boards", "sourceRecordId": "107", "locator": "D.C. Code § 9-1006" },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa"
+    },
+    {
+      "source": "operator_live_official_audit",
+      "sourceRecordId": "2026-06-24-mwaa-9-1006",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/9-1006"
+    }
+  ],
+  "patch": { "relations": {} }
+}

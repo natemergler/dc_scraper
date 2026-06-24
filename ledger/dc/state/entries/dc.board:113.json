@@ -5,7 +5,7 @@
   "name": "Police Officers Standards and Training Board (POST)",
   "attributes": {
     "enablingStatute": "D.C. Code § 5-107.03",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/5-107.03.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/5-107.03",
     "shortName": "Police Officers Standards and Training Board (POST)",
     "sourceBoardId": "113",
     "sourceOpenDcSlug": "police-officers-standards-and-training-board-post",

@@ -4,6 +4,7 @@
   "kind": "dc.council",
   "name": "Criminal Justice Coordinating Council",
   "attributes": {
+    "officialUrl": "https://cjcc.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

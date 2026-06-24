@@ -402,7 +402,8 @@ function applyRevisions(
 
     if (revision.targetKind === "entry") {
       if (revision.patch.suppress === true) {
-        suppressEntry(outputState, targetId);
+        const replacementId = suppressionReplacementId(revision, identityResolver, findings);
+        suppressEntry(outputState, targetId, replacementId);
         findings.push({
           kind: "info",
           code: "compiler.revision.entry_suppressed",
@@ -626,19 +627,52 @@ function selectorDescription(selector?: RevisionTargetSelector): string {
   return parts.join("; ");
 }
 
-function suppressEntry(state: LedgerState, targetId: string): void {
+function suppressEntry(state: LedgerState, targetId: string, replacementId?: string): void {
   state.entries.delete(targetId);
 
   for (const entry of state.entries.values()) {
     for (const [relationKind, relations] of Object.entries(entry.relations)) {
-      const filtered = relations.filter((relation) => relation.to !== targetId);
+      const filtered = relations
+        .map((relation) =>
+          relation.to === targetId && replacementId && replacementId !== entry.id
+            ? { ...relation, to: replacementId }
+            : relation
+        )
+        .filter((relation) => relation.to !== targetId);
       if (filtered.length === 0) {
         delete entry.relations[relationKind];
       } else {
-        entry.relations[relationKind] = filtered;
+        entry.relations[relationKind] = dedupeRelations(filtered);
       }
     }
   }
+}
+
+function suppressionReplacementId(
+  revision: Revision,
+  identityResolver: IdentityAliasResolver,
+  findings: Finding[],
+): string | undefined {
+  const rawReview = revision.patch.review;
+  if (!rawReview || typeof rawReview !== "object" || Array.isArray(rawReview)) {
+    return undefined;
+  }
+
+  const review = rawReview as Record<string, unknown>;
+  if (
+    review.decision !== "source_shadow" ||
+    typeof review.canonicalEntryId !== "string" ||
+    review.canonicalEntryId.trim().length === 0
+  ) {
+    return undefined;
+  }
+
+  return resolveRevisionReferenceId(
+    review.canonicalEntryId,
+    revision.id,
+    identityResolver,
+    findings,
+  );
 }
 
 function applyRelationPatch(

@@ -1,0 +1,16 @@
+{
+  "id": "2026-06-24-mwaa-ambiguous-code-authority-suppress",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.legal_authority:d-c-code-9-1006",
+  "rationale": "Suppress ambiguous D.C. Code § 9-1006 authority node after removing the MWAA authorized_by edge; live official section URL does not resolve and the exact modern replacement is not confirmed for this release.",
+  "evidence": [
+    { "source": "dcgis.boards", "sourceRecordId": "107", "locator": "D.C. Code § 9-1006" },
+    {
+      "source": "operator_live_official_audit",
+      "sourceRecordId": "2026-06-24-mwaa-9-1006",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/9-1006"
+    }
+  ],
+  "patch": { "suppress": true }
+}

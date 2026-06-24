@@ -70,7 +70,7 @@
     },
     {
       "id": "dcgis-agency-1013",
-      "canonicalId": "dc.agency:criminal-justice-coordinating-council",
+      "canonicalId": "dc.council:21",
       "previousIds": [
         "dc.agency:1013"
       ],
@@ -80,9 +80,9 @@
           "sourceRecordId": "4"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.council",
       "name": "Criminal Justice Coordinating Council",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical council entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -730,7 +730,7 @@
     },
     {
       "id": "dcgis-agency-1052",
-      "canonicalId": "dc.agency:executive-office-of-the-mayor",
+      "canonicalId": "dc.office:executive-office-of-the-mayor",
       "previousIds": [
         "dc.agency:1052"
       ],
@@ -740,9 +740,9 @@
           "sourceRecordId": "45"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Executive Office of the Mayor",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -840,7 +840,7 @@
     },
     {
       "id": "dcgis-agency-1058",
-      "canonicalId": "dc.agency:mayors-office-of-community-affairs",
+      "canonicalId": "dc.office:mayors-office-of-community-affairs",
       "previousIds": [
         "dc.agency:1058"
       ],
@@ -850,9 +850,9 @@
           "sourceRecordId": "52"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Community Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -862,7 +862,7 @@
     },
     {
       "id": "dcgis-agency-1059",
-      "canonicalId": "dc.agency:mayors-office-of-religious-affairs",
+      "canonicalId": "dc.office:mayors-office-of-religious-affairs",
       "previousIds": [
         "dc.agency:1059"
       ],
@@ -872,9 +872,9 @@
           "sourceRecordId": "75"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Religious Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -884,7 +884,7 @@
     },
     {
       "id": "dcgis-agency-1060",
-      "canonicalId": "dc.agency:mayors-office-of-veterans-affairs",
+      "canonicalId": "dc.office:mayors-office-of-veterans-affairs",
       "previousIds": [
         "dc.agency:1060"
       ],
@@ -894,9 +894,9 @@
           "sourceRecordId": "83"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Veterans Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -906,7 +906,7 @@
     },
     {
       "id": "dcgis-agency-1061",
-      "canonicalId": "dc.agency:mayors-office-on-african-affairs",
+      "canonicalId": "dc.office:mayors-office-on-african-affairs",
       "previousIds": [
         "dc.agency:1061"
       ],
@@ -916,9 +916,9 @@
           "sourceRecordId": "54"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office on African Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -950,7 +950,7 @@
     },
     {
       "id": "dcgis-agency-1063",
-      "canonicalId": "dc.agency:mayors-office-on-latino-affairs",
+      "canonicalId": "dc.office:mayors-office-on-latino-affairs",
       "previousIds": [
         "dc.agency:1063"
       ],
@@ -960,9 +960,9 @@
           "sourceRecordId": "68"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office on Latino Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -972,7 +972,7 @@
     },
     {
       "id": "dcgis-agency-1064",
-      "canonicalId": "dc.agency:mayors-office-on-womens-policy-and-initiatives",
+      "canonicalId": "dc.office:mayors-office-on-womens-policy-and-initiatives",
       "previousIds": [
         "dc.agency:1064"
       ],
@@ -982,9 +982,9 @@
           "sourceRecordId": "85"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office on Women's Policy and Initiatives",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1148,7 +1148,7 @@
     },
     {
       "id": "dcgis-agency-1074",
-      "canonicalId": "dc.agency:office-of-federal-and-regional-affairs",
+      "canonicalId": "dc.office:office-of-federal-and-regional-affairs",
       "previousIds": [
         "dc.agency:1074"
       ],
@@ -1158,9 +1158,9 @@
           "sourceRecordId": "65"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of Federal and Regional Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1214,7 +1214,7 @@
     },
     {
       "id": "dcgis-agency-1077",
-      "canonicalId": "dc.agency:office-of-open-government",
+      "canonicalId": "dc.office:office-of-open-government",
       "previousIds": [
         "dc.agency:1077"
       ],
@@ -1224,9 +1224,9 @@
           "sourceRecordId": "70"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of Open Government",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1280,7 +1280,7 @@
     },
     {
       "id": "dcgis-agency-1081",
-      "canonicalId": "dc.agency:office-of-policy-and-legislative-affairs",
+      "canonicalId": "dc.office:office-of-policy-and-legislative-affairs",
       "previousIds": [
         "dc.agency:1081"
       ],
@@ -1290,9 +1290,9 @@
           "sourceRecordId": "74"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of Policy and Legislative Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1412,7 +1412,7 @@
     },
     {
       "id": "dcgis-agency-1087",
-      "canonicalId": "dc.agency:office-of-the-city-administrator",
+      "canonicalId": "dc.office:office-of-the-city-administrator",
       "previousIds": [
         "dc.agency:1087"
       ],
@@ -1422,9 +1422,9 @@
           "sourceRecordId": "57"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the City Administrator",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1456,7 +1456,7 @@
     },
     {
       "id": "dcgis-agency-1089",
-      "canonicalId": "dc.agency:office-of-the-deputy-mayor-for-education",
+      "canonicalId": "dc.office:office-of-the-deputy-mayor-for-education",
       "previousIds": [
         "dc.agency:1089"
       ],
@@ -1466,9 +1466,9 @@
           "sourceRecordId": "32"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Deputy Mayor for Education",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1478,7 +1478,7 @@
     },
     {
       "id": "dcgis-agency-1091",
-      "canonicalId": "dc.agency:office-of-the-deputy-mayor-for-health-and-human-services",
+      "canonicalId": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
       "previousIds": [
         "dc.agency:1091"
       ],
@@ -1488,9 +1488,9 @@
           "sourceRecordId": "34"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Deputy Mayor for Health and Human Services",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1500,7 +1500,7 @@
     },
     {
       "id": "dcgis-agency-1092",
-      "canonicalId": "dc.agency:office-of-the-deputy-mayor-for-planning-and-economic-development",
+      "canonicalId": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
       "previousIds": [
         "dc.agency:1092"
       ],
@@ -1510,9 +1510,9 @@
           "sourceRecordId": "35"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Deputy Mayor for Planning and Economic Development",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1566,7 +1566,7 @@
     },
     {
       "id": "dcgis-agency-1095",
-      "canonicalId": "dc.agency:office-of-the-secretary",
+      "canonicalId": "dc.office:office-of-the-secretary",
       "previousIds": [
         "dc.agency:1095"
       ],
@@ -1576,9 +1576,9 @@
           "sourceRecordId": "78"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Secretary",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1588,7 +1588,7 @@
     },
     {
       "id": "dcgis-agency-1096",
-      "canonicalId": "dc.agency:office-of-the-senior-advisor",
+      "canonicalId": "dc.office:office-of-the-senior-advisor",
       "previousIds": [
         "dc.agency:1096"
       ],
@@ -1598,9 +1598,9 @@
           "sourceRecordId": "79"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Senior Advisor",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1840,7 +1840,7 @@
     },
     {
       "id": "dcgis-agency-1139",
-      "canonicalId": "dc.agency:board-of-elections",
+      "canonicalId": "dc.board:board-elections",
       "previousIds": [
         "dc.agency:1139"
       ],
@@ -1850,9 +1850,9 @@
           "sourceRecordId": "119"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.board",
       "name": "Board of Elections",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical board entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1884,7 +1884,7 @@
     },
     {
       "id": "dcgis-agency-1141",
-      "canonicalId": "dc.agency:mayors-office-on-fathers-men-and-boys",
+      "canonicalId": "dc.office:mayors-office-on-fathers-men-and-boys",
       "previousIds": [
         "dc.agency:1141"
       ],
@@ -1894,9 +1894,9 @@
           "sourceRecordId": "121"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office on Fathers, Men, and Boys",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1906,7 +1906,7 @@
     },
     {
       "id": "dcgis-agency-1142",
-      "canonicalId": "dc.agency:dc-public-charter-school-board",
+      "canonicalId": "dc.board:87",
       "previousIds": [
         "dc.agency:1142"
       ],
@@ -1916,9 +1916,9 @@
           "sourceRecordId": "122"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.board",
       "name": "DC Public Charter School Board",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical board entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -1994,7 +1994,7 @@
     },
     {
       "id": "dcgis-agency-1147",
-      "canonicalId": "dc.agency:mayors-office-of-talent-and-appointments",
+      "canonicalId": "dc.office:mayors-office-of-talent-and-appointments",
       "previousIds": [
         "dc.agency:1147"
       ],
@@ -2004,9 +2004,9 @@
           "sourceRecordId": "126"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Talent and Appointments",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2060,7 +2060,7 @@
     },
     {
       "id": "dcgis-agency-1154",
-      "canonicalId": "dc.agency:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+      "canonicalId": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
       "previousIds": [
         "dc.agency:1154"
       ],
@@ -2070,9 +2070,9 @@
           "sourceRecordId": "133"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Deputy Mayor for Operations and Infrastructure",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2192,7 +2192,7 @@
     },
     {
       "id": "dcgis-agency-1168",
-      "canonicalId": "dc.agency:mayors-office-of-community-relations-and-services",
+      "canonicalId": "dc.office:mayors-office-of-community-relations-and-services",
       "previousIds": [
         "dc.agency:1168"
       ],
@@ -2202,9 +2202,9 @@
           "sourceRecordId": "147"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Community Relations and Services",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2214,7 +2214,7 @@
     },
     {
       "id": "dcgis-agency-1169",
-      "canonicalId": "dc.agency:mayors-office-on-african-american-affairs",
+      "canonicalId": "dc.office:mayors-office-on-african-american-affairs",
       "previousIds": [
         "dc.agency:1169"
       ],
@@ -2224,9 +2224,9 @@
           "sourceRecordId": "148"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office on African American Affairs",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2236,7 +2236,7 @@
     },
     {
       "id": "dcgis-agency-1170",
-      "canonicalId": "dc.agency:mayors-office-of-nightlife-and-culture",
+      "canonicalId": "dc.office:mayors-office-of-nightlife-and-culture",
       "previousIds": [
         "dc.agency:1170"
       ],
@@ -2246,9 +2246,9 @@
           "sourceRecordId": "149"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of Nightlife and Culture",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2258,7 +2258,7 @@
     },
     {
       "id": "dcgis-agency-1171",
-      "canonicalId": "dc.agency:mayors-office-of-the-clean-city",
+      "canonicalId": "dc.office:mayors-office-of-the-clean-city",
       "previousIds": [
         "dc.agency:1171"
       ],
@@ -2268,9 +2268,9 @@
           "sourceRecordId": "150"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Mayor's Office of the Clean City",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",
@@ -2324,7 +2324,7 @@
     },
     {
       "id": "dcgis-agency-1174",
-      "canonicalId": "dc.agency:office-of-the-deputy-mayor-for-public-safety-and-justice",
+      "canonicalId": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
       "previousIds": [
         "dc.agency:1174"
       ],
@@ -2334,9 +2334,9 @@
           "sourceRecordId": "153"
         }
       ],
-      "kind": "dc.agency",
+      "kind": "dc.office",
       "name": "Office of the Deputy Mayor for Public Safety and Justice",
-      "rationale": "DCGIS source agency ID migrated to a human-readable civic agency slug; the source agency ID remains provenance.",
+      "rationale": "DCGIS source agency ID resolves to the audited canonical office entry; the source agency ID remains provenance.",
       "evidence": [
         {
           "source": "dcgis.agencies",

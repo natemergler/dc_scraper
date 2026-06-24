@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office on Women's Policy and Initiatives",
   "attributes": {
+    "officialUrl": "https://owpi.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

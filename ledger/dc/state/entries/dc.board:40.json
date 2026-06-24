@@ -5,7 +5,7 @@
   "name": "Board of Industrial Trades",
   "attributes": {
     "enablingStatute": "D.C. Official Code § 47-2853.06(d)",
-    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06#(d)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
     "shortName": "Board of Industrial Trades",
     "sourceBoardId": "40",
     "sourceOpenDcSlug": "board-industrial-trades",
@@ -42,7 +42,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "board-industrial-trades",
             "locator": "D.C. Code § 47-2853.06(d)",
-            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06#(d)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
           }
         ]
       }

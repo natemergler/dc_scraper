@@ -1,0 +1,22 @@
+{
+  "id": "2026-06-24-mofmb-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:mayors-office-on-fathers-men-and-boys",
+  "rationale": "Same-name DCGIS agency row is a source shadow of the Mayor organizational-chart office node, which carries the current executive hierarchy.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "121" },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-on-fathers-men-and-boys",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:mayors-office-on-fathers-men-and-boys"
+    }
+  }
+}

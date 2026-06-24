@@ -5,7 +5,7 @@
   "name": "Commission for Women",
   "attributes": {
     "enablingStatute": "DC Code § 3-702",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-702.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-702",
     "shortName": "Commission for Women",
     "sourceCommissionId": "64",
     "sourceOpenDcSlug": "commission-women",
@@ -43,7 +43,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-on-womens-policy-and-initiatives",
+        "to": "dc.office:mayors-office-on-womens-policy-and-initiatives",
         "citations": [
           {
             "source": "dcgis.commissions",

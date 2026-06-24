@@ -5,7 +5,7 @@
   "name": "DC Retirement Board",
   "attributes": {
     "enablingStatute": "DC Code § 1-711",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/1-711.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/1-711",
     "shortName": "DC Retirement Board",
     "sourceOpenDcSlug": "dc-retirement-board",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/dc-retirement-board"

@@ -4,6 +4,8 @@
   "kind": "dc.board",
   "name": "Concealed Pistol Licensing Review Board (CPLRB)",
   "attributes": {
+    "currentStateNote": "Official OAH notice says concealed pistol license appeals moved to OAH effective October 1, 2023; retain as legal board record with transfer caveat.",
+    "officialUrl": "https://dmpsj.dc.gov/page/concealed-pistol-licensing-review-board-cplrb",
     "shortName": "Concealed Pistol Licensing Review Board (CPLRB)",
     "sourceBoardId": "83"
   },
@@ -30,7 +32,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
         "citations": [
           {
             "source": "dcgis.boards",

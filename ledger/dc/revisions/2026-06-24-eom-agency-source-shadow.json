@@ -1,0 +1,27 @@
+{
+  "id": "2026-06-24-eom-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:executive-office-of-the-mayor",
+  "rationale": "Applied review recheck found the DCGIS/directory agency row and Mayor organizational-chart office row describe the same Executive Office of the Mayor public entity. The office node carries the executive hierarchy, so suppress the administrative agency shadow.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "45" },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "executive-office-of-the-mayor:mayor-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "executive-office-of-the-mayor",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:executive-office-of-the-mayor"
+    }
+  }
+}

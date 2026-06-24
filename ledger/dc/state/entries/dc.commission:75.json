@@ -5,7 +5,7 @@
   "name": "Commission on Latino Community Development",
   "attributes": {
     "enablingStatute": "DC Code § 2-1321",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/2-1321.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1321",
     "shortName": "Commission on Latino Community Development",
     "sourceCommissionId": "75",
     "sourceOpenDcSlug": "commission-latino-community-development",
@@ -43,7 +43,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-on-latino-affairs",
+        "to": "dc.office:mayors-office-on-latino-affairs",
         "citations": [
           {
             "source": "dcgis.commissions",

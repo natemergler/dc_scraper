@@ -5,7 +5,7 @@
   "name": "Armory Board",
   "attributes": {
     "enablingStatute": "DC Code § 3-302",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-302.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-302",
     "shortName": "Armory Board",
     "sourceBoardId": "27",
     "sourceOpenDcSlug": "armory-board",

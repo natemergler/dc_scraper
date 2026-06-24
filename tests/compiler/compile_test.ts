@@ -748,6 +748,83 @@ Deno.test("compile applies suppress revisions and removes inbound relations", ()
   );
 });
 
+Deno.test("compile retargets inbound relations when suppressing source shadows", () => {
+  const registry = new KindRegistry();
+  registry.register(dcAgencyKind);
+  registry.registerRelation(defineRelationKind({ kind: "dc.relation:reports_to" }));
+
+  const result = compileFragments({
+    jurisdiction: "dc",
+    generatedAt: "2026-06-07T00:00:00.000Z",
+    kindRegistry: registry,
+    promotionPolicy: promoteAllFragmentsPolicy,
+    fragments: [{
+      fragmentType: "entry",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      provisionalId: "dc.agency:a-1",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Agency One",
+      attributes: { shortName: "A1", sourceAgencyId: "a-1" },
+      citations: [cite("dcgis.agencies", "row-1")],
+    }, {
+      fragmentType: "entry",
+      source: "open_dc.public_bodies",
+      sourceRecordId: "shadow",
+      provisionalId: "dc.agency:shadow",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Shadow Office",
+      attributes: { shortName: "Shadow Office" },
+      citations: [cite("open_dc.public_bodies", "shadow")],
+    }, {
+      fragmentType: "entry",
+      source: "mayor.structure",
+      sourceRecordId: "canonical",
+      provisionalId: "dc.agency:canonical",
+      family: "organization",
+      kind: "dc.agency",
+      name: "Canonical Office",
+      attributes: { shortName: "Canonical Office" },
+      citations: [cite("mayor.structure", "canonical")],
+    }, {
+      fragmentType: "relation",
+      source: "dcgis.agencies",
+      sourceRecordId: "row-1",
+      from: "dc.agency:a-1",
+      relationKind: "dc.relation:reports_to",
+      to: "dc.agency:shadow",
+      citations: [cite("dcgis.agencies", "row-1")],
+    }],
+    revisions: [{
+      id: "suppress-shadow",
+      source: "operator",
+      targetKind: "entry",
+      targetId: "dc.agency:shadow",
+      rationale: "Reviewed duplicate source shadow.",
+      evidence: [cite("mayor.structure", "canonical")],
+      patch: {
+        suppress: true,
+        review: {
+          decision: "source_shadow",
+          canonicalEntryId: "dc.agency:canonical",
+        },
+      },
+    }],
+  });
+
+  assertEquals(result.ok, true);
+  assertEquals(result.state?.entries.has("dc.agency:shadow"), false);
+  assertEquals(result.state?.entries.get("dc.agency:a-1")?.relations, {
+    "dc.relation:reports_to": [{
+      kind: "dc.relation:reports_to",
+      to: "dc.agency:canonical",
+      citations: [cite("dcgis.agencies", "row-1")],
+    }],
+  });
+});
+
 Deno.test("compile records audited review decisions without merging entries", () => {
   const registry = new KindRegistry();
   registry.register(dcAgencyKind);

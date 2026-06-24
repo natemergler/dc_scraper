@@ -5,7 +5,7 @@
   "name": "Office of the Deputy Mayor for Planning and Economic Development",
   "attributes": {
     "description": "Oversees District agencies involved in the coordination, planning, supervision, and execution of economic development efforts with the goal of creating and preserving affordable housing, creating jobs, and increasing tax revenue.",
-    "officialUrl": "http://dmped.dc.gov/",
+    "officialUrl": "https://dmped.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

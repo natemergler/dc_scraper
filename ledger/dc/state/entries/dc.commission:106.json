@@ -30,7 +30,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:mayors-office-of-community-affairs",
+        "to": "dc.office:mayors-office-of-community-affairs",
         "citations": [
           {
             "source": "dcgis.commissions",

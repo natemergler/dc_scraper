@@ -4,6 +4,7 @@
   "kind": "dc.office",
   "name": "Mayor's Office on African American Affairs",
   "attributes": {
+    "officialUrl": "https://moaaa.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

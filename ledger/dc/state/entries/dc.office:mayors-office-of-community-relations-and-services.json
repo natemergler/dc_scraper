@@ -5,6 +5,7 @@
   "name": "Mayor's Office of Community Relations and Services",
   "attributes": {
     "description": "Serves as the Mayor's primary constituent services organization by providing rapid and complete responses to constituent requests, complaints, and questions.",
+    "officialUrl": "https://mocrs.dc.gov",
     "revisionReviews": [
       {
         "decision": "preserve_distinct",

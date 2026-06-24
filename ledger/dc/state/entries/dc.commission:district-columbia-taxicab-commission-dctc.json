@@ -5,7 +5,8 @@
   "name": "District of Columbia Taxicab Commission (DCTC)",
   "attributes": {
     "description": "D.C. Law 21-0124, renames the “Taxicab Commission” to the “Department of For Hire Vehicles.",
-    "enablingStatute": "DC Code § 50-304",
+    "enablingStatute": "D.C. Code § 50-301.04",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/50-301.04",
     "shortName": "District of Columbia Taxicab Commission (DCTC)",
     "sourceOpenDcSlug": "district-columbia-taxicab-commission-dctc",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-taxicab-commission-dctc"
@@ -20,12 +21,13 @@
     "dc.relation:authorized_by": [
       {
         "kind": "dc.relation:authorized_by",
-        "to": "dc.legal_authority:d-c-code-50-304",
+        "to": "dc.legal_authority:d-c-code-50-301-04",
         "citations": [
           {
             "source": "open_dc.public_bodies",
             "sourceRecordId": "district-columbia-taxicab-commission-dctc",
-            "locator": "D.C. Code § 50-304"
+            "locator": "D.C. Code § 50-301.04",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/50-301.04"
           }
         ]
       }

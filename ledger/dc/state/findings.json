@@ -121,11 +121,71 @@
   },
   {
     "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"D.C. Commission on Poverty\" legal authority evidence adjusted: live D.C. Code section 3-641 404s; section 3-641.02 is the establishment section",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-commission-poverty",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"District of Columbia Taxicab Commission (DCTC)\" legal authority evidence adjusted: live D.C. Code section 50-304 404s as prior codification; section 50-301.04 is the current official section",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-taxicab-commission-dctc",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"Food Policy Council\" legal authority evidence adjusted: live D.C. Code section 48-314.05 404s; section 48-312 establishes the council",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "food-policy-council",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"Opioid Fatality Review Board\" legal authority evidence adjusted: live D.C. Register shows Mayor's Order 2019-026 is a Financial Literacy Council appointment; 2019-024 establishes the Opioid Fatality Review Board",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-fatality-review-board",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
     "code": "dc.interpreter.opendc_enabling_statute_rejected",
     "message": "Rejected implausible legal citation from enabling statute: \"D.C. Code §1993-200\"",
     "citation": {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "humanities-council-washington-dc",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_suppressed",
+    "message": "Open DC public body \"DC Children and Youth Investment Trust Corporation Board of Directors\" legal authority evidence adjusted: Open DC locator D.C. Code § 13-38 does not resolve as a live D.C. Code section; official search surfaces D.C. Law 13-38, so the authority evidence is ambiguous",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "dc-children-and-youth-investment-trust-corporation-board-directors",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_suppressed",
+    "message": "Open DC public body \"Metropolitan Washington Airports Authority Board of Directors (MWAA)\" legal authority evidence adjusted: Open DC locator D.C. Code § 9-1006 does not resolve as a live D.C. Code section and needs a future human replacement decision",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa",
       "locator": "enablingStatute"
     }
   },

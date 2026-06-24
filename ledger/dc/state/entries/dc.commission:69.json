@@ -5,7 +5,7 @@
   "name": "Commission on Climate Change and Resiliency",
   "attributes": {
     "enablingStatute": "D.C. Official Code § 8-181.02(a)",
-    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02#(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02",
     "shortName": "Commission on Climate Change and Resiliency",
     "sourceCommissionId": "69",
     "sourceOpenDcSlug": "commission-climate-change-and-resiliency",
@@ -31,7 +31,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "commission-climate-change-and-resiliency",
             "locator": "D.C. Code § 8-181.02(a)",
-            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02#(a)"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02"
           }
         ]
       }
@@ -39,7 +39,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:office-of-the-city-administrator",
+        "to": "dc.office:office-of-the-city-administrator",
         "citations": [
           {
             "source": "dcgis.commissions",

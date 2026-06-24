@@ -6,7 +6,7 @@
   "attributes": {
     "description": "There is established for the District of Columbia a Higher Education Licensure Commission (“Commission”) which shall license postsecondary educational institutions subject to this chapter and their agents, ensure authenticity and legitimacy of the educational institutions, serve as the state approving agency for veterans educational benefits, provide standards and criteria, and administer rules and regulations, including rules of procedure for the Commission to ensure adequate public notice of each meeting of the Commission.",
     "enablingStatute": "D.C. Law 21-74. Higher Education Licensure Commission Amendment Act of 2015.",
-    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303",
     "shortName": "Higher Education Licensure Commission",
     "sourceOpenDcSlug": "higher-education-licensure-commission",
     "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/higher-education-licensure-commission"
@@ -27,7 +27,7 @@
             "source": "open_dc.public_bodies",
             "sourceRecordId": "higher-education-licensure-commission",
             "locator": "D.C. Code § 38-1303",
-            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303.html"
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303"
           }
         ]
       },

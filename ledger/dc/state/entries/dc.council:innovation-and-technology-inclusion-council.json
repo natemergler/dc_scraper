@@ -32,7 +32,7 @@
     "dc.relation:governs": [
       {
         "kind": "dc.relation:governs",
-        "to": "dc.agency:office-of-the-deputy-mayor-for-planning-and-economic-development",
+        "to": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
         "citations": [
           {
             "source": "open_dc.public_bodies",

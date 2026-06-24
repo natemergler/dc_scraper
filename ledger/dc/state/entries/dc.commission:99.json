@@ -5,7 +5,7 @@
   "name": "Homeland Security Commission",
   "attributes": {
     "enablingStatute": "DC Code § 7-2271.02",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/7-2271.02.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-2271.02",
     "shortName": "Homeland Security Commission",
     "sourceCommissionId": "99",
     "sourceOpenDcSlug": "homeland-security-commission",

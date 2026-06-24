@@ -5,7 +5,7 @@
   "name": "District of Columbia Sentencing Commission",
   "attributes": {
     "enablingStatute": "DC Code § 3-101",
-    "enablingStatuteUrl": "http://dccode.org/simple/sections/3-101.html",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-101",
     "shortName": "District of Columbia Sentencing Commission",
     "sourceCommissionId": "90",
     "sourceOpenDcSlug": "district-columbia-sentencing-commission",
