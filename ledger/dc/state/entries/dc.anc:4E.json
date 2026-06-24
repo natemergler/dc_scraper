@@ -1,0 +1,92 @@
+{
+  "id": "dc.anc:4E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 4E",
+  "attributes": {
+    "gisId": "ANCPly_344",
+    "officialUrl": "https://anc4e.dc.gov/Commissioner-Directory",
+    "representedNeighborhoods": "the Crestwood and 16th Street Heights neighborhoods",
+    "sourceAncId": "4E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4e",
+    "sourceWardNumbers": [
+      "4"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "4E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E06"
+          }
+        ]
+      }
+    ]
+  }
+}

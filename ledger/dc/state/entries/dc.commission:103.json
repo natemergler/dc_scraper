@@ -1,0 +1,31 @@
+{
+  "id": "dc.commission:103",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Judicial Nomination Commission",
+  "attributes": {
+    "shortName": "Judicial Nomination Commission",
+    "sourceCommissionId": "103"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "103"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-204-34",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "103",
+            "locator": "D.C. Code § 1-204.34"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2C04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2C04",
+  "attributes": {
+    "currentHolderName": "Jim Swart",
+    "officerRole": "Vice Chairperson",
+    "sourceAncId": "2C",
+    "sourceFirstName": "JIM",
+    "sourceLastName": "SWART",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2c",
+    "sourceRepresentativeName": "JIM L. SWART",
+    "sourceSmdId": "2C04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2C04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C04"
+          }
+        ]
+      }
+    ]
+  }
+}

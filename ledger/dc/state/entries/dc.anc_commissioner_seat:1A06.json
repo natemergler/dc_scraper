@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:1A06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1A06",
+  "attributes": {
+    "currentHolderName": "Anthony Thomas-Davis",
+    "sourceAncId": "1A",
+    "sourceFirstName": "ANTHONY",
+    "sourceLastName": "THOMAS-DAVIS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourceRepresentativeName": "ANTHONY THOMAS-DAVIS",
+    "sourceSmdId": "1A06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1A06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1A06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1A06"
+          }
+        ]
+      }
+    ]
+  }
+}

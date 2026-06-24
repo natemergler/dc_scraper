@@ -1,0 +1,51 @@
+{
+  "id": "dc.commission:86",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Criminal Code Reform Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 3–151(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-151",
+    "shortName": "Criminal Code Reform Commission",
+    "sourceCommissionId": "86",
+    "sourceOpenDcSlug": "criminal-code-reform-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/criminal-code-reform-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "86"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "criminal-code-reform-commission"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-151",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "86",
+            "locator": "D.C. Code § 3-151"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-151-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "criminal-code-reform-commission",
+            "locator": "D.C. Code § 3-151(a)",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/3-151"
+          }
+        ]
+      }
+    ]
+  }
+}

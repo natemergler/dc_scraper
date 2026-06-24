@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-youth-rehabilitation-services",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Youth Rehabilitation Services",
+  "attributes": {
+    "officialUrl": "https://dyrs.dc.gov",
+    "shortName": "Department of Youth Rehabilitation Services",
+    "sourceAgencyId": "1047",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-youth-rehabilitation-services:dyrs-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "44"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-youth-rehabilitation-services",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

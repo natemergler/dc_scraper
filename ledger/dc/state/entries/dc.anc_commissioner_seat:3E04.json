@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:3E04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3E04",
+  "attributes": {
+    "currentHolderName": "Tom Quinn",
+    "officerRole": "Treasurer",
+    "sourceAncId": "3E",
+    "sourceFirstName": "TOM",
+    "sourceLastName": "QUINN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3e",
+    "sourceRepresentativeName": "TOM QUINN",
+    "sourceSmdId": "3E04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3E04"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:metropolitan-police-department",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Metropolitan Police Department",
+  "attributes": {
+    "officialUrl": "https://mpdc.dc.gov",
+    "shortName": "Metropolitan Police Department",
+    "sourceAgencyId": "1067",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "metropolitan-police-department:mpd-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "53"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "metropolitan-police-department",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

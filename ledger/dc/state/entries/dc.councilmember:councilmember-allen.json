@@ -1,0 +1,128 @@
+{
+  "id": "dc.councilmember:councilmember-allen",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Charles Allen",
+  "attributes": {
+    "officeLabel": "Ward 6 Councilmember",
+    "sourceProfileSlug": "councilmember-allen",
+    "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-allen/",
+    "wardNumber": "6"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-health"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-transportation-environment"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "sub-committee-on-local-business-development"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "councilmember-allen"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-transportation-environment",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-6-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-allen"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-health",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-health"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-transportation-environment",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:sub-committee-on-local-business-development",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:6",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-allen"
+          }
+        ]
+      }
+    ]
+  }
+}

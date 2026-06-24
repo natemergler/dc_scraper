@@ -1,0 +1,66 @@
+{
+  "id": "dc.board:113",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police Officers Standards and Training Board (POST)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 5-107.03",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/5-107.03",
+    "shortName": "Police Officers Standards and Training Board (POST)",
+    "sourceBoardId": "113",
+    "sourceOpenDcSlug": "police-officers-standards-and-training-board-post",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/police-officers-standards-and-training-board-post"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "113"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-officers-standards-and-training-board-post"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-107-03",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "113",
+            "locator": "D.C. Code § 5-107.03"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-officers-standards-and-training-board-post",
+            "locator": "D.C. Code § 5-107.03"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:metropolitan-police-department",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "113"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-police-complaints",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-officers-standards-and-training-board-post"
+          }
+        ]
+      }
+    ]
+  }
+}

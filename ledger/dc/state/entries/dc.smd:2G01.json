@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:2G01",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 2G01",
+  "attributes": {
+    "sourceAncId": "2G",
+    "sourceSmdId": "2G01",
+    "webUrl": "https://www.anc2g.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2G01"
+    }
+  ],
+  "relations": {}
+}

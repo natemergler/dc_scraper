@@ -1,0 +1,55 @@
+{
+  "id": "dc.commission:81",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on the Martin Luther King, Jr. Holiday",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2013-243",
+    "shortName": "Commission on the Martin Luther King, Jr. Holiday",
+    "sourceCommissionId": "81",
+    "sourceOpenDcSlug": "commission-martin-luther-king-jr-holiday",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-martin-luther-king-jr-holiday"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "81"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-martin-luther-king-jr-holiday"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2013-243",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "81",
+            "locator": "Mayor's Order 2013-243"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-martin-luther-king-jr-holiday",
+            "locator": "Mayor's Order 2013-243"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:office-of-the-secretary",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "81"
+          }
+        ]
+      }
+    ]
+  }
+}

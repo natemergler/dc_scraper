@@ -1,0 +1,23 @@
+{
+  "id": "dc.board:107",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+  "attributes": {
+    "shortName": "Metropolitan Washington Airports Authority Board of Directors (MWAA)",
+    "sourceBoardId": "107",
+    "sourceOpenDcSlug": "metropolitan-washington-airports-authority-board-directors-mwaa",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/metropolitan-washington-airports-authority-board-directors-mwaa"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "107"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-airports-authority-board-directors-mwaa"
+    }
+  ],
+  "relations": {}
+}

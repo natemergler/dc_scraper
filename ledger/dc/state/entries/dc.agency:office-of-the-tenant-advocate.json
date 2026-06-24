@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:office-of-the-tenant-advocate",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the Tenant Advocate",
+  "attributes": {
+    "officialUrl": "https://ota.dc.gov",
+    "shortName": "Office of the Tenant Advocate",
+    "sourceAgencyId": "1098",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-tenant-advocate-ota:ota-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "81"
+    }
+  ],
+  "relations": {}
+}

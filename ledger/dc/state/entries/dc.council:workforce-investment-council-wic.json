@@ -1,0 +1,34 @@
+{
+  "id": "dc.council:workforce-investment-council-wic",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Workforce Investment Council (WIC)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2011-114",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2011-114",
+    "shortName": "Workforce Investment Council (WIC)",
+    "sourceOpenDcSlug": "workforce-investment-council-wic",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/workforce-investment-council-wic"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "workforce-investment-council-wic"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2011-114",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "workforce-investment-council-wic",
+            "locator": "Mayor's Order 2011-114"
+          }
+        ]
+      }
+    ]
+  }
+}

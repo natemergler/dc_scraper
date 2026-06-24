@@ -1,0 +1,37 @@
+{
+  "id": "dc.office:office-of-communications",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Office of Communications",
+  "attributes": {
+    "description": "Works to ensure that the media, residents of and visitors to the District, and District employees have access to accurate, timely information from the Mayor.",
+    "shortName": "Office of Communications",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "office-of-communications",
+    "sourceOfficeKey": "office-of-communications",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-communications",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:executive-office-of-the-mayor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-communications",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

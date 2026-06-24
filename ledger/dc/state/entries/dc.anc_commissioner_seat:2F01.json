@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2F01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2F01",
+  "attributes": {
+    "currentHolderName": "David R. Rubenstein",
+    "officerRole": "Treasurer",
+    "sourceAncId": "2F",
+    "sourceFirstName": "DAVID",
+    "sourceLastName": "RUBENSTEIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2f",
+    "sourceRepresentativeName": "DAVID R. RUBENSTEIN",
+    "sourceSmdId": "2F01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2F01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2F01"
+          }
+        ]
+      }
+    ]
+  }
+}

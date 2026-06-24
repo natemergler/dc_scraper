@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:mayor-s-order-2012-24",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "Mayor's Order 2012-24",
+  "attributes": {
+    "authorityType": "mayors_order",
+    "canonicalUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2012-24",
+    "locator": "Mayor's Order 2012-24",
+    "shortName": "Mayor's Order 2012-24"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-information-exchange-policy-board-hie",
+      "locator": "Mayor's Order 2012-24"
+    }
+  ],
+  "relations": {}
+}

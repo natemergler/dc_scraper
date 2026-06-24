@@ -1,0 +1,115 @@
+{
+  "id": "dc.councilmember:councilmember-robert-c-white-jr",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Robert C. White, Jr.",
+  "attributes": {
+    "officeLabel": "At-Large Councilmember",
+    "sourceProfileSlug": "councilmember-robert-c-white-jr",
+    "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-robert-c-white-jr/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-public-works-and-operations"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-youth-affairs"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "housing"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "councilmember-robert-c-white-jr"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:housing",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-robert-c-white-jr"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-public-works-and-operations",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-public-works-and-operations"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-youth-affairs",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-youth-affairs"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:housing",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ]
+  }
+}

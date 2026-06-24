@@ -1,0 +1,59 @@
+{
+  "id": "dc.board:134",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Public Defender Service Board of Trustees",
+  "attributes": {
+    "enablingStatute": "D.C. Code §§2-1601 to 1608",
+    "shortName": "Public Defender Service Board of Trustees",
+    "sourceBoardId": "134",
+    "sourceOpenDcSlug": "public-defender-service-board-trustees",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-defender-service-board-trustees"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "134"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-defender-service-board-trustees"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1601",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "134",
+            "locator": "D.C. Code § 2-1601"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-defender-service-board-trustees",
+            "locator": "D.C. Code § 2-1601"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1608",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "134",
+            "locator": "D.C. Code § 2-1608"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-defender-service-board-trustees",
+            "locator": "D.C. Code § 2-1608"
+          }
+        ]
+      }
+    ]
+  }
+}

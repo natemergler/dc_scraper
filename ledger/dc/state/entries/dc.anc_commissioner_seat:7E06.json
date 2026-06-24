@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:7E06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7E06",
+  "attributes": {
+    "currentHolderName": "Ravi K. Perry",
+    "sourceAncId": "7E",
+    "sourceFirstName": "RAVI",
+    "sourceLastName": "PERRY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7e",
+    "sourceRepresentativeName": "RAVI K. PERRY",
+    "sourceSmdId": "7E06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7E06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7E06"
+          }
+        ]
+      }
+    ]
+  }
+}

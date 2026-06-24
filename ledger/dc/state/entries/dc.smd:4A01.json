@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:4A01",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 4A01",
+  "attributes": {
+    "sourceAncId": "4A",
+    "sourceSmdId": "4A01",
+    "webUrl": "https://www.anc4a.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4A01"
+    }
+  ],
+  "relations": {}
+}

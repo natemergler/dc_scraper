@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:7F02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7F02",
+  "attributes": {
+    "currentHolderName": "Ashley Renee Ruff",
+    "sourceAncId": "7F",
+    "sourceFirstName": "ASHLEY",
+    "sourceLastName": "RUFF",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7f",
+    "sourceRepresentativeName": "ASHLEY RENEE RUFF",
+    "sourceSmdId": "7F02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7F02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F02"
+          }
+        ]
+      }
+    ]
+  }
+}

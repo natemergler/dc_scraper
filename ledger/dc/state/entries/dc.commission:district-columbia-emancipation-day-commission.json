@@ -1,0 +1,18 @@
+{
+  "id": "dc.commission:district-columbia-emancipation-day-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "District of Columbia Emancipation Day Commission",
+  "attributes": {
+    "shortName": "District of Columbia Emancipation Day Commission",
+    "sourceOpenDcSlug": "district-columbia-emancipation-day-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/district-columbia-emancipation-day-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "district-columbia-emancipation-day-commission"
+    }
+  ],
+  "relations": {}
+}

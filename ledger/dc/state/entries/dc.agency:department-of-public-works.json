@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-public-works",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Public Works",
+  "attributes": {
+    "officialUrl": "https://dpw.dc.gov",
+    "shortName": "Department of Public Works",
+    "sourceAgencyId": "1045",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-public-works:dpw-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "42"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-public-works",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

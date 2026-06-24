@@ -1,0 +1,122 @@
+{
+  "id": "dc.anc:7B",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 7B",
+  "attributes": {
+    "gisId": "ANCPly_356",
+    "officialUrl": "http://anc7b.com/",
+    "representedNeighborhoods": "the Dupont Park, Fairfax Village, Fort Davis Park, Greenway, Hillcrest, Naylor Gardens, Penn Branch, and Randle Highlands neighborhoods",
+    "sourceAncId": "7B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7b",
+    "sourceWardNumbers": [
+      "7"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-7b"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "7B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7b"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B08"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:7B09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B09"
+          }
+        ]
+      }
+    ]
+  }
+}

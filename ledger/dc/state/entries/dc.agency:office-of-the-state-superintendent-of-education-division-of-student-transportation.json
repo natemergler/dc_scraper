@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:office-of-the-state-superintendent-of-education-division-of-student-transportation",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of the State Superintendent of Education - Division of Student Transportation",
+  "attributes": {
+    "shortName": "Office of the State Superintendent of Education - Division of Student Transportation",
+    "sourceAgencyId": "1157"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "136"
+    }
+  ],
+  "relations": {}
+}

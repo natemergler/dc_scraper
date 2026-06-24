@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:6C06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6C06",
+  "attributes": {
+    "currentHolderName": "Andrew R. Hayes",
+    "officerRole": "Secretary",
+    "sourceAncId": "6C",
+    "sourceFirstName": "ANDREW",
+    "sourceLastName": "HAYES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourceRepresentativeName": "ANDREW R. HAYES",
+    "sourceSmdId": "6C06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6C06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C06"
+          }
+        ]
+      }
+    ]
+  }
+}

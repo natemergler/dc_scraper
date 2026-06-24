@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:4C04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4C04",
+  "attributes": {
+    "currentHolderName": "Elizabeth Kovacevic",
+    "officerRole": "Secretary",
+    "sourceAncId": "4C",
+    "sourceFirstName": "LIZ",
+    "sourceLastName": "KOVACEVIC",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourceRepresentativeName": "LIZ KOVACEVIC",
+    "sourceSmdId": "4C04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4C04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C04"
+          }
+        ]
+      }
+    ]
+  }
+}

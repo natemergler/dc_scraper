@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:5A03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5A03",
+  "attributes": {
+    "currentHolderName": "Emily Singer Lucio",
+    "sourceAncId": "5A",
+    "sourceFirstName": "EMILY",
+    "sourceLastName": "LUCIO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5a",
+    "sourceRepresentativeName": "EMILY SINGER LUCIO",
+    "sourceSmdId": "5A03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5A03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5A03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5A03"
+          }
+        ]
+      }
+    ]
+  }
+}

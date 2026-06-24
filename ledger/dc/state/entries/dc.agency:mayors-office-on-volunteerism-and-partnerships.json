@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:mayors-office-on-volunteerism-and-partnerships",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office on Volunteerism and Partnerships",
+  "attributes": {
+    "officialUrl": "https://communityaffairs.dc.gov/servedc",
+    "shortName": "Serve DC",
+    "sourceAgencyId": "1149",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "serve-dc:servedc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "128"
+    }
+  ],
+  "relations": {}
+}

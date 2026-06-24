@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:office-of-unified-communications",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Unified Communications",
+  "attributes": {
+    "officialUrl": "https://ouc.dc.gov",
+    "shortName": "Office of Unified Communications",
+    "sourceAgencyId": "1099",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-unified-communications:ouc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "82"
+    }
+  ],
+  "relations": {}
+}

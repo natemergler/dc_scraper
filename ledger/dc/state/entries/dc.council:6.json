@@ -1,0 +1,67 @@
+{
+  "id": "dc.council:6",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "State Rehabilitation Council (SRC)",
+  "attributes": {
+    "description": "Mayor's Order: 2001-173 State Rehabilitation Council",
+    "enablingStatute": "Mayor's Order 2001-173",
+    "officialUrl": "https://www.open-dc.gov/sites/default/files/2001-173%20State%20Rehabilitation%20Council.pdf",
+    "shortName": "State Rehabilitation Council (SRC)",
+    "sourceCouncilId": "6",
+    "sourceOpenDcSlug": "state-rehabilitation-council-src",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/state-rehabilitation-council-src"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "6"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "state-rehabilitation-council-src"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2001-173",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "6",
+            "locator": "Mayor's Order 2001-173"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-rehabilitation-council-src",
+            "locator": "Mayor's Order 2001-173"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-human-services",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "state-rehabilitation-council-src"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-on-disability-services",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "6"
+          }
+        ]
+      }
+    ]
+  }
+}

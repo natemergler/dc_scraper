@@ -1,0 +1,15 @@
+{
+  "id": "2026-06-24-pcsb-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:dc-public-charter-school-board",
+  "rationale": "Applied preserve-distinct review was rechecked and does not support separate agency and board nodes for DC Public Charter School Board in this release. The board record carries the legal authority, so suppress the same-entity administrative agency shadow.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "122" },
+    { "source": "dcgis.boards", "sourceRecordId": "87", "locator": "D.C. Code § 38-1802.14" }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": { "decision": "source_shadow", "canonicalEntryId": "dc.board:87" }
+  }
+}

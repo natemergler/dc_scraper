@@ -1,0 +1,26 @@
+{
+  "id": "dc.legal_authority:d-c-code-48-312",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 48-312",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/48-312",
+    "locator": "D.C. Code § 48-312",
+    "shortName": "D.C. Code § 48-312"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "19",
+      "locator": "D.C. Code § 48-312"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "food-policy-council",
+      "locator": "D.C. Code § 48-312",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/48-312"
+    }
+  ],
+  "relations": {}
+}

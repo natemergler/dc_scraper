@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-law-21-74",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Law 21-74",
+  "attributes": {
+    "authorityType": "dc_law",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/laws/21-74",
+    "locator": "D.C. Law 21-74",
+    "shortName": "D.C. Law 21-74"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "higher-education-licensure-commission",
+      "locator": "D.C. Law 21-74"
+    }
+  ],
+  "relations": {}
+}

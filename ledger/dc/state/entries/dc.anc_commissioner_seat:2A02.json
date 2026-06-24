@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:2A02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2A02",
+  "attributes": {
+    "currentHolderName": "Rob Gifford",
+    "sourceAncId": "2A",
+    "sourceFirstName": "ROB",
+    "sourceLastName": "GIFFORD",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2a",
+    "sourceRepresentativeName": "ROB GIFFORD",
+    "sourceSmdId": "2A02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2A02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2A02"
+          }
+        ]
+      }
+    ]
+  }
+}

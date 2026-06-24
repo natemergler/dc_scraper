@@ -1,0 +1,39 @@
+{
+  "id": "dc.office:office-of-government-ethics",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Office of Government Ethics",
+  "attributes": {
+    "shortName": "Office of Government Ethics",
+    "sourceBegaStructureKey": "office-of-government-ethics",
+    "sourceOfficeKey": "office-of-government-ethics",
+    "sourcePageTitle": "Office of Government Ethics | bega",
+    "sourcePageUrl": "https://bega.dc.gov/page/office-government-ethics"
+  },
+  "citations": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "office-of-government-ethics",
+      "url": "https://bega.dc.gov/page/office-government-ethics"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.agency:board-of-ethics-and-government-accountability",
+        "citations": [
+          {
+            "source": "bega.structure",
+            "sourceRecordId": "office-of-government-ethics",
+            "url": "https://bega.dc.gov/page/office-government-ethics"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "118"
+          }
+        ]
+      }
+    ]
+  }
+}

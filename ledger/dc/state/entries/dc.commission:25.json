@@ -1,0 +1,17 @@
+{
+  "id": "dc.commission:25",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Advisory Neighborhood Commissions",
+  "attributes": {
+    "shortName": "Advisory Neighborhood Commissions",
+    "sourceCommissionId": "25"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "25"
+    }
+  ],
+  "relations": {}
+}

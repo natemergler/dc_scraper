@@ -1,0 +1,31 @@
+{
+  "id": "dc.elected_office:ward-2-councilmember",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "Ward 2 Councilmember",
+  "attributes": {
+    "officeType": "ward_councilmember",
+    "sourceLabel": "Ward 2 Councilmember",
+    "wardNumber": "2"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:2",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+          }
+        ]
+      }
+    ]
+  }
+}

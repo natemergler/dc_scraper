@@ -1,0 +1,45 @@
+{
+  "id": "dc.council:innovation-and-technology-inclusion-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Innovation and Technology Inclusion Council",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2014-139",
+    "shortName": "Innovation and Technology Inclusion Council",
+    "sourceOpenDcSlug": "innovation-and-technology-inclusion-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/innovation-and-technology-inclusion-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "innovation-and-technology-inclusion-council"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2014-139",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "innovation-and-technology-inclusion-council",
+            "locator": "Mayor's Order 2014-139"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "innovation-and-technology-inclusion-council"
+          }
+        ]
+      }
+    ]
+  }
+}

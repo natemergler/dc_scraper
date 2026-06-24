@@ -1,0 +1,64 @@
+{
+  "id": "dc.office:mayors-office-of-legal-counsel",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Legal Counsel",
+  "attributes": {
+    "description": "Provides legal counsel to the Mayor, Deputy Mayors' offices, and District agencies, with particular attention to coordinating legal support with agency general counsels and their staff.",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "mayor-s-office-of-legal-counsel:molc-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "117"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-legal-counsel",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of Legal Counsel. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-of-legal-counsel"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-legal-counsel-6k3c2e-dc-office-mayors-office-of-legal-counsel-syxq64",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Mayor's Office of Legal Counsel",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-legal-counsel",
+    "sourceOfficeKey": "mayors-office-of-legal-counsel",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-legal-counsel",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:executive-office-of-the-mayor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-legal-counsel",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

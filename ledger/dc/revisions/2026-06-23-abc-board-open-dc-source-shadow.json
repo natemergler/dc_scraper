@@ -1,0 +1,34 @@
+{
+  "id": "2026-06-23-abc-board-open-dc-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.board:alcoholic-beverage-and-cannabis-board-abc-board",
+  "rationale": "Treat the Open DC Alcoholic Beverage and Cannabis Board row as a source shadow of canonical DCGIS board 26 for this alpha. Both rows describe the board associated with the Alcoholic Beverage and Cannabis Administration and cite D.C. Code § 25-201, so publishing both creates a duplicate public-body node. Keep the DCGIS board as the canonical public body and preserve the Open DC evidence through this audited suppression.",
+  "evidence": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26",
+      "locator": "D.C. Code § 25-201"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "26"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board",
+      "locator": "D.C. Code § 25-201"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "alcoholic-beverage-and-cannabis-board-abc-board"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.board:26"
+    }
+  }
+}

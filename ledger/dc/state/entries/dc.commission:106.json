@@ -1,0 +1,43 @@
+{
+  "id": "dc.commission:106",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Mayor's Advisory Commission on Caribbean Community Affairs (MACCCA)",
+  "attributes": {
+    "shortName": "Mayor's Advisory Commission on Caribbean Community Affairs (MACCCA)",
+    "sourceCommissionId": "106"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "106"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2012-127",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "106",
+            "locator": "Mayor's Order 2012-127"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "106"
+          }
+        ]
+      }
+    ]
+  }
+}

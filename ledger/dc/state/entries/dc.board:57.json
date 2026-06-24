@@ -1,0 +1,43 @@
+{
+  "id": "dc.board:57",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Review for Anti-Deficiency Violations",
+  "attributes": {
+    "shortName": "Board of Review for Anti-Deficiency Violations",
+    "sourceBoardId": "57"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "57"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2003-156",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "57",
+            "locator": "Mayor's Order 2003-156"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "57"
+          }
+        ]
+      }
+    ]
+  }
+}

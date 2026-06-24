@@ -1,0 +1,52 @@
+{
+  "id": "dc.anc:2D",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 2D",
+  "attributes": {
+    "gisId": "ANCPly_329",
+    "officialUrl": "http://anc2d.org/",
+    "representedNeighborhoods": "the Kalorama Heights neighborhoods",
+    "sourceAncId": "2D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2d",
+    "sourceWardNumbers": [
+      "2"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2d"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "2D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2d"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2D01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2D02"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-on-facilities",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Facilities",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-on-facilities",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-on-facilities/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-facilities"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,60 @@
+{
+  "id": "dc.council:12",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Financial Literacy Council",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 38-731.03",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/38-731.03",
+    "shortName": "Financial Literacy Council",
+    "sourceCouncilId": "12",
+    "sourceOpenDcSlug": "financial-literacy-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/financial-literacy-council"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "12"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "financial-literacy-council"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-731-03",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "12",
+            "locator": "D.C. Code § 38-731.03"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "financial-literacy-council",
+            "locator": "D.C. Code § 38-731.03"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-insurance-securities-and-banking",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "12"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "financial-literacy-council"
+          }
+        ]
+      }
+    ]
+  }
+}

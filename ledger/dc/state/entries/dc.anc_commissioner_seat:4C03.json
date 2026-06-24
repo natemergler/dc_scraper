@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:4C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4C03",
+  "attributes": {
+    "currentHolderName": "Mike Warburton",
+    "officerRole": "Chairperson",
+    "sourceAncId": "4C",
+    "sourceFirstName": "MIKE",
+    "sourceLastName": "WARBURTON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourceRepresentativeName": "MIKE WARBURTON",
+    "sourceSmdId": "4C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4C03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C03"
+          }
+        ]
+      }
+    ]
+  }
+}

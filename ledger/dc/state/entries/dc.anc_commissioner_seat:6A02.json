@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:6A02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6A02",
+  "attributes": {
+    "currentHolderName": "Kimberly Butler",
+    "sourceAncId": "6A",
+    "sourceFirstName": "KIMBERLY",
+    "sourceLastName": "BUTLER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6a",
+    "sourceRepresentativeName": "KIMBERLY BUTLER",
+    "sourceSmdId": "6A02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6A02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6A02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6A02"
+          }
+        ]
+      }
+    ]
+  }
+}

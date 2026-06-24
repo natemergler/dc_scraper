@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:3C07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3C07",
+  "attributes": {
+    "currentHolderName": "Gawain Kripke",
+    "officerRole": "Treasurer",
+    "sourceAncId": "3C",
+    "sourceFirstName": "GAWAIN",
+    "sourceLastName": "KRIPKE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3c",
+    "sourceRepresentativeName": "GAWAIN KRIPKE",
+    "sourceSmdId": "3C07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3C07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3C07"
+          }
+        ]
+      }
+    ]
+  }
+}

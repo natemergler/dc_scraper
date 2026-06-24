@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:3~2F4G04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3/4G04",
+  "attributes": {
+    "sourceAncId": "3/4G",
+    "sourceFirstName": "LAURA",
+    "sourceLastName": "PHINIZY",
+    "sourceRepresentativeName": "LAURA PHINIZY",
+    "sourceSmdId": "3/4G04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3/4G04"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3~2F4G04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3/4G04"
+          }
+        ]
+      }
+    ]
+  }
+}

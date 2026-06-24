@@ -1,0 +1,25 @@
+{
+  "id": "2026-06-16-anc-68f-source-shadow",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.anc:6~2F8F",
+  "rationale": "Resolve the ANC 6/8F versus ANC 8F identity conflict by treating the OANC profile as a source shadow of canonical ANC 8F. The OANC page routes to the ANC 8F site and commissioner roster, so its public facts are preserved on ANC 8F while the conflicting shadow entry is suppressed from public state.",
+  "evidence": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.anc:8F"
+    }
+  }
+}

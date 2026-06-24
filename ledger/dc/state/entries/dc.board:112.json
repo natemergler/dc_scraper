@@ -1,0 +1,56 @@
+{
+  "id": "dc.board:112",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Police Complaints Board",
+  "attributes": {
+    "enablingStatute": "DC Code D.C. Code § 5-1104",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/5-1104",
+    "shortName": "Police Complaints Board",
+    "sourceBoardId": "112",
+    "sourceOpenDcSlug": "police-complaints-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/police-complaints-board"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "112"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "police-complaints-board"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-5-1104",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "112",
+            "locator": "D.C. Code § 5-1104"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-complaints-board",
+            "locator": "D.C. Code § 5-1104"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-police-complaints",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "police-complaints-board"
+          }
+        ]
+      }
+    ]
+  }
+}

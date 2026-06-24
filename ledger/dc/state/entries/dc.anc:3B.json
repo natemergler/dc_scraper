@@ -1,0 +1,92 @@
+{
+  "id": "dc.anc:3B",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3B",
+  "attributes": {
+    "gisId": "ANCPly_335",
+    "officialUrl": "http://anc3b.org/",
+    "representedNeighborhoods": "the Glover Park and part of the Cathedral Heights neighborhoods",
+    "sourceAncId": "3B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3b",
+    "sourceWardNumbers": [
+      "3"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3b"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3b"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3B06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3B06"
+          }
+        ]
+      }
+    ]
+  }
+}

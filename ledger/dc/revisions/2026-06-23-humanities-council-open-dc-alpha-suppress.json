@@ -1,0 +1,21 @@
+{
+  "id": "2026-06-23-humanities-council-open-dc-alpha-suppress",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.council:humanities-council-washington-dc",
+  "rationale": "Suppress the Open DC Humanities Council of Washington, D.C. row from the alpha public state. The only supplied enabling-statute text was rejected as an implausible D.C. Code locator, and no other promoted legal or structural relation remains to support publishing it as a current DC council/public body in this alpha.",
+  "evidence": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "humanities-council-washington-dc",
+      "locator": "enablingStatute"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "humanities-council-washington-dc"
+    }
+  ],
+  "patch": {
+    "suppress": true
+  }
+}

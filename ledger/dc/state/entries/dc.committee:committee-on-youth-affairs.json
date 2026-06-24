@@ -1,0 +1,18 @@
+{
+  "id": "dc.committee:committee-on-youth-affairs",
+  "family": "organization",
+  "kind": "dc.committee",
+  "name": "Committee on Youth Affairs",
+  "attributes": {
+    "committeeType": "committee",
+    "sourceCommitteeSlug": "committee-on-youth-affairs",
+    "sourceUrl": "https://dccouncil.gov/committees/committee-on-youth-affairs/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-youth-affairs"
+    }
+  ],
+  "relations": {}
+}

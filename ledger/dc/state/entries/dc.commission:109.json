@@ -1,0 +1,37 @@
+{
+  "id": "dc.commission:109",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "New Columbia Statehood Commission",
+  "attributes": {
+    "shortName": "New Columbia Statehood Commission",
+    "sourceCommissionId": "109",
+    "sourceOpenDcSlug": "new-columbia-statehood-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/new-columbia-statehood-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "109"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "new-columbia-statehood-commission"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-129-31",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "109",
+            "locator": "D.C. Code § 1-129.31"
+          }
+        ]
+      }
+    ]
+  }
+}

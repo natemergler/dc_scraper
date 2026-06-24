@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:3D03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3D03",
+  "attributes": {
+    "currentHolderName": "Quentin Colon Roosevelt",
+    "sourceAncId": "3D",
+    "sourceFirstName": "QUENTIN",
+    "sourceLastName": "ROOSEVELT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3d",
+    "sourceRepresentativeName": "QUENTIN COLÓN ROOSEVELT",
+    "sourceSmdId": "3D03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3D03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D03"
+          }
+        ]
+      }
+    ]
+  }
+}

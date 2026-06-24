@@ -1,0 +1,43 @@
+{
+  "id": "dc.council:5",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Mayor's Council on Physical Fitness, Health, and Nutrition",
+  "attributes": {
+    "shortName": "Mayor's Council on Physical Fitness, Health, and Nutrition",
+    "sourceCouncilId": "5"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "5"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-121",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "5",
+            "locator": "D.C. Code § 7-121"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:dc-health",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "5"
+          }
+        ]
+      }
+    ]
+  }
+}

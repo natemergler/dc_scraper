@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-dmhhs-canonical-url",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+  "rationale": "Normalize canonical Deputy Mayor office official URL to HTTPS from live agency-directory evidence.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services:dmhhs-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-health-and-human-services",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": { "attributes": { "officialUrl": "https://dmhhs.dc.gov" } }
+}

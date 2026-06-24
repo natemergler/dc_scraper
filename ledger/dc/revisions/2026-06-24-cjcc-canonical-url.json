@@ -1,0 +1,16 @@
+{
+  "id": "2026-06-24-cjcc-canonical-url",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.council:21",
+  "rationale": "Carry the live official CJCC site from the suppressed administrative agency shadow onto the canonical public-body entry.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "criminal-justice-coordinating-council:cjcc-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    { "source": "dcgis.councils", "sourceRecordId": "21" }
+  ],
+  "patch": { "attributes": { "officialUrl": "https://cjcc.dc.gov" } }
+}

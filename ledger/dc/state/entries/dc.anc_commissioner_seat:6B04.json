@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:6B04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6B04",
+  "attributes": {
+    "currentHolderName": "Brian Gorman",
+    "sourceAncId": "6B",
+    "sourceFirstName": "BRIAN",
+    "sourceLastName": "GORMAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "sourceRepresentativeName": "BRIAN GORMAN",
+    "sourceSmdId": "6B04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6B04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B04"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "dc.council:mayors-council-physical-fitness-health-and-nutrition-mcpfhn",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Mayor's Council on Physical Fitness, Health, and Nutrition (MCPFHN)",
+  "attributes": {
+    "enablingStatute": "DC Code 7-121",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-121",
+    "shortName": "Mayor's Council on Physical Fitness, Health, and Nutrition (MCPFHN)",
+    "sourceOpenDcSlug": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/mayors-council-physical-fitness-health-and-nutrition-mcpfhn"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-121",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "mayors-council-physical-fitness-health-and-nutrition-mcpfhn",
+            "locator": "D.C. Code § 7-121"
+          }
+        ]
+      }
+    ]
+  }
+}

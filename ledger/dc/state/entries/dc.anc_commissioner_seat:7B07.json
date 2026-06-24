@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:7B07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7B07",
+  "attributes": {
+    "currentHolderName": "Jimmie Williams",
+    "sourceAncId": "7B",
+    "sourceFirstName": "JIMMIE",
+    "sourceLastName": "WILLIAMS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7b",
+    "sourceRepresentativeName": "JIMMIE WILLIAMS",
+    "sourceSmdId": "7B07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7B07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7B07"
+          }
+        ]
+      }
+    ]
+  }
+}

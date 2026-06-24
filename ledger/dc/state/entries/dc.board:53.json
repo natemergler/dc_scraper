@@ -1,0 +1,63 @@
+{
+  "id": "dc.board:53",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Professional Engineering",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-2853.06(e)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
+    "shortName": "Board of Professional Engineering",
+    "sourceBoardId": "53",
+    "sourceOpenDcSlug": "board-professional-engineering",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-professional-engineering"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "53"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-professional-engineering"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "53",
+            "locator": "D.C. Code § 47-2853.06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-e",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-professional-engineering",
+            "locator": "D.C. Code § 47-2853.06(e)",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-licensing-and-consumer-protection",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-professional-engineering"
+          }
+        ]
+      }
+    ]
+  }
+}

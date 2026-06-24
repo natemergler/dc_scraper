@@ -1,0 +1,67 @@
+{
+  "id": "dc.board:95",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Health Information Exchange Policy Board (HIE)",
+  "attributes": {
+    "description": "The Board is tasked with making recommendations to the Mayor, and Directors of several key District Government agencies, regarding the District’s HIE policies, mission, definition, vision, geographic scope, and functional scope of HIE operations, and how they should be coordinated with local and national efforts. More information about the HIE Policy Board can be reviewed at this link.",
+    "enablingStatute": "Mayor's Order 2012-24",
+    "officialUrl": "https://dhcf.dc.gov/page/hie-policy-board",
+    "shortName": "Health Information Exchange Policy Board (HIE)",
+    "sourceBoardId": "95",
+    "sourceOpenDcSlug": "health-information-exchange-policy-board-hie",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/health-information-exchange-policy-board-hie"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "95"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "health-information-exchange-policy-board-hie"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2012-24",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "health-information-exchange-policy-board-hie",
+            "locator": "Mayor's Order 2012-24"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2016-035",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "95",
+            "locator": "Mayor's Order 2016-035"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-health-care-finance",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "95"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "health-information-exchange-policy-board-hie"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2G04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2G04",
+  "attributes": {
+    "currentHolderName": "Steven McCarty",
+    "officerRole": "Chairperson",
+    "sourceAncId": "2G",
+    "sourceFirstName": "STEVEN",
+    "sourceLastName": "MCCARTY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourceRepresentativeName": "STEVEN MCCARTY",
+    "sourceSmdId": "2G04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2G04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2g"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2G04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2G04"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:2G05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2G05",
+  "attributes": {
+    "currentHolderName": "Sheena Berry",
+    "sourceAncId": "2G",
+    "sourceFirstName": "SHEENA",
+    "sourceLastName": "BERRY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2g",
+    "sourceRepresentativeName": "SHEENA BERRY",
+    "sourceSmdId": "2G05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2G05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2g"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2G05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2G05"
+          }
+        ]
+      }
+    ]
+  }
+}

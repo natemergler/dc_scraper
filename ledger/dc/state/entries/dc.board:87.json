@@ -1,0 +1,57 @@
+{
+  "id": "dc.board:87",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "DC Public Charter School Board",
+  "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "122"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "87",
+            "locator": "D.C. Code § 38-1802.14"
+          },
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "87"
+          }
+        ],
+        "rationale": "Preserve the Public Charter School Board public-body facet separately from the DCGIS agency facet. The board record carries board/legal-authority structure while the agency record carries the administrative agency row, so collapsing them is a broader canonical modeling decision for later projection work.",
+        "relatedEntryIds": [
+          "dc.agency:dc-public-charter-school-board"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-dc-public-charter-school-board-pw6r7i-dc-board-87-1ggj831",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "DC Public Charter School Board",
+    "sourceBoardId": "87"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "87"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1802-14",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "87",
+            "locator": "D.C. Code § 38-1802.14"
+          }
+        ]
+      }
+    ]
+  }
+}

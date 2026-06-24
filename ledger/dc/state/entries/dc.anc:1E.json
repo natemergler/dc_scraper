@@ -1,0 +1,101 @@
+{
+  "id": "dc.anc:1E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 1E",
+  "attributes": {
+    "gisId": "ANCPly_325",
+    "officialUrl": "http://www.anc1e.org/",
+    "sourceAncId": "1E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourceWardNumbers": [
+      "1"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "1E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1E07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E07"
+          }
+        ]
+      }
+    ]
+  }
+}

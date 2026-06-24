@@ -1,0 +1,37 @@
+{
+  "id": "dc.court_division:criminal-division",
+  "family": "organization",
+  "kind": "dc.court_division",
+  "name": "Criminal Division",
+  "attributes": {
+    "officialUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division",
+    "shortName": "Criminal Division",
+    "sourceCourtDivisionKey": "criminal-division",
+    "sourceDCCourtsKey": "criminal-division",
+    "sourceDiscoveryPageUrl": "https://www.dccourts.gov/superior-court",
+    "sourceFromSeed": true,
+    "sourcePageUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division"
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "criminal-division",
+      "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court:superior-court",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "criminal-division",
+            "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/criminal-division"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "id": "dc.anc:8D",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 8D",
+  "attributes": {
+    "gisId": "ANCPly_364",
+    "officialUrl": "https://anc8d.dc.gov/Commissioner-Directory",
+    "representedNeighborhoods": "the Bellevue neighborhood",
+    "sourceAncId": "8D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8d",
+    "sourceWardNumbers": [
+      "8"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8d"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8d"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8D08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D08"
+          }
+        ]
+      }
+    ]
+  }
+}

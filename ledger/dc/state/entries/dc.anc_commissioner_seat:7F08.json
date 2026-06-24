@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:7F08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7F08",
+  "attributes": {
+    "currentHolderName": "Harold Cunningham",
+    "sourceAncId": "7F",
+    "sourceFirstName": "HAROLD",
+    "sourceLastName": "CUNNINGHAM",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7f",
+    "sourceRepresentativeName": "HAROLD CUNNINGHAM",
+    "sourceSmdId": "7F08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7F08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7F08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7F08"
+          }
+        ]
+      }
+    ]
+  }
+}

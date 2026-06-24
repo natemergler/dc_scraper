@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:2B09",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2B09",
+  "attributes": {
+    "currentHolderName": "Lynn Thompson",
+    "sourceAncId": "2B",
+    "sourceFirstName": "LYNN",
+    "sourceLastName": "THOMPSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourceRepresentativeName": "LYNN THOMPSON",
+    "sourceSmdId": "2B09"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2B09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2B09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2B09"
+          }
+        ]
+      }
+    ]
+  }
+}

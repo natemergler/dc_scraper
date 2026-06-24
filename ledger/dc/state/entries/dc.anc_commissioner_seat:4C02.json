@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:4C02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4C02",
+  "attributes": {
+    "currentHolderName": "Antoine M. Kirby",
+    "sourceAncId": "4C",
+    "sourceFirstName": "ANTOINE",
+    "sourceLastName": "KIRBY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourceRepresentativeName": "ANTOINE M. KIRBY",
+    "sourceSmdId": "4C02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4C02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C02"
+          }
+        ]
+      }
+    ]
+  }
+}

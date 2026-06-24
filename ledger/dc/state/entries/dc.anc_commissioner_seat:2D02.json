@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2D02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2D02",
+  "attributes": {
+    "currentHolderName": "Carole L. Feld",
+    "officerRole": "Chairperson/Secretary",
+    "sourceAncId": "2D",
+    "sourceFirstName": "CAROLE",
+    "sourceLastName": "FELD",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2d",
+    "sourceRepresentativeName": "CAROLE L. FELD",
+    "sourceSmdId": "2D02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2D02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2D02"
+          }
+        ]
+      }
+    ]
+  }
+}

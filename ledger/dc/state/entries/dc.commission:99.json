@@ -1,0 +1,60 @@
+{
+  "id": "dc.commission:99",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Homeland Security Commission",
+  "attributes": {
+    "enablingStatute": "DC Code § 7-2271.02",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-2271.02",
+    "shortName": "Homeland Security Commission",
+    "sourceCommissionId": "99",
+    "sourceOpenDcSlug": "homeland-security-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/homeland-security-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "99"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "homeland-security-commission"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-2271-02",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "99",
+            "locator": "D.C. Code § 7-2271.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "homeland-security-commission",
+            "locator": "D.C. Code § 7-2271.02"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:homeland-security-and-emergency-management-agency",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "99"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "homeland-security-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

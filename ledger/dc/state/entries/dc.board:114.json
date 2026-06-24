@@ -1,0 +1,59 @@
+{
+  "id": "dc.board:114",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Procurement Accountability Review Board (PARB)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2015-165",
+    "shortName": "Procurement Accountability Review Board (PARB)",
+    "sourceBoardId": "114",
+    "sourceOpenDcSlug": "procurement-accountability-review-board-parb",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/procurement-accountability-review-board-parb"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "114"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "procurement-accountability-review-board-parb"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2015-165",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "114",
+            "locator": "Mayor's Order 2015-165"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "procurement-accountability-review-board-parb",
+            "locator": "Mayor's Order 2015-165"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-contracting-and-procurement",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "114"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "procurement-accountability-review-board-parb"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "id": "dc.office:mayors-office-of-religious-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Religious Affairs",
+  "attributes": {
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "75"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-religious-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of Religious Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-of-religious-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-religious-affairs-9n2kgl-dc-office-mayors-office-of-religious-aff-7mub0v",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Mayor's Office of Religious Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-religious-affairs",
+    "sourceOfficeKey": "mayors-office-of-religious-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-religious-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-religious-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

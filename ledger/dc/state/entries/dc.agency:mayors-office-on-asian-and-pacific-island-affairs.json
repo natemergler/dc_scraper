@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:mayors-office-on-asian-and-pacific-island-affairs",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Mayor's Office on Asian and Pacific Island Affairs",
+  "attributes": {
+    "shortName": "Mayor's Office on Asian and Pacific Island Affairs",
+    "sourceAgencyId": "1062"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "2"
+    }
+  ],
+  "relations": {}
+}

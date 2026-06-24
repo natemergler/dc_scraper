@@ -1,0 +1,18 @@
+{
+  "id": "dc.council:metropolitan-washington-council-governments",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Metropolitan Washington Council of Governments",
+  "attributes": {
+    "shortName": "Metropolitan Washington Council of Governments",
+    "sourceOpenDcSlug": "metropolitan-washington-council-governments",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/metropolitan-washington-council-governments"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "metropolitan-washington-council-governments"
+    }
+  ],
+  "relations": {}
+}

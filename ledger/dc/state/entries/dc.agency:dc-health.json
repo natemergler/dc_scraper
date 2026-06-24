@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:dc-health",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Health",
+  "attributes": {
+    "officialUrl": "https://dchealth.dc.gov",
+    "shortName": "DC Health",
+    "sourceAgencyId": "1037",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "dc-health:dchealth-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "40"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "dc-health",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

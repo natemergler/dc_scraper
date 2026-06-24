@@ -1,0 +1,89 @@
+{
+  "id": "dc.ward:4",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 4",
+  "attributes": {
+    "wardNumber": "4"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-4-councilmember-janeese-lewis-george"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3/4G"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4E"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:3~2F4G",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "3/4G"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:4B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "4B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:4C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "4C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:4D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "4D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:4E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "4E"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-42-2802-01",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 42-2802.01",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/42-2802.01",
+    "locator": "D.C. Code § 42-2802.01",
+    "shortName": "D.C. Code § 42-2802.01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "102",
+      "locator": "D.C. Code § 42-2802.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-production-trust-fund-board-hptf",
+      "locator": "D.C. Code § 42-2802.01"
+    }
+  ],
+  "relations": {}
+}

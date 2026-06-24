@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-motor-vehicles",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Motor Vehicles",
+  "attributes": {
+    "officialUrl": "https://dmv.dc.gov",
+    "shortName": "Department of Motor Vehicles",
+    "sourceAgencyId": "1043",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-motor-vehicles:dmv-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "36"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-motor-vehicles",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

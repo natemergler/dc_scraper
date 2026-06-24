@@ -1,0 +1,128 @@
+{
+  "id": "dc.councilmember:ward-5-councilmember-zachary-parker",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Zachary Parker",
+  "attributes": {
+    "officeLabel": "Ward 5 Councilmember",
+    "sourceProfileSlug": "ward-5-councilmember-zachary-parker",
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-5-councilmember-zachary-parker/",
+    "wardNumber": "5"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-health"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-youth-affairs"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-transportation-environment"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-5-councilmember-zachary-parker"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-on-youth-affairs",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-youth-affairs"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-5-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-5-councilmember-zachary-parker"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-health",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-health"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-youth-affairs",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-youth-affairs"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-transportation-environment",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:5",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-5-councilmember-zachary-parker"
+          }
+        ]
+      }
+    ]
+  }
+}

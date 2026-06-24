@@ -1,0 +1,102 @@
+{
+  "id": "dc.anc:5C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 5C",
+  "attributes": {
+    "gisId": "ANCPly_347",
+    "officialUrl": "http://www.anc-5c.com/",
+    "representedNeighborhoods": "the Arboretum, Brentwood, Fort Lincoln, Gateway, Langdon, and part of the Woodridge neighborhoods",
+    "sourceAncId": "5C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5c",
+    "sourceWardNumbers": [
+      "5"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "5C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5C07"
+          }
+        ]
+      }
+    ]
+  }
+}

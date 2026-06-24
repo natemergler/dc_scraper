@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:8B04",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 8B04",
+  "attributes": {
+    "sourceAncId": "8B",
+    "sourceSmdId": "8B04",
+    "webUrl": "https://www.facebook.com/groups/374432668582169"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8B04"
+    }
+  ],
+  "relations": {}
+}

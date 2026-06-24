@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2B08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2B08",
+  "attributes": {
+    "currentHolderName": "Zachary Adams",
+    "officerRole": "Chairperson",
+    "sourceAncId": "2B",
+    "sourceFirstName": "ZACHARY",
+    "sourceLastName": "ADAMS",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2b",
+    "sourceRepresentativeName": "ZACHARY ADAMS",
+    "sourceSmdId": "2B08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2B08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2B08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2B08"
+          }
+        ]
+      }
+    ]
+  }
+}

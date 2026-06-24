@@ -1,0 +1,56 @@
+{
+  "id": "dc.board:52",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Professional Counseling",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.13",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.13",
+    "shortName": "Board of Professional Counseling",
+    "sourceBoardId": "52",
+    "sourceOpenDcSlug": "board-professional-counseling",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-professional-counseling"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "52"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-professional-counseling"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-13",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "52",
+            "locator": "D.C. Code § 3-1202.13"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-professional-counseling",
+            "locator": "D.C. Code § 3-1202.13"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:dc-health",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "52"
+          }
+        ]
+      }
+    ]
+  }
+}

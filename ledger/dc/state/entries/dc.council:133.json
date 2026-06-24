@@ -1,0 +1,43 @@
+{
+  "id": "dc.council:133",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Youth Apprenticeship Advisory Committee",
+  "attributes": {
+    "shortName": "Youth Apprenticeship Advisory Committee",
+    "sourceCouncilId": "133"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "133"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-32-1406",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "133",
+            "locator": "D.C. Code § 32-1406"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-employment-services",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "133"
+          }
+        ]
+      }
+    ]
+  }
+}

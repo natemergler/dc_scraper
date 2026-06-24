@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:3D05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3D05",
+  "attributes": {
+    "currentHolderName": "Bernie Horn",
+    "officerRole": "Chairperson",
+    "sourceAncId": "3D",
+    "sourceFirstName": "BERNIE",
+    "sourceLastName": "HORN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3d",
+    "sourceRepresentativeName": "BERNIE HORN",
+    "sourceSmdId": "3D05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3D05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D05"
+          }
+        ]
+      }
+    ]
+  }
+}

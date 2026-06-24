@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:1E04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1E04",
+  "attributes": {
+    "currentHolderName": "Rashida Brown",
+    "sourceAncId": "1E",
+    "sourceFirstName": "RASHIDA",
+    "sourceLastName": "BROWN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourceRepresentativeName": "RASHIDA BROWN",
+    "sourceSmdId": "1E04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E04"
+          }
+        ]
+      }
+    ]
+  }
+}

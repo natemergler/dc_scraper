@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:8C01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8C01",
+  "attributes": {
+    "currentHolderName": "Georgette Joy Johnson",
+    "sourceAncId": "8C",
+    "sourceFirstName": "GEORGETTE",
+    "sourceLastName": "JOHNSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourceRepresentativeName": "GEORGETTE JOY JOHNSON",
+    "sourceSmdId": "8C01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8C01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C01"
+          }
+        ]
+      }
+    ]
+  }
+}

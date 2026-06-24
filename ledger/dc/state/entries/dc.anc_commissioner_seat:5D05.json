@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:5D05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5D05",
+  "attributes": {
+    "currentHolderName": "Salvador Sauceda- Guzmán",
+    "officerRole": "Chairperson",
+    "sourceAncId": "5D",
+    "sourceFirstName": "SALVADOR",
+    "sourceLastName": "SAUCEDA-GUZMAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5d",
+    "sourceRepresentativeName": "SALVADOR SAUCEDA-GUZMAN",
+    "sourceSmdId": "5D05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5D05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5D05"
+          }
+        ]
+      }
+    ]
+  }
+}

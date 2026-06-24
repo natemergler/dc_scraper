@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:5E04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5E04",
+  "attributes": {
+    "currentHolderName": "Huma Imtiaz",
+    "officerRole": "Chairperson",
+    "sourceAncId": "5E",
+    "sourceFirstName": "HUMA",
+    "sourceLastName": "IMTIAZ",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5e",
+    "sourceRepresentativeName": "HUMA IMTIAZ",
+    "sourceSmdId": "5E04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E04"
+          }
+        ]
+      }
+    ]
+  }
+}

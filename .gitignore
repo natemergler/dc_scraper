@@ -1,41 +1,35 @@
-notes/
-.agent/
-
-# Local v2 workbench state and generated artifacts.
-data/
-resolutions/
-snapshots/
-candidates/
-candidates_patched/
-records/
-checks/
-patches/
+.civic/
 releases/
-.tmp*/
+data/
+notes/
+snapshots/
+records/
+conflicts/
+drafts/
+.agent/
+.hive/
+
 *.sqlite
-*.sqlite-*
+*.sqlite-shm
+*.sqlite-wal
 *.db
-*.db-*
+*.db-shm
+*.db-wal
 
-# Local runtime and editor noise.
+.DS_Store
 .env
-.envrc
-.venv/
-env/
-venv/
-.cache/
-cover/
-coverage/
-.vscode/
-.idea/
+.env.*
 
-# Python leftovers from old tooling and occasional local scripts.
-__pycache__/
-*.py[codz]
-*.so
+.cache/
+.tmp*/
 dist/
-*.egg-info/
+coverage/
 .coverage
 .coverage.*
 coverage.xml
-.pytest_cache/
+node_modules/
+venv/
+env/
+.venv/
+.idea/
+.vscode/

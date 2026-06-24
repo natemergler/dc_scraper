@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:6B09",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6B09",
+  "attributes": {
+    "currentHolderName": "Karen Hughes",
+    "sourceAncId": "6B",
+    "sourceFirstName": "KAREN",
+    "sourceLastName": "HUGHES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "sourceRepresentativeName": "KAREN HUGHES",
+    "sourceSmdId": "6B09"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6B09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6B09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B09"
+          }
+        ]
+      }
+    ]
+  }
+}

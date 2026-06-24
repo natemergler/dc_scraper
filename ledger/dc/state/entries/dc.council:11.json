@@ -1,0 +1,31 @@
+{
+  "id": "dc.council:11",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Condominium Association Advisory Council",
+  "attributes": {
+    "shortName": "Condominium Association Advisory Council",
+    "sourceCouncilId": "11"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "11"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-42-1903-08a",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "11",
+            "locator": "D.C. Code § 42-1903.08a"
+          }
+        ]
+      }
+    ]
+  }
+}

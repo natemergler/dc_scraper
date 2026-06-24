@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:real-property-tax-appeals-commission",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Real Property Tax Appeals Commission",
+  "attributes": {
+    "officialUrl": "https://rptac.dc.gov",
+    "shortName": "Real Property Tax Appeals Commission",
+    "sourceAgencyId": "1144",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "real-property-tax-appeals-commission:rptac-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "124"
+    }
+  ],
+  "relations": {}
+}

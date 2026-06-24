@@ -1,0 +1,31 @@
+{
+  "id": "dc.elected_office:ward-4-councilmember",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "Ward 4 Councilmember",
+  "attributes": {
+    "officeType": "ward_councilmember",
+    "sourceLabel": "Ward 4 Councilmember",
+    "wardNumber": "4"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-4-councilmember-janeese-lewis-george"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:4",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-4-councilmember-janeese-lewis-george"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "dc.commission:real-property-tax-appeals-commission-rptac",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Real Property Tax Appeals Commission (RPTAC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-825.01a",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-825.01a",
+    "shortName": "Real Property Tax Appeals Commission (RPTAC)",
+    "sourceOpenDcSlug": "real-property-tax-appeals-commission-rptac",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/real-property-tax-appeals-commission-rptac"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "real-property-tax-appeals-commission-rptac"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-825-01a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-property-tax-appeals-commission-rptac",
+            "locator": "D.C. Code § 47-825.01a"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:real-property-tax-appeals-commission",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "real-property-tax-appeals-commission-rptac"
+          }
+        ]
+      }
+    ]
+  }
+}

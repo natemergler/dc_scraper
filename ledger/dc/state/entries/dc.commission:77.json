@@ -1,0 +1,59 @@
+{
+  "id": "dc.commission:77",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Persons with Disabilities",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-165",
+    "shortName": "Commission on Persons with Disabilities",
+    "sourceCommissionId": "77",
+    "sourceOpenDcSlug": "commission-persons-disabilities",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-persons-disabilities"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "77"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-persons-disabilities"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2009-165",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "77",
+            "locator": "Mayor's Order 2009-165"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-persons-disabilities",
+            "locator": "Mayor's Order 2009-165"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-disability-rights",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "77"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-persons-disabilities"
+          }
+        ]
+      }
+    ]
+  }
+}

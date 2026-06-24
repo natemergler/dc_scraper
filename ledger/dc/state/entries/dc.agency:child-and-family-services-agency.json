@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:child-and-family-services-agency",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Child and Family Services Agency",
+  "attributes": {
+    "officialUrl": "https://cfsa.dc.gov",
+    "shortName": "Child and Family Services Agency",
+    "sourceAgencyId": "1006",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "child-and-family-services-agency:cfsa-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "3"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-health-and-human-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "child-and-family-services-agency",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

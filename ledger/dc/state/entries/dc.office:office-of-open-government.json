@@ -1,0 +1,39 @@
+{
+  "id": "dc.office:office-of-open-government",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Office of Open Government",
+  "attributes": {
+    "shortName": "Office of Open Government",
+    "sourceBegaStructureKey": "office-of-open-government",
+    "sourceOfficeKey": "office-of-open-government",
+    "sourcePageTitle": "Office of Open Government | Open DC",
+    "sourcePageUrl": "https://www.open-dc.gov/office-open-government"
+  },
+  "citations": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "office-of-open-government",
+      "url": "https://www.open-dc.gov/office-open-government"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.agency:board-of-ethics-and-government-accountability",
+        "citations": [
+          {
+            "source": "bega.structure",
+            "sourceRecordId": "office-of-open-government",
+            "url": "https://www.open-dc.gov/office-open-government"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "118"
+          }
+        ]
+      }
+    ]
+  }
+}

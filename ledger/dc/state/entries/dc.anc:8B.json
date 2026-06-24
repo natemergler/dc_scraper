@@ -1,0 +1,102 @@
+{
+  "id": "dc.anc:8B",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 8B",
+  "attributes": {
+    "gisId": "ANCPly_362",
+    "officialUrl": "https://www.facebook.com/groups/374432668582169",
+    "representedNeighborhoods": "the Garfield Heights, Hillsdale, Knox Hill/Buena Vista, Skyland, and Woodland neighborhoods",
+    "sourceAncId": "8B",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8b",
+    "sourceWardNumbers": [
+      "8"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8b"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8b"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8B07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8B07"
+          }
+        ]
+      }
+    ]
+  }
+}

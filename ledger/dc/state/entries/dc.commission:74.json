@@ -1,0 +1,50 @@
+{
+  "id": "dc.commission:74",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Judicial Disabilities and Tenure",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 1-204.31",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/1-204.31",
+    "shortName": "Commission on Judicial Disabilities and Tenure",
+    "sourceCommissionId": "74",
+    "sourceOpenDcSlug": "commission-judicial-disabilities-and-tenure",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-judicial-disabilities-and-tenure"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "74"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-judicial-disabilities-and-tenure"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-204-31",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-judicial-disabilities-and-tenure",
+            "locator": "D.C. Code § 1-204.31"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-11-1521",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "74",
+            "locator": "D.C. Code § 11-1521"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "dc.commission:commission-nightlife-and-culture",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Nightlife and Culture",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 3-664",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-664",
+    "officialUrl": "https://communityaffairs.dc.gov/monc",
+    "shortName": "Commission on Nightlife and Culture",
+    "sourceOpenDcSlug": "commission-nightlife-and-culture",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-nightlife-and-culture"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-nightlife-and-culture"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-664",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-nightlife-and-culture",
+            "locator": "D.C. Code § 3-664",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/3-664"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:mayors-office-of-nightlife-and-culture",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-nightlife-and-culture"
+          }
+        ]
+      }
+    ]
+  }
+}

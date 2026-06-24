@@ -1,0 +1,58 @@
+{
+  "id": "2026-06-16-anc-8f-oanc-profile-enrichment",
+  "source": "audited_revision",
+  "targetKind": "entry",
+  "targetId": "dc.anc:8F",
+  "target": {
+    "canonicalId": "dc.anc:8F",
+    "sourceRefs": [
+      {
+        "source": "dcgis.ancs",
+        "sourceRecordId": "8F"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ],
+    "kind": "dc.anc",
+    "name": "ANC 8F"
+  },
+  "rationale": "Carry the OANC ANC 6/8F profile's public website, freshness metadata, and explicit display-label caveat onto canonical ANC 8F. DCGIS identifies the commission as 8F and supplies the boundary/SMD identifiers, while OANC presents the same public profile as ANC 6/8F spanning Wards 6 and 8. Alpha keeps the DCGIS canonical ID/name and preserves the OANC label as source evidence instead of silently overwriting either source.",
+  "evidence": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "patch": {
+    "attributes": {
+      "description": "DCGIS identifies this Advisory Neighborhood Commission as ANC 8F. OANC presents the public profile and ward listing as ANC 6/8F spanning Wards 6 and 8; alpha keeps the DCGIS canonical ID/name while preserving the OANC display label as source evidence.",
+      "officialUrl": "http://anc8f.org/",
+      "sourceOancDisplayName": "ANC 6/8F",
+      "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+      "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
+      "sourceWardNumbers": [
+        "6",
+        "8"
+      ]
+    },
+    "citations": [
+      {
+        "source": "dcgis.ancs",
+        "sourceRecordId": "8F"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "6/8F",
+        "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+      }
+    ]
+  }
+}

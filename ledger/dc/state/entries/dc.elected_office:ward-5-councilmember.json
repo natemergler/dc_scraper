@@ -1,0 +1,31 @@
+{
+  "id": "dc.elected_office:ward-5-councilmember",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "Ward 5 Councilmember",
+  "attributes": {
+    "officeType": "ward_councilmember",
+    "sourceLabel": "Ward 5 Councilmember",
+    "wardNumber": "5"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-5-councilmember-zachary-parker"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:5",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-5-councilmember-zachary-parker"
+          }
+        ]
+      }
+    ]
+  }
+}

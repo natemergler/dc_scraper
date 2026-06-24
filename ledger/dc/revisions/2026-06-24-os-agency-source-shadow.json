@@ -1,0 +1,27 @@
+{
+  "id": "2026-06-24-os-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:office-of-the-secretary",
+  "rationale": "Same-name DCGIS/directory agency row is a source shadow of the Mayor organizational-chart office node, which carries the current executive hierarchy. Incoming public-body governs edges are retargeted to the canonical office by source-shadow suppression.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "78" },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-secretary-os:os-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-secretary",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:office-of-the-secretary"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "2026-06-24-dmpsj-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:office-of-the-deputy-mayor-for-public-safety-and-justice",
+  "rationale": "Same-name DCGIS/directory agency row is a source shadow of the Mayor organizational-chart office node, which carries the current executive hierarchy. Incoming public-body governs edges are retargeted to the canonical office by source-shadow suppression.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "153" },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice:dmpsj-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-deputy-mayor-for-public-safety-and-justice",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice"
+    }
+  }
+}

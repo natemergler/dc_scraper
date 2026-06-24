@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:office-of-administrative-hearings",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Administrative Hearings",
+  "attributes": {
+    "officialUrl": "https://oah.dc.gov",
+    "shortName": "Office of Administrative Hearings",
+    "sourceAgencyId": "1068",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-administrative-hearings:oah-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "56"
+    }
+  ],
+  "relations": {}
+}

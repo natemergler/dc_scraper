@@ -1,0 +1,43 @@
+{
+  "id": "dc.council:13",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "For-Hire Vehicle Advisory Council",
+  "attributes": {
+    "shortName": "For-Hire Vehicle Advisory Council",
+    "sourceCouncilId": "13"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "13"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-50-301-10a",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "13",
+            "locator": "D.C. Code § 50-301.10a"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-for-hire-vehicles",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "13"
+          }
+        ]
+      }
+    ]
+  }
+}

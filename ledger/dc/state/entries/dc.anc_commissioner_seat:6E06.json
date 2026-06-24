@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:6E06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6E06",
+  "attributes": {
+    "currentHolderName": "Christina Laridaen",
+    "sourceAncId": "6E",
+    "sourceFirstName": "CHRISTINA",
+    "sourceLastName": "LARIDAEN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourceRepresentativeName": "CHRISTINA",
+    "sourceSmdId": "6E06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6E06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6E06"
+          }
+        ]
+      }
+    ]
+  }
+}

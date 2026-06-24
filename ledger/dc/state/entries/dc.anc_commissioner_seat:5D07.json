@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:5D07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5D07",
+  "attributes": {
+    "currentHolderName": "Juan McCullum",
+    "sourceAncId": "5D",
+    "sourceFirstName": "JUAN",
+    "sourceLastName": "MCCULLUM",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5d",
+    "sourceRepresentativeName": "JUAN MCCULLUM",
+    "sourceSmdId": "5D07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5D07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5D07"
+          }
+        ]
+      }
+    ]
+  }
+}

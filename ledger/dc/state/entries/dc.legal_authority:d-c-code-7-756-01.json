@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-7-756-01",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 7-756.01",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-756.01",
+    "locator": "D.C. Code § 7-756.01",
+    "shortName": "D.C. Code § 7-756.01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "72",
+      "locator": "D.C. Code § 7-756.01"
+    }
+  ],
+  "relations": {}
+}

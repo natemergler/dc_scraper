@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:6C02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6C02",
+  "attributes": {
+    "currentHolderName": "Karen Wirt",
+    "officerRole": "Chairperson",
+    "sourceAncId": "6C",
+    "sourceFirstName": "KAREN",
+    "sourceLastName": "WIRT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourceRepresentativeName": "KAREN J. WIRT",
+    "sourceSmdId": "6C02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6C02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C02"
+          }
+        ]
+      }
+    ]
+  }
+}

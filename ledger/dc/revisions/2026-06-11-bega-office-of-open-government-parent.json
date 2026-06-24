@@ -1,0 +1,51 @@
+{
+  "id": "2026-06-11-bega-office-of-open-government-parent",
+  "source": "audited_revision",
+  "targetKind": "relation",
+  "targetId": "dc.office:office-of-open-government",
+  "target": {
+    "canonicalId": "dc.office:office-of-open-government",
+    "sourceRefs": [
+      {
+        "source": "bega.structure",
+        "sourceRecordId": "office-of-open-government",
+        "url": "https://www.open-dc.gov/office-open-government"
+      }
+    ],
+    "kind": "dc.office",
+    "name": "Office of Open Government"
+  },
+  "rationale": "Retarget BEGA structure office hierarchy to the canonical BEGA agency while preserving the audited source-shadow decision as review metadata.",
+  "evidence": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "office-of-open-government",
+      "url": "https://www.open-dc.gov/office-open-government"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "118"
+    }
+  ],
+  "patch": {
+    "relations": {
+      "dc.relation:part_of": [
+        {
+          "kind": "dc.relation:part_of",
+          "to": "dc.agency:board-of-ethics-and-government-accountability",
+          "citations": [
+            {
+              "source": "bega.structure",
+              "sourceRecordId": "office-of-open-government",
+              "url": "https://www.open-dc.gov/office-open-government"
+            },
+            {
+              "source": "dcgis.agencies",
+              "sourceRecordId": "118"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

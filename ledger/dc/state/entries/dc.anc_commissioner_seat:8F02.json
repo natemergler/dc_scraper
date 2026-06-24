@@ -1,0 +1,42 @@
+{
+  "id": "dc.anc_commissioner_seat:8F02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8F02",
+  "attributes": {
+    "currentHolderName": "Markita Bryant",
+    "officerRole": "Vice Chairperson",
+    "sourceAncId": "8F",
+    "sourceFirstName": "MARKITA",
+    "sourceLastName": "BRYANT",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
+    "sourceRepresentativeName": "MARKITA BRYANT",
+    "sourceSmdId": "8F02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8F02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F02"
+          }
+        ]
+      }
+    ]
+  }
+}

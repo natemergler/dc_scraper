@@ -1,0 +1,34 @@
+{
+  "id": "dc.board:public-employee-relations-board-perb",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Public Employee Relations Board (PERB)",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-605.01",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/1-605.01",
+    "shortName": "Public Employee Relations Board (PERB)",
+    "sourceOpenDcSlug": "public-employee-relations-board-perb",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/public-employee-relations-board-perb"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "public-employee-relations-board-perb"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-605-01",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "public-employee-relations-board-perb",
+            "locator": "D.C. Code § 1-605.01"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "dc.elected_office:at-large-councilmember",
+  "family": "position",
+  "kind": "dc.elected_office",
+  "name": "At-Large Councilmember",
+  "attributes": {
+    "officeType": "at_large_councilmember",
+    "sourceLabel": "At-Large Councilmember"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "anita-bonds"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "at-large-councilmember-christina-henderson"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "at-large-councilmember-doni-crawford"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "councilmember-robert-c-white-jr"
+    }
+  ],
+  "relations": {}
+}

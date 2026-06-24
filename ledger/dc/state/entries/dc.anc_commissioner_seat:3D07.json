@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:3D07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3D07",
+  "attributes": {
+    "currentHolderName": "J. P. Szymkowicz",
+    "sourceAncId": "3D",
+    "sourceFirstName": "J.P.",
+    "sourceLastName": "SZYMKOWICZ",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3d",
+    "sourceRepresentativeName": "J. P. SZYMKOWICZ",
+    "sourceSmdId": "3D07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3D07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D07"
+          }
+        ]
+      }
+    ]
+  }
+}

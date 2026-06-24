@@ -1,0 +1,102 @@
+{
+  "id": "dc.anc:3D",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3D",
+  "attributes": {
+    "gisId": "ANCPly_337",
+    "officialUrl": "http://anc3d.org/",
+    "representedNeighborhoods": "the Berkley, Foxhall, Kent, Palisades, Spring Valley, and Wesley Heights neighborhoods",
+    "sourceAncId": "3D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3d",
+    "sourceWardNumbers": [
+      "3"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3d"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3d"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3D07"
+          }
+        ]
+      }
+    ]
+  }
+}

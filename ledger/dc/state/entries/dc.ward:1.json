@@ -1,0 +1,89 @@
+{
+  "id": "dc.ward:1",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 1",
+  "attributes": {
+    "wardNumber": "1"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "brianne-nadeau"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:1A",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "1A"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:1B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "1B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:1C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "1C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:1D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "1D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:1E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "1E"
+          }
+        ]
+      }
+    ]
+  }
+}

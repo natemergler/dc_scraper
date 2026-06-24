@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:5B01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5B01",
+  "attributes": {
+    "currentHolderName": "Edward Borrego",
+    "officerRole": "Chairperson",
+    "sourceAncId": "5B",
+    "sourceFirstName": "EDWARD",
+    "sourceLastName": "BORREGO",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5b",
+    "sourceRepresentativeName": "EDWARD BORREGO",
+    "sourceSmdId": "5B01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5B01"
+          }
+        ]
+      }
+    ]
+  }
+}

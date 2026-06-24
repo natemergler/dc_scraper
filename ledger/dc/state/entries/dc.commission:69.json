@@ -1,0 +1,52 @@
+{
+  "id": "dc.commission:69",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Climate Change and Resiliency",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 8-181.02(a)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02",
+    "shortName": "Commission on Climate Change and Resiliency",
+    "sourceCommissionId": "69",
+    "sourceOpenDcSlug": "commission-climate-change-and-resiliency",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-climate-change-and-resiliency"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "69"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-climate-change-and-resiliency"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-8-181-02-a",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-climate-change-and-resiliency",
+            "locator": "D.C. Code § 8-181.02(a)",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/8-181.02"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:office-of-the-city-administrator",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "69"
+          }
+        ]
+      }
+    ]
+  }
+}

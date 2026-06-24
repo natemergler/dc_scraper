@@ -1,0 +1,60 @@
+{
+  "id": "dc.board:102",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Housing Production Trust Fund Board (HPTF)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 42-2802.01",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/42-2802.01",
+    "shortName": "Housing Production Trust Fund Board (HPTF)",
+    "sourceBoardId": "102",
+    "sourceOpenDcSlug": "housing-production-trust-fund-board-hptf",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/housing-production-trust-fund-board-hptf"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "102"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "housing-production-trust-fund-board-hptf"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-42-2802-01",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "102",
+            "locator": "D.C. Code § 42-2802.01"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-production-trust-fund-board-hptf",
+            "locator": "D.C. Code § 42-2802.01"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-housing-and-community-development",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "102"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "housing-production-trust-fund-board-hptf"
+          }
+        ]
+      }
+    ]
+  }
+}

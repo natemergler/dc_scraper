@@ -1,0 +1,35 @@
+{
+  "id": "dc.council:leadership-council-cleaner-anacostia-river",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Leadership Council for a Cleaner Anacostia River",
+  "attributes": {
+    "description": "The purpose of the Leadership Council as stated in the Mayor’s Order is, “to utilize the knowledge and influence of its members to advise and support the District’s For a Cleaner Anacostia River project, and to address ongoing pollution to the river from sources in multiple jurisdictions, throughout the Anacostia River’s watershed.”",
+    "enablingStatute": "Mayor's Order 2015-171",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2015-171",
+    "shortName": "Leadership Council for a Cleaner Anacostia River",
+    "sourceOpenDcSlug": "leadership-council-cleaner-anacostia-river",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/leadership-council-cleaner-anacostia-river"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "leadership-council-cleaner-anacostia-river"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2015-171",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "leadership-council-cleaner-anacostia-river",
+            "locator": "Mayor's Order 2015-171"
+          }
+        ]
+      }
+    ]
+  }
+}

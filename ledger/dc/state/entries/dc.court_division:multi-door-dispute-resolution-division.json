@@ -1,0 +1,37 @@
+{
+  "id": "dc.court_division:multi-door-dispute-resolution-division",
+  "family": "organization",
+  "kind": "dc.court_division",
+  "name": "Multi-Door Dispute Resolution Division",
+  "attributes": {
+    "officialUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division",
+    "shortName": "Multi-Door Dispute Resolution Division",
+    "sourceCourtDivisionKey": "multi-door-dispute-resolution-division",
+    "sourceDCCourtsKey": "multi-door-dispute-resolution-division",
+    "sourceDiscoveryPageUrl": "https://www.dccourts.gov/superior-court",
+    "sourceFromSeed": true,
+    "sourcePageUrl": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division"
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "multi-door-dispute-resolution-division",
+      "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court:superior-court",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "multi-door-dispute-resolution-division",
+            "url": "https://www.dccourts.gov/superior-court/superior-court-divisions/multi-door-dispute-resolution-division"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "dc.commission:opioid-abatement-advisory-commission",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Opioid Abatement Advisory Commission",
+  "attributes": {
+    "description": "(3) Ensure that the monies the District receives and deposits into the Fund have the effect of preventing, treating, and reducing opioid use disorder and co-occurring substance use and mental health disorders and reducing fatalities.",
+    "enablingStatute": "Opioid Litigation Proceeds Amendment Act of 2022",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-3212",
+    "shortName": "Opioid Abatement Advisory Commission",
+    "sourceOpenDcSlug": "opioid-abatement-advisory-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/opioid-abatement-advisory-commission"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "opioid-abatement-advisory-commission"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-3212",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "opioid-abatement-advisory-commission",
+            "locator": "D.C. Code § 7-3212",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-3212"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-behavioral-health",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "opioid-abatement-advisory-commission"
+          }
+        ]
+      }
+    ]
+  }
+}

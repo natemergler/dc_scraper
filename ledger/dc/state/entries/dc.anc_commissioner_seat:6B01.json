@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:6B01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6B01",
+  "attributes": {
+    "currentHolderName": "Tyler Wolanin",
+    "officerRole": "Parliamentarian",
+    "sourceAncId": "6B",
+    "sourceFirstName": "TYLER",
+    "sourceLastName": "WOLANIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6b",
+    "sourceRepresentativeName": "TYLER WOLANIN",
+    "sourceSmdId": "6B01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6B01"
+          }
+        ]
+      }
+    ]
+  }
+}

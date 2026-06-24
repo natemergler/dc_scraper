@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:office-of-disability-rights",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Disability Rights",
+  "attributes": {
+    "officialUrl": "https://odr.dc.gov",
+    "shortName": "Office of Disability Rights",
+    "sourceAgencyId": "1072",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-disability-rights:odr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "63"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:internal-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-disability-rights",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

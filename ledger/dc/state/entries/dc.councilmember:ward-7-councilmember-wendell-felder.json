@@ -1,0 +1,142 @@
+{
+  "id": "dc.councilmember:ward-7-councilmember-wendell-felder",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Wendell Felder",
+  "attributes": {
+    "officeLabel": "Ward 7 Councilmember",
+    "sourceProfileSlug": "ward-7-councilmember-wendell-felder",
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-7-councilmember-wendell-felder/",
+    "wardNumber": "7"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-health"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-public-works-and-operations"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "sub-committee-on-local-business-development"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-7-councilmember-wendell-felder"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:sub-committee-on-local-business-development",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-7-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-7-councilmember-wendell-felder"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-health",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-health"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-public-works-and-operations",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-public-works-and-operations"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:sub-committee-on-local-business-development",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:7",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-7-councilmember-wendell-felder"
+          }
+        ]
+      }
+    ]
+  }
+}

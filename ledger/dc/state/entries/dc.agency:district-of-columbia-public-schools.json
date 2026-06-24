@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:district-of-columbia-public-schools",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "District of Columbia Public Schools",
+  "attributes": {
+    "shortName": "District of Columbia Public Schools",
+    "sourceAgencyId": "1050"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "18"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,71 @@
+{
+  "id": "dc.anc:2C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 2C",
+  "attributes": {
+    "gisId": "ANCPly_328",
+    "officialUrl": "http://anc2c.us/",
+    "sourceAncId": "2C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2c",
+    "sourceWardNumbers": [
+      "2"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "2C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C04"
+          }
+        ]
+      }
+    ]
+  }
+}

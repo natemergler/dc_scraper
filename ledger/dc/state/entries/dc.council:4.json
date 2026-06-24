@@ -1,0 +1,59 @@
+{
+  "id": "dc.council:4",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Developmental Disabilities State Planning Council (DD Council)",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2009-165",
+    "shortName": "Developmental Disabilities State Planning Council (DD Council)",
+    "sourceCouncilId": "4",
+    "sourceOpenDcSlug": "developmental-disabilities-state-planning-council-dd-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/developmental-disabilities-state-planning-council-dd-council"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "4"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "developmental-disabilities-state-planning-council-dd-council"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2009-165",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "4",
+            "locator": "Mayor's Order 2009-165"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "developmental-disabilities-state-planning-council-dd-council",
+            "locator": "Mayor's Order 2009-165"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-disability-rights",
+        "citations": [
+          {
+            "source": "dcgis.councils",
+            "sourceRecordId": "4"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "developmental-disabilities-state-planning-council-dd-council"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:7D09",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 7D09",
+  "attributes": {
+    "currentHolderName": "Ashley Schapitl",
+    "sourceAncId": "7D",
+    "sourceFirstName": "ASHLEY",
+    "sourceLastName": "SCHAPITL",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-7d",
+    "sourceRepresentativeName": "ASHLEY SCHAPITL",
+    "sourceSmdId": "7D09"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "7D09"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "7D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-7d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:7D09",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "7D09"
+          }
+        ]
+      }
+    ]
+  }
+}

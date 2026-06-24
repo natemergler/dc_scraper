@@ -1,0 +1,92 @@
+{
+  "id": "dc.anc:5E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 5E",
+  "attributes": {
+    "gisId": "ANCPly_349",
+    "officialUrl": "https://www.anc5edc.org/",
+    "representedNeighborhoods": "the Bates, Bloomingdale, Stronghold, and Truxton Circle neighborhoods",
+    "sourceAncId": "5E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5e",
+    "sourceWardNumbers": [
+      "5"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-5e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "5E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:5E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5E06"
+          }
+        ]
+      }
+    ]
+  }
+}

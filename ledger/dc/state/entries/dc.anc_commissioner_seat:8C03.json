@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:8C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8C03",
+  "attributes": {
+    "currentHolderName": "Dascha Cleckley",
+    "officerRole": "Secretary",
+    "sourceAncId": "8C",
+    "sourceFirstName": "DASCHA",
+    "sourceLastName": "CLECKLEY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourceRepresentativeName": "DASCHA CLECKLEY",
+    "sourceSmdId": "8C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8C03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C03"
+          }
+        ]
+      }
+    ]
+  }
+}

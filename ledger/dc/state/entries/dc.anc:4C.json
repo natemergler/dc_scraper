@@ -1,0 +1,102 @@
+{
+  "id": "dc.anc:4C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 4C",
+  "attributes": {
+    "gisId": "ANCPly_342",
+    "officialUrl": "http://anc4c.com/",
+    "representedNeighborhoods": "the southern part of the Petworth neighborhood",
+    "sourceAncId": "4C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourceWardNumbers": [
+      "4"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-4c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "4C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:4C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C07"
+          }
+        ]
+      }
+    ]
+  }
+}

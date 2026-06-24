@@ -1,0 +1,35 @@
+{
+  "id": "dc.council:tipped-workers-coordinating-council",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Tipped Workers Coordinating Council",
+  "attributes": {
+    "enablingStatute": "D.C. Official Code § 32-1009.02",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/32-1009.02",
+    "shortName": "Tipped Workers Coordinating Council",
+    "sourceOpenDcSlug": "tipped-workers-coordinating-council",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/tipped-workers-coordinating-council"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tipped-workers-coordinating-council"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-32-1009-02",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "tipped-workers-coordinating-council",
+            "locator": "D.C. Code § 32-1009.02",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/32-1009.02"
+          }
+        ]
+      }
+    ]
+  }
+}

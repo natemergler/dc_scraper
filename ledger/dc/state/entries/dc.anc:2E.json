@@ -1,0 +1,112 @@
+{
+  "id": "dc.anc:2E",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 2E",
+  "attributes": {
+    "gisId": "ANCPly_330",
+    "officialUrl": "http://www.anc2e.com/",
+    "representedNeighborhoods": "the Georgetown, Burleith, and Hillandale neighborhoods",
+    "sourceAncId": "2E",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2e",
+    "sourceWardNumbers": [
+      "2"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-2e"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "2E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2e"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:2E08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2E08"
+          }
+        ]
+      }
+    ]
+  }
+}

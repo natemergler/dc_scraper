@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-for-hire-vehicles",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of For-Hire Vehicles",
+  "attributes": {
+    "officialUrl": "https://dfhv.dc.gov",
+    "shortName": "Department of For-Hire Vehicles",
+    "sourceAgencyId": "1035",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-for-hire-vehicles:dfhv-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "25"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-operations-and-infrastructure",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-for-hire-vehicles",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

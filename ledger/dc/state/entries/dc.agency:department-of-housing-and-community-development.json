@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-housing-and-community-development",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Housing and Community Development",
+  "attributes": {
+    "officialUrl": "https://dhcd.dc.gov",
+    "shortName": "Department of Housing and Community Development",
+    "sourceAgencyId": "1039",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-housing-and-community-development:dhcd-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "28"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-planning-and-economic-development",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-housing-and-community-development",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

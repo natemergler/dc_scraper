@@ -1,0 +1,56 @@
+{
+  "id": "dc.commission:64",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission for Women",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-702",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-702",
+    "shortName": "Commission for Women",
+    "sourceCommissionId": "64",
+    "sourceOpenDcSlug": "commission-women",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-women"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "64"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-women"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-702",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "64",
+            "locator": "D.C. Code § 3-702"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-women",
+            "locator": "D.C. Code § 3-702"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:mayors-office-on-womens-policy-and-initiatives",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "64"
+          }
+        ]
+      }
+    ]
+  }
+}

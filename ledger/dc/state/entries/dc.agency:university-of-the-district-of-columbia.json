@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:university-of-the-district-of-columbia",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "University of the District of Columbia",
+  "attributes": {
+    "shortName": "University of the District of Columbia",
+    "sourceAgencyId": "1106"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "88"
+    }
+  ],
+  "relations": {}
+}

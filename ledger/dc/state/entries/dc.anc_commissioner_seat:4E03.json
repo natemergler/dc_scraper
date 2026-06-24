@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:4E03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4E03",
+  "attributes": {
+    "currentHolderName": "Maria Barry",
+    "sourceAncId": "4E",
+    "sourceFirstName": "MARIA",
+    "sourceLastName": "BARRY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4e",
+    "sourceRepresentativeName": "MARIA BARRY",
+    "sourceSmdId": "4E03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4E03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4E03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E03"
+          }
+        ]
+      }
+    ]
+  }
+}

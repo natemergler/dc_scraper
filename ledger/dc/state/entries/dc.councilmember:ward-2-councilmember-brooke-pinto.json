@@ -1,0 +1,128 @@
+{
+  "id": "dc.councilmember:ward-2-councilmember-brooke-pinto",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Brooke Pinto",
+  "attributes": {
+    "officeLabel": "Ward 2 Councilmember",
+    "sourceProfileSlug": "ward-2-councilmember-brooke-pinto",
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-2-councilmember-brooke-pinto/",
+    "wardNumber": "2"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-judiciary-public-safety"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-youth-affairs"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "housing"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "sub-committee-on-local-business-development"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-2-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-judiciary-public-safety",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-judiciary-public-safety"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-youth-affairs",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-youth-affairs"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:housing",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "housing"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:sub-committee-on-local-business-development",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "sub-committee-on-local-business-development"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:2",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+          }
+        ]
+      }
+    ]
+  }
+}

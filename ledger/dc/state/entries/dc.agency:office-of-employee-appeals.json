@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:office-of-employee-appeals",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Employee Appeals",
+  "attributes": {
+    "officialUrl": "https://oea.dc.gov",
+    "shortName": "Office of Employee Appeals",
+    "sourceAgencyId": "1073",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-employee-appeals:oea-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "64"
+    }
+  ],
+  "relations": {}
+}

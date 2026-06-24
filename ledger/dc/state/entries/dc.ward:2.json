@@ -1,0 +1,117 @@
+{
+  "id": "dc.ward:2",
+  "family": "area",
+  "kind": "dc.ward",
+  "name": "Ward 2",
+  "attributes": {
+    "wardNumber": "2"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-2-councilmember-brooke-pinto"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2A"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2B"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2E"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2G"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2A",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2A"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2B",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2B"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2C",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2C"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2D",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2D"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2E",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2E"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2F",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2F"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.anc:2G",
+        "citations": [
+          {
+            "source": "oanc.profiles",
+            "sourceRecordId": "2G"
+          }
+        ]
+      }
+    ]
+  }
+}

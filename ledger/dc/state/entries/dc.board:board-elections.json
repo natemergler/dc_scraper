@@ -1,0 +1,60 @@
+{
+  "id": "dc.board:board-elections",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Elections",
+  "attributes": {
+    "enablingStatute": "DC Code § 1-1001.03",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/1-1001.03",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "119"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-elections",
+            "locator": "D.C. Code § 1-1001.03"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-elections"
+          }
+        ],
+        "rationale": "Preserve the Board of Elections public-body facet separately from the DCGIS agency facet. Open DC contributes the board/public-body record and enabling statute while DCGIS agencies contributes official site and administrative metadata, so collapsing them is a broader canonical modeling decision for later projection work.",
+        "relatedEntryIds": [
+          "dc.agency:board-of-elections"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-board-of-elections-14m1b5q-dc-board-board-elections-17h3ye9",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Board of Elections",
+    "sourceOpenDcSlug": "board-elections",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-elections"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-elections"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-1-1001-03",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-elections",
+            "locator": "D.C. Code § 1-1001.03"
+          }
+        ]
+      }
+    ]
+  }
+}

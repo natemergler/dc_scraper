@@ -1,0 +1,27 @@
+{
+  "id": "2026-06-24-clean-city-agency-source-shadow",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.agency:mayors-office-of-the-clean-city",
+  "rationale": "Same-name DCGIS/directory agency row is a source shadow of the Mayor organizational-chart office node, which carries the current executive hierarchy.",
+  "evidence": [
+    { "source": "dcgis.agencies", "sourceRecordId": "150" },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-of-the-clean-city:cleancity-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-the-clean-city",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.office:mayors-office-of-the-clean-city"
+    }
+  }
+}

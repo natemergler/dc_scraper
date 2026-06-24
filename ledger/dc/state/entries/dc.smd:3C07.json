@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:3C07",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 3C07",
+  "attributes": {
+    "sourceAncId": "3C",
+    "sourceSmdId": "3C07",
+    "webUrl": "https://anc3c.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3C07"
+    }
+  ],
+  "relations": {}
+}

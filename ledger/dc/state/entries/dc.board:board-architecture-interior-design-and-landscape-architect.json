@@ -1,0 +1,47 @@
+{
+  "id": "dc.board:board-architecture-interior-design-and-landscape-architect",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Architecture, Interior Design and Landscape Architect",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 47-2853.06(a)(1)",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
+    "shortName": "Board of Architecture, Interior Design and Landscape Architect",
+    "sourceOpenDcSlug": "board-architecture-interior-design-and-landscape-architect",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-architecture-interior-design-and-landscape-architect"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-architecture-interior-design-and-landscape-architect"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-47-2853-06-a-1",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-architecture-interior-design-and-landscape-architect",
+            "locator": "D.C. Code § 47-2853.06(a)(1)",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-licensing-and-consumer-protection",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-architecture-interior-design-and-landscape-architect"
+          }
+        ]
+      }
+    ]
+  }
+}

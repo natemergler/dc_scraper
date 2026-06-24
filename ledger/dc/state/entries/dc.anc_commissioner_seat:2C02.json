@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:2C02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2C02",
+  "attributes": {
+    "currentHolderName": "Nancy Groth",
+    "officerRole": "Secretary",
+    "sourceAncId": "2C",
+    "sourceFirstName": "NANCY",
+    "sourceLastName": "GROTH",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2c",
+    "sourceRepresentativeName": "NANCY GROTH",
+    "sourceSmdId": "2C02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2C02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2C02"
+          }
+        ]
+      }
+    ]
+  }
+}

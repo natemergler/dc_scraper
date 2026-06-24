@@ -1,0 +1,46 @@
+{
+  "id": "dc.council:bicycle-advisory-council-bac",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Bicycle Advisory Council (BAC)",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 50-1604",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/50-1604",
+    "shortName": "Bicycle Advisory Council (BAC)",
+    "sourceOpenDcSlug": "bicycle-advisory-council-bac",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/bicycle-advisory-council-bac"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "bicycle-advisory-council-bac"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-50-1604",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "bicycle-advisory-council-bac",
+            "locator": "D.C. Code § 50-1604"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:district-department-of-transportation",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "bicycle-advisory-council-bac"
+          }
+        ]
+      }
+    ]
+  }
+}

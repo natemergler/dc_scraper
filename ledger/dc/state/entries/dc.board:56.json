@@ -1,0 +1,56 @@
+{
+  "id": "dc.board:56",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Board of Respiratory Care",
+  "attributes": {
+    "enablingStatute": "DC Code § 3-1202.14",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.14",
+    "shortName": "Board of Respiratory Care",
+    "sourceBoardId": "56",
+    "sourceOpenDcSlug": "board-respiratory-care",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/board-respiratory-care"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "56"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-respiratory-care"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1202-14",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "56",
+            "locator": "D.C. Code § 3-1202.14"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "board-respiratory-care",
+            "locator": "D.C. Code § 3-1202.14"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:dc-health",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "56"
+          }
+        ]
+      }
+    ]
+  }
+}

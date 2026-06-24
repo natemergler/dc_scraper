@@ -1,0 +1,115 @@
+{
+  "id": "dc.councilmember:at-large-councilmember-christina-henderson",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Christina Henderson",
+  "attributes": {
+    "officeLabel": "At-Large Councilmember",
+    "sourceProfileSlug": "at-large-councilmember-christina-henderson",
+    "sourceProfileUrl": "https://dccouncil.gov/council/at-large-councilmember-christina-henderson/"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-facilities"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-health"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-transportation-environment"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "at-large-councilmember-christina-henderson"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-on-health",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-health"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:at-large-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "at-large-councilmember-christina-henderson"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-facilities",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-facilities"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-health",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-health"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-transportation-environment",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-transportation-environment"
+          }
+        ]
+      }
+    ]
+  }
+}

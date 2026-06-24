@@ -1,0 +1,69 @@
+{
+  "id": "dc.office:mayors-office-of-community-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Community Affairs",
+  "attributes": {
+    "description": "Fosters communication and relationships across all eight wards and between the community and District agencies. Oversees the following offices: Mayor's Office on African Affairs, Mayor's Office of African American Affairs, Mayor's Office on Asian and Pacific Islander Affairs, Mayor's Office of the Clean City, Mayor's Office on Fathers, Men, and Boys, Mayor's Office on Latino Affairs, Mayor's Office of LGBTQ Affairs, Mayor's Office of Nightlife and Culture, Mayor's Office of Religious Affairs, Mayor's Office on Returning Citizens Affairs, Mayor's Office of Veterans Affairs, Mayor's Office of Volunteerism and Partnerships, and Mayor's Office on Women's Policy and Initiatives.",
+    "officialUrl": "https://moca.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "52"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-community-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of Community Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-of-community-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-community-affairs-gmg013-dc-office-mayors-office-of-community-aff-wov0v1",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Mayor's Office of Community Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-community-affairs",
+    "sourceOfficeKey": "mayors-office-of-community-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-community-affairs",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-community-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:executive-office-of-the-mayor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-community-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

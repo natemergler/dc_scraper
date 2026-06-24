@@ -1,0 +1,60 @@
+{
+  "id": "dc.commission:75",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Latino Community Development",
+  "attributes": {
+    "enablingStatute": "DC Code § 2-1321",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/2-1321",
+    "shortName": "Commission on Latino Community Development",
+    "sourceCommissionId": "75",
+    "sourceOpenDcSlug": "commission-latino-community-development",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-latino-community-development"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "75"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-latino-community-development"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-2-1321",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "75",
+            "locator": "D.C. Code § 2-1321"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-latino-community-development",
+            "locator": "D.C. Code § 2-1321"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.office:mayors-office-on-latino-affairs",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "75"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-latino-community-development"
+          }
+        ]
+      }
+    ]
+  }
+}

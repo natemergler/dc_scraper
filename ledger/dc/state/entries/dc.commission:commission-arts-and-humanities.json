@@ -1,0 +1,77 @@
+{
+  "id": "dc.commission:commission-arts-and-humanities",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on the Arts and Humanities",
+  "attributes": {
+    "enablingStatute": "DC Code § 39-201 et seq",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/39-201",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "commission-on-the-arts-and-humanities:dcarts-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "120"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities",
+            "locator": "D.C. Code § 39-201"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities"
+          }
+        ],
+        "rationale": "Preserve the Arts and Humanities commission public-body facet separately from the agency facet. The commission record carries public-body and legal-authority context while the agency record carries official site and executive-agency metadata, and collapsing them needs a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:commission-on-the-arts-and-humanities"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-commission-on-the-arts-and-humanities-pub0rn-dc-commission-commission-arts-and-humani-j3sf9x",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Commission on the Arts and Humanities",
+    "sourceOpenDcSlug": "commission-arts-and-humanities",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-arts-and-humanities"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-arts-and-humanities"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-39-201",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities",
+            "locator": "D.C. Code § 39-201"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:commission-on-the-arts-and-humanities",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-arts-and-humanities"
+          }
+        ]
+      }
+    ]
+  }
+}

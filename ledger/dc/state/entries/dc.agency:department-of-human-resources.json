@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-human-resources",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Human Resources",
+  "attributes": {
+    "officialUrl": "https://dchr.dc.gov",
+    "shortName": "Department of Human Resources",
+    "sourceAgencyId": "1040",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-human-resources:dchr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "12"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:internal-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-human-resources",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

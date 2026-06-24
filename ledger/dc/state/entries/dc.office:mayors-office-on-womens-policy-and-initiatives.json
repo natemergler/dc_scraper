@@ -1,0 +1,64 @@
+{
+  "id": "dc.office:mayors-office-on-womens-policy-and-initiatives",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office on Women's Policy and Initiatives",
+  "attributes": {
+    "officialUrl": "https://owpi.dc.gov",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "mayor-s-office-on-women-s-policy-and-initiatives:owpi-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "85"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-womens-policy-and-initiatives",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office on Women's Policy and Initiatives. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-on-womens-policy-and-initiatives"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-on-women-s-policy-and-initiatives-15lescm-dc-office-mayors-office-on-womens-policy-dk0i6p",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Mayor's Office on Women's Policy and Initiatives",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-on-womens-policy-and-initiatives",
+    "sourceOfficeKey": "mayors-office-on-womens-policy-and-initiatives",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-on-womens-policy-and-initiatives",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-womens-policy-and-initiatives",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

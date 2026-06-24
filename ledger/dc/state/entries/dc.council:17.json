@@ -1,0 +1,17 @@
+{
+  "id": "dc.council:17",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Innovation and Technology Council",
+  "attributes": {
+    "shortName": "Innovation and Technology Council",
+    "sourceCouncilId": "17"
+  },
+  "citations": [
+    {
+      "source": "dcgis.councils",
+      "sourceRecordId": "17"
+    }
+  ],
+  "relations": {}
+}

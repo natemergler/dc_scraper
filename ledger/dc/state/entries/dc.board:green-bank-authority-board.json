@@ -1,0 +1,18 @@
+{
+  "id": "dc.board:green-bank-authority-board",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Green Bank Authority Board",
+  "attributes": {
+    "shortName": "Green Bank Authority Board",
+    "sourceOpenDcSlug": "green-bank-authority-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/green-bank-authority-board"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "green-bank-authority-board"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,44 @@
+{
+  "id": "dc.board:120",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Saint Elizabeths East Redevelopment Initiative Advisory Board",
+  "attributes": {
+    "enablingStatute": "Mayor's Order 2016-134",
+    "enablingStatuteUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2016-134",
+    "shortName": "Saint Elizabeths East Redevelopment Initiative Advisory Board",
+    "sourceBoardId": "120",
+    "sourceOpenDcSlug": "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/saint-elizabeths-east-redevelopment-initiative-advisory-board"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "120"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:mayor-s-order-2016-134",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "120",
+            "locator": "Mayor's Order 2016-134"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+            "locator": "Mayor's Order 2016-134"
+          }
+        ]
+      }
+    ]
+  }
+}

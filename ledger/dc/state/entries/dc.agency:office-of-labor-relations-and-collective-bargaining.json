@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:office-of-labor-relations-and-collective-bargaining",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Labor Relations and Collective Bargaining",
+  "attributes": {
+    "officialUrl": "https://olrcb.dc.gov",
+    "shortName": "Office of Labor Relations and Collective Bargaining",
+    "sourceAgencyId": "1076",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-labor-relations-and-collective-bargaining:olrcb-dc",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "69"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:internal-services",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-labor-relations-and-collective-bargaining",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

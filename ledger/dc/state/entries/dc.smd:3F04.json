@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:3F04",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 3F04",
+  "attributes": {
+    "sourceAncId": "3F",
+    "sourceSmdId": "3F04",
+    "webUrl": "https://www.anc3f.com/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3F04"
+    }
+  ],
+  "relations": {}
+}

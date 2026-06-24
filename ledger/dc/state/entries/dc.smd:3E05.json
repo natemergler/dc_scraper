@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:3E05",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 3E05",
+  "attributes": {
+    "sourceAncId": "3E",
+    "sourceSmdId": "3E05",
+    "webUrl": "https://anc3e.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3E05"
+    }
+  ],
+  "relations": {}
+}

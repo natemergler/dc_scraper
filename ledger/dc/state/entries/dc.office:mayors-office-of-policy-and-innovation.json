@@ -1,0 +1,37 @@
+{
+  "id": "dc.office:mayors-office-of-policy-and-innovation",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office of Policy and Innovation",
+  "attributes": {
+    "description": "Responsible for generating the fresh ideas that allow the District government to better serve District residents, create forwardthinking change, and support a city that is as innovative as it is historic.",
+    "shortName": "Mayor's Office of Policy and Innovation",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-of-policy-and-innovation",
+    "sourceOfficeKey": "mayors-office-of-policy-and-innovation",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-policy-and-innovation",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:executive-office-of-the-mayor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-of-policy-and-innovation",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

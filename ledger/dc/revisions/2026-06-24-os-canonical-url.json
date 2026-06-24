@@ -1,0 +1,20 @@
+{
+  "id": "2026-06-24-os-canonical-url",
+  "source": "operator_audit",
+  "targetKind": "entry",
+  "targetId": "dc.office:office-of-the-secretary",
+  "rationale": "Normalize canonical Office of the Secretary official URL to HTTPS from live agency-directory evidence.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-the-secretary-os:os-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-the-secretary",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": { "attributes": { "officialUrl": "https://os.dc.gov" } }
+}

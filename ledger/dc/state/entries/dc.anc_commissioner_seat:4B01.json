@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:4B01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4B01",
+  "attributes": {
+    "currentHolderName": "Douglas Payton",
+    "sourceAncId": "4B",
+    "sourceFirstName": "DOUG",
+    "sourceLastName": "PAYTON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4b",
+    "sourceRepresentativeName": "DOUG PAYTON",
+    "sourceSmdId": "4B01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4B01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4B01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4B01"
+          }
+        ]
+      }
+    ]
+  }
+}

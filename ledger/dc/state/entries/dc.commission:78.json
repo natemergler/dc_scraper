@@ -1,0 +1,56 @@
+{
+  "id": "dc.commission:78",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Re-Entry and Returning Citizen Affairs",
+  "attributes": {
+    "enablingStatute": "D. C. Code § 24-1303",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/24-1303",
+    "shortName": "Commission on Re-Entry and Returning Citizen Affairs",
+    "sourceCommissionId": "78",
+    "sourceOpenDcSlug": "commission-re-entry-and-returning-citizen-affairs",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-re-entry-and-returning-citizen-affairs"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "78"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-24-1303",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "78",
+            "locator": "D.C. Code § 24-1303"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "commission-re-entry-and-returning-citizen-affairs",
+            "locator": "D.C. Code § 24-1303"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:mayors-office-on-returning-citizen-affairs",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "78"
+          }
+        ]
+      }
+    ]
+  }
+}

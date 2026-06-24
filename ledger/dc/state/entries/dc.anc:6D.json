@@ -1,0 +1,112 @@
+{
+  "id": "dc.anc:6D",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 6D",
+  "attributes": {
+    "gisId": "ANCPly_354",
+    "officialUrl": "http://anc6d.org/",
+    "representedNeighborhoods": "the Southwest/Waterfront neighborhood",
+    "sourceAncId": "6D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6d",
+    "sourceWardNumbers": [
+      "6"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-6d"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "6D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6d"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:6D08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6D08"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "id": "dc.board:92",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Domestic Violence Fatality Review Board",
+  "attributes": {
+    "description": "Mayor's Order 2015-270 Delegation of Authority - Administration of Domestic Violence Fatality Review Board",
+    "enablingStatute": "D.C. Code § 16-1052",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/16-1052",
+    "officialUrl": "https://www.open-dc.gov/documents/mayors-order-2015-270-delegation-authority-domestic-violence-fatality-review-board",
+    "shortName": "Domestic Violence Fatality Review Board",
+    "sourceBoardId": "92",
+    "sourceOpenDcSlug": "domestic-violence-fatality-review-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/domestic-violence-fatality-review-board"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "92"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "domestic-violence-fatality-review-board"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-16-1052",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "92",
+            "locator": "D.C. Code § 16-1052"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "domestic-violence-fatality-review-board",
+            "locator": "D.C. Code § 16-1052"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-victim-services-and-justice-grants",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "92"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "id": "dc.anc_commissioner_seat:8E06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8E06",
+  "attributes": {
+    "sourceAncId": "8E",
+    "sourceFirstName": "DOLORES",
+    "sourceLastName": "BRYANT",
+    "sourceRepresentativeName": "DOLORES BRYANT",
+    "sourceSmdId": "8E06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8E06"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8E06"
+          }
+        ]
+      }
+    ]
+  }
+}

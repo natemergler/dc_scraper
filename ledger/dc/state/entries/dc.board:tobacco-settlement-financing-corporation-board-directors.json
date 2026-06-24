@@ -1,0 +1,35 @@
+{
+  "id": "dc.board:tobacco-settlement-financing-corporation-board-directors",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Tobacco Settlement Financing Corporation Board of Directors",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 7–1831.03",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-1831.03",
+    "shortName": "Tobacco Settlement Financing Corporation Board of Directors",
+    "sourceOpenDcSlug": "tobacco-settlement-financing-corporation-board-directors",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/tobacco-settlement-financing-corporation-board-directors"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "tobacco-settlement-financing-corporation-board-directors"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-1831-03",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "tobacco-settlement-financing-corporation-board-directors",
+            "locator": "D.C. Code § 7-1831.03",
+            "url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-1831.03"
+          }
+        ]
+      }
+    ]
+  }
+}

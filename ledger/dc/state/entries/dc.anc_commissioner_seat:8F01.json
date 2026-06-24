@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:8F01",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8F01",
+  "attributes": {
+    "currentHolderName": "Nic Wilson",
+    "sourceAncId": "8F",
+    "sourceFirstName": "NIC",
+    "sourceLastName": "WILSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
+    "sourceRepresentativeName": "NIC WILSON",
+    "sourceSmdId": "8F01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8F01"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F01"
+          }
+        ]
+      }
+    ]
+  }
+}

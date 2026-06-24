@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-7-1131-10",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 7-1131.10",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/7-1131.10",
+    "locator": "D.C. Code § 7-1131.10",
+    "shortName": "D.C. Code § 7-1131.10"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "behavioral-health-council",
+      "locator": "D.C. Code § 7-1131.10"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:mayor-s-order-2009-22",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "Mayor's Order 2009-22",
+  "attributes": {
+    "authorityType": "mayors_order",
+    "canonicalUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2009-22",
+    "locator": "Mayor's Order 2009-22",
+    "shortName": "Mayor's Order 2009-22"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "84",
+      "locator": "Mayor's Order 2009-22"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "construction-codes-coordinating-board",
+      "locator": "Mayor's Order 2009-22"
+    }
+  ],
+  "relations": {}
+}

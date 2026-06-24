@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-parks-and-recreation",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Parks and Recreation",
+  "attributes": {
+    "officialUrl": "https://dpr.dc.gov",
+    "shortName": "Department of Parks and Recreation",
+    "sourceAgencyId": "1044",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-parks-and-recreation:dpr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "41"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-education",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-parks-and-recreation",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

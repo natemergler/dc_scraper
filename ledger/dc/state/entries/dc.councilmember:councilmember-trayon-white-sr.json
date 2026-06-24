@@ -1,0 +1,60 @@
+{
+  "id": "dc.councilmember:councilmember-trayon-white-sr",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Trayon White, Sr.",
+  "attributes": {
+    "officeLabel": "Ward 8 Councilmember",
+    "sourceProfileSlug": "councilmember-trayon-white-sr",
+    "sourceProfileUrl": "https://dccouncil.gov/council/councilmember-trayon-white-sr/",
+    "wardNumber": "8"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "councilmember-trayon-white-sr"
+    }
+  ],
+  "relations": {
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-8-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-trayon-white-sr"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          },
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-trayon-white-sr"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:8",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "councilmember-trayon-white-sr"
+          }
+        ]
+      }
+    ]
+  }
+}

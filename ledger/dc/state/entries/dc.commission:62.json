@@ -1,0 +1,50 @@
+{
+  "id": "dc.commission:62",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Combat Sports Commission",
+  "attributes": {
+    "enablingStatute": "D.C. Code § 3-604",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-604",
+    "shortName": "Combat Sports Commission",
+    "sourceCommissionId": "62",
+    "sourceOpenDcSlug": "combat-sports-commission",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/combat-sports-commission"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "62"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "combat-sports-commission"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-604",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "combat-sports-commission",
+            "locator": "D.C. Code § 3-604"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-law-22-228",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "62",
+            "locator": "D.C. Law 22-228"
+          }
+        ]
+      }
+    ]
+  }
+}

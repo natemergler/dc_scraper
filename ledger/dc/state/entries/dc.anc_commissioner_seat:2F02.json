@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:2F02",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 2F02",
+  "attributes": {
+    "currentHolderName": "Neil Rocklin",
+    "sourceAncId": "2F",
+    "sourceFirstName": "NEIL",
+    "sourceLastName": "ROCKLIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-2f",
+    "sourceRepresentativeName": "NEIL ROCKLIN",
+    "sourceSmdId": "2F02"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "2F02"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "2F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-2f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:2F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "2F02"
+          }
+        ]
+      }
+    ]
+  }
+}

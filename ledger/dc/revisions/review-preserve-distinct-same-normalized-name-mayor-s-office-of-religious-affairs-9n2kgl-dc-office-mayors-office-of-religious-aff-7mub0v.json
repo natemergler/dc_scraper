@@ -1,0 +1,26 @@
+{
+  "id": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-religious-affairs-9n2kgl-dc-office-mayors-office-of-religious-aff-7mub0v",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.office:mayors-office-of-religious-affairs",
+  "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of Religious Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+  "evidence": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "75"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-religious-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:mayors-office-of-religious-affairs"
+      ]
+    }
+  }
+}

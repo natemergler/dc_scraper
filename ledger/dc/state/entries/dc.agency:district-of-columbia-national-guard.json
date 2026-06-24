@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:district-of-columbia-national-guard",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "District of Columbia National Guard",
+  "attributes": {
+    "shortName": "District of Columbia National Guard",
+    "sourceAgencyId": "1049"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "13"
+    }
+  ],
+  "relations": {}
+}

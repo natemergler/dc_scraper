@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:6C03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6C03",
+  "attributes": {
+    "currentHolderName": "Jay Adelstein",
+    "officerRole": "Treasurer",
+    "sourceAncId": "6C",
+    "sourceFirstName": "JAY",
+    "sourceLastName": "ADELSTEIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6c",
+    "sourceRepresentativeName": "JAY ADELSTEIN",
+    "sourceSmdId": "6C03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6C03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6C03"
+          }
+        ]
+      }
+    ]
+  }
+}

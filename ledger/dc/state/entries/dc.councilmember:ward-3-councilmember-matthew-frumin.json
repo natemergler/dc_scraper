@@ -1,0 +1,128 @@
+{
+  "id": "dc.councilmember:ward-3-councilmember-matthew-frumin",
+  "family": "person",
+  "kind": "dc.councilmember",
+  "name": "Matthew Frumin",
+  "attributes": {
+    "officeLabel": "Ward 3 Councilmember",
+    "sourceProfileSlug": "ward-3-councilmember-matthew-frumin",
+    "sourceProfileUrl": "https://dccouncil.gov/council/ward-3-councilmember-matthew-frumin/",
+    "wardNumber": "3"
+  },
+  "citations": [
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-human-services"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-of-the-whole"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-executive-administration-and-labor"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "committee-on-facilities"
+    },
+    {
+      "source": "dccouncil.committees",
+      "sourceRecordId": "housing"
+    },
+    {
+      "source": "dccouncil.members",
+      "sourceRecordId": "ward-3-councilmember-matthew-frumin"
+    }
+  ],
+  "relations": {
+    "dc.relation:chairs": [
+      {
+        "kind": "dc.relation:chairs",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      }
+    ],
+    "dc.relation:holds": [
+      {
+        "kind": "dc.relation:holds",
+        "to": "dc.elected_office:ward-3-councilmember",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-3-councilmember-matthew-frumin"
+          }
+        ]
+      }
+    ],
+    "dc.relation:member_of": [
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-human-services",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-human-services"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-of-the-whole",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-of-the-whole"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-executive-administration-and-labor",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-executive-administration-and-labor"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:committee-on-facilities",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "committee-on-facilities"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:member_of",
+        "to": "dc.committee:housing",
+        "citations": [
+          {
+            "source": "dccouncil.committees",
+            "sourceRecordId": "housing"
+          }
+        ]
+      }
+    ],
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.ward:3",
+        "citations": [
+          {
+            "source": "dccouncil.members",
+            "sourceRecordId": "ward-3-councilmember-matthew-frumin"
+          }
+        ]
+      }
+    ]
+  }
+}

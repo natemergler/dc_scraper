@@ -1,0 +1,44 @@
+{
+  "id": "dc.board:105",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Lottery and Charitable Games Control Board",
+  "attributes": {
+    "enablingStatute": "DC Code § 3–1301",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1301",
+    "shortName": "Lottery and Charitable Games Control Board",
+    "sourceBoardId": "105",
+    "sourceOpenDcSlug": "lottery-and-charitable-games-control-board",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/lottery-and-charitable-games-control-board"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "105"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "lottery-and-charitable-games-control-board"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-3-1301",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "105",
+            "locator": "D.C. Code § 3-1301"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "lottery-and-charitable-games-control-board",
+            "locator": "D.C. Code § 3-1301"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "id": "dc.office:mayors-office-on-african-american-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Mayor's Office on African American Affairs",
+  "attributes": {
+    "officialUrl": "https://moaaa.dc.gov",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dc.agency_directory",
+            "sourceRecordId": "mayor-s-office-on-african-american-affairs:moaaa-dc-gov",
+            "url": "https://dc.gov/page/agency-list"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "148"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-african-american-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office on African American Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:mayors-office-on-african-american-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-mayor-s-office-on-african-american-affairs-19djz9d-dc-office-mayors-office-on-african-ameri-1tvl5kz",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Mayor's Office on African American Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "mayors-office-on-african-american-affairs",
+    "sourceOfficeKey": "mayors-office-on-african-american-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-on-african-american-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:mayors-office-of-community-affairs",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "mayors-office-on-african-american-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

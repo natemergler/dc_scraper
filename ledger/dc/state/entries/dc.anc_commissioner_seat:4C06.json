@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:4C06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4C06",
+  "attributes": {
+    "currentHolderName": "Christien Boas Hayes",
+    "officerRole": "Vice Chairperson",
+    "sourceAncId": "4C",
+    "sourceFirstName": "CHRISTEN",
+    "sourceLastName": "HAYES",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4c",
+    "sourceRepresentativeName": "CHRISTEN BOAS HAYES",
+    "sourceSmdId": "4C06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4C06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4C06"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:4E06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4E06",
+  "attributes": {
+    "currentHolderName": "Julianna Gonen",
+    "officerRole": "Secretary",
+    "sourceAncId": "4E",
+    "sourceFirstName": "JULIANNA",
+    "sourceLastName": "GONEN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4e",
+    "sourceRepresentativeName": "JULIANNA SUSAN GONEN",
+    "sourceSmdId": "4E06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4E06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4E06"
+          }
+        ]
+      }
+    ]
+  }
+}

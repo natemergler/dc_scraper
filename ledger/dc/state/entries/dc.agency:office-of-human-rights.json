@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:office-of-human-rights",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Office of Human Rights",
+  "attributes": {
+    "officialUrl": "https://ohr.dc.gov",
+    "shortName": "Office of Human Rights",
+    "sourceAgencyId": "1075",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "office-of-human-rights:ohr-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "66"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-public-safety-and-justice",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-human-rights",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

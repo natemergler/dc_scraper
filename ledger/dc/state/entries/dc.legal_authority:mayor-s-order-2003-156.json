@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:mayor-s-order-2003-156",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "Mayor's Order 2003-156",
+  "attributes": {
+    "authorityType": "mayors_order",
+    "canonicalUrl": "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2003-156",
+    "locator": "Mayor's Order 2003-156",
+    "shortName": "Mayor's Order 2003-156"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "57",
+      "locator": "Mayor's Order 2003-156"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-review-anti-deficiency-violationsintergovernmental-judicial-commission",
+      "locator": "Mayor's Order 2003-156"
+    }
+  ],
+  "relations": {}
+}

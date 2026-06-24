@@ -1,0 +1,40 @@
+{
+  "id": "dc.court:court-of-appeals",
+  "family": "organization",
+  "kind": "dc.court",
+  "name": "Court of Appeals",
+  "attributes": {
+    "description": "The District of Columbia Court of Appeals is the highest court of the District of Columbia.",
+    "officialUrl": "https://www.dccourts.gov/court-of-appeals",
+    "shortName": "Court of Appeals",
+    "sourceCourtKey": "court-of-appeals",
+    "sourceDCCourtsKey": "court-of-appeals",
+    "sourceFromSeed": true,
+    "sourceHeading": "Court of Appeals",
+    "sourcePageTitle": "Court of Appeals | District of Columbia Courts",
+    "sourcePageUrl": "https://www.dccourts.gov/court-of-appeals",
+    "sourceSummary": "The District of Columbia Court of Appeals is the highest court of the District of Columbia."
+  },
+  "citations": [
+    {
+      "source": "dccourts.structure",
+      "sourceRecordId": "court-of-appeals",
+      "url": "https://www.dccourts.gov/court-of-appeals"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.court_system:district-of-columbia-courts",
+        "citations": [
+          {
+            "source": "dccourts.structure",
+            "sourceRecordId": "court-of-appeals",
+            "url": "https://www.dccourts.gov/court-of-appeals"
+          }
+        ]
+      }
+    ]
+  }
+}

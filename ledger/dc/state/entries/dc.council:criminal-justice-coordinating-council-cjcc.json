@@ -1,0 +1,34 @@
+{
+  "id": "dc.council:criminal-justice-coordinating-council-cjcc",
+  "family": "organization",
+  "kind": "dc.council",
+  "name": "Criminal Justice Coordinating Council (CJCC)",
+  "attributes": {
+    "enablingStatute": "DC Code § 22-4232",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/22-4232",
+    "shortName": "Criminal Justice Coordinating Council (CJCC)",
+    "sourceOpenDcSlug": "criminal-justice-coordinating-council-cjcc",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/criminal-justice-coordinating-council-cjcc"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "criminal-justice-coordinating-council-cjcc"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-22-4232",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "criminal-justice-coordinating-council-cjcc",
+            "locator": "D.C. Code § 22-4232"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:3A04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 3A04",
+  "attributes": {
+    "currentHolderName": "Claire McCafferty",
+    "sourceAncId": "3A",
+    "sourceFirstName": "CLAIRE",
+    "sourceLastName": "MCcAFFERTY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3a",
+    "sourceRepresentativeName": "CLAIRE MCcAFFERTY",
+    "sourceSmdId": "3A04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3A04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:3A04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3A04"
+          }
+        ]
+      }
+    ]
+  }
+}

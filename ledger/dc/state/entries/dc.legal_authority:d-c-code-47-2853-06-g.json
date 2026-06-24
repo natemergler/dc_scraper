@@ -1,0 +1,21 @@
+{
+  "id": "dc.legal_authority:d-c-code-47-2853-06-g",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 47-2853.06(g)",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06",
+    "locator": "D.C. Code § 47-2853.06(g)",
+    "shortName": "D.C. Code § 47-2853.06(g)"
+  },
+  "citations": [
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-real-estate-appraisers",
+      "locator": "D.C. Code § 47-2853.06(g)",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-2853.06"
+    }
+  ],
+  "relations": {}
+}

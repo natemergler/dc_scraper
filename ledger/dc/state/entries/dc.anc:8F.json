@@ -1,0 +1,85 @@
+{
+  "id": "dc.anc:8F",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 8F",
+  "attributes": {
+    "description": "DCGIS identifies this Advisory Neighborhood Commission as ANC 8F. OANC presents the public profile and ward listing as ANC 6/8F spanning Wards 6 and 8; alpha keeps the DCGIS canonical ID/name while preserving the OANC display label as source evidence.",
+    "gisId": "ANCPly_366",
+    "officialUrl": "http://anc8f.org/",
+    "sourceAncId": "8F",
+    "sourceOancDisplayName": "ANC 6/8F",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-68f",
+    "sourcePageLastModified": "2026-06-16T21:58:02.000Z",
+    "sourceWardNumbers": [
+      "6",
+      "8"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8f"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6/8F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-68f"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8F03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8F04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8F05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8F05"
+          }
+        ]
+      }
+    ]
+  }
+}

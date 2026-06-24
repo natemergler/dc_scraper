@@ -1,0 +1,43 @@
+{
+  "id": "review-source-shadow-shared-url-https-www-open-dc-gov-sites-default-files-enablingstatute-elizabeths-z6g0rh-dc-board-120-dg2s89",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.board:st-elizabeths-east-redevelopment-initiative-advisory-board",
+  "rationale": "Draft source-shadow resolution for shared_url:https-www-open-dc-gov-sites-default-files-enablingstatute-elizabeths-east-redevelopment-pdf; target dc.board:120. Classified as curation_conflict because shared_url produced a source shadow review packet across dcgis, open_dc.",
+  "evidence": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "120",
+      "locator": "Mayor's Order 2016-134"
+    },
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "120"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board",
+      "locator": "Mayor's Order 2016-134"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "saint-elizabeths-east-redevelopment-initiative-advisory-board"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "st-elizabeths-east-redevelopment-initiative-advisory-board",
+      "locator": "Mayor's Order 2016-134"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "st-elizabeths-east-redevelopment-initiative-advisory-board"
+    }
+  ],
+  "patch": {
+    "suppress": true,
+    "review": {
+      "decision": "source_shadow",
+      "canonicalEntryId": "dc.board:120"
+    }
+  }
+}

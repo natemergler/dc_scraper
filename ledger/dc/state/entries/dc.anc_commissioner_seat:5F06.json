@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:5F06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5F06",
+  "attributes": {
+    "currentHolderName": "Joe Bishop-Henchman",
+    "officerRole": "Chairperson",
+    "sourceAncId": "5F",
+    "sourceFirstName": "JOE",
+    "sourceLastName": "BISHOP-HENCHMAN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5f",
+    "sourceRepresentativeName": "JOE BISHOP-HENCHMAN",
+    "sourceSmdId": "5F06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5F06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5F06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5F06"
+          }
+        ]
+      }
+    ]
+  }
+}

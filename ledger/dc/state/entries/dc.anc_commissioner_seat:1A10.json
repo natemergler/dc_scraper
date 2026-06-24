@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:1A10",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1A10",
+  "attributes": {
+    "currentHolderName": "Billy Easley",
+    "sourceAncId": "1A",
+    "sourceFirstName": "BILLY",
+    "sourceLastName": "EASLEY",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourceRepresentativeName": "BILLY EASLEY",
+    "sourceSmdId": "1A10"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1A10"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1A10",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1A10"
+          }
+        ]
+      }
+    ]
+  }
+}

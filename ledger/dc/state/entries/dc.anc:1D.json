@@ -1,0 +1,102 @@
+{
+  "id": "dc.anc:1D",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 1D",
+  "attributes": {
+    "gisId": "ANCPly_324",
+    "officialUrl": "http://anc1d.org/",
+    "representedNeighborhoods": "the Mount Pleasant and northwest corner of the Columbia Heights neighborhoods",
+    "sourceAncId": "1D",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1d",
+    "sourceWardNumbers": [
+      "1"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-1d"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "1D"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1d"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:1D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1D07"
+          }
+        ]
+      }
+    ]
+  }
+}

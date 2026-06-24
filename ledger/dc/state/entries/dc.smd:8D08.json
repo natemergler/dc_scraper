@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:8D08",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 8D08",
+  "attributes": {
+    "sourceAncId": "8D",
+    "sourceSmdId": "8D08",
+    "webUrl": "https://www.anc8d.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8D08"
+    }
+  ],
+  "relations": {}
+}

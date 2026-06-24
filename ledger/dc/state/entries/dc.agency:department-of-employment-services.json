@@ -1,0 +1,38 @@
+{
+  "id": "dc.agency:department-of-employment-services",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department of Employment Services",
+  "attributes": {
+    "officialUrl": "https://does.dc.gov",
+    "shortName": "Department of Employment Services",
+    "sourceAgencyId": "1032",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-of-employment-services:does-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "39"
+    }
+  ],
+  "relations": {
+    "dc.relation:reports_to": [
+      {
+        "kind": "dc.relation:reports_to",
+        "to": "dc.office:office-of-the-deputy-mayor-for-education",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "department-of-employment-services",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

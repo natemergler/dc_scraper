@@ -1,0 +1,24 @@
+{
+  "id": "dc.agency:department-on-disability-services",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Department on Disability Services",
+  "attributes": {
+    "officialUrl": "https://dds.dc.gov",
+    "shortName": "Department on Disability Services",
+    "sourceAgencyId": "1031",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "department-on-disability-services:dds-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "24"
+    }
+  ],
+  "relations": {}
+}

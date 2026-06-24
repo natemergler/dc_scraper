@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:dc-green-bank",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "DC Green Bank",
+  "attributes": {
+    "shortName": "DC Green Bank",
+    "sourceAgencyId": "1172"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "151"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:3D02",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 3D02",
+  "attributes": {
+    "sourceAncId": "3D",
+    "sourceSmdId": "3D02",
+    "webUrl": "https://www.anc3d.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "3D02"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,112 @@
+{
+  "id": "dc.anc:8C",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 8C",
+  "attributes": {
+    "gisId": "ANCPly_363",
+    "officialUrl": "https://www.anc8c.org/",
+    "representedNeighborhoods": "the Barry Farm, Congress Heights, and Douglass neighborhoods",
+    "sourceAncId": "8C",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourceWardNumbers": [
+      "8"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-8c"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "8C"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C06"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C07"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:8C08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C08"
+          }
+        ]
+      }
+    ]
+  }
+}

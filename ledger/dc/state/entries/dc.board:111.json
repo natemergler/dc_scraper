@@ -1,0 +1,56 @@
+{
+  "id": "dc.board:111",
+  "family": "organization",
+  "kind": "dc.board",
+  "name": "Not-for-Profit Hospital Corporation Board of Directors (known as UMC, United Medical Center)",
+  "attributes": {
+    "enablingStatute": "DC Code § 44-951.02",
+    "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/44-951.02",
+    "shortName": "Not-for-Profit Hospital Corporation Board of Directors (known as UMC, United Medical Center)",
+    "sourceBoardId": "111",
+    "sourceOpenDcSlug": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/not-profit-hospital-corporation-board-directors-known-umc-united-medical-center"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "111"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-44-951-02",
+        "citations": [
+          {
+            "source": "dcgis.boards",
+            "sourceRecordId": "111",
+            "locator": "D.C. Code § 44-951.02"
+          },
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center",
+            "locator": "D.C. Code § 44-951.02"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:department-of-health-care-finance",
+        "citations": [
+          {
+            "source": "open_dc.public_bodies",
+            "sourceRecordId": "not-profit-hospital-corporation-board-directors-known-umc-united-medical-center"
+          }
+        ]
+      }
+    ]
+  }
+}

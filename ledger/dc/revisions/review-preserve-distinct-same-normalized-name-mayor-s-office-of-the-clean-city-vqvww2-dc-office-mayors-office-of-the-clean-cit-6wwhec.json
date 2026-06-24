@@ -1,0 +1,31 @@
+{
+  "id": "review-preserve-distinct-same-normalized-name-mayor-s-office-of-the-clean-city-vqvww2-dc-office-mayors-office-of-the-clean-cit-6wwhec",
+  "source": "review_cli",
+  "targetKind": "entry",
+  "targetId": "dc.office:mayors-office-of-the-clean-city",
+  "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Mayor's Office of the Clean City. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+  "evidence": [
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "mayor-s-office-of-the-clean-city:cleancity-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "150"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "mayors-office-of-the-clean-city",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "patch": {
+    "review": {
+      "decision": "preserve_distinct",
+      "relatedEntryIds": [
+        "dc.agency:mayors-office-of-the-clean-city"
+      ]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "dc.agency:washington-convention-and-sports-authority",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Washington Convention and Sports Authority",
+  "attributes": {
+    "shortName": "Washington Convention and Sports Authority",
+    "sourceAgencyId": "1108"
+  },
+  "citations": [
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "47"
+    }
+  ],
+  "relations": {}
+}

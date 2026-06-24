@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:6E04",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 6E04",
+  "attributes": {
+    "currentHolderName": "Julia Fiedler",
+    "sourceAncId": "6E",
+    "sourceFirstName": "JULIA",
+    "sourceLastName": "FIEDLER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-6e",
+    "sourceRepresentativeName": "JULIA FIEDLER",
+    "sourceSmdId": "6E04"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "6E04"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "6E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-6e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:6E04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "6E04"
+          }
+        ]
+      }
+    ]
+  }
+}

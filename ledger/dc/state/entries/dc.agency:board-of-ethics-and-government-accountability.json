@@ -1,0 +1,51 @@
+{
+  "id": "dc.agency:board-of-ethics-and-government-accountability",
+  "family": "organization",
+  "kind": "dc.agency",
+  "name": "Board of Ethics and Government Accountability",
+  "attributes": {
+    "officialUrl": "https://bega.dc.gov",
+    "revisionReviews": [
+      {
+        "canonicalEntryId": "dc.agency:board-of-ethics-and-government-accountability",
+        "decision": "source_shadow",
+        "evidence": [
+          {
+            "source": "bega.structure",
+            "sourceRecordId": "board-of-ethics-and-government-accountability",
+            "url": "https://bega.dc.gov/node/61616/"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "118"
+          }
+        ],
+        "rationale": "The BEGA structure source page names the same Board of Ethics and Government Accountability organization already represented by DCGIS agency 1138. After canonical agency ID migration, both source fragments attach to the same civic agency ID, so this revision records the audited source-shadow decision without suppressing the canonical BEGA agency.",
+        "revisionId": "2026-06-11-bega-structure-agency-source-shadow",
+        "source": "audited_revision"
+      }
+    ],
+    "shortName": "Board of Ethics and Government Accountability",
+    "sourceAgencyId": "1138",
+    "sourceBegaStructureKey": "board-of-ethics-and-government-accountability",
+    "sourcePageTitle": "About BEGA | bega",
+    "sourcePageUrl": "https://dc.gov/page/agency-list"
+  },
+  "citations": [
+    {
+      "source": "bega.structure",
+      "sourceRecordId": "board-of-ethics-and-government-accountability",
+      "url": "https://bega.dc.gov/node/61616/"
+    },
+    {
+      "source": "dc.agency_directory",
+      "sourceRecordId": "board-of-ethics-and-government-accountability:bega-dc-gov",
+      "url": "https://dc.gov/page/agency-list"
+    },
+    {
+      "source": "dcgis.agencies",
+      "sourceRecordId": "118"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,92 @@
+{
+  "id": "dc.anc:3F",
+  "family": "organization",
+  "kind": "dc.anc",
+  "name": "ANC 3F",
+  "attributes": {
+    "gisId": "ANCPly_339",
+    "officialUrl": "http://anc3f.dc.gov/",
+    "representedNeighborhoods": "the Van Ness, North Cleveland Park, Wakefield, and Forest Hills neighborhoods",
+    "sourceAncId": "3F",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-3f",
+    "sourceWardNumbers": [
+      "3"
+    ],
+    "webUrl": "http://anc.dc.gov/page/advisory-neighborhood-commission-3f"
+  },
+  "citations": [
+    {
+      "source": "dcgis.ancs",
+      "sourceRecordId": "3F"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "3F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-3f"
+    }
+  ],
+  "relations": {
+    "dc.relation:contains": [
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F01",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F01"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F02",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F02"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F03"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F04",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F04"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F05"
+          }
+        ]
+      },
+      {
+        "kind": "dc.relation:contains",
+        "to": "dc.smd:3F06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "3F06"
+          }
+        ]
+      }
+    ]
+  }
+}

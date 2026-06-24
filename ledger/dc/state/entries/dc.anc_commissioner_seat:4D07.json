@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:4D07",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4D07",
+  "attributes": {
+    "currentHolderName": "Kayla D. Baker",
+    "sourceAncId": "4D",
+    "sourceFirstName": "KAYLA",
+    "sourceLastName": "BAKER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4d",
+    "sourceRepresentativeName": "KAYLA D. BAKER",
+    "sourceSmdId": "4D07"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4D07"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4D07",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4D07"
+          }
+        ]
+      }
+    ]
+  }
+}

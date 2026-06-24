@@ -1,0 +1,25 @@
+{
+  "id": "dc.legal_authority:d-c-code-3-1202-01",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 3-1202.01",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/3-1202.01",
+    "locator": "D.C. Code § 3-1202.01",
+    "shortName": "D.C. Code § 3-1202.01"
+  },
+  "citations": [
+    {
+      "source": "dcgis.boards",
+      "sourceRecordId": "35",
+      "locator": "D.C. Code § 3-1202.01"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "board-dentistry",
+      "locator": "D.C. Code § 3-1202.01"
+    }
+  ],
+  "relations": {}
+}

@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:5F05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5F05",
+  "attributes": {
+    "currentHolderName": "Jennifer Anderson",
+    "sourceAncId": "5F",
+    "sourceFirstName": "JENNIFER",
+    "sourceLastName": "ANDERSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5f",
+    "sourceRepresentativeName": "JENNIFER ANDERSON",
+    "sourceSmdId": "5F05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5F05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5F",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5f"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5F05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5F05"
+          }
+        ]
+      }
+    ]
+  }
+}

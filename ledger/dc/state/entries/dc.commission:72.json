@@ -1,0 +1,49 @@
+{
+  "id": "dc.commission:72",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Commission on Health Equity",
+  "attributes": {
+    "shortName": "Commission on Health Equity",
+    "sourceCommissionId": "72",
+    "sourceOpenDcSlug": "commission-health-equity",
+    "sourceOpenDcUrl": "https://www.open-dc.gov/public-bodies/commission-health-equity"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "72"
+    },
+    {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "commission-health-equity"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-7-756-01",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "72",
+            "locator": "D.C. Code § 7-756.01"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:dc-health",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "72"
+          }
+        ]
+      }
+    ]
+  }
+}

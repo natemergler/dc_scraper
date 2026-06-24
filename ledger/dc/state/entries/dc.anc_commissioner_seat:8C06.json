@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:8C06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8C06",
+  "attributes": {
+    "currentHolderName": "Robbie Woodland",
+    "sourceAncId": "8C",
+    "sourceFirstName": "ROBBIE",
+    "sourceLastName": "WOODLAND",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8c",
+    "sourceRepresentativeName": "ROBBIE WOODLAND",
+    "sourceSmdId": "8C06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8C06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8C",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8c"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8C06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8C06"
+          }
+        ]
+      }
+    ]
+  }
+}

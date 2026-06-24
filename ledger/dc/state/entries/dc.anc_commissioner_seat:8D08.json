@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:8D08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 8D08",
+  "attributes": {
+    "currentHolderName": "Randell Strickland",
+    "sourceAncId": "8D",
+    "sourceFirstName": "RANDELL",
+    "sourceLastName": "STRICKLAND",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-8d",
+    "sourceRepresentativeName": "RANDELL STRICKLAND",
+    "sourceSmdId": "8D08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "8D08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "8D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-8d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:8D08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "8D08"
+          }
+        ]
+      }
+    ]
+  }
+}

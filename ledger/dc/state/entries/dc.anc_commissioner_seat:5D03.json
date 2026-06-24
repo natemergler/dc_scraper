@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:5D03",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 5D03",
+  "attributes": {
+    "currentHolderName": "Anna Roblin",
+    "officerRole": "Secretary",
+    "sourceAncId": "5D",
+    "sourceFirstName": "ANNA",
+    "sourceLastName": "ROBLIN",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-5d",
+    "sourceRepresentativeName": "ANNA ROBLIN",
+    "sourceSmdId": "5D03"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5D03"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5D",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5d"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:5D03",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "5D03"
+          }
+        ]
+      }
+    ]
+  }
+}

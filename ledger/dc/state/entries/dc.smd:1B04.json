@@ -1,0 +1,18 @@
+{
+  "id": "dc.smd:1B04",
+  "family": "area",
+  "kind": "dc.smd",
+  "name": "SMD 1B04",
+  "attributes": {
+    "sourceAncId": "1B",
+    "sourceSmdId": "1B04",
+    "webUrl": "https://www.anc1b.org/"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1B04"
+    }
+  ],
+  "relations": {}
+}

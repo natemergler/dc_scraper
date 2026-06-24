@@ -1,0 +1,59 @@
+{
+  "id": "dc.office:office-of-policy-and-legislative-affairs",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Office of Policy and Legislative Affairs",
+  "attributes": {
+    "description": "Performs policy analysis, develops policy issues and marshals the Mayor's legislative agenda.",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "74"
+          },
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-policy-and-legislative-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ],
+        "rationale": "Preserve the Mayor organizational-chart office facet separately from the DCGIS agency facet for Office of Policy and Legislative Affairs. The Mayor source contributes executive hierarchy structure while DCGIS contributes an agency row; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:office-of-policy-and-legislative-affairs"
+        ],
+        "revisionId": "review-preserve-distinct-same-normalized-name-office-of-policy-and-legislative-affairs-2y5v6x-dc-office-office-of-policy-and-legislati-k2q6b8",
+        "source": "review_cli"
+      }
+    ],
+    "shortName": "Office of Policy and Legislative Affairs",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "office-of-policy-and-legislative-affairs",
+    "sourceOfficeKey": "office-of-policy-and-legislative-affairs",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "office-of-policy-and-legislative-affairs",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {
+    "dc.relation:part_of": [
+      {
+        "kind": "dc.relation:part_of",
+        "to": "dc.office:office-of-the-senior-advisor",
+        "citations": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "office-of-policy-and-legislative-affairs",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          }
+        ]
+      }
+    ]
+  }
+}

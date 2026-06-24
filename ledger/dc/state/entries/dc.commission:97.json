@@ -1,0 +1,43 @@
+{
+  "id": "dc.commission:97",
+  "family": "organization",
+  "kind": "dc.commission",
+  "name": "Higher Education Licensure Commission (ELC)",
+  "attributes": {
+    "shortName": "Higher Education Licensure Commission (ELC)",
+    "sourceCommissionId": "97"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "97"
+    }
+  ],
+  "relations": {
+    "dc.relation:authorized_by": [
+      {
+        "kind": "dc.relation:authorized_by",
+        "to": "dc.legal_authority:d-c-code-38-1303",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "97",
+            "locator": "D.C. Code § 38-1303"
+          }
+        ]
+      }
+    ],
+    "dc.relation:governs": [
+      {
+        "kind": "dc.relation:governs",
+        "to": "dc.agency:office-of-the-state-superintendent-of-education",
+        "citations": [
+          {
+            "source": "dcgis.commissions",
+            "sourceRecordId": "97"
+          }
+        ]
+      }
+    ]
+  }
+}

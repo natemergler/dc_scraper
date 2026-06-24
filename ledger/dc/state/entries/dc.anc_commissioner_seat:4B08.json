@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:4B08",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 4B08",
+  "attributes": {
+    "currentHolderName": "Garrett Moore",
+    "sourceAncId": "4B",
+    "sourceFirstName": "GARRETT",
+    "sourceLastName": "MOORE",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-4b",
+    "sourceRepresentativeName": "GARRETT MOORE",
+    "sourceSmdId": "4B08"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "4B08"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "4B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-4b"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:4B08",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "4B08"
+          }
+        ]
+      }
+    ]
+  }
+}

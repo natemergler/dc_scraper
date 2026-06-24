@@ -1,0 +1,41 @@
+{
+  "id": "dc.anc_commissioner_seat:1E06",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1E06",
+  "attributes": {
+    "currentHolderName": "Josh Jacobson",
+    "officerRole": "Chairperson",
+    "sourceAncId": "1E",
+    "sourceFirstName": "JOSH",
+    "sourceLastName": "JACOBSON",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1e",
+    "sourceRepresentativeName": "JOSH JACOBSON",
+    "sourceSmdId": "1E06"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1E06"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1E",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1e"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1E06",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1E06"
+          }
+        ]
+      }
+    ]
+  }
+}

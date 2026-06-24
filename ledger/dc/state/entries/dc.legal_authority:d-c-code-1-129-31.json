@@ -1,0 +1,20 @@
+{
+  "id": "dc.legal_authority:d-c-code-1-129-31",
+  "family": "authority",
+  "kind": "dc.legal_authority",
+  "name": "D.C. Code § 1-129.31",
+  "attributes": {
+    "authorityType": "dc_code",
+    "canonicalUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/1-129.31",
+    "locator": "D.C. Code § 1-129.31",
+    "shortName": "D.C. Code § 1-129.31"
+  },
+  "citations": [
+    {
+      "source": "dcgis.commissions",
+      "sourceRecordId": "109",
+      "locator": "D.C. Code § 1-129.31"
+    }
+  ],
+  "relations": {}
+}

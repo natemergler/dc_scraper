@@ -1,0 +1,40 @@
+{
+  "id": "dc.anc_commissioner_seat:1A05",
+  "family": "position",
+  "kind": "dc.anc_commissioner_seat",
+  "name": "Commissioner Seat for SMD 1A05",
+  "attributes": {
+    "currentHolderName": "Christine Miller",
+    "sourceAncId": "1A",
+    "sourceFirstName": "CHRISTINE",
+    "sourceLastName": "MILLER",
+    "sourceOancProfileUrl": "https://oanc.dc.gov/anc-profile/anc-1a",
+    "sourceRepresentativeName": "CHRISTINE MILLER",
+    "sourceSmdId": "1A05"
+  },
+  "citations": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "1A05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "1A",
+      "url": "https://oanc.dc.gov/anc-profile/anc-1a"
+    }
+  ],
+  "relations": {
+    "dc.relation:represents": [
+      {
+        "kind": "dc.relation:represents",
+        "to": "dc.smd:1A05",
+        "citations": [
+          {
+            "source": "dcgis.smds",
+            "sourceRecordId": "1A05"
+          }
+        ]
+      }
+    ]
+  }
+}

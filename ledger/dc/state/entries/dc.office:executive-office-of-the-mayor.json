@@ -1,0 +1,54 @@
+{
+  "id": "dc.office:executive-office-of-the-mayor",
+  "family": "organization",
+  "kind": "dc.office",
+  "name": "Executive Office of the Mayor",
+  "attributes": {
+    "officialUrl": "https://mayor.dc.gov/",
+    "revisionReviews": [
+      {
+        "decision": "preserve_distinct",
+        "evidence": [
+          {
+            "source": "mayor.executive_structure",
+            "sourceRecordId": "executive-office-of-the-mayor",
+            "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+          },
+          {
+            "source": "dcgis.agencies",
+            "sourceRecordId": "45"
+          }
+        ],
+        "rationale": "Preserve the Mayor-source office facet separately from the DCGIS agency facet for this state snapshot. DCGIS classifies EOM as an agency/budget source row, while the Mayor organizational-chart source contributes an executive hierarchy office node; merging or suppressing either facet would be a broader canonical identity decision.",
+        "relatedEntryIds": [
+          "dc.agency:executive-office-of-the-mayor"
+        ],
+        "revisionId": "2026-06-11-eom-agency-office-review",
+        "source": "audited_revision"
+      }
+    ],
+    "shortName": "Executive Office of the Mayor",
+    "sourceHeading": "Organizational Charts for Agencies and Offices Under the Mayor's Authority",
+    "sourceMayorExecutiveStructureKey": "executive-office-of-the-mayor",
+    "sourceOfficeKey": "executive-office-of-the-mayor",
+    "sourcePageTitle": "Organizational Charts for Agencies and Offices Under the Mayor's Authority | mayormb",
+    "sourcePageUrl": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+    "sourcePageUrls": [
+      "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority",
+      "https://mayor.dc.gov/page/executive-branch-0"
+    ]
+  },
+  "citations": [
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "executive-office-of-the-mayor",
+      "url": "https://mayor.dc.gov/page/executive-branch-0"
+    },
+    {
+      "source": "mayor.executive_structure",
+      "sourceRecordId": "executive-office-of-the-mayor",
+      "url": "https://mayor.dc.gov/page/organizational-charts-agencies-and-offices-under-mayors-authority"
+    }
+  ],
+  "relations": {}
+}
