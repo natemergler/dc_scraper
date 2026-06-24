@@ -21,8 +21,8 @@ DC is the first jurisdiction and the alpha contract-readiness target.
 
 The current alpha package is a reproducible checkpoint from committed state, not a promise of
 complete live DC coverage. The latest local export contains more than 1,200 ledger entries, more
-than 1,100 relations, source coverage rows for collected and inventory-only source categories, and
-zero release-blocking GovGraph review items.
+than 1,100 relations, source coverage rows for collected, collected-empty, and inventory-only source
+categories, and zero release-blocking GovGraph review items.
 
 The old CSV packet remains useful as a checklist and vocabulary seed. It is not treated as current
 authority.

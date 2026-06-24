@@ -117,9 +117,6 @@ Deno.test("legal authority artifacts reject implausible DC Code section roots", 
   assertEquals(artifacts.relationFragments, []);
   assertEquals(artifacts.entryCitations, [
     cite("open_dc.public_bodies", "humanities-council-washington-dc"),
-    cite("open_dc.public_bodies", "humanities-council-washington-dc", {
-      locator: "D.C. Code § 1993-200",
-    }),
   ]);
 });
 

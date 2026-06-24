@@ -4,7 +4,6 @@
   "kind": "dc.commission",
   "name": "Washington Metropolitan Area Transit Commission (WMATC)",
   "attributes": {
-    "enablingStatute": "Public Law 89-794",
     "shortName": "Washington Metropolitan Area Transit Commission (WMATC)",
     "sourceCommissionId": "129",
     "sourceOpenDcSlug": "washington-metropolitan-area-transit-commission-wmatc",

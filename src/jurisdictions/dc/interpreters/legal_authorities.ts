@@ -94,6 +94,9 @@ export function buildLegalAuthorityArtifacts(
 
   for (const input of options.locatorInputs) {
     const classified = classifyLegalAuthorityLocator(input.locator);
+    if (!classified && isRejectedLegalAuthorityLocator(input.locator)) {
+      continue;
+    }
     const locatorCitation = cite(options.source, options.sourceRecordId, {
       locator: classified?.locator ?? input.locator,
       url: input.url,
@@ -178,6 +181,14 @@ function findMergeableLocatorKey(
   }
 
   return existing.has(candidate.locator) ? candidate.locator : null;
+}
+
+export function isRejectedLegalAuthorityLocator(rawLocator: string): boolean {
+  const locator = rawLocator.trim().replace(/\s+/g, " ");
+  const dcCodeMatch = locator.match(
+    /^D\.?\s*C\.?\s*(?:Official\s+)?Code\s*§\s*([0-9][0-9A-Za-z.\-]*(?:\([^)]+\))*)$/i,
+  );
+  return Boolean(dcCodeMatch?.[1] && !classifyLegalAuthorityLocator(locator));
 }
 
 function classifyLegalAuthorityLocator(rawLocator: string): ClassifiedLegalAuthority | null {

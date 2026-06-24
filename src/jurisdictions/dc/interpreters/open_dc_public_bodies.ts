@@ -15,6 +15,7 @@ import {
 import {
   buildLegalAuthorityArtifacts,
   buildOpenDcLegalAuthorityLocatorInputs,
+  isRejectedLegalAuthorityLocator,
 } from "./legal_authorities.ts";
 import { dcBoardKind } from "../kinds/board.ts";
 import { dcCommissionKind } from "../kinds/commission.ts";
@@ -383,6 +384,9 @@ export function interpretOpenDCPublicBodies(
       legalLocators,
       parsed.enablingStatuteUrl,
     );
+    const releaseLegalAuthorityLocatorInputs = legalAuthorityLocatorInputs.filter((input) =>
+      !isRejectedLegalAuthorityLocator(input.locator)
+    );
     const legalAuthorityArtifacts = buildLegalAuthorityArtifacts({
       source: sourceKind,
       sourceRecordId: parsed.record.key,
@@ -398,10 +402,10 @@ export function interpretOpenDCPublicBodies(
       sourceOpenDcUrl: parsed.detailUrl,
     };
 
-    if (parsed.enablingStatute) {
+    if (parsed.enablingStatute && releaseLegalAuthorityLocatorInputs.length > 0) {
       attributes.enablingStatute = parsed.enablingStatute;
     }
-    if (parsed.enablingStatuteUrl) {
+    if (parsed.enablingStatuteUrl && releaseLegalAuthorityLocatorInputs.length > 0) {
       attributes.enablingStatuteUrl = parsed.enablingStatuteUrl;
     }
     if (parsed.description) {
@@ -495,6 +499,17 @@ export function interpretOpenDCPublicBodies(
         code: "dc.interpreter.opendc_enabling_statute_unparsed",
         message:
           `Could not parse legal citation from enabling statute: "${parsed.enablingStatute}"`,
+        citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
+      });
+    } else if (
+      parsed.enablingStatute && legalAuthorityLocatorInputs.length > 0 &&
+      releaseLegalAuthorityLocatorInputs.length === 0
+    ) {
+      findings.push({
+        kind: "info",
+        code: "dc.interpreter.opendc_enabling_statute_rejected",
+        message:
+          `Rejected implausible legal citation from enabling statute: "${parsed.enablingStatute}"`,
         citation: cite(sourceKind, parsed.record.key, { locator: "enablingStatute" }),
       });
     }

@@ -559,6 +559,36 @@ Deno.test("open_dc.public_bodies parses legal citations from enabling statute", 
   assertEquals(output.relationFragments[0].to, "dc.legal_authority:d-c-code-1-200-01");
 });
 
+Deno.test("open_dc.public_bodies drops implausible Code locator evidence", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "humanities-council-washington-dc",
+    payload: {
+      name: "Humanities Council of Washington, D.C.",
+      slug: "humanities-council-washington-dc",
+      detailUrl: "https://www.open-dc.gov/public-bodies/humanities-council-washington-dc/",
+      enablingStatute: "D.C. Code §1993-200",
+      enablingStatuteUrl: "http://dccode.org/simple/sections/1993-200.html",
+    },
+  }]);
+
+  assertEquals(output.relationFragments.length, 0);
+  assertEquals(output.entryFragments.length, 1);
+  const entryFragment = output.entryFragments[0];
+  assertEquals(Object.hasOwn(entryFragment.attributes, "enablingStatute"), false);
+  assertEquals(Object.hasOwn(entryFragment.attributes, "enablingStatuteUrl"), false);
+  assertEquals(entryFragment.citations, [
+    cite(openDCPublicBodiesSource.id, "humanities-council-washington-dc"),
+  ]);
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_enabling_statute_rejected"
+    ),
+    true,
+  );
+});
+
 Deno.test("open_dc.public_bodies preserves mayoral order authority text as evidence and locator citation", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,

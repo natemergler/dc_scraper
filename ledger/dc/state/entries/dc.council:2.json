@@ -4,7 +4,6 @@
   "kind": "dc.council",
   "name": "Interagency Coordinating Council (ICC)",
   "attributes": {
-    "enablingStatute": "Mayor's Order 20012-49",
     "shortName": "Interagency Coordinating Council (ICC)",
     "sourceCouncilId": "2",
     "sourceOpenDcSlug": "interagency-coordinating-council-icc",

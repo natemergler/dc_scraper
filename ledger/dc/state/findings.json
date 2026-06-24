@@ -121,6 +121,16 @@
   },
   {
     "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_rejected",
+    "message": "Rejected implausible legal citation from enabling statute: \"D.C. Code §1993-200\"",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "humanities-council-washington-dc",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
     "code": "dc.interpreter.opendc_enabling_statute_unparsed",
     "message": "Could not parse legal citation from enabling statute: \"1993-148; amended by 2001-79 and 2012-154\"",
     "citation": {
