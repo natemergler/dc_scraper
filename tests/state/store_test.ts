@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 
-import { cite, type Entry, type LedgerState } from "../../src/core/types.ts";
+import { cite, type Entry, type Finding, type LedgerState } from "../../src/core/types.ts";
 import { defineEntryKind, defineRelationKind, KindRegistry } from "../../src/core/kinds.ts";
 import { loadCommittedState, writeCommittedState } from "../../src/state/store.ts";
 
@@ -108,6 +108,55 @@ Deno.test("state writes are stable and deterministic", async () => {
 
     const fileText2 = await Deno.readTextFile(`${stateRoot}/entries/dc.agency:b.json`);
     assertStringIncludes(fileText2, '"id": "dc.agency:b"');
+  } finally {
+    await Deno.remove(stateRoot, { recursive: true });
+  }
+});
+
+Deno.test("state store persists release metadata", async () => {
+  const registry = new KindRegistry();
+  const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-state-release-metadata-" });
+  try {
+    registry.register(makeAgencyKind());
+    const findings: Finding[] = [
+      {
+        kind: "warn",
+        code: "fixture.finding",
+        message: "Fixture finding for release posture.",
+        citation: cite("registry", "1"),
+      },
+    ];
+    const state: LedgerState = {
+      jurisdiction: "dc",
+      generatedAt: "",
+      entries: new Map([
+        [
+          "dc.agency:a",
+          buildAgency("dc.agency:a", "A", [{
+            source: "registry",
+            sourceRecordId: "1",
+          }]),
+        ],
+      ]),
+      findings,
+    };
+
+    await writeCommittedState(state, stateRoot, {
+      sourceCoverageStats: [
+        { source: "registry", snapshotCount: 1, recordCount: 1, citationCount: 1 },
+      ],
+    });
+
+    const loaded = await loadCommittedState(stateRoot, registry);
+    assertEquals(loaded.state.findings, [{
+      kind: "warn",
+      code: "fixture.finding",
+      message: "Fixture finding for release posture.",
+      citation: { source: "registry", sourceRecordId: "1" },
+    }]);
+    assertEquals(loaded.sourceCoverageStats, [
+      { source: "registry", snapshotCount: 1, recordCount: 1, citationCount: 1 },
+    ]);
   } finally {
     await Deno.remove(stateRoot, { recursive: true });
   }

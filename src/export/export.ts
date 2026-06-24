@@ -68,6 +68,13 @@ interface SourceStats {
   citations: number;
 }
 
+export interface ReleaseSourceCoverageStats {
+  source: string;
+  snapshotCount: number;
+  recordCount: number;
+  citationCount: number;
+}
+
 interface ExportRelationRow {
   from_entry_id: string;
   relation_kind: string;
@@ -272,6 +279,7 @@ export interface ExportReleaseOptions {
   jurisdiction: string;
   releaseRoot: string;
   sourceCatalog?: SourceCoverageCatalogItem[];
+  sourceCoverageStats?: ReleaseSourceCoverageStats[];
   reviewItems?: ReviewItem[];
 }
 
@@ -421,40 +429,63 @@ export async function exportReleaseArtifacts(
     }
   }
 
-  const snapshotRows = workspace.db.prepare(
-    "SELECT source, COUNT(*) AS count FROM snapshots GROUP BY source ORDER BY source ASC",
-  ).all() as Array<{ source: string; count: number }>;
-  const recordRows = workspace.db.prepare(
-    "SELECT source, COUNT(*) AS count FROM records GROUP BY source ORDER BY source ASC",
-  ).all() as Array<{ source: string; count: number }>;
-  const recordCountBySource = new Map(recordRows.map((row) => [row.source, row.count]));
-
   const sourceCount = new Map<string, SourceStats>();
-  for (const snapshot of snapshotRows) {
-    sourceCount.set(snapshot.source, {
-      snapshotRecords: snapshot.count,
-      citations: 0,
-    });
-  }
+  const recordCountBySource = new Map<string, number>();
+  const catalogBySource = new Map((options.sourceCatalog ?? []).map((item) => [item.source, item]));
 
-  for (const citation of citationsOut) {
-    if (!citation.source) {
-      continue;
+  if (options.sourceCoverageStats) {
+    for (const stat of options.sourceCoverageStats) {
+      if (
+        stat.snapshotCount === 0 && stat.recordCount === 0 && stat.citationCount === 0 &&
+        !catalogBySource.has(stat.source)
+      ) {
+        continue;
+      }
+      sourceCount.set(stat.source, {
+        snapshotRecords: stat.snapshotCount,
+        citations: stat.citationCount,
+      });
+      recordCountBySource.set(stat.source, stat.recordCount);
     }
-    const current = sourceCount.get(citation.source);
-    if (current) {
-      current.citations += 1;
-      sourceCount.set(citation.source, current);
-      continue;
+  } else {
+    const snapshotRows = workspace.db.prepare(
+      "SELECT source, COUNT(*) AS count FROM snapshots GROUP BY source ORDER BY source ASC",
+    ).all() as Array<{ source: string; count: number }>;
+    const recordRows = workspace.db.prepare(
+      "SELECT source, COUNT(*) AS count FROM records GROUP BY source ORDER BY source ASC",
+    ).all() as Array<{ source: string; count: number }>;
+    for (const row of recordRows) {
+      recordCountBySource.set(row.source, row.count);
+    }
+    for (const snapshot of snapshotRows) {
+      sourceCount.set(snapshot.source, {
+        snapshotRecords: snapshot.count,
+        citations: 0,
+      });
     }
 
-    sourceCount.set(citation.source, {
-      snapshotRecords: 0,
-      citations: 1,
-    });
+    for (const citation of citationsOut) {
+      if (!citation.source) {
+        continue;
+      }
+      const current = sourceCount.get(citation.source);
+      if (current) {
+        current.citations += 1;
+        sourceCount.set(citation.source, current);
+        continue;
+      }
+
+      sourceCount.set(citation.source, {
+        snapshotRecords: 0,
+        citations: 1,
+      });
+    }
   }
 
   const sourceRows = Array.from(sourceCount.entries())
+    .filter(([source, stats]) => {
+      return stats.citations > 0 || stats.snapshotRecords > 0;
+    })
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([source, stats]) => [
       source,

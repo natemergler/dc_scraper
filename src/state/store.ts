@@ -5,6 +5,7 @@ import {
   type BaseRelation,
   type CitationValue,
   type Entry,
+  type Finding,
   isCitationValue,
   type LedgerState,
 } from "../core/types.ts";
@@ -14,9 +15,21 @@ import { validateStateEntries } from "./validation.ts";
 export interface StateStoreResult {
   state: LedgerState;
   backlinks: Map<string, BaseRelation[]>;
+  sourceCoverageStats: CommittedSourceCoverageStats[];
 }
 
-export async function writeCommittedState(state: LedgerState, stateRoot: string): Promise<void> {
+export interface CommittedSourceCoverageStats {
+  source: string;
+  snapshotCount: number;
+  recordCount: number;
+  citationCount: number;
+}
+
+export async function writeCommittedState(
+  state: LedgerState,
+  stateRoot: string,
+  options: { sourceCoverageStats?: CommittedSourceCoverageStats[] } = {},
+): Promise<void> {
   const entriesDir = join(stateRoot, "entries");
   await ensureDir(entriesDir);
   const expectedEntryFiles = new Set(Array.from(state.entries.keys()).map((id) => `${id}.json`));
@@ -39,6 +52,15 @@ export async function writeCommittedState(state: LedgerState, stateRoot: string)
     const payload = JSON.stringify(normalized, null, 2) + "\n";
     await Deno.writeTextFile(outputPath, payload);
   }
+
+  await Deno.writeTextFile(
+    join(stateRoot, "findings.json"),
+    JSON.stringify(normalizeFindings(state.findings ?? []), null, 2) + "\n",
+  );
+  await Deno.writeTextFile(
+    join(stateRoot, "source_coverage_stats.json"),
+    JSON.stringify(normalizeSourceCoverageStats(options.sourceCoverageStats ?? []), null, 2) + "\n",
+  );
 }
 
 export async function loadCommittedState(
@@ -68,6 +90,7 @@ export async function loadCommittedState(
     return {
       state: { jurisdiction: "", generatedAt: "", entries: new Map(), findings: [] },
       backlinks,
+      sourceCoverageStats: [],
     };
   }
 
@@ -108,15 +131,50 @@ export async function loadCommittedState(
   }
 
   const generatedAt = new Date().toISOString();
+  const findings = await loadCommittedFindings(stateRoot);
+  const sourceCoverageStats = await loadCommittedSourceCoverageStats(stateRoot);
   return {
     state: {
       jurisdiction: "",
       generatedAt,
       entries,
-      findings: [],
+      findings,
     },
     backlinks,
+    sourceCoverageStats,
   };
+}
+
+async function loadCommittedFindings(stateRoot: string): Promise<Finding[]> {
+  try {
+    const raw = JSON.parse(await Deno.readTextFile(join(stateRoot, "findings.json")));
+    if (!Array.isArray(raw)) {
+      throw new Error("findings.json must contain an array");
+    }
+    return normalizeFindings(raw.map(parseStoredFinding));
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function loadCommittedSourceCoverageStats(
+  stateRoot: string,
+): Promise<CommittedSourceCoverageStats[]> {
+  try {
+    const raw = JSON.parse(await Deno.readTextFile(join(stateRoot, "source_coverage_stats.json")));
+    if (!Array.isArray(raw)) {
+      throw new Error("source_coverage_stats.json must contain an array");
+    }
+    return normalizeSourceCoverageStats(raw.map(parseStoredSourceCoverageStat));
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 const citationCompare = (left: CitationValue, right: CitationValue): number => {
@@ -178,6 +236,109 @@ function normalizeStoredEntry(entry: Entry) {
     attributes,
     citations,
     relations,
+  };
+}
+
+function normalizeFindings(findings: Finding[]): Finding[] {
+  return [...findings].map((finding) => ({
+    kind: finding.kind,
+    code: finding.code,
+    message: finding.message,
+    ...(finding.citation ? { citation: normalizeCitation(finding.citation) } : {}),
+  })).sort((left, right) => {
+    const leftKey = [
+      left.kind,
+      left.code,
+      left.message,
+      left.citation ? citationIdentity(left.citation) : "",
+    ].join("\0");
+    const rightKey = [
+      right.kind,
+      right.code,
+      right.message,
+      right.citation ? citationIdentity(right.citation) : "",
+    ].join("\0");
+    return leftKey.localeCompare(rightKey);
+  });
+}
+
+function normalizeCitation(citation: CitationValue): CitationValue {
+  if ("source" in citation) {
+    return {
+      source: citation.source,
+      sourceRecordId: citation.sourceRecordId,
+      ...(citation.locator ? { locator: citation.locator } : {}),
+      ...(citation.url ? { url: citation.url } : {}),
+    };
+  }
+  return {
+    uncited: true,
+    ...(citation.reason ? { reason: citation.reason } : {}),
+  };
+}
+
+function normalizeSourceCoverageStats(
+  stats: CommittedSourceCoverageStats[],
+): CommittedSourceCoverageStats[] {
+  return [...stats].map((stat) => ({
+    source: stat.source,
+    snapshotCount: stat.snapshotCount,
+    recordCount: stat.recordCount,
+    citationCount: stat.citationCount,
+  })).sort((left, right) => left.source.localeCompare(right.source));
+}
+
+function parseStoredFinding(value: unknown): Finding {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("findings.json item must be an object");
+  }
+  const candidate = value as Record<string, unknown>;
+  if (
+    candidate.kind !== "info" && candidate.kind !== "warn" && candidate.kind !== "conflict"
+  ) {
+    throw new Error("findings.json item has invalid kind");
+  }
+  if (typeof candidate.code !== "string" || candidate.code.length === 0) {
+    throw new Error("findings.json item missing code");
+  }
+  if (typeof candidate.message !== "string" || candidate.message.length === 0) {
+    throw new Error("findings.json item missing message");
+  }
+  if (candidate.citation !== undefined && !isCitationValue(candidate.citation)) {
+    throw new Error("findings.json item has invalid citation");
+  }
+  return {
+    kind: candidate.kind,
+    code: candidate.code,
+    message: candidate.message,
+    ...(candidate.citation ? { citation: candidate.citation } : {}),
+  };
+}
+
+function parseStoredSourceCoverageStat(value: unknown): CommittedSourceCoverageStats {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("source_coverage_stats.json item must be an object");
+  }
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.source !== "string" || candidate.source.length === 0) {
+    throw new Error("source_coverage_stats.json item missing source");
+  }
+  for (const field of ["snapshotCount", "recordCount", "citationCount"]) {
+    if (
+      typeof candidate[field] !== "number" || !Number.isInteger(candidate[field]) ||
+      candidate[field] < 0
+    ) {
+      throw new Error(`source_coverage_stats.json item has invalid ${field}`);
+    }
+  }
+  const snapshotCount = candidate.snapshotCount as number;
+  const recordCount = candidate.recordCount as number;
+  const citationCount = candidate.citationCount as number;
+  return {
+    source: candidate.source,
+    snapshotCount,
+    recordCount,
+    citationCount,
   };
 }
 

@@ -253,6 +253,10 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
           notes: "Fixture for not_collected coverage rows.",
         },
       ],
+      sourceCoverageStats: [
+        { source: "gazette", snapshotCount: 1, recordCount: 1, citationCount: 4 },
+        { source: "registry", snapshotCount: 1, recordCount: 1, citationCount: 7 },
+      ],
       reviewItems: [
         makeReviewItem({
           id: "deferred-source",
@@ -348,12 +352,12 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       (manifest.counts as Record<string, unknown>).sourceCoverageStatuses,
       {
-        collected_empty: 2,
+        collected: 2,
         not_collected: 2,
       },
     );
     assertEquals(manifest.sourceCoverageStatusCounts, {
-      collected_empty: 2,
+      collected: 2,
       not_collected: 2,
     });
     assertEquals(
@@ -378,7 +382,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       {
         family: "legal",
         rows: 1,
-        collectionStatuses: { collected_empty: 1 },
+        collectionStatuses: { collected: 1 },
         releaseStatuses: { exported: 1 },
       },
       {
@@ -390,7 +394,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       {
         family: "registry",
         rows: 1,
-        collectionStatuses: { collected_empty: 1 },
+        collectionStatuses: { collected: 1 },
         releaseStatuses: { exported: 1 },
       },
     ]);
@@ -839,8 +843,8 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(restoredSourceCoverageMetadataVerification.valid, true);
 
     const invalidSourceCoverageReaderStatus = originalSourceCoverage.replace(
-      ",collected_empty,wired,wired,exported,",
-      ",collected_empty,hand_waved,wired,exported,",
+      ",collected,wired,wired,exported,",
+      ",collected,hand_waved,wired,exported,",
     );
     assertEquals(invalidSourceCoverageReaderStatus === originalSourceCoverage, false);
     await writeSourceCoverageWithManifestMetadata(invalidSourceCoverageReaderStatus);
@@ -862,8 +866,8 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(restoredSourceCoverageVocabularyVerification.valid, true);
 
     const inconsistentSourceCoverageStatuses = originalSourceCoverage.replace(
-      ",collected_empty,wired,wired,exported,1,0,",
-      ",collected,wired,wired,collected_empty,1,0,",
+      ",collected,wired,wired,exported,1,1,",
+      ",collected_empty,wired,wired,collected_empty,1,1,",
     );
     assertEquals(inconsistentSourceCoverageStatuses === originalSourceCoverage, false);
     const originalSourceCoverageStatusCounts = manifest.sourceCoverageStatusCounts;
@@ -904,7 +908,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       inconsistentSourceCoverageStatusesVerification.errors.some((error) =>
         error.includes(
-          "source_coverage.csv row 3 collection_status collected does not match snapshot_count/record_count expected collected_empty",
+          "source_coverage.csv row 3 collection_status collected_empty does not match snapshot_count/record_count expected collected",
         )
       ),
       true,
@@ -928,7 +932,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(restoredSourceCoverageStatusVerification.valid, true);
 
     const staleSourceCoverage = originalSourceCoverage.replace(
-      ",collected_empty,",
+      ",collected,",
       ",not_collected,",
     );
     assertEquals(staleSourceCoverage === originalSourceCoverage, false);
@@ -1019,7 +1023,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       true,
     );
     assertEquals(readme.includes("## Source coverage"), true);
-    assertEquals(readme.includes("- collected_empty: 2"), true);
+    assertEquals(readme.includes("- collected: 2"), true);
     assertEquals(readme.includes("- not_collected: 2"), true);
     assertEquals(readme.includes("- Release statuses:"), true);
     assertEquals(readme.includes("  - exported: 2"), true);
@@ -1302,7 +1306,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(sourceCoverageBySource.get("blocked.source")?.[8], "inventory_only");
     assertEquals(sourceCoverageBySource.get("blocked.source")?.[9], "not_wired");
     assertEquals(sourceCoverageBySource.get("blocked.source")?.[10], "inventory_only");
-    assertEquals(sourceCoverageBySource.get("gazette")?.[7], "collected_empty");
+    assertEquals(sourceCoverageBySource.get("gazette")?.[7], "collected");
     assertEquals(sourceCoverageBySource.get("gazette")?.[8], "wired");
     assertEquals(sourceCoverageBySource.get("gazette")?.[9], "wired");
     assertEquals(sourceCoverageBySource.get("gazette")?.[10], "exported");
@@ -1713,6 +1717,9 @@ Deno.test("exportReleaseArtifacts explains collected-empty authority entity cove
         contributes: "Authority entries when rows are present.",
         excludes: "Boards, commissions, councils, and contacts.",
       }],
+      sourceCoverageStats: [
+        { source: "dcgis.authorities", snapshotCount: 1, recordCount: 0, citationCount: 0 },
+      ],
     });
 
     const readme = await Deno.readTextFile(join(releaseRoot, "README.md"));

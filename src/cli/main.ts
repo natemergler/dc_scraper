@@ -1,7 +1,11 @@
 import { Command } from "@cliffy/command";
 import { join } from "@std/path";
 
-import { loadCommittedState, writeCommittedState } from "../state/store.ts";
+import {
+  type CommittedSourceCoverageStats,
+  loadCommittedState,
+  writeCommittedState,
+} from "../state/store.ts";
 import { compileFragments } from "../compiler/compile.ts";
 import {
   closeWorkspace,
@@ -65,6 +69,7 @@ import {
   type CitationValue,
   type EntryFragment,
   type Finding,
+  type LedgerState,
   type RelationFragment,
 } from "../core/types.ts";
 import {
@@ -733,6 +738,44 @@ function loadWorkspaceCoverageStats(workspaceRoot: string): Map<string, Workspac
   }
 }
 
+function buildCommittedSourceCoverageStats(
+  workspace: Workspace,
+  state: LedgerState,
+): CommittedSourceCoverageStats[] {
+  const stats = new Map<string, WorkspaceCoverageStats>();
+  for (const coverage of dcRuntime.sourceCoverage) {
+    const snapshotRow = workspace.db.prepare(
+      "SELECT COUNT(*) AS count FROM snapshots WHERE source = ?",
+    ).get([coverage.source]) as { count: number };
+    const recordRow = workspace.db.prepare(
+      "SELECT COUNT(*) AS count FROM records WHERE source = ?",
+    ).get([coverage.source]) as { count: number };
+    stats.set(coverage.source, {
+      snapshotCount: Number(snapshotRow.count),
+      recordCount: Number(recordRow.count),
+      citationCount: 0,
+    });
+  }
+
+  for (const entry of state.entries.values()) {
+    addCitationCounts(entry.citations, stats);
+    for (const relations of Object.values(entry.relations)) {
+      for (const relation of relations) {
+        addCitationCounts(relation.citations ?? [], stats);
+      }
+    }
+  }
+
+  return Array.from(stats.entries())
+    .map(([source, stat]) => ({
+      source,
+      snapshotCount: stat.snapshotCount,
+      recordCount: stat.recordCount,
+      citationCount: stat.citationCount,
+    }))
+    .sort((left, right) => left.source.localeCompare(right.source));
+}
+
 function collectionStatusForCoverage(
   stats: WorkspaceCoverageStats | undefined,
 ): SourceCoverageCollectionStatus {
@@ -1087,7 +1130,8 @@ async function runStateGenerate(workspaceRoot: string, stateRoot: string): Promi
     });
     await saveReviewItems(workspaceRoot, reviewItems);
 
-    await writeCommittedState(result.state, stateRoot);
+    const sourceCoverageStats = buildCommittedSourceCoverageStats(workspace, result.state);
+    await writeCommittedState(result.state, stateRoot, { sourceCoverageStats });
     console.log(`state generated with ${result.state.entries.size} entries`);
     console.log(formatReviewQueueSummary(reviewItems));
     return 0;
@@ -1147,12 +1191,15 @@ async function runExport(
   try {
     initWorkspace(workspace);
     indexState(workspace, loaded.state);
-    const reviewItems = await refreshReviewItemsFromCommittedState(workspaceRoot, stateRoot);
+    const reviewItems = await refreshReviewItemsFromCommittedState(workspaceRoot, stateRoot, {
+      includePersistedFindings: false,
+    });
     const result = await exportReleaseArtifacts({
       workspace,
       jurisdiction: dcRuntime.jurisdiction,
       releaseRoot,
       sourceCatalog: dcRuntime.sourceCoverage,
+      sourceCoverageStats: loaded.sourceCoverageStats,
       reviewItems,
     });
     const color = cliColorEnabled();
@@ -1725,12 +1772,16 @@ async function runRevisionApplyDraft(
 async function refreshReviewItemsFromCommittedState(
   workspaceRoot: string,
   stateRoot: string,
+  options: { includePersistedFindings?: boolean } = {},
 ): Promise<ReviewItem[]> {
   const loaded = await loadCommittedState(stateRoot, dcRuntime.kinds);
   const revisionRoot = revisionRootForStateRoot(stateRoot);
   const trackedRevisions = await loadRevisions(revisionRoot);
   const draftRevisions = await safelyLoadDraftRevisions(workspaceRoot);
-  const findings = loadPersistedFindings(workspaceRoot);
+  const persistedFindings = options.includePersistedFindings === false
+    ? []
+    : loadPersistedFindings(workspaceRoot);
+  const findings = loaded.state.findings.length > 0 ? loaded.state.findings : persistedFindings;
   const items = generateReviewItems(loaded.state, findings, {
     trackedRevisions: [...dcRuntime.revisions, ...trackedRevisions],
     draftRevisions,

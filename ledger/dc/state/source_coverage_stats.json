@@ -1,0 +1,218 @@
+[
+  {
+    "source": "bega.structure",
+    "snapshotCount": 3,
+    "recordCount": 3,
+    "citationCount": 5
+  },
+  {
+    "source": "dc.agency_directory",
+    "snapshotCount": 1,
+    "recordCount": 113,
+    "citationCount": 73
+  },
+  {
+    "source": "dccouncil.committees",
+    "snapshotCount": 12,
+    "recordCount": 11,
+    "citationCount": 137
+  },
+  {
+    "source": "dccouncil.members",
+    "snapshotCount": 1,
+    "recordCount": 13,
+    "citationCount": 64
+  },
+  {
+    "source": "dccourts.structure",
+    "snapshotCount": 3,
+    "recordCount": 12,
+    "citationCount": 23
+  },
+  {
+    "source": "dcgis.agencies",
+    "snapshotCount": 1,
+    "recordCount": 112,
+    "citationCount": 114
+  },
+  {
+    "source": "dcgis.ancs",
+    "snapshotCount": 1,
+    "recordCount": 46,
+    "citationCount": 46
+  },
+  {
+    "source": "dcgis.authorities",
+    "snapshotCount": 1,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "dcgis.boards",
+    "snapshotCount": 1,
+    "recordCount": 63,
+    "citationCount": 225
+  },
+  {
+    "source": "dcgis.commissions",
+    "snapshotCount": 1,
+    "recordCount": 38,
+    "citationCount": 124
+  },
+  {
+    "source": "dcgis.councils",
+    "snapshotCount": 1,
+    "recordCount": 23,
+    "citationCount": 66
+  },
+  {
+    "source": "dcgis.smds",
+    "snapshotCount": 1,
+    "recordCount": 345,
+    "citationCount": 1380
+  },
+  {
+    "source": "inventory.administrative_datasets",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.budget_finance",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.dc_courts_legal",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.dc_laws",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.dcmr",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.dcr",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.elections",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.federal_laws_codified",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.home_rule_act",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.legislation_lims",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.mayors_memoranda",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.mayors_orders",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.mota_quickbase",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.oag",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.oah",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.open_data_catalog",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.permits_licenses",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.procurement_contracting",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.property_land",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "inventory.public_safety_crime",
+    "snapshotCount": 0,
+    "recordCount": 0,
+    "citationCount": 0
+  },
+  {
+    "source": "legal.entrypoints",
+    "snapshotCount": 1,
+    "recordCount": 4,
+    "citationCount": 4
+  },
+  {
+    "source": "mayor.executive_structure",
+    "snapshotCount": 2,
+    "recordCount": 67,
+    "citationCount": 108
+  },
+  {
+    "source": "oanc.profiles",
+    "snapshotCount": 44,
+    "recordCount": 43,
+    "citationCount": 443
+  },
+  {
+    "source": "open_dc.public_bodies",
+    "snapshotCount": 234,
+    "recordCount": 233,
+    "citationCount": 490
+  }
+]
