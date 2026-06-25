@@ -121,6 +121,16 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
       stateIds: [],
       relationEndpoints: [],
     }),
+    makeReviewItem({
+      id: "state-generation-blocker",
+      category: "source_stale_or_failed",
+      stateIds: [],
+      relationEndpoints: [],
+      blocks: {
+        stateGeneration: true,
+        releaseReadiness: false,
+      },
+    }),
   ];
 
   const projection = buildGovGraphProjection(entries, reviewItems);
@@ -196,8 +206,24 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
   });
   assertEquals(projection.summary.excludedNodeCount, 1);
   assertEquals(projection.summary.excludedEdgeCount, 2);
-  assertEquals(projection.summary.blockedReviewItemCount, 1);
+  assertEquals(projection.summary.blockedReviewItemCount, 2);
+  assertEquals(projection.summary.releaseBlockingReviewItemCount, 2);
+  assertEquals(projection.summary.nonBlockingDeferredReviewItemCount, 1);
+  assertEquals(projection.summary.reviewPosture, {
+    releaseBlockingReviewItemCount: 2,
+    nonBlockingDeferredReviewItemCount: 1,
+    note:
+      "releaseBlockingReviewItemCount must be zero for release; nonBlockingDeferredReviewItemCount records deferred review work that is outside the current public-output release path.",
+  });
+  assertEquals(projection.summary.reviewQueueCounts, {
+    blocking: 2,
+    actionable: 0,
+    drafted: 0,
+    applied: 0,
+    deferred: 1,
+  });
   assertEquals(projection.summary.blockedReviewCountsByCategory.identity_conflict, 1);
+  assertEquals(projection.summary.blockedReviewCountsByCategory.source_stale_or_failed, 1);
   assertEquals(projection.summary.blockedReviewCountsByCategory.out_of_scope_candidate, undefined);
   assertEquals(projection.summary.mappedRelationCount, 1);
   assertEquals(projection.summary.mappedRelationCounts, [{
@@ -205,6 +231,10 @@ Deno.test("buildGovGraphProjection maps administrative home edges and excludes r
     verb: "administered_by",
     count: 1,
   }]);
+  assertEquals(projection.summary.relationFieldDescriptions, {
+    relationKind: "Stable raw ledger relation identifier.",
+    verb: "Public relationship label for release consumers.",
+  });
 });
 
 Deno.test("buildDcAncSmdStructureRows projects ANC to SMD and commissioner seat structure", () => {
@@ -312,6 +342,7 @@ function makeReviewItem(
     category: ReviewItem["category"];
     stateIds: string[];
     relationEndpoints: Array<{ from: string; kind: string; to: string }>;
+    blocks?: ReviewItem["blocks"];
   },
 ): ReviewItem {
   return {
@@ -338,7 +369,7 @@ function makeReviewItem(
     attributesThatAgree: {},
     attributesThatConflict: {},
     suggestedResolutions: ["suppress"],
-    blocks: {
+    blocks: options.blocks ?? {
       stateGeneration: false,
       releaseReadiness: true,
     },

@@ -54,7 +54,12 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
           kind: "dc.board",
           name: "City Board",
           citations: [{ uncited: true, reason: "inferred from statute" }],
-          attributes: { shortName: "CB", alias: "Board One" },
+          attributes: {
+            shortName: "CB",
+            alias: "Board One",
+            enablingStatute: "DC Code § 3–1301",
+            enablingStatuteUrl: "https://example.com/raw-legal-text",
+          },
         }),
         "dc.commission:c-1",
         "dc",
@@ -97,7 +102,10 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
           kind: "dc.anc",
           name: "ANC 8F",
           citations: [],
-          attributes: { shortName: "8F" },
+          attributes: {
+            description: "OANC lists this as ANC 6/8F; the release keeps the DCGIS ANC 8F ID.",
+            shortName: "8F",
+          },
         }),
         "dc.smd:8F01",
         "dc",
@@ -143,6 +151,26 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     );
 
     workspace.db.run(
+      "INSERT INTO state_entries (entry_id, jurisdiction, kind, payload) VALUES (?, ?, ?, ?)",
+      [
+        "dc.legal_authority:d-c-code-3-1301",
+        "dc",
+        "dc.legal_authority",
+        JSON.stringify({
+          family: "legal",
+          kind: "dc.legal_authority",
+          name: "D.C. Code § 3-1301",
+          citations: [],
+          attributes: {
+            authorityType: "dc_code",
+            locator: "D.C. Code § 3-1301",
+            canonicalUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/3-1301",
+          },
+        }),
+      ],
+    );
+
+    workspace.db.run(
       "INSERT INTO state_relations (from_entry_id, relation_kind, to_entry_id, citations) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
       [
         "dc.board:b-1",
@@ -177,6 +205,22 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     );
 
     workspace.db.run(
+      "INSERT INTO state_relations (from_entry_id, relation_kind, to_entry_id, citations) VALUES (?, ?, ?, ?)",
+      [
+        "dc.board:b-1",
+        "dc.relation:authorized_by",
+        "dc.legal_authority:d-c-code-3-1301",
+        JSON.stringify([
+          {
+            source: "registry",
+            sourceRecordId: "law-3-1301",
+            url: "https://example.com/raw-legal-text",
+          },
+        ]),
+      ],
+    );
+
+    workspace.db.run(
       "INSERT INTO state_relations (from_entry_id, relation_kind, to_entry_id, citations) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
       [
         "dc.anc:8F",
@@ -197,6 +241,9 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
         JSON.stringify([{ source: "registry", sourceRecordId: "committee-transportation" }]),
       ],
     );
+
+    await Deno.writeTextFile(join(releaseRoot, "entries.csv"), "stale\n");
+    await Deno.writeTextFile(join(releaseRoot, "dc_council_committee_membership.csv"), "stale\n");
 
     const result = await exportReleaseArtifacts({
       workspace,
@@ -274,9 +321,9 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       ],
     });
 
-    assertEquals(result.entryCount, 9);
-    assertEquals(result.relationCount, 8);
-    assertEquals(result.citationCount, 11);
+    assertEquals(result.entryCount, 10);
+    assertEquals(result.relationCount, 9);
+    assertEquals(result.citationCount, 12);
     assertEquals(result.sourceCount, 2);
     assertEquals(result.sourceCoverageCount, 4);
     assertEquals(result.boardAffiliationCount, 1);
@@ -284,23 +331,49 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(result.authorityAffiliationCount, 1);
     assertEquals(result.ancSmdStructureCount, 1);
     assertEquals(result.councilCommitteeMembershipCount, 1);
-    assertEquals(result.govGraphNodeCount, 9);
-    assertEquals(result.govGraphEdgeCount, 7);
+    assertEquals(result.dcAgencyCount, 1);
+    assertEquals(result.dcOfficeCount, 0);
+    assertEquals(result.dcCouncilmemberCount, 1);
+    assertEquals(result.dcCouncilCommitteeCount, 1);
+    assertEquals(result.dcPublicBodyCount, 3);
+    assertEquals(result.dcPublicBodyAffiliationCount, 3);
+    assertEquals(result.dcAncCount, 1);
+    assertEquals(result.dcSmdCount, 1);
+    assertEquals(result.dcWardCount, 0);
+    assertEquals(result.dcCourtCount, 0);
+    assertEquals(result.dcLegalAuthorityCount, 1);
+    assertEquals(result.dcSourceCount, 4);
+    assertEquals(result.govGraphNodeCount, 10);
+    assertEquals(result.govGraphEdgeCount, 8);
     assertEquals(result.govGraphExcludedNodeCount, 0);
     assertEquals(result.govGraphExcludedEdgeCount, 1);
     assertEquals(result.govGraphBlockedReviewItemCount, 0);
 
     const expectedFiles = [
-      "entries.csv",
-      "relations.csv",
-      "citations.csv",
-      "sources.csv",
-      "source_coverage.csv",
-      "dc_board_affiliations.csv",
-      "dc_commission_affiliations.csv",
-      "dc_authority_affiliations.csv",
-      "dc_anc_smd_structure.csv",
-      "dc_council_committee_membership.csv",
+      "_local/ledger_entries.csv",
+      "_local/ledger_relations.csv",
+      "_local/ledger_citations.csv",
+      "_local/source_counts.csv",
+      "_local/source_coverage.csv",
+      "_local/dc_board_affiliations.csv",
+      "_local/dc_commission_affiliations.csv",
+      "_local/dc_authority_affiliations.csv",
+      "_local/dc_anc_smd_structure.csv",
+      "dc_council_committee_memberships.csv",
+      "dc_agencies.csv",
+      "dc_offices.csv",
+      "dc_councilmembers.csv",
+      "dc_council_committees.csv",
+      "dc_public_bodies.csv",
+      "dc_public_body_affiliations.csv",
+      "dc_ancs.csv",
+      "dc_smds.csv",
+      "_local/dc_smd_commissioners.csv",
+      "dc_wards.csv",
+      "dc_courts.csv",
+      "dc_legal_authorities.csv",
+      "dc_relationships.csv",
+      "dc_sources.csv",
       "govgraph_nodes.json",
       "govgraph_edges.json",
       "govgraph_summary.json",
@@ -312,13 +385,37 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     for (const expected of expectedFiles) {
       assertEquals(await exists(join(releaseRoot, expected)), true);
     }
+    assertEquals(await exists(join(releaseRoot, "entries.csv")), false);
+    assertEquals(await exists(join(releaseRoot, "dc_council_committee_membership.csv")), false);
+    const releaseParentEntries = [];
+    for await (const entry of Deno.readDir(join(releaseRoot, ".."))) {
+      releaseParentEntries.push(entry.name);
+    }
+    assertEquals(
+      releaseParentEntries.some((name) => name.includes(".export-") && name.endsWith(".tmp")),
+      false,
+    );
 
     const manifest = JSON.parse(
       await Deno.readTextFile(join(releaseRoot, "manifest.json")),
     ) as Record<string, unknown>;
     assertEquals(manifest.jurisdiction, "dc");
     assertEquals(manifest.schemaVersion, 1);
-    assertEquals((manifest.counts as Record<string, unknown>).entries, 9);
+    const provenance = manifest.provenance as Record<string, unknown>;
+    assertEquals(typeof provenance.gitHeadCommit, "string");
+    assertEquals(/^[0-9a-f]{40}$/.test(provenance.gitHeadCommit as string), true);
+    assertEquals(provenance.gitSource, "git_metadata");
+    assertEquals(
+      ["clean", "dirty", "unknown"].includes(provenance.workingTreeStatus as string),
+      true,
+    );
+    assertEquals(
+      provenance.workingTreeStatus === "unknown"
+        ? provenance.workingTreeChangedPathCount === null
+        : typeof provenance.workingTreeChangedPathCount === "number",
+      true,
+    );
+    assertEquals((manifest.counts as Record<string, unknown>).entries, 10);
     assertEquals(
       (manifest.counts as Record<string, unknown>).entryKinds,
       {
@@ -330,14 +427,16 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
         "dc.commission": 1,
         "dc.committee": 1,
         "dc.councilmember": 1,
+        "dc.legal_authority": 1,
         "dc.smd": 1,
       },
     );
-    assertEquals((manifest.counts as Record<string, unknown>).relations, 8);
+    assertEquals((manifest.counts as Record<string, unknown>).relations, 9);
     assertEquals(
       (manifest.counts as Record<string, unknown>).relationKinds,
       {
         "dc.relation:affiliated_with": 1,
+        "dc.relation:authorized_by": 1,
         "dc.relation:chairs": 1,
         "dc.relation:contains": 1,
         "dc.relation:governs": 2,
@@ -346,7 +445,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
         "dc.relation:represents": 1,
       },
     );
-    assertEquals((manifest.counts as Record<string, unknown>).citations, 11);
+    assertEquals((manifest.counts as Record<string, unknown>).citations, 12);
     assertEquals((manifest.counts as Record<string, unknown>).sources, 2);
     assertEquals((manifest.counts as Record<string, unknown>).sourceCoverage, 4);
     assertEquals(
@@ -450,8 +549,23 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     ]);
     assertEquals((manifest.counts as Record<string, unknown>).ancSmdStructure, 1);
     assertEquals((manifest.counts as Record<string, unknown>).councilCommitteeMembership, 1);
-    assertEquals((manifest.counts as Record<string, unknown>).govGraphNodes, 9);
-    assertEquals((manifest.counts as Record<string, unknown>).govGraphEdges, 7);
+    assertEquals((manifest.counts as Record<string, unknown>).dcAgencies, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcOffices, 0);
+    assertEquals((manifest.counts as Record<string, unknown>).dcCouncilmembers, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcCouncilCommittees, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcPublicBodies, 3);
+    assertEquals((manifest.counts as Record<string, unknown>).dcPublicBodyAffiliations, 3);
+    assertEquals((manifest.counts as Record<string, unknown>).dcAncs, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcSmds, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcWards, 0);
+    assertEquals((manifest.counts as Record<string, unknown>).dcCourts, 0);
+    assertEquals((manifest.counts as Record<string, unknown>).dcLegalAuthorities, 1);
+    assertEquals((manifest.counts as Record<string, unknown>).dcSources, 4);
+    assertEquals((manifest.counts as Record<string, unknown>).collectedSourceCount, 2);
+    assertEquals((manifest.counts as Record<string, unknown>).sourceInventoryCount, 4);
+    assertEquals((manifest.counts as Record<string, unknown>).publicSourceRows, 4);
+    assertEquals((manifest.counts as Record<string, unknown>).govGraphNodes, 10);
+    assertEquals((manifest.counts as Record<string, unknown>).govGraphEdges, 8);
     assertEquals((manifest.govGraph as Record<string, unknown>).nodeKindCounts, {
       "dc.agency": 1,
       "dc.anc": 1,
@@ -461,18 +575,20 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       "dc.commission": 1,
       "dc.committee": 1,
       "dc.councilmember": 1,
+      "dc.legal_authority": 1,
       "dc.smd": 1,
     });
     assertEquals((manifest.govGraph as Record<string, unknown>).nodeCategoryCounts, {
       executive: 1,
       legislative: 1,
+      legal_authority: 1,
       neighborhood: 3,
       public_body: 3,
       representation: 1,
     });
     assertEquals(
       (manifest.outputs as Record<string, unknown>).sourceCoverageCsv,
-      "source_coverage.csv",
+      "_local/source_coverage.csv",
     );
     assertEquals(
       (manifest.outputs as Record<string, unknown>).govGraphNodesJson,
@@ -480,26 +596,306 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     );
     assertEquals(
       (manifest.outputs as Record<string, unknown>).ancSmdStructureCsv,
-      "dc_anc_smd_structure.csv",
+      "_local/dc_anc_smd_structure.csv",
     );
     assertEquals(
       (manifest.outputs as Record<string, unknown>).councilCommitteeMembershipCsv,
-      "dc_council_committee_membership.csv",
+      "dc_council_committee_memberships.csv",
     );
+    assertEquals((manifest.outputs as Record<string, unknown>).dcAgenciesCsv, "dc_agencies.csv");
+    assertEquals(
+      (manifest.outputs as Record<string, unknown>).dcPublicBodiesCsv,
+      "dc_public_bodies.csv",
+    );
+    assertEquals((manifest.outputs as Record<string, unknown>).dcSourcesCsv, "dc_sources.csv");
 
     const manifestOutputs = manifest.outputs as Record<string, string>;
     assertEquals(manifestOutputs.readme, "README.md");
+    assertEquals(manifestOutputs.sha256Sums, "SHA256SUMS");
     assertEquals("manifestJson" in manifestOutputs, false);
     for (const outputPath of Object.values(manifestOutputs)) {
       assertEquals(await exists(join(releaseRoot, outputPath)), true);
     }
+    const releaseAssets = manifest.releaseAssets as {
+      paths: string[];
+      outputNames: string[];
+      items: Array<Record<string, unknown>>;
+      categories: Record<string, number>;
+      note: string;
+      count: number;
+    };
+    assertEquals(releaseAssets.paths, [
+      "dc_agencies.csv",
+      "dc_offices.csv",
+      "dc_councilmembers.csv",
+      "dc_council_committees.csv",
+      "dc_council_committee_memberships.csv",
+      "dc_public_bodies.csv",
+      "dc_public_body_affiliations.csv",
+      "dc_ancs.csv",
+      "dc_smds.csv",
+      "dc_wards.csv",
+      "dc_courts.csv",
+      "dc_legal_authorities.csv",
+      "dc_relationships.csv",
+      "dc_sources.csv",
+      "govgraph_nodes.json",
+      "govgraph_edges.json",
+      "govgraph_summary.json",
+      "ledger.sqlite",
+      "README.md",
+      "SHA256SUMS",
+      "manifest.json",
+    ]);
+    assertEquals(releaseAssets.outputNames, [
+      "dcAgenciesCsv",
+      "dcOfficesCsv",
+      "dcCouncilmembersCsv",
+      "dcCouncilCommitteesCsv",
+      "councilCommitteeMembershipCsv",
+      "dcPublicBodiesCsv",
+      "dcPublicBodyAffiliationsCsv",
+      "dcAncsCsv",
+      "dcSmdsCsv",
+      "dcWardsCsv",
+      "dcCourtsCsv",
+      "dcLegalAuthoritiesCsv",
+      "dcRelationshipsCsv",
+      "dcSourcesCsv",
+      "govGraphNodesJson",
+      "govGraphEdgesJson",
+      "govGraphSummaryJson",
+      "ledgerSqlite",
+      "readme",
+      "sha256Sums",
+      "manifestJson",
+    ]);
+    assertEquals(releaseAssets.categories, {
+      database: 1,
+      documentation: 2,
+      machine_json: 4,
+      public_csv: 14,
+    });
+    assertEquals(
+      releaseAssets.note,
+      "Upload these files as separate GitHub release assets.",
+    );
+    assertEquals(releaseAssets.count, 21);
+    assertEquals(releaseAssets.items.length, 21);
+    const releaseAssetByName = new Map(releaseAssets.items.map((item) => [item.outputName, item]));
+    assertEquals(releaseAssetByName.get("dcCouncilmembersCsv")?.path, "dc_councilmembers.csv");
+    assertEquals(releaseAssetByName.get("dcCouncilmembersCsv")?.category, "public_csv");
+    assertEquals(
+      releaseAssetByName.get("dcCouncilmembersCsv")?.description,
+      "Current Council roster, seats, wards, and profiles.",
+    );
+    assertEquals(releaseAssetByName.get("dcCouncilmembersCsv")?.rowCount, 1);
+    assertEquals(releaseAssetByName.get("dcCouncilmembersCsv")?.columnCount, 10);
+    assertEquals(releaseAssetByName.get("govGraphSummaryJson")?.category, "machine_json");
+    assertEquals(
+      releaseAssetByName.get("ledgerSqlite")?.description,
+      "SQLite database with the public tables, audit tables, and a table catalog.",
+    );
+    assertEquals(releaseAssetByName.get("manifestJson"), {
+      outputName: "manifestJson",
+      path: "manifest.json",
+      category: "machine_json",
+      releaseAsset: true,
+      description: "Release manifest with file sizes, hashes, row counts, and asset categories.",
+    });
+    assertEquals(manifest.manifestFile, {
+      path: "manifest.json",
+      releaseAsset: true,
+      checksumListedInSha256Sums: false,
+      note:
+        "manifest.json is uploaded as a release asset but is not listed in SHA256SUMS because it records file hashes and is written after the other file metadata is calculated.",
+    });
+    const localOnlyOutputs = manifest.localOnlyOutputs as {
+      paths: string[];
+      outputNames: string[];
+      items: Array<Record<string, unknown>>;
+      categories: Record<string, number>;
+      note: string;
+      count: number;
+    };
+    assertEquals(localOnlyOutputs.paths, [
+      "_local/ledger_entries.csv",
+      "_local/ledger_relations.csv",
+      "_local/ledger_citations.csv",
+      "_local/source_counts.csv",
+      "_local/source_coverage.csv",
+      "_local/dc_smd_commissioners.csv",
+      "_local/dc_board_affiliations.csv",
+      "_local/dc_commission_affiliations.csv",
+      "_local/dc_authority_affiliations.csv",
+      "_local/dc_anc_smd_structure.csv",
+    ]);
+    assertEquals(localOnlyOutputs.outputNames, [
+      "entriesCsv",
+      "relationsCsv",
+      "citationsCsv",
+      "sourcesCsv",
+      "sourceCoverageCsv",
+      "dcSmdCommissionersCsv",
+      "boardAffiliationsCsv",
+      "commissionAffiliationsCsv",
+      "authorityAffiliationsCsv",
+      "ancSmdStructureCsv",
+    ]);
+    assertEquals(localOnlyOutputs.categories, {
+      compatibility_csv: 5,
+      traceability_csv: 5,
+    });
+    assertEquals(
+      localOnlyOutputs.note,
+      "Kept under _local and bundled into ledger.sqlite for audit; do not upload as separate GitHub assets.",
+    );
+    assertEquals(localOnlyOutputs.count, 10);
+    assertEquals(localOnlyOutputs.items.length, 10);
+    const localOnlyByName = new Map(localOnlyOutputs.items.map((item) => [item.outputName, item]));
+    assertEquals(localOnlyByName.get("entriesCsv")?.path, "_local/ledger_entries.csv");
+    assertEquals(localOnlyByName.get("entriesCsv")?.category, "traceability_csv");
+    assertEquals(
+      localOnlyByName.get("entriesCsv")?.description,
+      "Audit table with every ledger entry, attributes JSON, and citations.",
+    );
+    assertEquals(localOnlyByName.get("entriesCsv")?.rowCount, 10);
+    assertEquals(localOnlyByName.get("boardAffiliationsCsv")?.category, "compatibility_csv");
+    assertEquals(
+      localOnlyByName.get("boardAffiliationsCsv")?.description,
+      "Compatibility board-to-agency link table; prefer dc_public_body_affiliations.csv.",
+    );
+    assertEquals(localOnlyByName.get("boardAffiliationsCsv")?.columnCount, 6);
+    assertEquals(manifest.sqliteTables, {
+      description:
+        "ledger.sqlite bundles public tables, audit tables, helper tables, and release_table_catalog.",
+      metadataTables: ["release_table_catalog"],
+      publicTables: [
+        "dc_agencies",
+        "dc_offices",
+        "dc_councilmembers",
+        "dc_council_committees",
+        "dc_council_committee_memberships",
+        "dc_public_bodies",
+        "dc_public_body_affiliations",
+        "dc_ancs",
+        "dc_smds",
+        "dc_wards",
+        "dc_courts",
+        "dc_legal_authorities",
+        "dc_relationships",
+        "dc_sources",
+      ],
+      traceabilityTables: [
+        "ledger_entries",
+        "ledger_relations",
+        "ledger_citations",
+        "source_counts",
+        "source_coverage",
+      ],
+      compatibilityTables: [
+        "dc_smd_commissioners",
+        "dc_board_affiliations",
+        "dc_commission_affiliations",
+        "dc_authority_affiliations",
+        "dc_anc_smd_structure",
+      ],
+      rawLedgerTables: ["entries", "relations", "citations", "sources"],
+    });
+    assertEquals(manifest.startHere, {
+      primaryReadme: "README.md",
+      recommendedEntryPoints: [
+        {
+          label: "Download a CSV",
+          path: "README.md",
+          note: "Short release index with row counts and file descriptions.",
+        },
+        {
+          label: "Check file metadata",
+          path: "manifest.json",
+          note: "Assets, local audit outputs, hashes, row counts, and columns.",
+        },
+        {
+          label: "Query SQLite",
+          path: "ledger.sqlite",
+          note: "Open release_table_catalog first for table groups, row counts, and columns.",
+        },
+        {
+          label: "Use graph JSON",
+          path: "govgraph_summary.json",
+          note:
+            "Field descriptions and join rules for govgraph_nodes.json and govgraph_edges.json.",
+        },
+      ],
+      releaseAssetCount: 21,
+      publicCsvCount: 14,
+      localAuditOutputCount: 10,
+      sqliteCatalogTable: "release_table_catalog",
+      govGraphSchemaFile: "govgraph_summary.json",
+    });
     assertEquals(
       (manifest.counts as Record<string, unknown>).outputFiles,
       Object.keys(manifestOutputs).length,
     );
+    const outputCatalog = manifest.outputCatalog as Array<Record<string, unknown>>;
+    assertEquals(outputCatalog.length, Object.keys(manifestOutputs).length);
+    assertEquals(outputCatalog.slice(0, 5).map((item) => item.path), [
+      "dc_agencies.csv",
+      "dc_offices.csv",
+      "dc_councilmembers.csv",
+      "dc_council_committees.csv",
+      "dc_council_committee_memberships.csv",
+    ]);
+    const outputCatalogByName = new Map(outputCatalog.map((item) => [item.outputName, item]));
+    assertEquals(outputCatalogByName.get("dcCouncilmembersCsv")?.path, "dc_councilmembers.csv");
+    assertEquals(outputCatalogByName.get("dcCouncilmembersCsv")?.category, "public_csv");
+    assertEquals(outputCatalogByName.get("dcCouncilmembersCsv")?.releaseAsset, true);
+    assertEquals(
+      outputCatalogByName.get("dcCouncilmembersCsv")?.description,
+      "Current Council roster, seats, wards, and profiles.",
+    );
+    assertEquals(outputCatalogByName.get("councilCommitteeMembershipCsv")?.category, "public_csv");
+    assertEquals(outputCatalogByName.get("entriesCsv")?.category, "traceability_csv");
+    assertEquals(outputCatalogByName.get("entriesCsv")?.releaseAsset, false);
+    assertEquals(
+      outputCatalogByName.get("entriesCsv")?.description,
+      "Audit table with every ledger entry, attributes JSON, and citations.",
+    );
+    assertEquals(outputCatalogByName.get("boardAffiliationsCsv")?.releaseAsset, false);
+    assertEquals(outputCatalogByName.get("boardAffiliationsCsv")?.category, "compatibility_csv");
+    assertEquals(
+      outputCatalogByName.get("boardAffiliationsCsv")?.description,
+      "Compatibility board-to-agency link table; prefer dc_public_body_affiliations.csv.",
+    );
+    assertEquals(outputCatalogByName.get("commissionAffiliationsCsv")?.releaseAsset, false);
+    assertEquals(
+      outputCatalogByName.get("commissionAffiliationsCsv")?.category,
+      "compatibility_csv",
+    );
+    assertEquals(outputCatalogByName.get("authorityAffiliationsCsv")?.releaseAsset, false);
+    assertEquals(
+      outputCatalogByName.get("authorityAffiliationsCsv")?.category,
+      "compatibility_csv",
+    );
+    assertEquals(outputCatalogByName.get("ancSmdStructureCsv")?.releaseAsset, false);
+    assertEquals(outputCatalogByName.get("ancSmdStructureCsv")?.category, "compatibility_csv");
+    assertEquals(outputCatalogByName.get("dcSmdCommissionersCsv")?.releaseAsset, false);
+    assertEquals(outputCatalogByName.get("dcSmdCommissionersCsv")?.category, "compatibility_csv");
+    assertEquals(outputCatalogByName.get("govGraphNodesJson")?.category, "machine_json");
+    assertEquals(outputCatalogByName.get("ledgerSqlite")?.category, "database");
+    assertEquals(outputCatalogByName.get("readme")?.category, "documentation");
+    assertEquals(outputCatalogByName.get("sha256Sums")?.category, "documentation");
+    assertEquals(outputCatalogByName.get("sha256Sums")?.releaseAsset, true);
     const outputFileMetadata = manifest.outputFileMetadata as Record<
       string,
-      { path: string; byteSize: number; sha256: string }
+      {
+        path: string;
+        byteSize: number;
+        sha256: string;
+        rowCount?: number;
+        columnCount?: number;
+        columns?: string[];
+      }
     >;
     assertEquals(
       Object.keys(outputFileMetadata).sort(),
@@ -508,12 +904,83 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals("manifestJson" in outputFileMetadata, false);
     for (const [outputName, outputPath] of Object.entries(manifestOutputs)) {
       const metadata = outputFileMetadata[outputName];
+      const catalogItem = outputCatalogByName.get(outputName);
       const bytes = await Deno.readFile(join(releaseRoot, outputPath));
       assertEquals(metadata.path, outputPath);
       assertEquals(metadata.byteSize, bytes.byteLength);
       assertEquals(metadata.sha256, await sha256Hex(bytes));
       assertEquals(/^[0-9a-f]{64}$/.test(metadata.sha256), true);
+      assertEquals(catalogItem?.byteSize, metadata.byteSize);
+      assertEquals(catalogItem?.sha256, metadata.sha256);
+      assertEquals(catalogItem?.rowCount, metadata.rowCount);
+      assertEquals(catalogItem?.columnCount, metadata.columnCount);
+      assertEquals(catalogItem?.columns, metadata.columns);
     }
+    const sha256Sums = await Deno.readTextFile(join(releaseRoot, "SHA256SUMS"));
+    assertEquals(
+      sha256Sums.includes(`${outputFileMetadata.dcAgenciesCsv.sha256}  dc_agencies.csv`),
+      true,
+    );
+    assertEquals(sha256Sums.includes(`${outputFileMetadata.readme.sha256}  README.md`), true);
+    assertEquals(sha256Sums.includes("manifest.json"), false);
+    assertEquals(sha256Sums.includes("SHA256SUMS"), false);
+    const sha256SumsPath = join(releaseRoot, "SHA256SUMS");
+    const originalSha256Sums = sha256Sums;
+    const sha256SumsCatalogItem = outputCatalogByName.get("sha256Sums");
+    const originalSha256SumsMetadata = { ...outputFileMetadata.sha256Sums };
+    const originalSha256SumsCatalogMetadata = sha256SumsCatalogItem
+      ? { ...sha256SumsCatalogItem }
+      : null;
+    const tamperedSha256Sums = `${outputFileMetadata.dcAgenciesCsv.sha256}  dc_agencies.csv\n`;
+    const tamperedSha256SumsBytes = new TextEncoder().encode(tamperedSha256Sums);
+    await Deno.writeTextFile(sha256SumsPath, tamperedSha256Sums);
+    outputFileMetadata.sha256Sums.byteSize = tamperedSha256SumsBytes.byteLength;
+    outputFileMetadata.sha256Sums.sha256 = await sha256Hex(tamperedSha256SumsBytes);
+    if (sha256SumsCatalogItem) {
+      sha256SumsCatalogItem.byteSize = outputFileMetadata.sha256Sums.byteSize;
+      sha256SumsCatalogItem.sha256 = outputFileMetadata.sha256Sums.sha256;
+    }
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const tamperedSha256SumsVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(tamperedSha256SumsVerification.valid, false);
+    assertEquals(
+      tamperedSha256SumsVerification.errors.some((error) =>
+        error.includes(
+          "SHA256SUMS must list exactly release upload assets except manifest.json and SHA256SUMS",
+        )
+      ),
+      true,
+    );
+    await Deno.writeTextFile(sha256SumsPath, originalSha256Sums);
+    outputFileMetadata.sha256Sums = originalSha256SumsMetadata;
+    if (sha256SumsCatalogItem && originalSha256SumsCatalogMetadata) {
+      Object.assign(sha256SumsCatalogItem, originalSha256SumsCatalogMetadata);
+    }
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const restoredSha256SumsVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(restoredSha256SumsVerification.valid, true);
+    assertEquals(outputFileMetadata.dcCouncilmembersCsv.rowCount, 1);
+    assertEquals(outputFileMetadata.dcCouncilmembersCsv.columnCount, 10);
+    assertEquals(outputFileMetadata.dcCouncilmembersCsv.columns, [
+      "sort_order",
+      "councilmember_id",
+      "name",
+      "seat_type",
+      "office_title",
+      "ward",
+      "is_at_large",
+      "profile_url",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(outputFileMetadata.govGraphNodesJson.rowCount, undefined);
+    assertEquals(outputFileMetadata.govGraphNodesJson.columns, undefined);
     const verification = await verifyReleaseArtifacts(releaseRoot);
     assertEquals(verification.valid, true);
     assertEquals(verification.checkedFileCount, Object.keys(manifestOutputs).length);
@@ -534,6 +1001,29 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       true,
     );
     manifest.jurisdiction = originalJurisdiction;
+
+    const councilmemberCatalogItem = outputCatalogByName.get("dcCouncilmembersCsv");
+    const originalCouncilmemberCatalogPath = councilmemberCatalogItem?.path;
+    if (councilmemberCatalogItem) {
+      councilmemberCatalogItem.path = "wrong.csv";
+    }
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const staleOutputCatalogVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(staleOutputCatalogVerification.valid, false);
+    assertEquals(
+      staleOutputCatalogVerification.errors.some((error) =>
+        error.includes(
+          "manifest outputCatalog dcCouncilmembersCsv path mismatch: expected dc_councilmembers.csv, found wrong.csv",
+        )
+      ),
+      true,
+    );
+    if (councilmemberCatalogItem && typeof originalCouncilmemberCatalogPath === "string") {
+      councilmemberCatalogItem.path = originalCouncilmemberCatalogPath;
+    }
 
     const originalExportedAt = manifest.exportedAt;
     manifest.exportedAt = "not-a-timestamp";
@@ -557,6 +1047,60 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     const restoredIdentityVerification = await verifyReleaseArtifacts(releaseRoot);
     assertEquals(restoredIdentityVerification.valid, true);
 
+    const originalProvenance = manifest.provenance;
+    manifest.provenance = {
+      ...(originalProvenance as Record<string, unknown>),
+      gitHeadCommit: "not-a-commit",
+    };
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const invalidProvenanceVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(invalidProvenanceVerification.valid, false);
+    assertEquals(
+      invalidProvenanceVerification.errors.some((error) =>
+        error.includes(
+          "manifest.provenance.gitHeadCommit must be null or a 40-character git HEAD commit hash",
+        )
+      ),
+      true,
+    );
+    manifest.provenance = originalProvenance;
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const restoredProvenanceVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(restoredProvenanceVerification.valid, true);
+
+    manifest.provenance = {
+      ...(originalProvenance as Record<string, unknown>),
+      workingTreeStatus: "clean",
+      workingTreeChangedPathCount: 1,
+    };
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const staleWorkingTreeProvenanceVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(staleWorkingTreeProvenanceVerification.valid, false);
+    assertEquals(
+      staleWorkingTreeProvenanceVerification.errors.some((error) =>
+        error.includes(
+          "manifest.provenance.workingTreeChangedPathCount must be 0 when workingTreeStatus is clean",
+        )
+      ),
+      true,
+    );
+    manifest.provenance = originalProvenance;
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const restoredWorkingTreeProvenanceVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(restoredWorkingTreeProvenanceVerification.valid, true);
+
     const manifestCounts = manifest.counts as Record<string, unknown>;
     const originalEntryCount = manifestCounts.entries;
     manifestCounts.entries = Number(originalEntryCount) + 1;
@@ -569,9 +1113,9 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       staleEntryCountVerification.errors.some((error) =>
         error.includes(
-          `counts.entries ${Number(originalEntryCount) + 1} does not match entries.csv data rows ${
-            Number(originalEntryCount)
-          }`,
+          `counts.entries ${
+            Number(originalEntryCount) + 1
+          } does not match _local/ledger_entries.csv data rows ${Number(originalEntryCount)}`,
         )
       ),
       true,
@@ -618,14 +1162,16 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(staleKindRollupVerification.valid, false);
     assertEquals(
       staleKindRollupVerification.errors.some((error) =>
-        error.includes("entries.csv kind counts must match manifest.counts.entryKinds")
+        error.includes(
+          "_local/ledger_entries.csv kind counts must match manifest.counts.entryKinds",
+        )
       ),
       true,
     );
     assertEquals(
       staleKindRollupVerification.errors.some((error) =>
         error.includes(
-          "relations.csv relation_kind counts must match manifest.counts.relationKinds",
+          "_local/ledger_relations.csv relation_kind counts must match manifest.counts.relationKinds",
         )
       ),
       true,
@@ -694,6 +1240,32 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     );
     const restoredReviewPostureVerification = await verifyReleaseArtifacts(releaseRoot);
     assertEquals(restoredReviewPostureVerification.valid, true);
+
+    const originalReviewQueueRecord = originalReviewQueueCounts as Record<string, number>;
+    const donorReviewQueue = originalReviewQueueRecord.applied > 0 ? "applied" : "deferred";
+    const blockingReviewQueueCounts = {
+      ...originalReviewQueueRecord,
+      blocking: originalReviewQueueRecord.blocking + 1,
+      [donorReviewQueue]: originalReviewQueueRecord[donorReviewQueue] - 1,
+    };
+    manifest.reviewQueueCounts = blockingReviewQueueCounts;
+    manifestCounts.reviewQueues = blockingReviewQueueCounts;
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const blockingReviewQueueVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(blockingReviewQueueVerification.valid, false);
+    assertEquals(
+      blockingReviewQueueVerification.errors.some((error) =>
+        error.includes(
+          "manifest.reviewQueueCounts.blocking must be 0 for release verification, found 1",
+        )
+      ),
+      true,
+    );
+    manifest.reviewQueueCounts = originalReviewQueueCounts;
+    manifestCounts.reviewQueues = originalCountReviewQueues;
 
     const unknownReviewQueueCounts = {
       ...(originalReviewQueueCounts as Record<string, unknown>),
@@ -986,278 +1558,191 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(restoredRollupVerification.valid, true);
 
     const readme = await Deno.readTextFile(join(releaseRoot, "README.md"));
-    assertEquals(readme.includes("## Release notes"), true);
-    assertEquals(readme.includes("Generated from committed Civic Ledger state."), true);
-    assertEquals(readme.includes("byte sizes, and SHA-256 checksums"), true);
+    assertEquals(readme.includes("# DC Civic Ledger"), true);
+    assertEquals(readme.includes(`- Git HEAD: ${provenance.gitHeadCommit}`), false);
+    assertEquals(readme.includes("- Export provenance: see [manifest.json](manifest.json)"), true);
+    assertEquals(readme.includes("## Public CSVs"), true);
+    assertEquals(readme.includes("- [dc_agencies.csv](dc_agencies.csv)"), true);
+    assertEquals(
+      readme.includes("- [dc_councilmembers.csv](dc_councilmembers.csv) (1 row)"),
+      true,
+    );
+    assertEquals(
+      readme.includes("- [dc_council_committees.csv](dc_council_committees.csv)"),
+      true,
+    );
     assertEquals(
       readme.includes(
-        "schema version, release identity, artifact file/row counts, entity/relation kind rollups, zero GovGraph-blocking review items, review posture/category/deferred-description agreement, source coverage metadata/status/count/rollup agreement, and GovGraph summary/manifest agreement",
+        "- [dc_council_committee_memberships.csv](dc_council_committee_memberships.csv)",
+      ),
+      true,
+    );
+    assertEquals(readme.includes("- [dc_public_bodies.csv](dc_public_bodies.csv)"), true);
+    assertEquals(
+      readme.includes("- [dc_public_body_affiliations.csv](dc_public_body_affiliations.csv)"),
+      true,
+    );
+    assertEquals(readme.includes("- [dc_smds.csv](dc_smds.csv)"), true);
+    assertEquals(readme.includes("- [dc_relationships.csv](dc_relationships.csv)"), true);
+    assertEquals(readme.includes("- [dc_sources.csv](dc_sources.csv)"), true);
+    assertEquals(readme.includes("## Notes"), true);
+    assertEquals(readme.includes("## Scope"), false);
+    assertEquals(
+      readme.includes("Does not try to be a complete legal"),
+      false,
+    );
+    assertEquals(readme.includes("Not included: contacts"), false);
+    assertEquals(
+      readme.includes("Relations mean the source supported that link"),
+      false,
+    );
+    assertEquals(
+      readme.includes(
+        "Relationship rows use public labels; trace CSVs keep raw `dc.relation:*` values.",
+      ),
+      false,
+    );
+    assertEquals(
+      readme.includes("Blank cells mean no current source-backed value."),
+      true,
+    );
+    assertEquals(
+      readme.includes(
+        "For complete relationship endpoint joins, use `govgraph_nodes.json` or `ledger.sqlite`",
+      ),
+      false,
+    );
+    assertEquals(
+      readme.includes(
+        "- Public-body near-duplicates stay distinct unless a tracked merge or suppression says otherwise.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "Add `--json` for machine-readable validity, checked file count, and error details.",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("- Schema version: 1"), true);
-    assertEquals(readme.includes("- Source rows in `sources.csv`: 2"), true);
-    assertEquals(
-      readme.includes(
-        "Because `manifest.json` contains the checksum table, it is not included in its own `outputFileMetadata`",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("## Scope and caveats"), true);
-    assertEquals(
-      readme.includes(
-        "This alpha release is a reproducible checkpoint from committed state",
+        "- `dc_councilmembers.csv` is the 13-member elected Council roster; `dc.council` in GovGraph counts means council-type public bodies.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "Legal authority graph facts are limited to explicit D.C. Code, D.C. Law, and Mayor's Order locators",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("## Source coverage"), true);
-    assertEquals(readme.includes("- collected: 2"), true);
-    assertEquals(readme.includes("- not_collected: 2"), true);
-    assertEquals(readme.includes("- Release statuses:"), true);
-    assertEquals(readme.includes("  - exported: 2"), true);
-    assertEquals(readme.includes("  - inventory_only: 2"), true);
-    assertEquals(readme.includes("- Source coverage families: 4"), true);
-    assertEquals(readme.includes("- Family rollup:"), true);
-    assertEquals(
-      readme.includes(
-        "  - legal_provenance: 1 row; collection not_collected: 1; release inventory_only: 1",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("sourceCoverageStatusCounts"), true);
-    assertEquals(readme.includes("sourceCoverageReleaseStatusCounts"), true);
-    assertEquals(readme.includes("sourceCoverageFamilyRollup"), true);
-    assertEquals(readme.includes("- Not-collected inventory rows:"), true);
-    assertEquals(
-      readme.includes(
-        "  - blocked.source (blocked): Known source not present in this workspace.",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("## Legal scope"), true);
-    assertEquals(
-      readme.includes(
-        "Legal-source entries (`dc.legal_source`) are official entrypoint anchors for inspection",
+        "- Ledger entries can exceed GovGraph nodes because source/audit anchor kinds listed in `govgraph_summary.json` are not graph nodes.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "Citations may preserve evidence, URLs, or out-of-scope locators without creating legal authority entries.",
+        "- Committee `member_count` includes chairs; Committee of the Whole has all 13 Councilmembers.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "Mayor's Order authorities remain locator evidence without canonical official URLs",
-      ),
-      true,
-    );
-    assertEquals(
-      readme.includes("- Deferred legal source inventory rows in `source_coverage.csv`:"),
-      true,
-    );
-    assertEquals(
-      readme.includes("  - inventory.dc_laws: D.C. laws corpus fixture."),
-      true,
-    );
-    assertEquals(readme.includes("## Entity taxonomy"), true);
-    assertEquals(
-      readme.includes(
-        "- Entry kinds are counts of exported ledger entries, not claims that every matching DC entity has been discovered.",
+        "`ledger.sqlite` includes the public tables plus audit tables; start with `release_table_catalog`.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "the alpha does not emit synthetic county, state, federal-branch, or city/county placeholder hierarchy without source-backed entries.",
+        "For audit and traceability in SQLite, use `ledger_entries`, `ledger_relations`, `ledger_citations`, and `source_coverage`",
       ),
-      true,
+      false,
     );
-    assertEquals(
-      readme.includes("- dc.agency: 1 - District agency or agency-like organization entries."),
-      true,
-    );
-    assertEquals(
-      readme.includes("- dc.smd: 1 - Single Member District area entries."),
-      true,
-    );
-    assertEquals(readme.includes("## Relationship evidence"), true);
-    assertEquals(readme.includes("- dc.relation:governs: 2"), true);
     assertEquals(
       readme.includes(
-        "- dc.relation:governs: 2 - Source names a governing or administering agency for a public body; projection labels safe agency/office targets as administered_by.",
+        "In SQLite, start with `release_table_catalog` to see table groups, row counts, and columns.",
       ),
-      true,
+      false,
     );
-    assertEquals(readme.includes("- Relation examples:"), true);
     assertEquals(
       readme.includes(
-        "  - dc.relation:contains: ANC 8F (dc.anc:8F) -> SMD 8F01 (dc.smd:8F01) (source: registry:smd-8F01)",
+        "`manifest.json` lists upload assets, row counts, columns, and hashes.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "  - dc.relation:governs: Ethics Authority (dc.authority:au-1) -> District Agency (dc.agency:a-1) (source: gazette:rel-au-1)",
+        "GovGraph: start with `govgraph_summary.json`, then use `govgraph_nodes.json` and `govgraph_edges.json`.",
       ),
       true,
     );
-    assertEquals(readme.includes("- Contract-facing relationship terms:"), true);
+    assertEquals(readme.includes("## Machine Files"), true);
+    assertEquals(readme.includes("## Other Upload Assets"), false);
+    assertEquals(readme.includes("- `ledger_entries.csv`"), false);
+    assertEquals(readme.includes("inspect ledger_citations.csv"), false);
+    assertEquals(readme.includes("_local/ledger_citations.csv"), false);
+    assertEquals(readme.includes("## Compatibility CSVs"), false);
+    assertEquals(readme.includes("`_local/dc_board_affiliations.csv`"), false);
+    assertEquals(readme.includes("`_local/dc_anc_smd_structure.csv`"), false);
+    assertEquals(readme.includes("`_local/dc_smd_commissioners.csv`"), false);
+    assertEquals(readme.includes("## Machine Assets"), false);
     assertEquals(
-      readme.includes(
-        "  - elected / office holder: `dc.relation:holds` links people to sourced elected-office entries",
-      ),
-      true,
+      readme.includes("public tables plus audit and helper tables"),
+      false,
     );
     assertEquals(
       readme.includes(
-        "alpha does not infer `advises`, `appoints`, `oversees`, `administers`, or `enforces` edges",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("## Public projection"), true);
-    assertEquals(readme.includes("- Projected nodes: 9"), true);
-    assertEquals(readme.includes("- Projected node categories:"), true);
-    assertEquals(readme.includes("  - neighborhood: 3"), true);
-    assertEquals(readme.includes("  - public_body: 3"), true);
-    assertEquals(readme.includes("- Projected edges: 7"), true);
-    assertEquals(readme.includes("- Excluded projection nodes: 0"), true);
-    assertEquals(readme.includes("- Excluded projection edges: 1"), true);
-    assertEquals(readme.includes("- Projected relation labels remapped for public use: 2"), true);
-    assertEquals(readme.includes("- Remapped relation labels:"), true);
-    assertEquals(
-      readme.includes("  - dc.relation:governs -> administered_by: 2"),
-      true,
-    );
-    assertEquals(
-      readme.includes(
-        "Unsupported or stale relation verbs remain reviewable in raw ledger artifacts but are excluded from GovGraph edges",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("- Projected edge verbs:"), true);
-    assertEquals(readme.includes("  - administered_by: 2"), true);
-    assertEquals(readme.includes("  - affiliated_with: 1"), true);
-    assertEquals(
-      readme.includes(
-        "node kind/category counts, edge verb counts, mapped relation label counts",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("## Review posture"), true);
-    assertEquals(readme.includes("review summaries under `reviewQueueCounts`"), true);
-    assertEquals(readme.includes("descriptions for each deferred group"), true);
-    assertEquals(readme.includes("- Review items: 2"), true);
-    assertEquals(readme.includes("- applied: 1"), true);
-    assertEquals(readme.includes("- deferred: 1"), true);
-    assertEquals(readme.includes("- Review queue notes:"), true);
-    assertEquals(
-      readme.includes(
-        "  - applied: A tracked revision or imported review decision already accounts for the item and is retained as audit evidence.",
+        "- [ledger.sqlite](ledger.sqlite) - SQLite database with the public tables, audit tables, and a table catalog.",
       ),
       true,
     );
     assertEquals(
       readme.includes(
-        "  - deferred: Parked, non-blocking work outside current alpha scope or without public-output impact.",
+        "- [SHA256SUMS](SHA256SUMS) - checksums for upload assets except `manifest.json` and `SHA256SUMS`.",
       ),
       true,
     );
-    assertEquals(readme.includes("- Review categories:"), true);
-    assertEquals(readme.includes("  - source_shadow: 1"), true);
-    assertEquals(readme.includes("  - source_stale_or_failed: 1"), true);
-    assertEquals(readme.includes("- Review category notes:"), true);
+    assertEquals(readme.includes("file sizes, hashes, row counts, columns"), true);
     assertEquals(
       readme.includes(
-        "  - source_shadow: One source appears to shadow another civic body, so curation preserves or suppresses deliberately.",
+        "`dc_sources.csv` includes exported and inventory-only rows; check `release_status`.",
       ),
-      true,
+      false,
     );
     assertEquals(
       readme.includes(
-        "  - source_stale_or_failed: A stale or failed source fragment is treated as an ingestion bug, not a release blocker.",
+        "`dc_public_bodies.csv` keeps Open DC profile URLs separate from official websites.",
       ),
-      true,
+      false,
     );
-    assertEquals(readme.includes("- Deferred review groups:"), true);
+    assertEquals(readme.includes("release verify"), false);
     assertEquals(
       readme.includes(
-        "  - source_stale_or_failed / dc.interpreter.opendc_stale_or_failed_duplicate: 1",
+        "Final publish gate: `deno task civic release verify --publish <release-root>`.",
       ),
-      true,
+      false,
     );
-    assertEquals(readme.includes("- Deferred review group notes:"), true);
+    assertEquals(readme.includes("## Release Checks"), true);
     assertEquals(
       readme.includes(
-        "A stale or failed Open DC duplicate fragment was suppressed as a source ingestion bug",
+        "Review queue: 2 total; 0 blocking; 1 applied; 1 deferred.",
       ),
       true,
     );
-    assertEquals(readme.includes("reviewDeferredGroups"), true);
     assertEquals(
-      readme.includes("- Release-blocking review items in GovGraph projection: 0"),
+      readme.includes("Sources: 4; exported / inventory-only / collected-empty 2 / 2 / 0."),
       true,
     );
     assertEquals(
       readme.includes(
-        "Catalog confidence is confidence in the source-inventory row and access path",
+        "Source inventory rows are in `dc_sources.csv`; collected source snapshot counts are in `_local/source_counts.csv` and `manifest.json` as `collectedSourceCount`.",
       ),
-      true,
+      false,
     );
-    assertEquals(readme.includes("## Artifacts"), true);
-    assertEquals(
-      readme.includes(
-        "- `source_coverage.csv` - source inventory publisher/access metadata, catalog confidence, collection/release status, scope, contribution, exclusions, and caveats.",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("publisher, access method, source URL, catalog confidence"), true);
-    assertEquals(readme.includes("counts.sourceCoverageStatuses"), true);
-    assertEquals(readme.includes("counts.sourceCoverageReleaseStatuses"), true);
-    assertEquals(readme.includes("- `dc_anc_smd_structure.csv`"), true);
-    assertEquals(readme.includes("- `dc_council_committee_membership.csv`"), true);
-    assertEquals(
-      readme.includes("- `README.md` - human-readable release summary and caveat trail."),
-      true,
-    );
-    assertEquals(
-      readme.includes("- `govgraph_nodes.json` - downstream-friendly public node projection."),
-      true,
-    );
-    assertEquals(
-      readme.includes(
-        "- `govgraph_summary.json` - projection counts, node kind/category counts, edge verbs, mapped relation label counts, excluded nodes/edges, and blocking review counts.",
-      ),
-      true,
-    );
-    assertEquals(readme.includes("- `ledger.sqlite`"), true);
-    assertEquals(
-      readme.includes(
-        "- `manifest.json` - machine-readable release manifest; it describes the manifest-managed outputs but is not included in its own checksum table.",
-      ),
-      true,
-    );
+    assertEquals(readme.includes("sha256sum -c SHA256SUMS"), true);
+    assertEquals(readme.includes("shasum -a 256 -c SHA256SUMS"), true);
 
-    const entriesRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "entries.csv")));
+    const entriesRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv")),
+    );
     const entriesById = new Map(entriesRows.slice(1).map((row) => [row[0], row]));
     assertEquals(entriesById.get("dc.board:b-1")?.[2], "dc.board");
     assertEquals(entriesById.get("dc.authority:au-1")?.[3], "Ethics Authority");
 
-    const relationRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "relations.csv")));
-    assertEquals(relationRows.length, 9);
+    const relationRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv")),
+    );
+    assertEquals(relationRows.length, 10);
     const relationFromIds = new Set(relationRows.slice(1).map((row) => row[0]));
     assertEquals(relationFromIds.has("dc.board:b-1"), true);
     assertEquals(relationFromIds.has("dc.commission:c-1"), true);
@@ -1269,13 +1754,16 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       return acc;
     }, {});
     assertEquals(relationKinds["dc.relation:governs"], 2);
+    assertEquals(relationKinds["dc.relation:authorized_by"], 1);
 
-    const sourceRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "sources.csv")));
+    const sourceRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/source_counts.csv")),
+    );
     assertEquals(sourceRows[1][0], "gazette");
     assertEquals(sourceRows[2][0], "registry");
 
     const sourceCoverageRows = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "source_coverage.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/source_coverage.csv")),
     );
     assertEquals(sourceCoverageRows[0], [
       "source",
@@ -1312,30 +1800,32 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(sourceCoverageBySource.get("gazette")?.[10], "exported");
     assertEquals(sourceCoverageBySource.get("registry")?.[13], "7");
 
-    const citationRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "citations.csv")));
-    assertEquals(citationRows.length, 12);
+    const citationRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/ledger_citations.csv")),
+    );
+    assertEquals(citationRows.length, 13);
     assertEquals(citationRows[1][0], "entry");
     assertEquals(citationRows[1][1], "dc.agency:a-1");
     assertEquals(citationRows[2][6], "true");
 
     const boardAffiliations = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "dc_board_affiliations.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/dc_board_affiliations.csv")),
     );
     assertEquals(boardAffiliations[1][0], "dc.board:b-1");
     assertEquals(boardAffiliations[1][3], "dc.agency:a-1");
 
     const commissionAffiliations = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "dc_commission_affiliations.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/dc_commission_affiliations.csv")),
     );
     assertEquals(commissionAffiliations[1][0], "dc.commission:c-1");
 
     const authorityAffiliations = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "dc_authority_affiliations.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/dc_authority_affiliations.csv")),
     );
     assertEquals(authorityAffiliations[1][0], "dc.authority:au-1");
 
     const ancSmdStructure = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "dc_anc_smd_structure.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/dc_anc_smd_structure.csv")),
     );
     assertEquals(ancSmdStructure[1][0], "dc.anc:8F");
     assertEquals(ancSmdStructure[1][3], "dc.smd:8F01");
@@ -1343,22 +1833,266 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(ancSmdStructure[1][7], "Nic Wilson");
 
     const councilCommitteeMembership = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "dc_council_committee_membership.csv")),
+      await Deno.readTextFile(join(releaseRoot, "dc_council_committee_memberships.csv")),
     );
+    assertEquals(councilCommitteeMembership[0], [
+      "committee_entry_id",
+      "committee_name",
+      "committee_type",
+      "councilmember_entry_id",
+      "councilmember_name",
+      "membership_role",
+      "source_url",
+      "source_id",
+    ]);
     assertEquals(councilCommitteeMembership[1][0], "dc.committee:transportation");
     assertEquals(councilCommitteeMembership[1][3], "dc.councilmember:jane-doe");
     assertEquals(councilCommitteeMembership[1][5], "chair");
+    assertEquals(councilCommitteeMembership[1][6], "https://example.com/registry");
+    assertEquals(councilCommitteeMembership[1][7], "registry:committee-transportation");
+
+    const dcAgencies = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "dc_agencies.csv")));
+    assertEquals(dcAgencies[0], [
+      "agency_id",
+      "name",
+      "short_name",
+      "official_url",
+      "parent_id",
+      "parent_name",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcAgencies[1][0], "dc.agency:a-1");
+    assertEquals(dcAgencies[1][7], "gazette:a-1");
+
+    const dcCouncilmembers = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_councilmembers.csv")),
+    );
+    assertEquals(dcCouncilmembers[0], [
+      "sort_order",
+      "councilmember_id",
+      "name",
+      "seat_type",
+      "office_title",
+      "ward",
+      "is_at_large",
+      "profile_url",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcCouncilmembers[1][1], "dc.councilmember:jane-doe");
+    assertEquals(dcCouncilmembers[1][3], "unknown");
+
+    const dcCouncilCommittees = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_council_committees.csv")),
+    );
+    assertEquals(dcCouncilCommittees[0], [
+      "committee_id",
+      "name",
+      "committee_type",
+      "chair_id",
+      "chair_name",
+      "member_count",
+      "members",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcCouncilCommittees[1][0], "dc.committee:transportation");
+    assertEquals(dcCouncilCommittees[1][3], "dc.councilmember:jane-doe");
+    assertEquals(dcCouncilCommittees[1][5], "1");
+    assertEquals(dcCouncilCommittees[1][6], "Jane Doe");
+
+    const dcPublicBodies = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_public_bodies.csv")),
+    );
+    assertEquals(dcPublicBodies.length, 4);
+    assertEquals(dcPublicBodies[1][2], "authority");
+    assertEquals(dcPublicBodies[1][9], "dc.agency:a-1");
+    assertEquals(dcPublicBodies[1][10], "District Agency");
+    assertEquals(dcPublicBodies[2][5], "D.C. Code § 3-1301");
+    assertEquals(
+      dcPublicBodies[2][6],
+      "https://code.dccouncil.gov/us/dc/council/code/sections/3-1301",
+    );
+
+    const dcPublicBodyAffiliations = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_public_body_affiliations.csv")),
+    );
+    assertEquals(dcPublicBodyAffiliations.length, 4);
+    assertEquals(dcPublicBodyAffiliations[0], [
+      "public_body_id",
+      "public_body_name",
+      "body_type",
+      "relation_type",
+      "target_id",
+      "target_name",
+      "target_type",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcPublicBodyAffiliations[1][3], "administered_by");
+    assertEquals(dcPublicBodyAffiliations[1][4], "dc.agency:a-1");
+
+    const dcAncs = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "dc_ancs.csv")));
+    assertEquals(dcAncs[0], [
+      "anc_id",
+      "anc",
+      "official_url",
+      "oanc_profile_url",
+      "wards",
+      "neighborhoods",
+      "smd_count",
+      "current_commissioners",
+      "current_state_note",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcAncs[1][0], "dc.anc:8F");
+    assertEquals(dcAncs[1][6], "1");
+    assertEquals(dcAncs[1][7], "Nic Wilson");
+    assertEquals(
+      dcAncs[1][8],
+      "OANC lists this as ANC 6/8F; the release keeps the DCGIS ANC 8F ID.",
+    );
+
+    const dcSmds = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "dc_smds.csv")));
+    assertEquals(dcSmds[1][0], "dc.smd:8F01");
+    assertEquals(dcSmds[1][4], "");
+    assertEquals(dcSmds[1][6], "Nic Wilson");
+    assertEquals(dcSmds[1][8], "https://example.com/registry");
+
+    const dcSmdCommissioners = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/dc_smd_commissioners.csv")),
+    );
+    assertEquals(dcSmdCommissioners[0], [
+      "smd",
+      "anc",
+      "wards",
+      "current_commissioner_name",
+      "officer_role",
+      "smd_id",
+      "anc_id",
+      "commissioner_seat_id",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcSmdCommissioners[1][0], "8F01");
+    assertEquals(dcSmdCommissioners[1][1], "8F");
+    assertEquals(dcSmdCommissioners[1][3], "Nic Wilson");
+    assertEquals(dcSmdCommissioners[1][8], "https://example.com/registry");
+
+    const dcRelationships = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_relationships.csv")),
+    );
+    assertEquals(dcRelationships[0], [
+      "from_id",
+      "from_name",
+      "from_type",
+      "relationship",
+      "to_id",
+      "to_name",
+      "to_type",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(dcRelationships.length, 10);
+    assertEquals(
+      dcRelationships.some((row) =>
+        row[0] === "dc.board:b-1" &&
+        row[3] === "authorized_by" &&
+        row[4] === "dc.legal_authority:d-c-code-3-1301" &&
+        row[5] === "D.C. Code § 3-1301"
+      ),
+      true,
+    );
+    assertEquals(
+      dcRelationships.some((row) =>
+        row[0] === "dc.councilmember:jane-doe" &&
+        row[3] === "member_of" &&
+        row[4] === "dc.committee:transportation" &&
+        row[5] === "Committee on Transportation"
+      ),
+      true,
+    );
+    assertEquals(
+      dcRelationships.some((row) =>
+        row[0] === "dc.board:b-1" &&
+        row[3] === "administered_by" &&
+        row[4] === "dc.agency:a-1"
+      ),
+      true,
+    );
+
+    const dcSources = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "dc_sources.csv")));
+    assertEquals(dcSources.length, 5);
+    assertEquals(dcSources[0], [
+      "source_id",
+      "publisher",
+      "source_url",
+      "family",
+      "access_method",
+      "collection_status",
+      "release_status",
+      "record_count",
+      "citation_count",
+      "scope",
+      "contributes",
+      "known_limits",
+      "notes",
+    ]);
+    assertEquals(dcSources[1][0], "blocked.source");
+    assertEquals(dcSources[1][5], "not_collected");
+    assertEquals(dcSources[1][6], "inventory_only");
+
+    const dcAgenciesOutputPath = manifestOutputs.dcAgenciesCsv;
+    const dcAgenciesPath = join(releaseRoot, dcAgenciesOutputPath);
+    const originalDcAgenciesBytes = await Deno.readFile(dcAgenciesPath);
+    const staleDcAgenciesText = new TextDecoder().decode(originalDcAgenciesBytes).replace(
+      "agency_id,name",
+      "agency_id,label",
+    );
+    const staleDcAgenciesBytes = new TextEncoder().encode(staleDcAgenciesText);
+    await Deno.writeFile(dcAgenciesPath, staleDcAgenciesBytes);
+    outputFileMetadata.dcAgenciesCsv.byteSize = staleDcAgenciesBytes.byteLength;
+    outputFileMetadata.dcAgenciesCsv.sha256 = await sha256Hex(staleDcAgenciesBytes);
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const stalePublicHeaderVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(stalePublicHeaderVerification.valid, false);
+    assertEquals(
+      stalePublicHeaderVerification.errors.some((error) =>
+        error.includes("dc_agencies.csv headers must match the release CSV contract")
+      ),
+      true,
+    );
+    await Deno.writeFile(dcAgenciesPath, originalDcAgenciesBytes);
+    outputFileMetadata.dcAgenciesCsv.byteSize = originalDcAgenciesBytes.byteLength;
+    outputFileMetadata.dcAgenciesCsv.sha256 = await sha256Hex(originalDcAgenciesBytes);
+    await Deno.writeTextFile(
+      join(releaseRoot, "manifest.json"),
+      JSON.stringify(manifest, null, 2) + "\n",
+    );
+    const restoredPublicHeaderVerification = await verifyReleaseArtifacts(releaseRoot);
+    assertEquals(restoredPublicHeaderVerification.valid, true);
 
     const govGraphNodes = JSON.parse(
       await Deno.readTextFile(join(releaseRoot, "govgraph_nodes.json")),
     ) as Array<Record<string, unknown>>;
-    assertEquals(govGraphNodes.length, 9);
+    assertEquals(govGraphNodes.length, 10);
     assertEquals(govGraphNodes[0].publicStatus, "published");
 
     const govGraphEdges = JSON.parse(
       await Deno.readTextFile(join(releaseRoot, "govgraph_edges.json")),
     ) as Array<Record<string, unknown>>;
-    assertEquals(govGraphEdges.length, 7);
+    assertEquals(govGraphEdges.length, 8);
+    assertEquals(
+      govGraphEdges.some((edge) =>
+        edge.relationKind === "dc.relation:authorized_by" && edge.verb === "authorized_by"
+      ),
+      true,
+    );
     assertEquals(
       govGraphEdges.some((edge) =>
         edge.relationKind === "dc.relation:governs" && edge.verb === "administered_by"
@@ -1382,18 +2116,26 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
       "dc.commission": 1,
       "dc.committee": 1,
       "dc.councilmember": 1,
+      "dc.legal_authority": 1,
       "dc.smd": 1,
     });
     assertEquals(govGraphSummary.nodeCategoryCounts, {
       executive: 1,
+      legal_authority: 1,
       legislative: 1,
       neighborhood: 3,
       public_body: 3,
       representation: 1,
     });
+    assertEquals(govGraphSummary.nonGraphLedgerEntryKinds, {});
+    assertEquals(
+      govGraphSummary.nonGraphLedgerEntryNote,
+      "Ledger entries in nonGraphLedgerEntryKinds are source or audit anchors and are intentionally not projected as GovGraph nodes.",
+    );
     assertEquals(govGraphSummary.edgeVerbCounts, {
       administered_by: 2,
       affiliated_with: 1,
+      authorized_by: 1,
       chairs: 1,
       contains: 1,
       member_of: 1,
@@ -1401,12 +2143,63 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     });
     assertEquals(govGraphSummary.excludedNodeCount, 0);
     assertEquals(govGraphSummary.excludedEdgeCount, 1);
+    assertEquals(govGraphSummary.releaseBlockingReviewItemCount, 0);
+    assertEquals(govGraphSummary.nonBlockingDeferredReviewItemCount, 1);
+    assertEquals(govGraphSummary.reviewPosture, {
+      releaseBlockingReviewItemCount: 0,
+      nonBlockingDeferredReviewItemCount: 1,
+      note:
+        "releaseBlockingReviewItemCount must be zero for release; nonBlockingDeferredReviewItemCount records deferred review work that is outside the current public-output release path.",
+    });
+    assertEquals(govGraphSummary.reviewQueueCounts, {
+      blocking: 0,
+      actionable: 0,
+      drafted: 0,
+      applied: 1,
+      deferred: 1,
+    });
+    assertEquals(
+      (manifest.govGraph as Record<string, unknown>).reviewQueueCounts,
+      govGraphSummary.reviewQueueCounts,
+    );
     assertEquals(govGraphSummary.mappedRelationCount, 2);
     assertEquals(govGraphSummary.mappedRelationCounts, [{
       relationKind: "dc.relation:governs",
       verb: "administered_by",
       count: 2,
     }]);
+    const nodeFieldDescriptions = govGraphSummary.nodeFieldDescriptions as Record<string, string>;
+    const edgeFieldDescriptions = govGraphSummary.edgeFieldDescriptions as Record<string, string>;
+    const citationFieldDescriptions = govGraphSummary.citationFieldDescriptions as Record<
+      string,
+      string
+    >;
+    const joinRules = govGraphSummary.joinRules as string[];
+    assertEquals(
+      nodeFieldDescriptions.id,
+      "Stable GovGraph node ID; equals ledgerId for this release.",
+    );
+    assertEquals(
+      edgeFieldDescriptions.from,
+      "Source node ID; joins to govgraph_nodes.json id.",
+    );
+    assertEquals(citationFieldDescriptions.url, "Source URL when available.");
+    assertEquals(
+      joinRules.includes(
+        "dc.councilmember is the elected Council member kind; dc.council is a council-type public body kind.",
+      ),
+      true,
+    );
+    assertEquals(
+      joinRules.includes(
+        "Ledger entry counts can exceed GovGraph node counts because source/audit anchor kinds listed in nonGraphLedgerEntryKinds are not graph nodes.",
+      ),
+      true,
+    );
+    assertEquals(govGraphSummary.relationFieldDescriptions, {
+      relationKind: "Stable raw ledger relation identifier.",
+      verb: "Public relationship label for release consumers.",
+    });
 
     const govGraphSummaryOutputPath = manifestOutputs.govGraphSummaryJson;
     const originalGovGraphSummaryBytes = new TextEncoder().encode(
@@ -1438,7 +2231,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       staleGovGraphRollupVerification.errors.some((error) =>
         error.includes(
-          "govgraph_summary.json.nodeCount 9 does not match govgraph_summary.json.nodeKindCounts total 0",
+          "govgraph_summary.json.nodeCount 10 does not match govgraph_summary.json.nodeKindCounts total 0",
         )
       ),
       true,
@@ -1446,7 +2239,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       staleGovGraphRollupVerification.errors.some((error) =>
         error.includes(
-          "govgraph_summary.json.edgeCount 7 does not match govgraph_summary.json.edgeVerbCounts total 0",
+          "govgraph_summary.json.edgeCount 8 does not match govgraph_summary.json.edgeVerbCounts total 0",
         )
       ),
       true,
@@ -1511,7 +2304,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       staleGovGraphPayloadCountVerification.errors.some((error) =>
         error.includes(
-          "govgraph_summary.json.nodeCount 8 does not match govgraph_nodes.json array length 9",
+          "govgraph_summary.json.nodeCount 8 does not match govgraph_nodes.json array length 10",
         )
       ),
       true,
@@ -1519,7 +2312,7 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
     assertEquals(
       staleGovGraphPayloadCountVerification.errors.some((error) =>
         error.includes(
-          "govgraph_summary.json.edgeCount 6 does not match govgraph_edges.json array length 7",
+          "govgraph_summary.json.edgeCount 6 does not match govgraph_edges.json array length 8",
         )
       ),
       true,
@@ -1639,18 +2432,166 @@ Deno.test("exportReleaseArtifacts writes all release files and expected counts",
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
-      assertEquals(countRows(ledgerDb, "entries"), 9);
-      assertEquals(countRows(ledgerDb, "relations"), 8);
-      assertEquals(countRows(ledgerDb, "citations"), 11);
-      assertEquals(countRows(ledgerDb, "sources"), 2);
+      assertEquals(countRows(ledgerDb, "ledger_entries"), 10);
+      assertEquals(countRows(ledgerDb, "ledger_relations"), 9);
+      assertEquals(countRows(ledgerDb, "ledger_citations"), 12);
+      assertEquals(countRows(ledgerDb, "source_counts"), 2);
       assertEquals(countRows(ledgerDb, "source_coverage"), 4);
       assertEquals(countRows(ledgerDb, "dc_anc_smd_structure"), 1);
-      assertEquals(countRows(ledgerDb, "dc_council_committee_membership"), 1);
+      assertEquals(countRows(ledgerDb, "dc_board_affiliations"), 1);
+      assertEquals(countRows(ledgerDb, "dc_commission_affiliations"), 1);
+      assertEquals(countRows(ledgerDb, "dc_authority_affiliations"), 1);
+      assertEquals(countRows(ledgerDb, "dc_council_committee_memberships"), 1);
+      assertEquals(countRows(ledgerDb, "dc_agencies"), 1);
+      assertEquals(countRows(ledgerDb, "dc_councilmembers"), 1);
+      assertEquals(countRows(ledgerDb, "dc_council_committees"), 1);
+      assertEquals(countRows(ledgerDb, "dc_public_bodies"), 3);
+      assertEquals(countRows(ledgerDb, "entries"), 10);
+      assertEquals(countRows(ledgerDb, "relations"), 9);
+      assertEquals(countRows(ledgerDb, "citations"), 12);
+      assertEquals(countRows(ledgerDb, "sources"), 2);
+      assertEquals(countRows(ledgerDb, "dc_public_body_affiliations"), 3);
+      assertEquals(countRows(ledgerDb, "dc_ancs"), 1);
+      assertEquals(countRows(ledgerDb, "dc_smds"), 1);
+      assertEquals(countRows(ledgerDb, "dc_smd_commissioners"), 1);
+      assertEquals(countRows(ledgerDb, "dc_legal_authorities"), 1);
+      assertEquals(countRows(ledgerDb, "dc_relationships"), 9);
+      assertEquals(countRows(ledgerDb, "dc_sources"), 4);
+      assertEquals(countRows(ledgerDb, "release_table_catalog"), 29);
+      assertEquals(sqliteTableExists(ledgerDb, "dc_council_committee_membership"), false);
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT table_group FROM release_table_catalog WHERE table_name = ?",
+          ["dc_agencies"],
+        ),
+        "public",
+      );
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT release_path FROM release_table_catalog WHERE table_name = ?",
+          ["dc_agencies"],
+        ),
+        "dc_agencies.csv",
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT is_release_asset FROM release_table_catalog WHERE table_name = ?",
+          ["dc_agencies"],
+        ),
+        1,
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT row_count FROM release_table_catalog WHERE table_name = ?",
+          ["dc_agencies"],
+        ),
+        1,
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT column_count FROM release_table_catalog WHERE table_name = ?",
+          ["dc_agencies"],
+        ),
+        8,
+      );
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT table_group FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        "traceability",
+      );
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT release_path FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        "_local/ledger_entries.csv",
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT is_release_asset FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        0,
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT row_count FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        10,
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT column_count FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        6,
+      );
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT columns_json FROM release_table_catalog WHERE table_name = ?",
+          ["ledger_entries"],
+        ),
+        JSON.stringify(["entry_id", "family", "kind", "name", "attributes", "citations"]),
+      );
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT table_group FROM release_table_catalog WHERE table_name = ?",
+          ["dc_board_affiliations"],
+        ),
+        "compatibility",
+      );
+      assertEquals(sqliteTableExists(ledgerDb, "dc_board_affiliations"), true);
+      assertEquals(sqliteTableExists(ledgerDb, "dc_commission_affiliations"), true);
+      assertEquals(sqliteTableExists(ledgerDb, "dc_authority_affiliations"), true);
+      assertEquals(
+        sqliteScalarString(
+          ledgerDb,
+          "SELECT table_kind FROM release_table_catalog WHERE table_name = ?",
+          ["entries"],
+        ),
+        "view",
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT row_count FROM release_table_catalog WHERE table_name = ?",
+          ["release_table_catalog"],
+        ),
+        29,
+      );
+      assertEquals(
+        sqliteScalarInteger(
+          ledgerDb,
+          "SELECT row_count FROM release_table_catalog WHERE table_name = ?",
+          ["entries"],
+        ),
+        10,
+      );
+      assertEquals(sqliteColumnTypes(ledgerDb, "dc_sources").record_count, "INTEGER");
+      assertEquals(sqliteColumnTypes(ledgerDb, "dc_sources").citation_count, "INTEGER");
+      assertEquals(sqliteColumnTypes(ledgerDb, "dc_council_committees").member_count, "INTEGER");
+      assertEquals(sqliteColumnTypes(ledgerDb, "dc_ancs").smd_count, "INTEGER");
+      assertEquals(sqliteColumnTypes(ledgerDb, "dc_legal_authorities").used_by_count, "INTEGER");
     } finally {
       ledgerDb.close();
     }
 
-    await Deno.writeTextFile(join(releaseRoot, "entries.csv"), "tampered\n");
+    await Deno.writeTextFile(join(releaseRoot, "_local/ledger_entries.csv"), "tampered\n");
     const tamperedVerification = await verifyReleaseArtifacts(releaseRoot);
     assertEquals(tamperedVerification.valid, false);
     assertEquals(
@@ -1725,7 +2666,7 @@ Deno.test("exportReleaseArtifacts explains collected-empty authority entity cove
     const readme = await Deno.readTextFile(join(releaseRoot, "README.md"));
     assertEquals(
       readme.includes(
-        "- dc.authority: 0 - Authority source is collected-empty in this release; see source_coverage.csv for the live-source caveat.",
+        "DCGIS authorities were collected empty; this release has zero `dc.authority` rows from that source.",
       ),
       true,
     );
@@ -1781,6 +2722,71 @@ function makeReviewItem(options: {
     },
   };
 }
+
+Deno.test("exportReleaseArtifacts marks the Council Chairman as elected at-large", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "civic-ledger-export-test-chairman-" });
+  const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-export-result-chairman-" });
+
+  const workspace = openWorkspace(workspaceRoot);
+  initWorkspace(workspace);
+
+  try {
+    workspace.db.run(
+      "INSERT INTO state_entries (entry_id, jurisdiction, kind, payload) VALUES (?, ?, ?, ?)",
+      [
+        "dc.councilmember:phil-mendelson",
+        "dc",
+        "dc.councilmember",
+        JSON.stringify({
+          family: "person",
+          kind: "dc.councilmember",
+          name: "Phil Mendelson",
+          citations: [
+            {
+              source: "dccouncil.members",
+              sourceRecordId: "phil-mendelson",
+              url: "https://dccouncil.gov/council/phil-mendelson/",
+            },
+          ],
+          attributes: {
+            officeLabel: "Chairman",
+            sourceProfileUrl: "https://dccouncil.gov/council/phil-mendelson/",
+          },
+        }),
+      ],
+    );
+
+    await exportReleaseArtifacts({
+      workspace,
+      jurisdiction: "dc",
+      releaseRoot,
+    });
+
+    const rows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "dc_councilmembers.csv")),
+    );
+    assertEquals(rows[0], [
+      "sort_order",
+      "councilmember_id",
+      "name",
+      "seat_type",
+      "office_title",
+      "ward",
+      "is_at_large",
+      "profile_url",
+      "source_url",
+      "source_id",
+    ]);
+    assertEquals(rows[1][1], "dc.councilmember:phil-mendelson");
+    assertEquals(rows[1][3], "chairman");
+    assertEquals(rows[1][4], "Chairman");
+    assertEquals(rows[1][6], "true");
+  } finally {
+    closeWorkspace(workspace);
+    await Deno.remove(workspaceRoot, { recursive: true });
+    await Deno.remove(releaseRoot, { recursive: true });
+  }
+});
 
 Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async () => {
   const workspaceRoot = await Deno.makeTempDir({
@@ -1851,17 +2857,21 @@ Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async 
     assertEquals(result.govGraphExcludedEdgeCount, 1);
     assertEquals(result.govGraphBlockedReviewItemCount, 0);
 
-    const citationsRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "citations.csv")));
+    const citationsRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/ledger_citations.csv")),
+    );
     assertEquals(citationsRows.length, 1);
     assertEquals(citationsRows[0][0], "citation_type");
 
-    const sourceRows = parseCsvRows(await Deno.readTextFile(join(releaseRoot, "sources.csv")));
+    const sourceRows = parseCsvRows(
+      await Deno.readTextFile(join(releaseRoot, "_local/source_counts.csv")),
+    );
     assertEquals(sourceRows.length, 2);
     assertEquals(sourceRows[1][0], "registry");
     assertEquals(sourceRows[1][2], "0");
 
     const sourceCoverageRows = parseCsvRows(
-      await Deno.readTextFile(join(releaseRoot, "source_coverage.csv")),
+      await Deno.readTextFile(join(releaseRoot, "_local/source_coverage.csv")),
     );
     assertEquals(sourceCoverageRows.length, 2);
     assertEquals(sourceCoverageRows[1][0], "registry");
@@ -1876,8 +2886,8 @@ Deno.test("exportReleaseArtifacts tolerates malformed citation payloads", async 
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
-      assertEquals(countRows(ledgerDb, "citations"), 0);
-      assertEquals(countRows(ledgerDb, "sources"), 1);
+      assertEquals(countRows(ledgerDb, "ledger_citations"), 0);
+      assertEquals(countRows(ledgerDb, "source_counts"), 1);
       assertEquals(countRows(ledgerDb, "source_coverage"), 1);
     } finally {
       ledgerDb.close();
@@ -1947,6 +2957,31 @@ function parseCsvRows(contents: string): string[][] {
 function countRows(db: Database, table: string): number {
   const row = db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number };
   return row.count;
+}
+
+function sqliteColumnTypes(db: Database, table: string): Record<string, string> {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+    type: string;
+  }>;
+  return Object.fromEntries(rows.map((row) => [row.name, row.type]));
+}
+
+function sqliteTableExists(db: Database, table: string): boolean {
+  const row = db.prepare(
+    "SELECT COUNT(*) AS count FROM sqlite_master WHERE name = ? AND type IN ('table', 'view')",
+  ).get(table) as { count: number };
+  return row.count > 0;
+}
+
+function sqliteScalarString(db: Database, sql: string, params: string[]): string {
+  const row = db.prepare(sql).get(...params) as Record<string, unknown>;
+  return String(Object.values(row)[0] ?? "");
+}
+
+function sqliteScalarInteger(db: Database, sql: string, params: string[]): number {
+  const row = db.prepare(sql).get(...params) as Record<string, unknown>;
+  return Number(Object.values(row)[0] ?? 0);
 }
 
 async function exists(path: string): Promise<boolean> {

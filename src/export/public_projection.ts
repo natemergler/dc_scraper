@@ -5,7 +5,13 @@ import {
   dcPublicNodeKinds,
 } from "../jurisdictions/dc/kinds/entity.ts";
 import { dcPublicRelationVerb, dcRawRelationVerb } from "../jurisdictions/dc/kinds/relation.ts";
-import type { ReviewCategory, ReviewItem } from "../review/items.ts";
+import {
+  type ReviewCategory,
+  type ReviewItem,
+  reviewItemBlocksCurrentOutput,
+  type ReviewQueue,
+  reviewQueueForItem,
+} from "../review/items.ts";
 
 export type GovGraphNodeCategory = DcPublicNodeCategory;
 
@@ -41,14 +47,32 @@ export interface GovGraphSummary {
   nodeCount: number;
   nodeKindCounts: Record<string, number>;
   nodeCategoryCounts: Record<string, number>;
+  nonGraphLedgerEntryKinds: Record<string, number>;
+  nonGraphLedgerEntryNote: string;
   edgeCount: number;
   edgeVerbCounts: Record<string, number>;
   excludedNodeCount: number;
   excludedEdgeCount: number;
   blockedReviewItemCount: number;
+  releaseBlockingReviewItemCount: number;
+  nonBlockingDeferredReviewItemCount: number;
+  reviewPosture: {
+    releaseBlockingReviewItemCount: number;
+    nonBlockingDeferredReviewItemCount: number;
+    note: string;
+  };
+  reviewQueueCounts: Record<ReviewQueue, number>;
   blockedReviewCountsByCategory: Partial<Record<ReviewCategory, number>>;
   mappedRelationCount: number;
   mappedRelationCounts: MappedRelationCount[];
+  nodeFieldDescriptions: Record<string, string>;
+  edgeFieldDescriptions: Record<string, string>;
+  citationFieldDescriptions: Record<string, string>;
+  joinRules: string[];
+  relationFieldDescriptions: {
+    relationKind: string;
+    verb: string;
+  };
 }
 
 export interface MappedRelationCount {
@@ -87,6 +111,7 @@ export interface DcCouncilCommitteeMembershipRow {
 }
 
 const supportedKinds = new Set(dcPublicNodeKinds());
+const reviewQueues: ReviewQueue[] = ["blocking", "actionable", "drafted", "applied", "deferred"];
 
 export function buildGovGraphProjection(
   entries: Iterable<Entry>,
@@ -94,15 +119,19 @@ export function buildGovGraphProjection(
 ): GovGraphProjection {
   const entryList = [...entries];
   const entryIndex = new Map(entryList.map((entry) => [entry.id, entry]));
-  const blockingItems = reviewItems.filter((item) =>
-    item.status === "open" &&
-    item.blocks.releaseReadiness &&
-    hasProjectionImpact(item)
-  );
+  const blockingItems = reviewItems.filter(reviewItemBlocksCurrentOutput);
 
   const excludedNodeIds = new Set<string>();
   const excludedRelationIds = new Set<string>();
   const blockedReviewCountsByCategory: Partial<Record<ReviewCategory, number>> = {};
+  const reviewQueueCounts = Object.fromEntries(
+    reviewQueues.map((queue) => [queue, 0]),
+  ) as Record<ReviewQueue, number>;
+
+  for (const item of reviewItems) {
+    const queue = reviewQueueForItem(item);
+    reviewQueueCounts[queue] += 1;
+  }
 
   for (const item of blockingItems) {
     blockedReviewCountsByCategory[item.category] =
@@ -223,7 +252,12 @@ export function buildGovGraphProjection(
   const supportedNodeCount = entryList.filter((entry) => supportedKinds.has(entry.kind)).length;
   const nodeKindCounts = countSorted(nodes.map((node) => node.kind));
   const nodeCategoryCounts = countSorted(nodes.map((node) => node.category));
+  const nonGraphLedgerEntryKinds = countSorted(
+    entryList.filter((entry) => !supportedKinds.has(entry.kind)).map((entry) => entry.kind),
+  );
   const edgeVerbCounts = countSorted(edges.map((edge) => edge.verb));
+  const releaseBlockingReviewItemCount = blockingItems.length;
+  const nonBlockingDeferredReviewItemCount = reviewQueueCounts.deferred;
 
   return {
     nodes,
@@ -232,11 +266,23 @@ export function buildGovGraphProjection(
       nodeCount: nodes.length,
       nodeKindCounts,
       nodeCategoryCounts,
+      nonGraphLedgerEntryKinds,
+      nonGraphLedgerEntryNote:
+        "Ledger entries in nonGraphLedgerEntryKinds are source or audit anchors and are intentionally not projected as GovGraph nodes.",
       edgeCount: edges.length,
       edgeVerbCounts,
       excludedNodeCount: supportedNodeCount - nodes.length,
       excludedEdgeCount,
       blockedReviewItemCount: blockingItems.length,
+      releaseBlockingReviewItemCount,
+      nonBlockingDeferredReviewItemCount,
+      reviewPosture: {
+        releaseBlockingReviewItemCount,
+        nonBlockingDeferredReviewItemCount,
+        note:
+          "releaseBlockingReviewItemCount must be zero for release; nonBlockingDeferredReviewItemCount records deferred review work that is outside the current public-output release path.",
+      },
+      reviewQueueCounts,
       blockedReviewCountsByCategory,
       mappedRelationCount,
       mappedRelationCounts: [...mappedRelationCounts.values()].sort((left, right) => {
@@ -245,6 +291,47 @@ export function buildGovGraphProjection(
         }
         return left.relationKind.localeCompare(right.relationKind);
       }),
+      nodeFieldDescriptions: {
+        id: "Stable GovGraph node ID; equals ledgerId for this release.",
+        ledgerId: "Stable Civic Ledger entry ID.",
+        slug: "Human-readable slug derived from the entry ID.",
+        name: "Display name from current committed state.",
+        category:
+          "Public graph category such as executive, legislative, public_body, neighborhood, representation, judicial, or legal_authority.",
+        kind: "Stable Civic Ledger entry kind.",
+        family: "High-level ledger family such as organization, position, person, area, or legal.",
+        officialUrl: "Official URL when the current source-backed state has one.",
+        sourcePageUrl: "Primary source page URL used for this node when available.",
+        legalAuthorityIds:
+          "GovGraph node IDs for legal authority entries linked by authorized_by edges.",
+        sourceCitationCount: "Count of source citations attached to the node.",
+        publicStatus: "published when the node is included in the public GovGraph release.",
+      },
+      edgeFieldDescriptions: {
+        id: "Stable edge triple identifier: from::relationKind::to.",
+        from: "Source node ID; joins to govgraph_nodes.json id.",
+        to: "Target node ID; joins to govgraph_nodes.json id.",
+        relationKind: "Stable raw Civic Ledger relation identifier.",
+        verb: "Public relationship label for release consumers.",
+        citations: "Source citations supporting the edge.",
+        publicStatus: "published when the edge is included in the public GovGraph release.",
+      },
+      citationFieldDescriptions: {
+        source: "Source identifier from dc_sources.csv or internal source inventory.",
+        sourceRecordId: "Source record key when available.",
+        locator: "Source locator such as a section, page, or legal citation when available.",
+        url: "Source URL when available.",
+      },
+      joinRules: [
+        "govgraph_edges.json from and to values join to govgraph_nodes.json id.",
+        "GovGraph node id values match release CSV ID columns when the same civic object appears in both surfaces.",
+        "dc.councilmember is the elected Council member kind; dc.council is a council-type public body kind.",
+        "Ledger entry counts can exceed GovGraph node counts because source/audit anchor kinds listed in nonGraphLedgerEntryKinds are not graph nodes.",
+      ],
+      relationFieldDescriptions: {
+        relationKind: "Stable raw ledger relation identifier.",
+        verb: "Public relationship label for release consumers.",
+      },
     },
   };
 }
@@ -362,10 +449,6 @@ export function buildDcCouncilCommitteeMembershipRows(
 
 function membershipKey(councilmemberId: string, committeeId: string): string {
   return `${councilmemberId}::${committeeId}`;
-}
-
-function hasProjectionImpact(item: ReviewItem): boolean {
-  return item.affected.stateIds.length > 0 || item.affected.relationEndpoints.length > 0;
 }
 
 function relationId(from: string, relationKind: string, to: string): string {

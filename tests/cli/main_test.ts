@@ -220,7 +220,7 @@ Deno.test("root, init, status, and sources list guide a fresh operator", async (
     assertEquals(humanSourcesResult.output.includes("inventory.budget_finance"), true);
     assertEquals(humanSourcesResult.output.includes("inventory_only"), true);
     assertEquals(humanSourcesResult.output.includes("publisher/access/sourceUrl/confidence"), true);
-    assertEquals(humanSourcesResult.output.includes("source_coverage.csv"), true);
+    assertEquals(humanSourcesResult.output.includes("_local/source_coverage.csv"), true);
   } finally {
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(projectRoot, { recursive: true });
@@ -852,8 +852,8 @@ Deno.test("state generation can compile Council committees and councilmembers to
     assertEquals(exportResult.code, 0);
     assertEquals(exportResult.output.includes("GovGraph projection: 16 nodes"), true);
     assertEquals(exportResult.output.includes("blocking review items 0"), true);
-    assertEquals(exportResult.output.includes("Alpha artifact highlights:"), true);
-    assertEquals(exportResult.output.includes("manifest.json / README.md"), true);
+    assertEquals(exportResult.output.includes("Release artifact highlights:"), true);
+    assertEquals(exportResult.output.includes("manifest.json / SHA256SUMS / README.md"), true);
     assertEquals(
       exportResult.output.includes("govgraph_nodes.json / govgraph_edges.json"),
       true,
@@ -867,7 +867,7 @@ Deno.test("state generation can compile Council committees and councilmembers to
     assertEquals(manifest.counts.relationKinds["dc.relation:holds"], 6);
     assertEquals(manifest.counts.relationKinds["dc.relation:represents"], 6);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("dc.committee:committee-of-the-whole"), true);
     assertEquals(entriesCsv.includes("dc.councilmember:phil-mendelson"), true);
     assertEquals(entriesCsv.includes("dc.elected_office:council-chairman"), true);
@@ -875,7 +875,7 @@ Deno.test("state generation can compile Council committees and councilmembers to
     assertEquals(entriesCsv.includes("Committee of the Whole"), true);
     assertEquals(entriesCsv.includes("Trayon White"), true);
 
-    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:chairs"), true);
     assertEquals(relationsCsv.includes("dc.relation:holds"), true);
     assertEquals(relationsCsv.includes("dc.relation:member_of"), true);
@@ -2038,7 +2038,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(manifest.counts.relationKinds["dc.relation:contains"], 2);
     assertEquals(manifest.counts.relationKinds["dc.relation:represents"], 2);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("dc.anc:3~2F4G"), true);
     assertEquals(entriesCsv.includes("dc.smd:3~2F4G01"), true);
     assertEquals(entriesCsv.includes("dc.anc_commissioner_seat:3~2F4G01"), true);
@@ -2048,7 +2048,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(entriesCsv.includes("john@example.com"), false);
     assertEquals(entriesCsv.includes("dc.person:anc_commissioner_3~2F4G01"), false);
 
-    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:contains"), true);
     assertEquals(relationsCsv.includes("dc.relation:represents"), true);
     assertEquals(relationsCsv.includes("dc.anc:3~2F4G"), true);
@@ -2060,7 +2060,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(relationsCsv.includes("john@example.com"), false);
     assertEquals(relationsCsv.includes("dc.person:anc_commissioner_3~2F4G01"), false);
 
-    const citationsCsv = await Deno.readTextFile(join(releaseRoot, "citations.csv"));
+    const citationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_citations.csv"));
     assertEquals(citationsCsv.includes("3/4G01"), true);
     assertEquals(citationsCsv.includes("3/4G"), true);
     assertEquals(citationsCsv.includes("Jane Doe"), false);
@@ -2068,7 +2068,7 @@ Deno.test("state generation can compile ANC and SMD sources together with commis
     assertEquals(citationsCsv.includes("jane@example.com"), false);
     assertEquals(citationsCsv.includes("john@example.com"), false);
 
-    const sourcesCsv = await Deno.readTextFile(join(releaseRoot, "sources.csv"));
+    const sourcesCsv = await Deno.readTextFile(join(releaseRoot, "_local/source_counts.csv"));
     assertEquals(sourcesCsv.includes("dcgis.ancs"), true);
     assertEquals(sourcesCsv.includes("dcgis.smds"), true);
     assertEquals(sourcesCsv.includes("Jane Doe"), false);
@@ -2469,6 +2469,9 @@ Deno.test("export command indexes committed state and writes release artifacts",
   const workspace = await Deno.makeTempDir({ prefix: "civic-ledger-cli-export-workspace-" });
   const stateRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-export-state-" });
   const releaseRoot = await Deno.makeTempDir({ prefix: "civic-ledger-cli-export-release-" });
+  const downloadedAssetsRoot = await Deno.makeTempDir({
+    prefix: "civic-ledger-cli-downloaded-assets-",
+  });
 
   const responses = [
     {
@@ -2652,13 +2655,13 @@ Deno.test("export command indexes committed state and writes release artifacts",
     );
 
     const expectedFiles = [
-      "entries.csv",
-      "relations.csv",
-      "citations.csv",
-      "sources.csv",
-      "dc_board_affiliations.csv",
-      "dc_commission_affiliations.csv",
-      "dc_authority_affiliations.csv",
+      "_local/ledger_entries.csv",
+      "_local/ledger_relations.csv",
+      "_local/ledger_citations.csv",
+      "_local/source_counts.csv",
+      "_local/dc_board_affiliations.csv",
+      "_local/dc_commission_affiliations.csv",
+      "_local/dc_authority_affiliations.csv",
       "govgraph_nodes.json",
       "govgraph_edges.json",
       "govgraph_summary.json",
@@ -2682,17 +2685,19 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(manifest.counts.govGraphNodes, 5);
     assertEquals(manifest.counts.govGraphEdges, 3);
 
-    const affiliations = await Deno.readTextFile(join(releaseRoot, "dc_board_affiliations.csv"));
+    const affiliations = await Deno.readTextFile(
+      join(releaseRoot, "_local/dc_board_affiliations.csv"),
+    );
     assertEquals(affiliations.includes("dc.board:b-1"), true);
     assertEquals(affiliations.includes("dc.agency:agency-one"), true);
     const commissionAffiliations = await Deno.readTextFile(
-      join(releaseRoot, "dc_commission_affiliations.csv"),
+      join(releaseRoot, "_local/dc_commission_affiliations.csv"),
     );
     assertEquals(commissionAffiliations.includes("dc.commission:c-1"), true);
     assertEquals(commissionAffiliations.includes("dc.agency:agency-one"), true);
 
     const authorityAffiliations = await Deno.readTextFile(
-      join(releaseRoot, "dc_authority_affiliations.csv"),
+      join(releaseRoot, "_local/dc_authority_affiliations.csv"),
     );
     assertEquals(authorityAffiliations.includes("dc.authority:au-1"), true);
     assertEquals(authorityAffiliations.includes("dc.agency:agency-one"), true);
@@ -2708,7 +2713,7 @@ Deno.test("export command indexes committed state and writes release artifacts",
 
     const ledgerDb = new Database(join(releaseRoot, "ledger.sqlite"));
     try {
-      const entryCount = ledgerDb.prepare("SELECT COUNT(*) as count FROM entries").get() as {
+      const entryCount = ledgerDb.prepare("SELECT COUNT(*) as count FROM ledger_entries").get() as {
         count: number;
       };
       assertEquals(entryCount.count, 5);
@@ -2729,7 +2734,7 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(verifyResult.output.includes("manifest.json"), true);
     assertEquals(
       verifyResult.output.includes(
-        "schema version, release identity, artifact counts, kind rollups, zero blocking review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
+        "schema version, release identity, artifact counts, kind rollups, zero blocking/actionable/drafted review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
       ),
       true,
     );
@@ -2759,6 +2764,314 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(verifyJson.valid, true);
     assertEquals(verifyJson.checkedFileCount > 0, true);
     assertEquals(verifyJson.errors, []);
+
+    const manifestPath = join(releaseRoot, "manifest.json");
+    const manifestForPublish = JSON.parse(await Deno.readTextFile(manifestPath)) as Record<
+      string,
+      unknown
+    >;
+    const originalProvenance = manifestForPublish.provenance;
+    manifestForPublish.provenance = {
+      ...(originalProvenance as Record<string, unknown>),
+      workingTreeStatus: "dirty",
+      workingTreeChangedPathCount: 1,
+    };
+    await Deno.writeTextFile(manifestPath, JSON.stringify(manifestForPublish, null, 2) + "\n");
+    const publishVerifyResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "verify",
+        "--publish",
+      ])
+    );
+    assertEquals(publishVerifyResult.code, 1);
+    assertEquals(
+      publishVerifyResult.output.includes(
+        "manifest.provenance.workingTreeStatus must be clean for publish",
+      ),
+      true,
+    );
+    const publishVerifyJsonResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "verify",
+        "--publish",
+        "--json",
+      ])
+    );
+    assertEquals(publishVerifyJsonResult.code, 1);
+    const publishVerifyJson = JSON.parse(publishVerifyJsonResult.output) as {
+      valid: boolean;
+      publishReady: boolean;
+      publishErrors: string[];
+    };
+    assertEquals(publishVerifyJson.valid, false);
+    assertEquals(publishVerifyJson.publishReady, false);
+    assertEquals(
+      publishVerifyJson.publishErrors.some((error) =>
+        error.includes("workingTreeStatus must be clean for publish")
+      ),
+      true,
+    );
+    manifestForPublish.provenance = originalProvenance;
+    await Deno.writeTextFile(manifestPath, JSON.stringify(manifestForPublish, null, 2) + "\n");
+    const restoredPublishVerification = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "verify",
+      ])
+    );
+    assertEquals(restoredPublishVerification.code, 0);
+
+    const assetsResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "assets",
+      ])
+    );
+    assertEquals(assetsResult.code, 0);
+    assertEquals(assetsResult.output.includes("release assets:"), true);
+    assertEquals(assetsResult.output.includes("public_csv"), true);
+    assertEquals(assetsResult.output.includes("dc_agencies.csv"), true);
+    assertEquals(
+      assetsResult.output.indexOf("public_csv") < assetsResult.output.indexOf("database"),
+      true,
+    );
+    assertEquals(assetsResult.output.includes("manifest.json"), true);
+
+    const assetsJsonResult = await captureConsole(
+      () =>
+        runCli([
+          "--release-root",
+          releaseRoot,
+          "release",
+          "assets",
+          "--json",
+        ]),
+      { stripAnsi: false },
+    );
+    assertEquals(assetsJsonResult.code, 0);
+    assertEquals(assetsJsonResult.output.includes("\x1b["), false);
+    const assetsJson = JSON.parse(assetsJsonResult.output) as {
+      releaseRoot: string;
+      manifestPath: string;
+      valid: boolean;
+      assetCount: number;
+      categoryCounts: Record<string, number>;
+      assets: Array<{
+        path: string;
+        category: string;
+        byteSize: number;
+        sha256: string;
+        rowCount?: number;
+        columnCount?: number;
+        columns?: string[];
+      }>;
+    };
+    assertEquals(assetsJson.releaseRoot, releaseRoot);
+    assertEquals(assetsJson.manifestPath, join(releaseRoot, "manifest.json"));
+    assertEquals(assetsJson.valid, true);
+    const manifestReleaseAssetCount = (manifest.outputCatalog as Array<{ releaseAsset: boolean }>)
+      .filter((item) => item.releaseAsset).length;
+    assertEquals(assetsJson.assetCount, manifestReleaseAssetCount + 1);
+    assertEquals(assetsJson.categoryCounts.public_csv > 0, true);
+    assertEquals(assetsJson.categoryCounts.machine_json, 4);
+    assertEquals(assetsJson.categoryCounts.documentation, 2);
+    assertEquals(assetsJson.categoryCounts.traceability_csv ?? 0, 0);
+    assertEquals(
+      assetsJson.assets.some((asset) => asset.path === "_local/ledger_entries.csv"),
+      false,
+    );
+    assertEquals(
+      assetsJson.assets.some((asset) => asset.path === "_local/source_coverage.csv"),
+      false,
+    );
+    assertEquals(
+      assetsJson.assets.some((asset) => asset.path === "_local/dc_board_affiliations.csv"),
+      false,
+    );
+    assertEquals(
+      assetsJson.assets.some((asset) => asset.path === "_local/dc_smd_commissioners.csv"),
+      false,
+    );
+    const councilmemberAsset = assetsJson.assets.find((asset) =>
+      asset.path === "dc_councilmembers.csv"
+    );
+    assertEquals(typeof councilmemberAsset?.rowCount, "number");
+    assertEquals(councilmemberAsset?.columnCount, 10);
+    assertEquals(councilmemberAsset?.columns?.includes("source_url"), true);
+    assertEquals(
+      assetsJson.assets.some((asset) =>
+        asset.path === "dc_agencies.csv" &&
+        asset.category === "public_csv" &&
+        asset.byteSize > 0 &&
+        /^[0-9a-f]{64}$/.test(asset.sha256)
+      ),
+      true,
+    );
+    assertEquals(
+      assetsJson.assets.some((asset) =>
+        asset.path === "manifest.json" &&
+        asset.category === "machine_json" &&
+        asset.byteSize > 0 &&
+        /^[0-9a-f]{64}$/.test(asset.sha256)
+      ),
+      true,
+    );
+    assertEquals(
+      assetsJson.assets.some((asset) =>
+        asset.path === "SHA256SUMS" &&
+        asset.category === "documentation" &&
+        asset.byteSize > 0 &&
+        /^[0-9a-f]{64}$/.test(asset.sha256)
+      ),
+      true,
+    );
+
+    for (const asset of assetsJson.assets) {
+      await Deno.copyFile(join(releaseRoot, asset.path), join(downloadedAssetsRoot, asset.path));
+    }
+
+    const verifyDownloadedResult = await captureConsole(() =>
+      runCli([
+        "release",
+        "verify-downloaded",
+        releaseRoot,
+        downloadedAssetsRoot,
+      ])
+    );
+    assertEquals(verifyDownloadedResult.code, 0);
+    assertEquals(
+      verifyDownloadedResult.output.includes("downloaded release assets verified:"),
+      true,
+    );
+
+    const verifyDownloadedJsonResult = await captureConsole(() =>
+      runCli([
+        "release",
+        "verify-downloaded",
+        releaseRoot,
+        downloadedAssetsRoot,
+        "--json",
+      ])
+    );
+    assertEquals(verifyDownloadedJsonResult.code, 0);
+    const verifyDownloadedJson = JSON.parse(verifyDownloadedJsonResult.output) as {
+      valid: boolean;
+      expectedAssetCount: number;
+      downloadedFileCount: number;
+      checkedAssetCount: number;
+      errors: string[];
+    };
+    assertEquals(verifyDownloadedJson.valid, true);
+    assertEquals(verifyDownloadedJson.expectedAssetCount, assetsJson.assets.length);
+    assertEquals(verifyDownloadedJson.downloadedFileCount, assetsJson.assets.length);
+    assertEquals(verifyDownloadedJson.checkedAssetCount, assetsJson.assets.length);
+    assertEquals(verifyDownloadedJson.errors, []);
+
+    const uploadPlanBlockedResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "upload-plan",
+        "dc-civic-ledger-test",
+      ])
+    );
+    assertEquals(uploadPlanBlockedResult.code, 1);
+    assertEquals(
+      uploadPlanBlockedResult.output.includes("is not publish-ready"),
+      true,
+    );
+    assertEquals(
+      uploadPlanBlockedResult.output.includes("Use --allow-local-candidate only for dry-run"),
+      true,
+    );
+
+    const uploadPlanBlockedJsonResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "upload-plan",
+        "dc-civic-ledger-test",
+        "--json",
+      ])
+    );
+    assertEquals(uploadPlanBlockedJsonResult.code, 1);
+    const uploadPlanBlockedJson = JSON.parse(uploadPlanBlockedJsonResult.output) as {
+      valid: boolean;
+      publishReady: boolean;
+      publishErrors: string[];
+    };
+    assertEquals(uploadPlanBlockedJson.valid, false);
+    assertEquals(uploadPlanBlockedJson.publishReady, false);
+    assertEquals(uploadPlanBlockedJson.publishErrors.length > 0, true);
+
+    const uploadPlanResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "upload-plan",
+        "dc-civic-ledger-test",
+        "--allow-local-candidate",
+      ])
+    );
+    assertEquals(uploadPlanResult.code, 0);
+    assertEquals(uploadPlanResult.output.includes("Local-candidate upload plan"), true);
+    assertEquals(uploadPlanResult.output.includes("gh"), true);
+    assertEquals(uploadPlanResult.output.includes("release"), true);
+    assertEquals(uploadPlanResult.output.includes("delete-asset"), true);
+    assertEquals(uploadPlanResult.output.includes("dc-civic-ledger-test.tar.gz"), true);
+    assertEquals(uploadPlanResult.output.includes("upload"), true);
+    assertEquals(uploadPlanResult.output.includes("dc_agencies.csv"), true);
+    assertEquals(uploadPlanResult.output.includes("SHA256SUMS"), true);
+    assertEquals(uploadPlanResult.output.includes("verify-downloaded"), true);
+
+    const uploadPlanJsonResult = await captureConsole(() =>
+      runCli([
+        "--release-root",
+        releaseRoot,
+        "release",
+        "upload-plan",
+        "dc-civic-ledger-test",
+        "--json",
+        "--allow-local-candidate",
+      ])
+    );
+    assertEquals(uploadPlanJsonResult.code, 0);
+    const uploadPlanJson = JSON.parse(uploadPlanJsonResult.output) as {
+      valid: boolean;
+      publishReady: boolean;
+      allowLocalCandidate: boolean;
+      assetCount: number;
+      obsoleteAssetCommands: string[][];
+      uploadCommand: string[];
+      downloadCommand: string[];
+      verifyDownloadedCommand: string[];
+    };
+    assertEquals(uploadPlanJson.valid, true);
+    assertEquals(uploadPlanJson.publishReady, false);
+    assertEquals(uploadPlanJson.allowLocalCandidate, true);
+    assertEquals(uploadPlanJson.assetCount, assetsJson.assets.length);
+    assertEquals(uploadPlanJson.obsoleteAssetCommands[0]?.includes("delete-asset"), true);
+    assertEquals(
+      uploadPlanJson.obsoleteAssetCommands[0]?.includes("dc-civic-ledger-test.tar.gz"),
+      true,
+    );
+    assertEquals(uploadPlanJson.uploadCommand.includes("gh"), true);
+    assertEquals(uploadPlanJson.uploadCommand.includes("--clobber"), true);
+    assertEquals(uploadPlanJson.downloadCommand.includes("download"), true);
+    assertEquals(uploadPlanJson.verifyDownloadedCommand.includes("verify-downloaded"), true);
 
     const previousColor = Deno.env.get("CIVIC_LEDGER_COLOR");
     const previousNoColor = Deno.env.get("NO_COLOR");
@@ -2799,7 +3112,7 @@ Deno.test("export command indexes committed state and writes release artifacts",
     );
     assertEquals(positionalVerifyResult.code, 0);
 
-    await Deno.writeTextFile(join(releaseRoot, "sources.csv"), "tampered\n");
+    await Deno.writeTextFile(join(releaseRoot, "_local/source_counts.csv"), "tampered\n");
     const failedVerifyResult = await captureConsole(() =>
       runCli([
         "--release-root",
@@ -2839,6 +3152,7 @@ Deno.test("export command indexes committed state and writes release artifacts",
     await Deno.remove(workspace, { recursive: true });
     await Deno.remove(stateRoot, { recursive: true });
     await Deno.remove(releaseRoot, { recursive: true });
+    await Deno.remove(downloadedAssetsRoot, { recursive: true });
   }
 });
 
@@ -3050,23 +3364,41 @@ Deno.test("review list help explains committed-state refresh", async () => {
   assertEquals(stdout.includes("Refresh from committed state"), true);
 });
 
-Deno.test("README documents review show source URL summaries", async () => {
+Deno.test("README points at the public release tables", async () => {
   const readme = await Deno.readTextFile(new URL("../../README.md", import.meta.url));
   const normalizedReadme = readme.replaceAll(/\s+/g, " ");
 
-  assertEquals(normalizedReadme.includes("`review show <item-id> --json`"), true);
-  assertEquals(normalizedReadme.includes("URL summaries"), true);
-  assertEquals(normalizedReadme.includes("raw payloads"), true);
+  assertEquals(normalizedReadme.includes("dc_agencies.csv"), true);
+  assertEquals(normalizedReadme.includes("dc_councilmembers.csv"), true);
+  assertEquals(normalizedReadme.includes("dc_public_bodies.csv"), true);
+  assertEquals(normalizedReadme.includes("_local/ledger_entries.csv"), false);
+  assertEquals(normalizedReadme.includes("Each GitHub release uploads 21 files"), true);
+  assertEquals(normalizedReadme.includes("the generated release `README.md`"), true);
+  assertEquals(normalizedReadme.includes("govgraph_nodes.json"), true);
+  assertEquals(normalizedReadme.includes("Trace and compatibility tables live in"), false);
 });
 
-Deno.test("README documents release verify JSON output", async () => {
+Deno.test("README documents release verification command", async () => {
   const readme = await Deno.readTextFile(new URL("../../README.md", import.meta.url));
   const normalizedReadme = readme.replaceAll(/\s+/g, " ");
 
-  assertEquals(normalizedReadme.includes("`release verify [release-root]`"), true);
-  assertEquals(normalizedReadme.includes("add `--json`"), true);
-  assertEquals(normalizedReadme.includes("machine-readable validity"), true);
-  assertEquals(normalizedReadme.includes("error details"), true);
+  assertEquals(normalizedReadme.includes("deno task civic release verify releases/latest"), true);
+  assertEquals(
+    normalizedReadme.includes("deno task civic release assets releases/latest --json"),
+    false,
+  );
+  assertEquals(normalizedReadme.includes("deno task civic release upload-plan <tag>"), false);
+  assertEquals(
+    normalizedReadme.includes("deno task civic release verify-downloaded releases/latest"),
+    false,
+  );
+  assertEquals(normalizedReadme.includes("deno task civic release verify --publish"), false);
+});
+
+Deno.test("README stays short", async () => {
+  const readme = await Deno.readTextFile(new URL("../../README.md", import.meta.url));
+
+  assertEquals(readme.split("\n").length < 55, true);
 });
 
 Deno.test("release verify help explains manifest contract checks", async () => {
@@ -3097,6 +3429,84 @@ Deno.test("release verify help explains manifest contract checks", async () => {
     true,
   );
   assertEquals(stdout.includes("Emit release verification result as JSON"), true);
+  assertEquals(stdout.includes("Require publish-grade provenance"), true);
+});
+
+Deno.test("release assets help explains uploadable manifest assets", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "release",
+      "assets",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("individually uploadable release assets"), true);
+  assertEquals(stdout.includes("verified manifest catalog"), true);
+  assertEquals(stdout.includes("Emit release asset metadata as JSON"), true);
+});
+
+Deno.test("release upload-plan help explains GitHub upload commands", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "release",
+      "upload-plan",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("publish-ready release"), true);
+  assertEquals(stdout.includes("Emit upload and verification commands as JSON arrays"), true);
+  assertEquals(stdout.includes("Bypass publish provenance checks"), true);
+});
+
+Deno.test("release verify-downloaded help explains downloaded asset verification", async () => {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-ffi",
+      "src/cli/main.ts",
+      "release",
+      "verify-downloaded",
+      "--help",
+    ],
+    cwd: new URL("../..", import.meta.url),
+  });
+
+  const output = await command.output();
+  const stdout = stripAnsi(new TextDecoder().decode(output.stdout));
+
+  assertEquals(output.code, 0);
+  assertEquals(stdout.includes("downloaded GitHub release assets"), true);
+  assertEquals(stdout.includes("Emit downloaded asset verification result as JSON"), true);
 });
 
 Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entries and relations", async () => {
@@ -3270,7 +3680,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(statusAfterGenerate.code, 0);
     assertEquals(
       statusAfterGenerate.output.includes(
-        "Review:    5 persisted items (blocking 0, actionable 0, drafted 0, applied 0, deferred 5)",
+        "Review:    1 persisted items (blocking 0, actionable 0, drafted 0, applied 0, deferred 1)",
       ),
       true,
     );
@@ -3350,9 +3760,9 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
         description: string | null;
       }>;
     };
-    assertEquals(deferredJson.reviewItemCount, 5);
-    assertEquals(deferredJson.deferredReviewItemCount, 5);
-    assertEquals(deferredJson.totalReviewItemCount, 5);
+    assertEquals(deferredJson.reviewItemCount, 1);
+    assertEquals(deferredJson.deferredReviewItemCount, 1);
+    assertEquals(deferredJson.totalReviewItemCount, 1);
     assertEquals(deferredJson.groupCount, deferredJson.groups.length);
     assertEquals(deferredJson.shownGroupCount, deferredJson.groups.length);
     assertEquals(deferredJson.limit, null);
@@ -3381,7 +3791,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       true,
     );
     assertEquals(
-      openDcDeferredGroup.description?.includes("alpha cannot safely promote"),
+      openDcDeferredGroup.description?.includes("current release cannot safely promote"),
       true,
     );
 
@@ -3468,14 +3878,11 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       limit: number | null;
       groups: unknown[];
     };
-    assertEquals(limitedDeferredGroupsJson.deferredReviewItemCount, 5);
+    assertEquals(limitedDeferredGroupsJson.deferredReviewItemCount, 1);
     assertEquals(limitedDeferredGroupsJson.limit, 1);
     assertEquals(limitedDeferredGroupsJson.shownGroupCount, 1);
     assertEquals(limitedDeferredGroupsJson.groups.length, 1);
-    assertEquals(
-      limitedDeferredGroupsJson.groupCount > limitedDeferredGroupsJson.shownGroupCount,
-      true,
-    );
+    assertEquals(limitedDeferredGroupsJson.groupCount, 1);
 
     const deferredHumanResult = await captureConsole(() =>
       runCli([
@@ -3490,7 +3897,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(deferredHumanResult.code, 0);
     assertEquals(
       deferredHumanResult.output.includes(
-        "why: Open DC supplied a public-body candidate that alpha cannot safely promote",
+        "why: Open DC supplied a public-body candidate that the current release cannot safely promote",
       ),
       true,
     );
@@ -3513,7 +3920,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     );
     assertEquals(limitedDeferredGroupsHumanResult.code, 0);
     assertEquals(
-      limitedDeferredGroupsHumanResult.output.includes("1 shown deferred groups"),
+      limitedDeferredGroupsHumanResult.output.includes("1 deferred, 1 total review items"),
       true,
     );
 
@@ -3547,15 +3954,15 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       items: unknown[];
     };
     assertEquals(openListDefaultJson.reviewItemCount, 0);
-    assertEquals(openListDefaultJson.totalReviewItemCount, 5);
+    assertEquals(openListDefaultJson.totalReviewItemCount, 1);
     assertEquals(openListDefaultJson.filter.status, "open");
     assertEquals(openListDefaultJson.filter.queue, "inbox");
     assertEquals(openListDefaultJson.filter.defaultQueueApplied, true);
-    assertEquals(openListDefaultJson.filter.statusMatchedReviewItemCount, 5);
+    assertEquals(openListDefaultJson.filter.statusMatchedReviewItemCount, 1);
     assertEquals(openListDefaultJson.filter.queueMatchedReviewItemCount, 0);
-    assertEquals(openListDefaultJson.filter.deferredMatchedReviewItemCount, 5);
-    assertEquals(openListDefaultJson.reviewQueueCounts.deferred, 5);
-    assertEquals(openListDefaultJson.statusFilteredReviewQueueCounts.deferred, 5);
+    assertEquals(openListDefaultJson.filter.deferredMatchedReviewItemCount, 1);
+    assertEquals(openListDefaultJson.reviewQueueCounts.deferred, 1);
+    assertEquals(openListDefaultJson.statusFilteredReviewQueueCounts.deferred, 1);
     assertEquals(openListDefaultJson.items.length, 0);
 
     const openListDefaultHumanResult = await captureConsole(() =>
@@ -3577,7 +3984,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     );
     assertEquals(
       openListDefaultHumanResult.output.includes(
-        "5 item(s) matched status before queue filtering.",
+        "1 item(s) matched status before queue filtering.",
       ),
       true,
     );
@@ -3611,12 +4018,12 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       };
       items: unknown[];
     };
-    assertEquals(limitedDeferredJson.reviewItemCount, 3);
+    assertEquals(limitedDeferredJson.reviewItemCount, 1);
     assertEquals(limitedDeferredJson.filter.queue, "deferred");
     assertEquals(limitedDeferredJson.filter.limit, 3);
-    assertEquals(limitedDeferredJson.filter.queueMatchedReviewItemCount, 5);
-    assertEquals(limitedDeferredJson.filter.shownReviewItemCount, 3);
-    assertEquals(limitedDeferredJson.items.length, 3);
+    assertEquals(limitedDeferredJson.filter.queueMatchedReviewItemCount, 1);
+    assertEquals(limitedDeferredJson.filter.shownReviewItemCount, 1);
+    assertEquals(limitedDeferredJson.items.length, 1);
 
     const limitedDeferredHumanResult = await captureConsole(() =>
       runCli([
@@ -3635,7 +4042,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       ])
     );
     assertEquals(limitedDeferredHumanResult.code, 0);
-    assertEquals(limitedDeferredHumanResult.output.includes("3 shown, 5 matching, 5 total"), true);
+    assertEquals(limitedDeferredHumanResult.output.includes("1 shown, 1 matching, 1 total"), true);
     assertEquals(limitedDeferredHumanResult.output.includes("Use --queue all"), false);
 
     const limitedAllQueueHumanResult = await captureConsole(() =>
@@ -3655,7 +4062,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
       ])
     );
     assertEquals(limitedAllQueueHumanResult.code, 0);
-    assertEquals(limitedAllQueueHumanResult.output.includes("3 shown, 5 matching, 5 total"), true);
+    assertEquals(limitedAllQueueHumanResult.output.includes("1 shown, 1 matching, 1 total"), true);
     assertEquals(limitedAllQueueHumanResult.output.includes("Use --queue all"), false);
 
     const stateEntries = await listEntryFiles(join(stateRoot, "entries"));
@@ -3753,7 +4160,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(manifest.counts.relationKinds["dc.relation:authorized_by"], 4);
     assertEquals(manifest.counts.relationKinds["dc.relation:governs"], 1);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("Advisory Board"), true);
     assertEquals(entriesCsv.includes("Planning Commission"), true);
     assertEquals(entriesCsv.includes("Water Authority"), true);
@@ -3763,7 +4170,7 @@ Deno.test("CLI flow with open_dc.public_bodies and dcgis.agencies produces entri
     assertEquals(entriesCsv.includes("D.C. Law 10-50"), true);
     assertEquals(entriesCsv.includes("D.C. Code § 1-123"), true);
 
-    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:governs"), true);
     assertEquals(relationsCsv.includes("dc.relation:authorized_by"), true);
     assertEquals(relationsCsv.includes("dc.board:advisory-board"), true);
@@ -3919,12 +4326,12 @@ Deno.test("CLI flow with bega.structure produces offices and part_of relations",
     assertEquals(manifest.counts.relations, 2);
     assertEquals(manifest.counts.relationKinds["dc.relation:part_of"], 2);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("Board of Ethics and Government Accountability"), true);
     assertEquals(entriesCsv.includes("Office of Government Ethics"), true);
     assertEquals(entriesCsv.includes("Office of Open Government"), true);
 
-    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:part_of"), true);
     assertEquals(relationsCsv.includes("dc.office:office-of-government-ethics"), true);
     assertEquals(
@@ -4087,7 +4494,7 @@ Deno.test("CLI flow with dccourts.structure produces courts and division part_of
     assertEquals(manifest.counts.relations, 4);
     assertEquals(manifest.counts.relationKinds["dc.relation:part_of"], 4);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("District of Columbia Courts"), true);
     assertEquals(entriesCsv.includes("Court of Appeals"), true);
     assertEquals(entriesCsv.includes("Superior Court"), true);
@@ -4096,7 +4503,7 @@ Deno.test("CLI flow with dccourts.structure produces courts and division part_of
     assertEquals(entriesCsv.includes("Crime Victims Compensation Program"), false);
     assertEquals(entriesCsv.includes("Office of the Auditor-Master"), false);
 
-    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "relations.csv"));
+    const relationsCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_relations.csv"));
     assertEquals(relationsCsv.includes("dc.relation:part_of"), true);
     assertEquals(relationsCsv.includes("dc.court:court-of-appeals"), true);
     assertEquals(relationsCsv.includes("dc.court:superior-court"), true);
@@ -4267,7 +4674,7 @@ Deno.test("CLI flow with legal.entrypoints produces legal source anchors", async
     assertEquals(manifest.counts.entries, 5);
     assertEquals(manifest.counts.relations, 0);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("District of Columbia Official Code"), true);
     assertEquals(entriesCsv.includes("DC Register / DCMR"), true);
     assertEquals(entriesCsv.includes("Mayor's Orders"), true);
@@ -4439,7 +4846,7 @@ Deno.test("CLI flow with mayor.executive_structure produces EOM offices", async 
     assertEquals(manifest.counts.entries, 3);
     assertEquals(manifest.counts.relations, 2);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("Executive Office of the Mayor"), true);
     assertEquals(entriesCsv.includes("Office of Communications"), true);
     assertEquals(entriesCsv.includes("mayor@example.com"), false);
@@ -4593,7 +5000,7 @@ Deno.test("CLI flow with oanc.profiles enriches ANC profiles without contact fie
     ]);
     assertEquals(exportCode, 0);
 
-    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "entries.csv"));
+    const entriesCsv = await Deno.readTextFile(join(releaseRoot, "_local/ledger_entries.csv"));
     assertEquals(entriesCsv.includes("Crestwood and 16th Street Heights"), true);
     assertEquals(entriesCsv.includes("4e@example.com"), false);
     assertEquals(entriesCsv.includes("4e01@example.com"), false);
@@ -5001,7 +5408,7 @@ Deno.test("review workflow lists, shows, drafts, validates, and applies revision
     const appliedConflict = appliedListJson.items.find((item) => item.id === itemId);
     assertEquals(appliedConflict?.status, "applied");
     assertEquals(appliedConflict?.publicOutputImpact, true);
-    assertEquals(appliedConflict?.blocks.releaseReadiness, true);
+    assertEquals(appliedConflict?.blocks.releaseReadiness, false);
     assertEquals(appliedConflict?.blocksCurrentOutput, false);
     assertEquals(appliedConflict?.queue, "applied");
     assertEquals(appliedConflict?.queueLabel, "Applied");

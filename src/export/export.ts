@@ -1,10 +1,10 @@
 import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";
-import { isAbsolute, join } from "@std/path";
+import { basename, dirname, isAbsolute, join } from "@std/path";
 
 import { type CitationValue, isCitationValue } from "../core/types.ts";
 import { dcEntityKindDescription } from "../jurisdictions/dc/kinds/entity.ts";
-import { dcRelationDescription } from "../jurisdictions/dc/kinds/relation.ts";
+import { dcPublicRelationVerb, dcRelationDescription } from "../jurisdictions/dc/kinds/relation.ts";
 import {
   deferredReviewGroupDescription,
   groupDeferredReviewItems,
@@ -19,6 +19,7 @@ import {
   buildDcAncSmdStructureRows,
   buildDcCouncilCommitteeMembershipRows,
   buildGovGraphProjection,
+  type DcAncSmdStructureRow,
 } from "./public_projection.ts";
 
 export interface ExportResult {
@@ -33,6 +34,20 @@ export interface ExportResult {
   authorityAffiliationCount: number;
   ancSmdStructureCount: number;
   councilCommitteeMembershipCount: number;
+  dcAgencyCount: number;
+  dcOfficeCount: number;
+  dcCouncilmemberCount: number;
+  dcCouncilCommitteeCount: number;
+  dcPublicBodyCount: number;
+  dcPublicBodyAffiliationCount: number;
+  dcAncCount: number;
+  dcSmdCount: number;
+  dcSmdCommissionerCount: number;
+  dcWardCount: number;
+  dcCourtCount: number;
+  dcLegalAuthorityCount: number;
+  dcRelationshipCount: number;
+  dcSourceCount: number;
   govGraphNodeCount: number;
   govGraphEdgeCount: number;
   govGraphExcludedNodeCount: number;
@@ -98,6 +113,23 @@ interface RelationExample {
   to: string;
   source?: string;
   sourceRecordId?: string;
+}
+
+interface PublicReleaseTables {
+  agencies: string[][];
+  offices: string[][];
+  councilmembers: string[][];
+  councilCommittees: string[][];
+  publicBodies: string[][];
+  publicBodyAffiliations: string[][];
+  ancs: string[][];
+  smds: string[][];
+  smdCommissioners: string[][];
+  wards: string[][];
+  courts: string[][];
+  legalAuthorities: string[][];
+  relationships: string[][];
+  sources: string[][];
 }
 
 const SOURCE_COVERAGE_HEADERS = [
@@ -190,6 +222,15 @@ interface SourceCoverageFamilyRollup {
   releaseStatuses: Record<string, number>;
 }
 
+interface ReleaseProvenance {
+  gitHeadCommit: string | null;
+  gitHeadRef: string | null;
+  gitHeadBranch: string | null;
+  gitSource: "git_metadata" | "unavailable";
+  workingTreeStatus: "clean" | "dirty" | "unknown";
+  workingTreeChangedPathCount: number | null;
+}
+
 const REVIEW_QUEUES: ReviewQueue[] = [
   "blocking",
   "actionable",
@@ -244,6 +285,145 @@ const SOURCE_COVERAGE_COUNT_COLUMNS = [
   ["citation_count", SOURCE_COVERAGE_COLUMN.citationCount],
 ] as const;
 
+const RELEASE_OUTPUT_CATEGORIES = [
+  "public_csv",
+  "traceability_csv",
+  "compatibility_csv",
+  "machine_json",
+  "database",
+  "documentation",
+] as const;
+
+type ReleaseOutputCategory = typeof RELEASE_OUTPUT_CATEGORIES[number];
+const RELEASE_OUTPUT_PATHS = {
+  dcAgenciesCsv: "dc_agencies.csv",
+  dcOfficesCsv: "dc_offices.csv",
+  dcCouncilmembersCsv: "dc_councilmembers.csv",
+  dcCouncilCommitteesCsv: "dc_council_committees.csv",
+  councilCommitteeMembershipCsv: "dc_council_committee_memberships.csv",
+  dcPublicBodiesCsv: "dc_public_bodies.csv",
+  dcPublicBodyAffiliationsCsv: "dc_public_body_affiliations.csv",
+  dcAncsCsv: "dc_ancs.csv",
+  dcSmdsCsv: "dc_smds.csv",
+  dcSmdCommissionersCsv: "_local/dc_smd_commissioners.csv",
+  dcWardsCsv: "dc_wards.csv",
+  dcCourtsCsv: "dc_courts.csv",
+  dcLegalAuthoritiesCsv: "dc_legal_authorities.csv",
+  dcRelationshipsCsv: "dc_relationships.csv",
+  dcSourcesCsv: "dc_sources.csv",
+  entriesCsv: "_local/ledger_entries.csv",
+  relationsCsv: "_local/ledger_relations.csv",
+  citationsCsv: "_local/ledger_citations.csv",
+  sourcesCsv: "_local/source_counts.csv",
+  sourceCoverageCsv: "_local/source_coverage.csv",
+  boardAffiliationsCsv: "_local/dc_board_affiliations.csv",
+  commissionAffiliationsCsv: "_local/dc_commission_affiliations.csv",
+  authorityAffiliationsCsv: "_local/dc_authority_affiliations.csv",
+  ancSmdStructureCsv: "_local/dc_anc_smd_structure.csv",
+  govGraphNodesJson: "govgraph_nodes.json",
+  govGraphEdgesJson: "govgraph_edges.json",
+  govGraphSummaryJson: "govgraph_summary.json",
+  ledgerSqlite: "ledger.sqlite",
+  readme: "README.md",
+  sha256Sums: "SHA256SUMS",
+} as const;
+type ReleaseOutputName = keyof typeof RELEASE_OUTPUT_PATHS;
+const RELEASE_OUTPUT_ORDER = Object.keys(RELEASE_OUTPUT_PATHS) as ReleaseOutputName[];
+
+interface ReleaseOutputCatalogItem {
+  outputName: string;
+  path: string;
+  category: ReleaseOutputCategory;
+  releaseAsset: boolean;
+  description: string;
+  byteSize: number;
+  sha256: string;
+  rowCount?: number;
+  columnCount?: number;
+  columns?: string[];
+}
+
+interface ReleaseAssetIndex {
+  paths: string[];
+  outputNames: string[];
+  items: Array<{
+    outputName: string;
+    path: string;
+    category: ReleaseOutputCategory;
+    releaseAsset: true;
+    description: string;
+    byteSize?: number;
+    sha256?: string;
+    rowCount?: number;
+    columnCount?: number;
+    columns?: string[];
+  }>;
+  categories: Record<string, number>;
+  note: string;
+  count: number;
+}
+
+interface LocalOnlyOutputIndex {
+  paths: string[];
+  outputNames: string[];
+  items: Array<{
+    outputName: string;
+    path: string;
+    category: ReleaseOutputCategory;
+    description: string;
+    rowCount?: number;
+    columnCount?: number;
+    columns?: string[];
+  }>;
+  categories: Record<string, number>;
+  note: string;
+  count: number;
+}
+
+interface ReleaseStartHere {
+  primaryReadme: string;
+  recommendedEntryPoints: Array<{
+    label: string;
+    path: string;
+    note: string;
+  }>;
+  releaseAssetCount: number;
+  publicCsvCount: number;
+  localAuditOutputCount: number;
+  sqliteCatalogTable: string;
+  govGraphSchemaFile: string;
+}
+
+interface SqliteTableIndex {
+  description: string;
+  metadataTables: string[];
+  publicTables: string[];
+  traceabilityTables: string[];
+  compatibilityTables: string[];
+  rawLedgerTables: string[];
+}
+
+interface SqliteTableCatalogRow {
+  tableName: string;
+  tableGroup: "metadata" | "public" | "traceability" | "compatibility" | "raw_ledger";
+  tableKind: "table" | "view";
+  releasePath: string;
+  isReleaseAsset: boolean;
+  rowCount?: number;
+  columnCount?: number;
+  columnsJson?: string;
+  description: string;
+}
+
+interface OutputFileMetadata {
+  path: string;
+  byteSize: number;
+  sha256: string;
+  rowCount?: number;
+  columnCount?: number;
+  columns?: string[];
+}
+
 const SOURCE_COVERAGE_ALLOWED_VALUES = [
   [
     "catalog_confidence",
@@ -274,6 +454,385 @@ const SOURCE_COVERAGE_ALLOWED_VALUES = [
 
 const RELEASE_SCHEMA_VERSION = 1;
 
+const RELEASE_OUTPUT_CATALOG_METADATA: Record<
+  ReleaseOutputName,
+  { category: ReleaseOutputCategory; releaseAsset: boolean; description: string }
+> = {
+  dcAgenciesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Agencies, official URLs, and parent offices.",
+  },
+  dcOfficesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Offices and hierarchy context.",
+  },
+  dcCouncilmembersCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Current Council roster, seats, wards, and profiles.",
+  },
+  dcCouncilCommitteesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Council committees, chairs, and members.",
+  },
+  councilCommitteeMembershipCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Committee membership rows, roles, and sources.",
+  },
+  dcPublicBodiesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Boards, commissions, councils, authorities, and legal context.",
+  },
+  dcPublicBodyAffiliationsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Public-body administering agency or office links.",
+  },
+  dcAncsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "ANCs, wards, neighborhoods, SMD counts, commissioners, and notes.",
+  },
+  dcSmdsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Single Member Districts, wards, ANCs, and current commissioners.",
+  },
+  dcSmdCommissionersCsv: {
+    category: "compatibility_csv",
+    releaseAsset: false,
+    description: "Compatibility SMD commissioner table; prefer dc_smds.csv.",
+  },
+  dcWardsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Ward identifiers and names.",
+  },
+  dcCourtsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "D.C. court structure table.",
+  },
+  dcLegalAuthoritiesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Legal locators, URLs, and usage counts.",
+  },
+  dcRelationshipsCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Public relationships with names, source URLs, and source IDs.",
+  },
+  dcSourcesCsv: {
+    category: "public_csv",
+    releaseAsset: true,
+    description: "Sources, status, scope, counts, and caveats.",
+  },
+  entriesCsv: {
+    category: "traceability_csv",
+    releaseAsset: false,
+    description: "Audit table with every ledger entry, attributes JSON, and citations.",
+  },
+  relationsCsv: {
+    category: "traceability_csv",
+    releaseAsset: false,
+    description: "Audit table with every raw ledger relation and citation evidence.",
+  },
+  citationsCsv: {
+    category: "traceability_csv",
+    releaseAsset: false,
+    description: "Audit table connecting entries and relations back to source records.",
+  },
+  sourcesCsv: {
+    category: "traceability_csv",
+    releaseAsset: false,
+    description: "Audit table with source snapshot and citation counts.",
+  },
+  sourceCoverageCsv: {
+    category: "traceability_csv",
+    releaseAsset: false,
+    description: "Audit table with source inventory, status, scope, and caveats.",
+  },
+  boardAffiliationsCsv: {
+    category: "compatibility_csv",
+    releaseAsset: false,
+    description:
+      "Compatibility board-to-agency link table; prefer dc_public_body_affiliations.csv.",
+  },
+  commissionAffiliationsCsv: {
+    category: "compatibility_csv",
+    releaseAsset: false,
+    description:
+      "Compatibility commission-to-agency link table; prefer dc_public_body_affiliations.csv.",
+  },
+  authorityAffiliationsCsv: {
+    category: "compatibility_csv",
+    releaseAsset: false,
+    description:
+      "Compatibility authority-to-agency link table; may be zero-row when no authority rows are exported.",
+  },
+  ancSmdStructureCsv: {
+    category: "compatibility_csv",
+    releaseAsset: false,
+    description: "Compatibility ANC/SMD structure table; prefer dc_ancs.csv and dc_smds.csv.",
+  },
+  govGraphNodesJson: {
+    category: "machine_json",
+    releaseAsset: true,
+    description: "GovGraph node projection.",
+  },
+  govGraphEdgesJson: {
+    category: "machine_json",
+    releaseAsset: true,
+    description: "GovGraph edge projection.",
+  },
+  govGraphSummaryJson: {
+    category: "machine_json",
+    releaseAsset: true,
+    description: "GovGraph count and invariant summary.",
+  },
+  ledgerSqlite: {
+    category: "database",
+    releaseAsset: true,
+    description: "SQLite database with the public tables, audit tables, and a table catalog.",
+  },
+  readme: {
+    category: "documentation",
+    releaseAsset: true,
+    description: "Short release index.",
+  },
+  sha256Sums: {
+    category: "documentation",
+    releaseAsset: true,
+    description:
+      "SHA-256 checksums for generated upload assets except manifest.json and SHA256SUMS.",
+  },
+};
+
+const RELEASE_CSV_HEADER_CONTRACTS: Partial<Record<ReleaseOutputName, readonly string[]>> = {
+  entriesCsv: ["entry_id", "family", "kind", "name", "attributes", "citations"],
+  relationsCsv: ["from_entry_id", "relation_kind", "to_entry_id", "citations"],
+  citationsCsv: [
+    "citation_type",
+    "entry_id",
+    "source",
+    "source_record_id",
+    "locator",
+    "url",
+    "uncited",
+    "reason",
+    "from_entry_id",
+    "relation_kind",
+    "to_entry_id",
+  ],
+  sourcesCsv: ["source", "snapshot_records", "citation_count"],
+  sourceCoverageCsv: SOURCE_COVERAGE_HEADERS,
+  boardAffiliationsCsv: [
+    "board_entry_id",
+    "board_name",
+    "board_short_name",
+    "agency_entry_id",
+    "agency_name",
+    "relation_citations",
+  ],
+  commissionAffiliationsCsv: [
+    "commission_entry_id",
+    "commission_name",
+    "commission_short_name",
+    "agency_entry_id",
+    "agency_name",
+    "relation_citations",
+  ],
+  authorityAffiliationsCsv: [
+    "authority_entry_id",
+    "authority_name",
+    "authority_short_name",
+    "agency_entry_id",
+    "agency_name",
+    "relation_citations",
+  ],
+  ancSmdStructureCsv: [
+    "anc_entry_id",
+    "anc_name",
+    "anc_short_name",
+    "smd_entry_id",
+    "smd_name",
+    "commissioner_seat_entry_id",
+    "commissioner_seat_name",
+    "current_commissioner_name",
+    "officer_role",
+    "relation_citations",
+  ],
+  councilCommitteeMembershipCsv: [
+    "committee_entry_id",
+    "committee_name",
+    "committee_type",
+    "councilmember_entry_id",
+    "councilmember_name",
+    "membership_role",
+    "source_url",
+    "source_id",
+  ],
+  dcAgenciesCsv: [
+    "agency_id",
+    "name",
+    "short_name",
+    "official_url",
+    "parent_id",
+    "parent_name",
+    "source_url",
+    "source_id",
+  ],
+  dcOfficesCsv: [
+    "office_id",
+    "name",
+    "short_name",
+    "official_url",
+    "parent_id",
+    "parent_name",
+    "source_url",
+    "source_id",
+  ],
+  dcCouncilmembersCsv: [
+    "sort_order",
+    "councilmember_id",
+    "name",
+    "seat_type",
+    "office_title",
+    "ward",
+    "is_at_large",
+    "profile_url",
+    "source_url",
+    "source_id",
+  ],
+  dcCouncilCommitteesCsv: [
+    "committee_id",
+    "name",
+    "committee_type",
+    "chair_id",
+    "chair_name",
+    "member_count",
+    "members",
+    "source_url",
+    "source_id",
+  ],
+  dcPublicBodiesCsv: [
+    "public_body_id",
+    "name",
+    "body_type",
+    "short_name",
+    "official_url",
+    "enabling_authority",
+    "authority_url",
+    "open_dc_url",
+    "current_state_note",
+    "agency_ids",
+    "agency_names",
+    "source_url",
+    "source_id",
+  ],
+  dcPublicBodyAffiliationsCsv: [
+    "public_body_id",
+    "public_body_name",
+    "body_type",
+    "relation_type",
+    "target_id",
+    "target_name",
+    "target_type",
+    "source_url",
+    "source_id",
+  ],
+  dcAncsCsv: [
+    "anc_id",
+    "anc",
+    "official_url",
+    "oanc_profile_url",
+    "wards",
+    "neighborhoods",
+    "smd_count",
+    "current_commissioners",
+    "current_state_note",
+    "source_url",
+    "source_id",
+  ],
+  dcSmdsCsv: [
+    "smd_id",
+    "smd",
+    "anc_id",
+    "anc",
+    "wards",
+    "commissioner_seat_id",
+    "current_commissioner_name",
+    "officer_role",
+    "source_url",
+    "source_id",
+  ],
+  dcSmdCommissionersCsv: [
+    "smd",
+    "anc",
+    "wards",
+    "current_commissioner_name",
+    "officer_role",
+    "smd_id",
+    "anc_id",
+    "commissioner_seat_id",
+    "source_url",
+    "source_id",
+  ],
+  dcWardsCsv: ["ward_id", "ward_number", "name"],
+  dcCourtsCsv: [
+    "court_id",
+    "name",
+    "court_type",
+    "parent_id",
+    "parent_name",
+    "official_url",
+    "source_url",
+    "source_id",
+  ],
+  dcLegalAuthoritiesCsv: [
+    "authority_id",
+    "authority_type",
+    "locator",
+    "canonical_url",
+    "name",
+    "used_by_count",
+    "used_by_ids",
+    "used_by_names",
+  ],
+  dcRelationshipsCsv: [
+    "from_id",
+    "from_name",
+    "from_type",
+    "relationship",
+    "to_id",
+    "to_name",
+    "to_type",
+    "source_url",
+    "source_id",
+  ],
+  dcSourcesCsv: [
+    "source_id",
+    "publisher",
+    "source_url",
+    "family",
+    "access_method",
+    "collection_status",
+    "release_status",
+    "record_count",
+    "citation_count",
+    "scope",
+    "contributes",
+    "known_limits",
+    "notes",
+  ],
+};
+
 export interface ExportReleaseOptions {
   workspace: Workspace;
   jurisdiction: string;
@@ -286,8 +845,30 @@ export interface ExportReleaseOptions {
 export async function exportReleaseArtifacts(
   options: ExportReleaseOptions,
 ): Promise<ExportResult> {
+  const stagingRoot = await createReleaseStagingRoot(options.releaseRoot);
+  try {
+    const result = await exportReleaseArtifactsIntoRoot({
+      ...options,
+      releaseRoot: stagingRoot,
+    });
+    await replaceReleaseRoot(stagingRoot, options.releaseRoot);
+    return {
+      ...result,
+      releaseRoot: options.releaseRoot,
+      ledgerSqlitePath: join(options.releaseRoot, "ledger.sqlite"),
+    };
+  } catch (error) {
+    await removeIfExists(stagingRoot);
+    throw error;
+  }
+}
+
+async function exportReleaseArtifactsIntoRoot(
+  options: ExportReleaseOptions,
+): Promise<ExportResult> {
   const { workspace, jurisdiction, releaseRoot } = options;
   await ensureDir(releaseRoot);
+  await removeObsoleteReleaseOutputs(releaseRoot);
 
   const entryRows = workspace.db.prepare(
     "SELECT entry_id, payload FROM state_entries ORDER BY entry_id ASC",
@@ -503,6 +1084,7 @@ export async function exportReleaseArtifacts(
     sourceCoverageRows,
   );
   const sourceCoverageFamilyRollup = buildSourceCoverageFamilyRollup(sourceCoverageRows);
+  const provenance = await buildReleaseProvenance();
   const projectedEntries = Array.from(entryIndex.entries())
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([id, entry]) => ({
@@ -520,10 +1102,20 @@ export async function exportReleaseArtifacts(
   const ancSmdStructureRows = buildDcAncSmdStructureRows(projectedEntries);
   const councilCommitteeMembershipRows = buildDcCouncilCommitteeMembershipRows(projectedEntries);
   const relationExamples = buildRelationExamples(relationRows, entryIndex);
+  const publicReleaseTables = buildPublicReleaseTables({
+    entryIndex,
+    sourceCoverageRows,
+    ancSmdStructureRows,
+  });
 
   const exportedAt = new Date().toISOString();
+  const govGraphSummary = {
+    jurisdiction,
+    exportedAt,
+    ...govGraph.summary,
+  };
 
-  await writeCsv(join(releaseRoot, "entries.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.entriesCsv), [
     "entry_id",
     "family",
     "kind",
@@ -532,7 +1124,7 @@ export async function exportReleaseArtifacts(
     "citations",
   ], entriesOut);
 
-  await writeCsv(join(releaseRoot, "relations.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.relationsCsv), [
     "from_entry_id",
     "relation_kind",
     "to_entry_id",
@@ -558,7 +1150,7 @@ export async function exportReleaseArtifacts(
     return left[0].localeCompare(right[0]);
   });
 
-  await writeCsv(join(releaseRoot, "dc_board_affiliations.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.boardAffiliationsCsv), [
     "board_entry_id",
     "board_name",
     "board_short_name",
@@ -567,7 +1159,7 @@ export async function exportReleaseArtifacts(
     "relation_citations",
   ], sortedBoardAffiliations);
 
-  await writeCsv(join(releaseRoot, "dc_commission_affiliations.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.commissionAffiliationsCsv), [
     "commission_entry_id",
     "commission_name",
     "commission_short_name",
@@ -576,7 +1168,7 @@ export async function exportReleaseArtifacts(
     "relation_citations",
   ], sortedCommissionAffiliations);
 
-  await writeCsv(join(releaseRoot, "dc_authority_affiliations.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.authorityAffiliationsCsv), [
     "authority_entry_id",
     "authority_name",
     "authority_short_name",
@@ -586,7 +1178,7 @@ export async function exportReleaseArtifacts(
   ], sortedAuthorityAffiliations);
 
   await writeCsv(
-    join(releaseRoot, "dc_anc_smd_structure.csv"),
+    join(releaseRoot, RELEASE_OUTPUT_PATHS.ancSmdStructureCsv),
     [
       "anc_entry_id",
       "anc_name",
@@ -614,7 +1206,7 @@ export async function exportReleaseArtifacts(
   );
 
   await writeCsv(
-    join(releaseRoot, "dc_council_committee_membership.csv"),
+    join(releaseRoot, RELEASE_OUTPUT_PATHS.councilCommitteeMembershipCsv),
     [
       "committee_entry_id",
       "committee_name",
@@ -622,7 +1214,8 @@ export async function exportReleaseArtifacts(
       "councilmember_entry_id",
       "councilmember_name",
       "membership_role",
-      "relation_citations",
+      "source_url",
+      "source_id",
     ],
     councilCommitteeMembershipRows.map((row) => [
       row.committeeEntryId,
@@ -631,12 +1224,184 @@ export async function exportReleaseArtifacts(
       row.councilmemberEntryId,
       row.councilmemberName,
       row.membershipRole,
-      stableStringify(row.relationCitations),
+      relationSourceUrl(row.relationCitations, sourceCoverageRows),
+      sourceCitationId(firstCitationRef(row.relationCitations)),
     ]),
   );
 
+  await writeCsv(join(releaseRoot, "dc_agencies.csv"), [
+    "agency_id",
+    "name",
+    "short_name",
+    "official_url",
+    "parent_id",
+    "parent_name",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.agencies);
+
+  await writeCsv(join(releaseRoot, "dc_offices.csv"), [
+    "office_id",
+    "name",
+    "short_name",
+    "official_url",
+    "parent_id",
+    "parent_name",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.offices);
+
+  await writeCsv(join(releaseRoot, "dc_councilmembers.csv"), [
+    "sort_order",
+    "councilmember_id",
+    "name",
+    "seat_type",
+    "office_title",
+    "ward",
+    "is_at_large",
+    "profile_url",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.councilmembers);
+
+  await writeCsv(join(releaseRoot, "dc_council_committees.csv"), [
+    "committee_id",
+    "name",
+    "committee_type",
+    "chair_id",
+    "chair_name",
+    "member_count",
+    "members",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.councilCommittees);
+
+  await writeCsv(join(releaseRoot, "dc_public_bodies.csv"), [
+    "public_body_id",
+    "name",
+    "body_type",
+    "short_name",
+    "official_url",
+    "enabling_authority",
+    "authority_url",
+    "open_dc_url",
+    "current_state_note",
+    "agency_ids",
+    "agency_names",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.publicBodies);
+
+  await writeCsv(join(releaseRoot, "dc_public_body_affiliations.csv"), [
+    "public_body_id",
+    "public_body_name",
+    "body_type",
+    "relation_type",
+    "target_id",
+    "target_name",
+    "target_type",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.publicBodyAffiliations);
+
+  await writeCsv(join(releaseRoot, "dc_ancs.csv"), [
+    "anc_id",
+    "anc",
+    "official_url",
+    "oanc_profile_url",
+    "wards",
+    "neighborhoods",
+    "smd_count",
+    "current_commissioners",
+    "current_state_note",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.ancs);
+
+  await writeCsv(join(releaseRoot, "dc_smds.csv"), [
+    "smd_id",
+    "smd",
+    "anc_id",
+    "anc",
+    "wards",
+    "commissioner_seat_id",
+    "current_commissioner_name",
+    "officer_role",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.smds);
+
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.dcSmdCommissionersCsv), [
+    "smd",
+    "anc",
+    "wards",
+    "current_commissioner_name",
+    "officer_role",
+    "smd_id",
+    "anc_id",
+    "commissioner_seat_id",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.smdCommissioners);
+
+  await writeCsv(join(releaseRoot, "dc_wards.csv"), [
+    "ward_id",
+    "ward_number",
+    "name",
+  ], publicReleaseTables.wards);
+
+  await writeCsv(join(releaseRoot, "dc_courts.csv"), [
+    "court_id",
+    "name",
+    "court_type",
+    "parent_id",
+    "parent_name",
+    "official_url",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.courts);
+
+  await writeCsv(join(releaseRoot, "dc_legal_authorities.csv"), [
+    "authority_id",
+    "authority_type",
+    "locator",
+    "canonical_url",
+    "name",
+    "used_by_count",
+    "used_by_ids",
+    "used_by_names",
+  ], publicReleaseTables.legalAuthorities);
+
+  await writeCsv(join(releaseRoot, "dc_relationships.csv"), [
+    "from_id",
+    "from_name",
+    "from_type",
+    "relationship",
+    "to_id",
+    "to_name",
+    "to_type",
+    "source_url",
+    "source_id",
+  ], publicReleaseTables.relationships);
+
+  await writeCsv(join(releaseRoot, "dc_sources.csv"), [
+    "source_id",
+    "publisher",
+    "source_url",
+    "family",
+    "access_method",
+    "collection_status",
+    "release_status",
+    "record_count",
+    "citation_count",
+    "scope",
+    "contributes",
+    "known_limits",
+    "notes",
+  ], publicReleaseTables.sources);
+
   await writeCsv(
-    join(releaseRoot, "citations.csv"),
+    join(releaseRoot, RELEASE_OUTPUT_PATHS.citationsCsv),
     [
       "citation_type",
       "entry_id",
@@ -665,14 +1430,14 @@ export async function exportReleaseArtifacts(
     ]),
   );
 
-  await writeCsv(join(releaseRoot, "sources.csv"), [
+  await writeCsv(join(releaseRoot, RELEASE_OUTPUT_PATHS.sourcesCsv), [
     "source",
     "snapshot_records",
     "citation_count",
   ], sourceRows);
 
   await writeCsv(
-    join(releaseRoot, "source_coverage.csv"),
+    join(releaseRoot, RELEASE_OUTPUT_PATHS.sourceCoverageCsv),
     [...SOURCE_COVERAGE_HEADERS],
     sourceCoverageRows,
   );
@@ -689,25 +1454,36 @@ export async function exportReleaseArtifacts(
 
   await Deno.writeTextFile(
     join(releaseRoot, "govgraph_summary.json"),
-    JSON.stringify(govGraph.summary, null, 2) + "\n",
+    JSON.stringify(govGraphSummary, null, 2) + "\n",
   );
 
-  const releaseOutputs = {
-    entriesCsv: "entries.csv",
-    relationsCsv: "relations.csv",
-    citationsCsv: "citations.csv",
-    sourcesCsv: "sources.csv",
-    sourceCoverageCsv: "source_coverage.csv",
-    boardAffiliationsCsv: "dc_board_affiliations.csv",
-    commissionAffiliationsCsv: "dc_commission_affiliations.csv",
-    authorityAffiliationsCsv: "dc_authority_affiliations.csv",
-    ancSmdStructureCsv: "dc_anc_smd_structure.csv",
-    councilCommitteeMembershipCsv: "dc_council_committee_membership.csv",
-    govGraphNodesJson: "govgraph_nodes.json",
-    govGraphEdgesJson: "govgraph_edges.json",
-    govGraphSummaryJson: "govgraph_summary.json",
-    ledgerSqlite: "ledger.sqlite",
-    readme: "README.md",
+  const releaseOutputs = { ...RELEASE_OUTPUT_PATHS };
+
+  const outputRowCounts: Partial<Record<ReleaseOutputName, number>> = {
+    dcAgenciesCsv: publicReleaseTables.agencies.length,
+    dcOfficesCsv: publicReleaseTables.offices.length,
+    dcCouncilmembersCsv: publicReleaseTables.councilmembers.length,
+    dcCouncilCommitteesCsv: publicReleaseTables.councilCommittees.length,
+    councilCommitteeMembershipCsv: councilCommitteeMembershipRows.length,
+    dcPublicBodiesCsv: publicReleaseTables.publicBodies.length,
+    dcPublicBodyAffiliationsCsv: publicReleaseTables.publicBodyAffiliations.length,
+    dcAncsCsv: publicReleaseTables.ancs.length,
+    dcSmdsCsv: publicReleaseTables.smds.length,
+    dcSmdCommissionersCsv: publicReleaseTables.smdCommissioners.length,
+    dcWardsCsv: publicReleaseTables.wards.length,
+    dcCourtsCsv: publicReleaseTables.courts.length,
+    dcLegalAuthoritiesCsv: publicReleaseTables.legalAuthorities.length,
+    dcRelationshipsCsv: publicReleaseTables.relationships.length,
+    dcSourcesCsv: publicReleaseTables.sources.length,
+    entriesCsv: entriesOut.length,
+    relationsCsv: relationsOut.length,
+    citationsCsv: citationsOut.length,
+    sourcesCsv: sourceRows.length,
+    sourceCoverageCsv: sourceCoverageRows.length,
+    boardAffiliationsCsv: sortedBoardAffiliations.length,
+    commissionAffiliationsCsv: sortedCommissionAffiliations.length,
+    authorityAffiliationsCsv: sortedAuthorityAffiliations.length,
+    ancSmdStructureCsv: ancSmdStructureRows.length,
   };
 
   await Deno.writeTextFile(
@@ -724,11 +1500,13 @@ export async function exportReleaseArtifacts(
       sourceCoverageStatusCounts,
       sourceCoverageReleaseStatusCounts,
       sourceCoverageFamilyRollup,
+      provenance,
       entryKindCounts,
       relationKindCounts,
       relationExamples,
       reviewPosture,
-      govGraphSummary: govGraph.summary,
+      govGraphSummary,
+      outputRowCounts,
     }),
   );
 
@@ -742,7 +1520,7 @@ export async function exportReleaseArtifacts(
   const ledgerDb = new Database(ledgerPath);
   try {
     ledgerDb.exec(`
-      CREATE TABLE entries (
+      CREATE TABLE ledger_entries (
         entry_id TEXT PRIMARY KEY,
         family TEXT NOT NULL,
         kind TEXT NOT NULL,
@@ -751,7 +1529,7 @@ export async function exportReleaseArtifacts(
         citations TEXT NOT NULL
       );
 
-      CREATE TABLE relations (
+      CREATE TABLE ledger_relations (
         from_entry_id TEXT NOT NULL,
         relation_kind TEXT NOT NULL,
         to_entry_id TEXT NOT NULL,
@@ -759,7 +1537,7 @@ export async function exportReleaseArtifacts(
         PRIMARY KEY (from_entry_id, relation_kind, to_entry_id)
       );
 
-      CREATE TABLE citations (
+      CREATE TABLE ledger_citations (
         citation_id INTEGER PRIMARY KEY AUTOINCREMENT,
         citation_type TEXT NOT NULL,
         entry_id TEXT NOT NULL,
@@ -774,7 +1552,7 @@ export async function exportReleaseArtifacts(
         to_entry_id TEXT
       );
 
-      CREATE TABLE sources (
+      CREATE TABLE source_counts (
         source TEXT PRIMARY KEY,
         snapshot_records INTEGER NOT NULL DEFAULT 0,
         citation_count INTEGER NOT NULL DEFAULT 0
@@ -815,34 +1593,253 @@ export async function exportReleaseArtifacts(
         PRIMARY KEY (anc_entry_id, smd_entry_id)
       );
 
-      CREATE TABLE dc_council_committee_membership (
+      CREATE TABLE dc_board_affiliations (
+        board_entry_id TEXT NOT NULL,
+        board_name TEXT NOT NULL,
+        board_short_name TEXT NOT NULL,
+        agency_entry_id TEXT NOT NULL,
+        agency_name TEXT NOT NULL,
+        relation_citations TEXT NOT NULL,
+        PRIMARY KEY (board_entry_id, agency_entry_id)
+      );
+
+      CREATE TABLE dc_commission_affiliations (
+        commission_entry_id TEXT NOT NULL,
+        commission_name TEXT NOT NULL,
+        commission_short_name TEXT NOT NULL,
+        agency_entry_id TEXT NOT NULL,
+        agency_name TEXT NOT NULL,
+        relation_citations TEXT NOT NULL,
+        PRIMARY KEY (commission_entry_id, agency_entry_id)
+      );
+
+      CREATE TABLE dc_authority_affiliations (
+        authority_entry_id TEXT NOT NULL,
+        authority_name TEXT NOT NULL,
+        authority_short_name TEXT NOT NULL,
+        agency_entry_id TEXT NOT NULL,
+        agency_name TEXT NOT NULL,
+        relation_citations TEXT NOT NULL,
+        PRIMARY KEY (authority_entry_id, agency_entry_id)
+      );
+
+      CREATE TABLE dc_council_committee_memberships (
         committee_entry_id TEXT NOT NULL,
         committee_name TEXT NOT NULL,
         committee_type TEXT NOT NULL,
         councilmember_entry_id TEXT NOT NULL,
         councilmember_name TEXT NOT NULL,
         membership_role TEXT NOT NULL,
-        relation_citations TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL,
         PRIMARY KEY (committee_entry_id, councilmember_entry_id)
       );
+
+      CREATE TABLE dc_agencies (
+        agency_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        short_name TEXT NOT NULL,
+        official_url TEXT NOT NULL,
+        parent_id TEXT NOT NULL,
+        parent_name TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_offices (
+        office_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        short_name TEXT NOT NULL,
+        official_url TEXT NOT NULL,
+        parent_id TEXT NOT NULL,
+        parent_name TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_councilmembers (
+        sort_order TEXT NOT NULL,
+        councilmember_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        seat_type TEXT NOT NULL,
+        office_title TEXT NOT NULL,
+        ward TEXT NOT NULL,
+        is_at_large TEXT NOT NULL,
+        profile_url TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_council_committees (
+        committee_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        committee_type TEXT NOT NULL,
+        chair_id TEXT NOT NULL,
+        chair_name TEXT NOT NULL,
+        member_count INTEGER NOT NULL,
+        members TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_public_bodies (
+        public_body_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        body_type TEXT NOT NULL,
+        short_name TEXT NOT NULL,
+        official_url TEXT NOT NULL,
+        enabling_authority TEXT NOT NULL,
+        authority_url TEXT NOT NULL,
+        open_dc_url TEXT NOT NULL,
+        current_state_note TEXT NOT NULL,
+        agency_ids TEXT NOT NULL,
+        agency_names TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_public_body_affiliations (
+        public_body_id TEXT NOT NULL,
+        public_body_name TEXT NOT NULL,
+        body_type TEXT NOT NULL,
+        relation_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        target_name TEXT NOT NULL,
+        target_type TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_ancs (
+        anc_id TEXT PRIMARY KEY,
+        anc TEXT NOT NULL,
+        official_url TEXT NOT NULL,
+        oanc_profile_url TEXT NOT NULL,
+        wards TEXT NOT NULL,
+        neighborhoods TEXT NOT NULL,
+        smd_count INTEGER NOT NULL,
+        current_commissioners TEXT NOT NULL,
+        current_state_note TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_smds (
+        smd_id TEXT PRIMARY KEY,
+        smd TEXT NOT NULL,
+        anc_id TEXT NOT NULL,
+        anc TEXT NOT NULL,
+        wards TEXT NOT NULL,
+        commissioner_seat_id TEXT NOT NULL,
+        current_commissioner_name TEXT NOT NULL,
+        officer_role TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_smd_commissioners (
+        smd TEXT NOT NULL,
+        anc TEXT NOT NULL,
+        wards TEXT NOT NULL,
+        current_commissioner_name TEXT NOT NULL,
+        officer_role TEXT NOT NULL,
+        smd_id TEXT PRIMARY KEY,
+        anc_id TEXT NOT NULL,
+        commissioner_seat_id TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_wards (
+        ward_id TEXT PRIMARY KEY,
+        ward_number TEXT NOT NULL,
+        name TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_courts (
+        court_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        court_type TEXT NOT NULL,
+        parent_id TEXT NOT NULL,
+        parent_name TEXT NOT NULL,
+        official_url TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_legal_authorities (
+        authority_id TEXT PRIMARY KEY,
+        authority_type TEXT NOT NULL,
+        locator TEXT NOT NULL,
+        canonical_url TEXT NOT NULL,
+        name TEXT NOT NULL,
+        used_by_count INTEGER NOT NULL,
+        used_by_ids TEXT NOT NULL,
+        used_by_names TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_relationships (
+        from_id TEXT NOT NULL,
+        from_name TEXT NOT NULL,
+        from_type TEXT NOT NULL,
+        relationship TEXT NOT NULL,
+        to_id TEXT NOT NULL,
+        to_name TEXT NOT NULL,
+        to_type TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        source_id TEXT NOT NULL
+      );
+
+      CREATE TABLE dc_sources (
+        source_id TEXT PRIMARY KEY,
+        publisher TEXT NOT NULL,
+        source_url TEXT NOT NULL,
+        family TEXT NOT NULL,
+        access_method TEXT NOT NULL,
+        collection_status TEXT NOT NULL,
+        release_status TEXT NOT NULL,
+        record_count INTEGER NOT NULL,
+        citation_count INTEGER NOT NULL,
+        scope TEXT NOT NULL,
+        contributes TEXT NOT NULL,
+        known_limits TEXT NOT NULL,
+        notes TEXT NOT NULL
+      );
+
+      CREATE TABLE release_table_catalog (
+        table_name TEXT PRIMARY KEY,
+        table_group TEXT NOT NULL,
+        table_kind TEXT NOT NULL,
+        release_path TEXT NOT NULL,
+        is_release_asset INTEGER NOT NULL,
+        row_count INTEGER,
+        column_count INTEGER,
+        columns_json TEXT,
+        description TEXT NOT NULL
+      );
+
+      CREATE VIEW entries AS SELECT * FROM ledger_entries;
+      CREATE VIEW relations AS SELECT * FROM ledger_relations;
+      CREATE VIEW citations AS SELECT * FROM ledger_citations;
+      CREATE VIEW sources AS SELECT * FROM source_counts;
     `);
 
     const insertEntry = ledgerDb.prepare(
-      "INSERT INTO entries (entry_id, family, kind, name, attributes, citations) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO ledger_entries (entry_id, family, kind, name, attributes, citations) VALUES (?, ?, ?, ?, ?, ?)",
     );
     for (const entry of entriesOut) {
       insertEntry.run(entry[0], entry[1], entry[2], entry[3], entry[4], entry[5]);
     }
 
     const insertRelation = ledgerDb.prepare(
-      "INSERT INTO relations (from_entry_id, relation_kind, to_entry_id, citations) VALUES (?, ?, ?, ?)",
+      "INSERT INTO ledger_relations (from_entry_id, relation_kind, to_entry_id, citations) VALUES (?, ?, ?, ?)",
     );
     for (const relation of relationsOut) {
       insertRelation.run(relation[0], relation[1], relation[2], relation[3]);
     }
 
     const insertCitation = ledgerDb.prepare(
-      "INSERT INTO citations (citation_type, entry_id, source, source_record_id, locator, url, uncited, reason, from_entry_id, relation_kind, to_entry_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO ledger_citations (citation_type, entry_id, source, source_record_id, locator, url, uncited, reason, from_entry_id, relation_kind, to_entry_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const citation of citationsOut) {
       insertCitation.run(
@@ -861,7 +1858,7 @@ export async function exportReleaseArtifacts(
     }
 
     const insertSource = ledgerDb.prepare(
-      "INSERT INTO sources (source, snapshot_records, citation_count) VALUES (?, ?, ?)",
+      "INSERT INTO source_counts (source, snapshot_records, citation_count) VALUES (?, ?, ?)",
     );
     for (const source of sourceRows) {
       insertSource.run(source[0], Number.parseInt(source[1], 10), Number.parseInt(source[2], 10));
@@ -911,8 +1908,48 @@ export async function exportReleaseArtifacts(
       );
     }
 
+    insertRows(
+      ledgerDb,
+      "dc_board_affiliations",
+      [
+        "board_entry_id",
+        "board_name",
+        "board_short_name",
+        "agency_entry_id",
+        "agency_name",
+        "relation_citations",
+      ],
+      sortedBoardAffiliations,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_commission_affiliations",
+      [
+        "commission_entry_id",
+        "commission_name",
+        "commission_short_name",
+        "agency_entry_id",
+        "agency_name",
+        "relation_citations",
+      ],
+      sortedCommissionAffiliations,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_authority_affiliations",
+      [
+        "authority_entry_id",
+        "authority_name",
+        "authority_short_name",
+        "agency_entry_id",
+        "agency_name",
+        "relation_citations",
+      ],
+      sortedAuthorityAffiliations,
+    );
+
     const insertCouncilCommitteeMembership = ledgerDb.prepare(
-      "INSERT INTO dc_council_committee_membership (committee_entry_id, committee_name, committee_type, councilmember_entry_id, councilmember_name, membership_role, relation_citations) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO dc_council_committee_memberships (committee_entry_id, committee_name, committee_type, councilmember_entry_id, councilmember_name, membership_role, source_url, source_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     );
     for (const row of councilCommitteeMembershipRows) {
       insertCouncilCommitteeMembership.run(
@@ -922,26 +1959,305 @@ export async function exportReleaseArtifacts(
         row.councilmemberEntryId,
         row.councilmemberName,
         row.membershipRole,
-        stableStringify(row.relationCitations),
+        relationSourceUrl(row.relationCitations, sourceCoverageRows),
+        sourceCitationId(firstCitationRef(row.relationCitations)),
       );
     }
+
+    insertRows(
+      ledgerDb,
+      "dc_agencies",
+      [
+        "agency_id",
+        "name",
+        "short_name",
+        "official_url",
+        "parent_id",
+        "parent_name",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.agencies,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_offices",
+      [
+        "office_id",
+        "name",
+        "short_name",
+        "official_url",
+        "parent_id",
+        "parent_name",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.offices,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_councilmembers",
+      [
+        "sort_order",
+        "councilmember_id",
+        "name",
+        "seat_type",
+        "office_title",
+        "ward",
+        "is_at_large",
+        "profile_url",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.councilmembers,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_council_committees",
+      [
+        "committee_id",
+        "name",
+        "committee_type",
+        "chair_id",
+        "chair_name",
+        "member_count",
+        "members",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.councilCommittees,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_public_bodies",
+      [
+        "public_body_id",
+        "name",
+        "body_type",
+        "short_name",
+        "official_url",
+        "enabling_authority",
+        "authority_url",
+        "open_dc_url",
+        "current_state_note",
+        "agency_ids",
+        "agency_names",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.publicBodies,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_public_body_affiliations",
+      [
+        "public_body_id",
+        "public_body_name",
+        "body_type",
+        "relation_type",
+        "target_id",
+        "target_name",
+        "target_type",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.publicBodyAffiliations,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_ancs",
+      [
+        "anc_id",
+        "anc",
+        "official_url",
+        "oanc_profile_url",
+        "wards",
+        "neighborhoods",
+        "smd_count",
+        "current_commissioners",
+        "current_state_note",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.ancs,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_smds",
+      [
+        "smd_id",
+        "smd",
+        "anc_id",
+        "anc",
+        "wards",
+        "commissioner_seat_id",
+        "current_commissioner_name",
+        "officer_role",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.smds,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_smd_commissioners",
+      [
+        "smd",
+        "anc",
+        "wards",
+        "current_commissioner_name",
+        "officer_role",
+        "smd_id",
+        "anc_id",
+        "commissioner_seat_id",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.smdCommissioners,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_wards",
+      ["ward_id", "ward_number", "name"],
+      publicReleaseTables.wards,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_courts",
+      [
+        "court_id",
+        "name",
+        "court_type",
+        "parent_id",
+        "parent_name",
+        "official_url",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.courts,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_legal_authorities",
+      [
+        "authority_id",
+        "authority_type",
+        "locator",
+        "canonical_url",
+        "name",
+        "used_by_count",
+        "used_by_ids",
+        "used_by_names",
+      ],
+      publicReleaseTables.legalAuthorities,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_relationships",
+      [
+        "from_id",
+        "from_name",
+        "from_type",
+        "relationship",
+        "to_id",
+        "to_name",
+        "to_type",
+        "source_url",
+        "source_id",
+      ],
+      publicReleaseTables.relationships,
+    );
+    insertRows(
+      ledgerDb,
+      "dc_sources",
+      [
+        "source_id",
+        "publisher",
+        "source_url",
+        "family",
+        "access_method",
+        "collection_status",
+        "release_status",
+        "record_count",
+        "citation_count",
+        "scope",
+        "contributes",
+        "known_limits",
+        "notes",
+      ],
+      publicReleaseTables.sources,
+    );
+    insertRows(
+      ledgerDb,
+      "release_table_catalog",
+      [
+        "table_name",
+        "table_group",
+        "table_kind",
+        "release_path",
+        "is_release_asset",
+        "row_count",
+        "column_count",
+        "columns_json",
+        "description",
+      ],
+      buildSqliteTableCatalogRows(outputRowCounts),
+    );
   } finally {
     ledgerDb.close();
   }
 
-  const outputFileMetadata = await buildOutputFileMetadata(releaseRoot, releaseOutputs);
+  const releaseOutputsWithoutSha256Sums = Object.fromEntries(
+    Object.entries(releaseOutputs).filter(([outputName]) => outputName !== "sha256Sums"),
+  );
+  const preSha256SumsMetadata = await buildOutputFileMetadata(
+    releaseRoot,
+    releaseOutputsWithoutSha256Sums,
+    outputRowCounts,
+  );
+  const preSha256SumsCatalog = buildReleaseOutputCatalog(
+    releaseOutputsWithoutSha256Sums,
+    preSha256SumsMetadata,
+  );
+  await Deno.writeTextFile(
+    join(releaseRoot, RELEASE_OUTPUT_PATHS.sha256Sums),
+    buildReleaseSha256Sums(preSha256SumsCatalog),
+  );
+
+  const outputFileMetadata = await buildOutputFileMetadata(
+    releaseRoot,
+    releaseOutputs,
+    outputRowCounts,
+  );
+  const outputCatalog = buildReleaseOutputCatalog(releaseOutputs, outputFileMetadata);
+  const releaseAssetIndex = buildReleaseAssetIndex(outputCatalog);
+  const localOnlyOutputIndex = buildLocalOnlyOutputIndex(outputCatalog);
+  const startHere = buildReleaseStartHere(outputCatalog, releaseAssetIndex, localOnlyOutputIndex);
   const manifestPath = join(releaseRoot, "manifest.json");
   const manifest = {
     schemaVersion: RELEASE_SCHEMA_VERSION,
     jurisdiction,
     exportedAt,
+    startHere,
     sourceCoverageStatusCounts,
     sourceCoverageReleaseStatusCounts,
     sourceCoverageFamilyRollup,
+    provenance,
     reviewQueueCounts: reviewPosture.queues,
     reviewCategoryCounts: reviewPosture.categories,
     reviewDeferredGroups: reviewPosture.deferredGroups,
     outputs: releaseOutputs,
+    outputCatalog,
+    releaseAssets: releaseAssetIndex,
+    manifestFile: {
+      path: "manifest.json",
+      releaseAsset: true,
+      checksumListedInSha256Sums: false,
+      note:
+        "manifest.json is uploaded as a release asset but is not listed in SHA256SUMS because it records file hashes and is written after the other file metadata is calculated.",
+    },
+    localOnlyOutputs: localOnlyOutputIndex,
+    sqliteTables: buildSqliteTableIndex(),
     outputFileMetadata,
     counts: {
       entries: entriesOut.length,
@@ -954,7 +2270,9 @@ export async function exportReleaseArtifacts(
       ),
       citations: citationsOut.length,
       sources: sourceRows.length,
+      collectedSourceCount: sourceRows.length,
       sourceCoverage: sourceCoverageRows.length,
+      sourceInventoryCount: sourceCoverageRows.length,
       sourceCoverageFamilies: sourceCoverageFamilyRollup.length,
       sourceCoverageStatuses: sourceCoverageStatusCounts,
       sourceCoverageReleaseStatuses: sourceCoverageReleaseStatusCounts,
@@ -968,10 +2286,25 @@ export async function exportReleaseArtifacts(
       authorityAffiliations: authorityAffiliationsOut.length,
       ancSmdStructure: ancSmdStructureRows.length,
       councilCommitteeMembership: councilCommitteeMembershipRows.length,
+      dcAgencies: publicReleaseTables.agencies.length,
+      dcOffices: publicReleaseTables.offices.length,
+      dcCouncilmembers: publicReleaseTables.councilmembers.length,
+      dcCouncilCommittees: publicReleaseTables.councilCommittees.length,
+      dcPublicBodies: publicReleaseTables.publicBodies.length,
+      dcPublicBodyAffiliations: publicReleaseTables.publicBodyAffiliations.length,
+      dcAncs: publicReleaseTables.ancs.length,
+      dcSmds: publicReleaseTables.smds.length,
+      dcSmdCommissioners: publicReleaseTables.smdCommissioners.length,
+      dcWards: publicReleaseTables.wards.length,
+      dcCourts: publicReleaseTables.courts.length,
+      dcLegalAuthorities: publicReleaseTables.legalAuthorities.length,
+      dcRelationships: publicReleaseTables.relationships.length,
+      dcSources: publicReleaseTables.sources.length,
+      publicSourceRows: publicReleaseTables.sources.length,
       govGraphNodes: govGraph.nodes.length,
       govGraphEdges: govGraph.edges.length,
     },
-    govGraph: govGraph.summary,
+    govGraph: govGraphSummary,
   };
 
   await Deno.writeTextFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
@@ -988,6 +2321,20 @@ export async function exportReleaseArtifacts(
     authorityAffiliationCount: authorityAffiliationsOut.length,
     ancSmdStructureCount: ancSmdStructureRows.length,
     councilCommitteeMembershipCount: councilCommitteeMembershipRows.length,
+    dcAgencyCount: publicReleaseTables.agencies.length,
+    dcOfficeCount: publicReleaseTables.offices.length,
+    dcCouncilmemberCount: publicReleaseTables.councilmembers.length,
+    dcCouncilCommitteeCount: publicReleaseTables.councilCommittees.length,
+    dcPublicBodyCount: publicReleaseTables.publicBodies.length,
+    dcPublicBodyAffiliationCount: publicReleaseTables.publicBodyAffiliations.length,
+    dcAncCount: publicReleaseTables.ancs.length,
+    dcSmdCount: publicReleaseTables.smds.length,
+    dcSmdCommissionerCount: publicReleaseTables.smdCommissioners.length,
+    dcWardCount: publicReleaseTables.wards.length,
+    dcCourtCount: publicReleaseTables.courts.length,
+    dcLegalAuthorityCount: publicReleaseTables.legalAuthorities.length,
+    dcRelationshipCount: publicReleaseTables.relationships.length,
+    dcSourceCount: publicReleaseTables.sources.length,
     govGraphNodeCount: govGraph.nodes.length,
     govGraphEdgeCount: govGraph.edges.length,
     govGraphExcludedNodeCount: govGraph.summary.excludedNodeCount,
@@ -995,6 +2342,731 @@ export async function exportReleaseArtifacts(
     govGraphBlockedReviewItemCount: govGraph.summary.blockedReviewItemCount,
     ledgerSqlitePath: ledgerPath,
   };
+}
+
+async function removeObsoleteReleaseOutputs(releaseRoot: string): Promise<void> {
+  for (
+    const fileName of [
+      "entries.csv",
+      "relations.csv",
+      "citations.csv",
+      "sources.csv",
+      "dc_council_committee_membership.csv",
+      "ledger_entries.csv",
+      "ledger_relations.csv",
+      "ledger_citations.csv",
+      "source_counts.csv",
+      "source_coverage.csv",
+      "dc_smd_commissioners.csv",
+      "dc_board_affiliations.csv",
+      "dc_commission_affiliations.csv",
+      "dc_authority_affiliations.csv",
+      "dc_anc_smd_structure.csv",
+    ]
+  ) {
+    try {
+      await Deno.remove(join(releaseRoot, fileName));
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) {
+        throw error;
+      }
+    }
+  }
+}
+
+async function createReleaseStagingRoot(releaseRoot: string): Promise<string> {
+  const parent = dirname(releaseRoot);
+  await ensureDir(parent);
+  const rootName = basename(releaseRoot) || "release";
+  const stagingRoot = join(parent, `.${rootName}.export-${crypto.randomUUID()}.tmp`);
+  await ensureDir(stagingRoot);
+  return stagingRoot;
+}
+
+async function replaceReleaseRoot(stagingRoot: string, releaseRoot: string): Promise<void> {
+  await removeIfExists(releaseRoot);
+  await Deno.rename(stagingRoot, releaseRoot);
+}
+
+async function removeIfExists(path: string): Promise<void> {
+  try {
+    await Deno.remove(path, { recursive: true });
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) {
+      throw error;
+    }
+  }
+}
+
+function buildPublicReleaseTables(input: {
+  entryIndex: Map<string, ExportEntryIndexValue>;
+  sourceCoverageRows: string[][];
+  ancSmdStructureRows: DcAncSmdStructureRow[];
+}): PublicReleaseTables {
+  const entries = [...input.entryIndex.entries()].sort(([left], [right]) =>
+    left.localeCompare(right)
+  );
+
+  const agencies: string[][] = [];
+  const offices: string[][] = [];
+  const councilmembers: string[][] = [];
+  const councilCommittees: string[][] = [];
+  const publicBodies: string[][] = [];
+  const publicBodyAffiliations: string[][] = [];
+  const ancs: string[][] = [];
+  const wards: string[][] = [];
+  const courts: string[][] = [];
+  const legalAuthorities: string[][] = [];
+  const relationships: string[][] = [];
+  const ancSummaries = buildAncSummaries(input.ancSmdStructureRows);
+  const committeeMembers = buildCommitteeMembers(input.entryIndex);
+  const legalAuthorityUsage = buildLegalAuthorityUsage(input.entryIndex);
+  const sourceUrls = new Map(
+    input.sourceCoverageRows.map((row) => [
+      row[SOURCE_COVERAGE_COLUMN.source],
+      row[SOURCE_COVERAGE_COLUMN.sourceUrl],
+    ]),
+  );
+
+  for (const [id, entry] of entries) {
+    const primaryCitation = sourceRefForEntry(entry);
+    const sourceUrl = primaryCitation.url || sourceUrls.get(primaryCitation.source) ||
+      firstStringAttribute(entry, [
+        "sourceProfileUrl",
+        "sourceUrl",
+        "sourcePageUrl",
+        "sourceOpenDcUrl",
+        "sourceOancProfileUrl",
+        "webUrl",
+        "officialUrl",
+        "canonicalUrl",
+      ]);
+    const sourceId = sourceCitationId(primaryCitation);
+
+    for (const [relationKind, relations] of Object.entries(entry.relations)) {
+      for (const relation of relations) {
+        const target = input.entryIndex.get(relation.to);
+        const relationCitation = firstCitationRef(relation.citations ?? []);
+        relationships.push([
+          id,
+          entry.name,
+          entry.kind,
+          publicRelationLabel(relationKind, entry.kind, target?.kind),
+          relation.to,
+          target?.name ?? "",
+          target?.kind ?? "",
+          relationCitation.url || sourceUrls.get(relationCitation.source) || "",
+          sourceCitationId(relationCitation),
+        ]);
+      }
+    }
+
+    if (entry.kind === "dc.agency") {
+      const parent = firstRelatedEntry(
+        entry,
+        ["dc.relation:reports_to", "dc.relation:part_of"],
+        input.entryIndex,
+      );
+      agencies.push([
+        id,
+        entry.name,
+        entry.shortName,
+        stringAttribute(entry, "officialUrl"),
+        parent?.id ?? "",
+        parent?.name ?? "",
+        sourceUrl,
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (entry.kind === "dc.office") {
+      const parent = firstRelatedEntry(
+        entry,
+        ["dc.relation:reports_to", "dc.relation:part_of"],
+        input.entryIndex,
+      );
+      offices.push([
+        id,
+        entry.name,
+        entry.shortName,
+        stringAttribute(entry, "officialUrl"),
+        parent?.id ?? "",
+        parent?.name ?? "",
+        sourceUrl,
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (entry.kind === "dc.councilmember") {
+      const officeTitle = stringAttribute(entry, "officeLabel");
+      const ward = stringAttribute(entry, "wardNumber");
+      const seatType = councilmemberSeatType(entry, officeTitle, ward);
+      councilmembers.push([
+        councilmemberSortOrder(entry, seatType, ward),
+        id,
+        entry.name,
+        seatType,
+        officeTitle,
+        ward,
+        seatType === "at_large" || seatType === "chairman" ? "true" : "false",
+        stringAttribute(entry, "sourceProfileUrl"),
+        sourceUrl,
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (entry.kind === "dc.committee") {
+      const chair = committeeChair(id, input.entryIndex);
+      const members = committeeMembers.get(id) ?? [];
+      councilCommittees.push([
+        id,
+        entry.name,
+        stringAttribute(entry, "committeeType"),
+        chair?.id ?? "",
+        chair?.name ?? "",
+        String(members.length),
+        members.map((member) => member.name).join("; "),
+        sourceUrl || stringAttribute(entry, "sourceUrl"),
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (isPublicBodyKind(entry.kind)) {
+      const publicBodyAgencies = publicBodyAgencyLinks(entry, input.entryIndex);
+      const legalAuthority = primaryLegalAuthority(entry, input.entryIndex);
+      publicBodies.push([
+        id,
+        entry.name,
+        publicBodyType(entry.kind),
+        entry.shortName,
+        stringAttribute(entry, "officialUrl"),
+        legalAuthority?.locator || stringAttribute(entry, "enablingStatute"),
+        legalAuthority?.canonicalUrl || stringAttribute(entry, "enablingStatuteUrl"),
+        stringAttribute(entry, "sourceOpenDcUrl"),
+        stringAttribute(entry, "currentStateNote"),
+        publicBodyAgencies.map((agency) => agency.id).join("; "),
+        publicBodyAgencies.map((agency) => agency.name).join("; "),
+        sourceUrl,
+        sourceId,
+      ]);
+
+      for (const relationKind of ["dc.relation:governs", "dc.relation:affiliated_with"]) {
+        for (const relation of entry.relations[relationKind] ?? []) {
+          const target = input.entryIndex.get(relation.to);
+          const relationCitation = firstCitationRef(relation.citations ?? []);
+          publicBodyAffiliations.push([
+            id,
+            entry.name,
+            publicBodyType(entry.kind),
+            publicRelationLabel(relationKind, entry.kind, target?.kind),
+            relation.to,
+            target?.name ?? "",
+            target?.kind ?? "",
+            relationCitation.url || sourceUrls.get(relationCitation.source) || "",
+            sourceCitationId(relationCitation),
+          ]);
+        }
+      }
+      continue;
+    }
+
+    if (entry.kind === "dc.anc") {
+      const ancSummary = ancSummaries.get(id);
+      ancs.push([
+        id,
+        entry.name,
+        firstStringAttribute(entry, ["officialUrl", "webUrl"]),
+        stringAttribute(entry, "sourceOancProfileUrl"),
+        joinedAttribute(entry, "sourceWardNumbers"),
+        joinedAttribute(entry, "representedNeighborhoods"),
+        String(ancSummary?.smdCount ?? 0),
+        ancSummary?.commissioners.join("; ") ?? "",
+        stringAttribute(entry, "currentStateNote") || stringAttribute(entry, "description"),
+        sourceUrl,
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (entry.kind === "dc.ward") {
+      wards.push([id, stringAttribute(entry, "wardNumber"), entry.name]);
+      continue;
+    }
+
+    if (
+      entry.kind === "dc.court_system" ||
+      entry.kind === "dc.court" ||
+      entry.kind === "dc.court_division"
+    ) {
+      const parent = firstRelatedEntry(entry, ["dc.relation:part_of"], input.entryIndex);
+      courts.push([
+        id,
+        entry.name,
+        entry.kind.replace("dc.", ""),
+        parent?.id ?? "",
+        parent?.name ?? "",
+        stringAttribute(entry, "officialUrl"),
+        sourceUrl,
+        sourceId,
+      ]);
+      continue;
+    }
+
+    if (entry.kind === "dc.legal_authority") {
+      const usage = legalAuthorityUsage.get(id) ?? [];
+      legalAuthorities.push([
+        id,
+        stringAttribute(entry, "authorityType"),
+        stringAttribute(entry, "locator"),
+        stringAttribute(entry, "canonicalUrl"),
+        entry.name,
+        String(usage.length),
+        usage.map((usedBy) => usedBy.id).join("; "),
+        usage.map((usedBy) => usedBy.name).join("; "),
+      ]);
+    }
+  }
+
+  const smds = input.ancSmdStructureRows.map((row) => {
+    const citation = firstCitationRef(row.relationCitations);
+    const ancEntry = input.entryIndex.get(row.ancEntryId);
+    return [
+      row.smdEntryId,
+      publicSmdCode(row.smdName),
+      row.ancEntryId,
+      publicAncCode(row.ancName),
+      ancEntry ? joinedAttribute(ancEntry, "sourceWardNumbers") : "",
+      row.commissionerSeatEntryId,
+      row.currentCommissionerName,
+      row.officerRole,
+      citation.url || sourceUrls.get(citation.source) || "",
+      sourceCitationId(citation),
+    ];
+  });
+
+  const smdCommissioners = input.ancSmdStructureRows.map((row) => {
+    const citation = firstCitationRef(row.relationCitations);
+    const ancEntry = input.entryIndex.get(row.ancEntryId);
+    return [
+      publicSmdCode(row.smdName),
+      publicAncCode(row.ancName),
+      ancEntry ? joinedAttribute(ancEntry, "sourceWardNumbers") : "",
+      row.currentCommissionerName,
+      row.officerRole,
+      row.smdEntryId,
+      row.ancEntryId,
+      row.commissionerSeatEntryId,
+      citation.url || sourceUrls.get(citation.source) || "",
+      sourceCitationId(citation),
+    ];
+  });
+
+  const sources = input.sourceCoverageRows.map((row) => [
+    row[SOURCE_COVERAGE_COLUMN.source],
+    row[SOURCE_COVERAGE_COLUMN.publisher],
+    row[SOURCE_COVERAGE_COLUMN.sourceUrl],
+    row[SOURCE_COVERAGE_COLUMN.family],
+    row[SOURCE_COVERAGE_COLUMN.accessMethod],
+    row[SOURCE_COVERAGE_COLUMN.collectionStatus],
+    row[SOURCE_COVERAGE_COLUMN.releaseStatus],
+    row[SOURCE_COVERAGE_COLUMN.recordCount],
+    row[SOURCE_COVERAGE_COLUMN.citationCount],
+    row[SOURCE_COVERAGE_COLUMN.scope],
+    row[SOURCE_COVERAGE_COLUMN.contributes],
+    row[SOURCE_COVERAGE_COLUMN.excludes],
+    row[SOURCE_COVERAGE_COLUMN.notes],
+  ]);
+
+  const byFirstColumn = (left: string[], right: string[]) => left[0].localeCompare(right[0]);
+  for (
+    const table of [
+      agencies,
+      offices,
+      councilmembers,
+      councilCommittees,
+      publicBodies,
+      publicBodyAffiliations,
+      ancs,
+      smds,
+      smdCommissioners,
+      wards,
+      courts,
+      legalAuthorities,
+      relationships,
+      sources,
+    ]
+  ) {
+    table.sort(byFirstColumn);
+  }
+
+  return {
+    agencies,
+    offices,
+    councilmembers,
+    councilCommittees,
+    publicBodies,
+    publicBodyAffiliations,
+    ancs,
+    smds,
+    smdCommissioners,
+    wards,
+    courts,
+    legalAuthorities,
+    relationships,
+    sources,
+  };
+}
+
+function buildAncSummaries(
+  rows: DcAncSmdStructureRow[],
+): Map<string, { smdCount: number; commissioners: string[] }> {
+  const summaries = new Map<string, { smdIds: Set<string>; commissioners: Set<string> }>();
+  for (const row of rows) {
+    const summary = summaries.get(row.ancEntryId) ?? {
+      smdIds: new Set<string>(),
+      commissioners: new Set<string>(),
+    };
+    summary.smdIds.add(row.smdEntryId);
+    if (row.currentCommissionerName) {
+      summary.commissioners.add(row.currentCommissionerName);
+    }
+    summaries.set(row.ancEntryId, summary);
+  }
+
+  return new Map(
+    [...summaries.entries()].map(([ancId, summary]) => [
+      ancId,
+      {
+        smdCount: summary.smdIds.size,
+        commissioners: [...summary.commissioners].sort((left, right) => left.localeCompare(right)),
+      },
+    ]),
+  );
+}
+
+function buildCommitteeMembers(
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): Map<string, Array<{ id: string; name: string; sortOrder: string }>> {
+  const membersByCommittee = new Map<
+    string,
+    Array<{ id: string; name: string; sortOrder: string }>
+  >();
+  for (const [id, entry] of entryIndex.entries()) {
+    if (entry.kind !== "dc.councilmember") {
+      continue;
+    }
+    const officeTitle = stringAttribute(entry, "officeLabel");
+    const ward = stringAttribute(entry, "wardNumber");
+    const seatType = councilmemberSeatType(entry, officeTitle, ward);
+    for (const relation of entry.relations["dc.relation:member_of"] ?? []) {
+      const members = membersByCommittee.get(relation.to) ?? [];
+      members.push({
+        id,
+        name: entry.name,
+        sortOrder: councilmemberSortOrder(entry, seatType, ward),
+      });
+      membersByCommittee.set(relation.to, members);
+    }
+  }
+  for (const members of membersByCommittee.values()) {
+    members.sort((left, right) =>
+      left.sortOrder.localeCompare(right.sortOrder) || left.name.localeCompare(right.name)
+    );
+  }
+  return membersByCommittee;
+}
+
+function buildLegalAuthorityUsage(
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): Map<string, Array<{ id: string; name: string }>> {
+  const usageByAuthority = new Map<string, Array<{ id: string; name: string }>>();
+  for (const [id, entry] of entryIndex.entries()) {
+    for (const relation of entry.relations["dc.relation:authorized_by"] ?? []) {
+      const usedBy = usageByAuthority.get(relation.to) ?? [];
+      usedBy.push({ id, name: entry.name });
+      usageByAuthority.set(relation.to, usedBy);
+    }
+  }
+  for (const usage of usageByAuthority.values()) {
+    usage.sort((left, right) => left.name.localeCompare(right.name));
+  }
+  return usageByAuthority;
+}
+
+function primaryLegalAuthority(
+  entry: ExportEntryIndexValue,
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): { locator: string; canonicalUrl: string } | null {
+  for (const relation of entry.relations["dc.relation:authorized_by"] ?? []) {
+    const authority = entryIndex.get(relation.to);
+    if (authority?.kind !== "dc.legal_authority") {
+      continue;
+    }
+    return {
+      locator: stringAttribute(authority, "locator"),
+      canonicalUrl: stringAttribute(authority, "canonicalUrl"),
+    };
+  }
+  return null;
+}
+
+function publicBodyAgencyLinks(
+  entry: ExportEntryIndexValue,
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): Array<{ id: string; name: string }> {
+  const agencies = new Map<string, string>();
+  for (const relationKind of ["dc.relation:governs", "dc.relation:affiliated_with"]) {
+    for (const relation of entry.relations[relationKind] ?? []) {
+      const target = entryIndex.get(relation.to);
+      agencies.set(relation.to, target?.name ?? "");
+    }
+  }
+  return [...agencies.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+}
+
+function publicRelationLabel(
+  relationKind: string,
+  fromKind: string,
+  toKind: string | undefined,
+): string {
+  if (toKind) {
+    const publicVerb = dcPublicRelationVerb({ relationKind, fromKind, toKind });
+    if (publicVerb) return publicVerb;
+  }
+  return relationKind.replace("dc.relation:", "");
+}
+
+function councilmemberSeatType(
+  entry: ExportEntryIndexValue,
+  officeTitle: string,
+  ward: string,
+): string {
+  const officeTitleLower = officeTitle.toLowerCase();
+  if (officeTitleLower.includes("chairman") || entry.name === "Phil Mendelson") {
+    return "chairman";
+  }
+  if (officeTitleLower.includes("at-large")) {
+    return "at_large";
+  }
+  if (ward) {
+    return "ward";
+  }
+  return "unknown";
+}
+
+function councilmemberSortOrder(
+  entry: ExportEntryIndexValue,
+  seatType: string,
+  ward: string,
+): string {
+  if (seatType === "chairman") {
+    return "00";
+  }
+  if (seatType === "ward") {
+    return `2${ward.padStart(2, "0")}`;
+  }
+  if (seatType === "at_large") {
+    const atLargeOrder: Record<string, string> = {
+      "Anita Bonds": "10",
+      "Robert C. White, Jr.": "11",
+      "Christina Henderson": "12",
+      "Doni Crawford": "13",
+    };
+    return atLargeOrder[entry.name] ?? `1${entry.name}`;
+  }
+  return `99${entry.name}`;
+}
+
+function insertRows(
+  db: Database,
+  table: string,
+  columns: string[],
+  rows: Array<Array<string | number | null>>,
+): void {
+  const columnSql = columns.join(", ");
+  const placeholders = columns.map(() => "?").join(", ");
+  const statement = db.prepare(`INSERT INTO ${table} (${columnSql}) VALUES (${placeholders})`);
+  for (const row of rows) {
+    statement.run(...row);
+  }
+}
+
+function isPublicBodyKind(kind: string): boolean {
+  return kind === "dc.board" || kind === "dc.commission" || kind === "dc.council" ||
+    kind === "dc.authority";
+}
+
+function publicBodyType(kind: string): string {
+  return kind.replace("dc.", "");
+}
+
+function publicSmdCode(name: string): string {
+  return name.replace(/^SMD\s+/i, "").trim();
+}
+
+function publicAncCode(name: string): string {
+  return name.replace(/^ANC\s+/i, "").trim();
+}
+
+function committeeChair(
+  committeeId: string,
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): { id: string; name: string } | null {
+  for (const [id, entry] of entryIndex.entries()) {
+    for (const relation of entry.relations["dc.relation:chairs"] ?? []) {
+      if (relation.to === committeeId) {
+        return { id, name: entry.name };
+      }
+    }
+  }
+  return null;
+}
+
+function firstRelatedEntry(
+  entry: ExportEntryIndexValue,
+  relationKinds: string[],
+  entryIndex: Map<string, ExportEntryIndexValue>,
+): { id: string; name: string } | null {
+  for (const relationKind of relationKinds) {
+    const relation = entry.relations[relationKind]?.[0];
+    if (!relation) {
+      continue;
+    }
+    const related = entryIndex.get(relation.to);
+    return { id: relation.to, name: related?.name ?? "" };
+  }
+  return null;
+}
+
+function stringAttribute(entry: ExportEntryIndexValue, key: string): string {
+  const value = entry.attributes[key];
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return "";
+}
+
+function firstStringAttribute(entry: ExportEntryIndexValue, keys: string[]): string {
+  for (const key of keys) {
+    const value = stringAttribute(entry, key);
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function joinedAttribute(entry: ExportEntryIndexValue, key: string): string {
+  const value = entry.attributes[key];
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).join("; ");
+  }
+  return stringAttribute(entry, key);
+}
+
+function firstCitationRef(citations: CitationValue[]): {
+  source: string;
+  sourceRecordId: string;
+  url: string;
+} {
+  for (const citation of citations) {
+    if ("source" in citation || "url" in citation) {
+      const record = citation as Record<string, unknown>;
+      return {
+        source: typeof record.source === "string" ? record.source : "",
+        sourceRecordId: typeof record.sourceRecordId === "string" ? record.sourceRecordId : "",
+        url: typeof record.url === "string" ? record.url : "",
+      };
+    }
+  }
+  return { source: "", sourceRecordId: "", url: "" };
+}
+
+function sourceRefForEntry(entry: ExportEntryIndexValue): {
+  source: string;
+  sourceRecordId: string;
+  url: string;
+} {
+  for (const preferredSource of preferredSourcesForKind(entry.kind)) {
+    const citation = citationRefForSource(entry.citations, preferredSource);
+    if (citation.source) {
+      return citation;
+    }
+  }
+  return firstCitationRef(entry.citations);
+}
+
+function preferredSourcesForKind(kind: string): string[] {
+  switch (kind) {
+    case "dc.agency":
+      return ["dc.agency_directory", "dcgis.agencies"];
+    case "dc.councilmember":
+      return ["dccouncil.members", "dccouncil.committees"];
+    case "dc.committee":
+      return ["dccouncil.committees"];
+    case "dc.anc":
+      return ["dcgis.ancs", "oanc.profiles"];
+    case "dc.smd":
+    case "dc.anc_commissioner_seat":
+      return ["dcgis.smds"];
+    case "dc.board":
+      return ["open_dc.public_bodies", "dcgis.boards"];
+    case "dc.commission":
+      return ["open_dc.public_bodies", "dcgis.commissions"];
+    case "dc.council":
+      return ["open_dc.public_bodies", "dcgis.councils"];
+    case "dc.authority":
+      return ["open_dc.public_bodies", "dcgis.authorities"];
+    default:
+      return [];
+  }
+}
+
+function citationRefForSource(citations: CitationValue[], source: string): {
+  source: string;
+  sourceRecordId: string;
+  url: string;
+} {
+  for (const citation of citations) {
+    const ref = firstCitationRef([citation]);
+    if (ref.source === source) {
+      return ref;
+    }
+  }
+  return { source: "", sourceRecordId: "", url: "" };
+}
+
+function sourceCitationId(citation: { source: string; sourceRecordId: string }): string {
+  if (!citation.source) {
+    return "";
+  }
+  if (!citation.sourceRecordId) {
+    return citation.source;
+  }
+  return `${citation.source}:${citation.sourceRecordId}`;
+}
+
+function relationSourceUrl(citations: CitationValue[], sourceCoverageRows: string[][]): string {
+  const citation = firstCitationRef(citations);
+  if (citation.url) {
+    return citation.url;
+  }
+  if (!citation.source) {
+    return "";
+  }
+  const sourceRow = sourceCoverageRows.find((row) =>
+    row[SOURCE_COVERAGE_COLUMN.source] === citation.source
+  );
+  return sourceRow?.[SOURCE_COVERAGE_COLUMN.sourceUrl] ?? "";
 }
 
 export async function verifyReleaseArtifacts(
@@ -1029,9 +3101,10 @@ export async function verifyReleaseArtifacts(
   }
 
   const outputs = parseManifestOutputs(manifest.outputs, errors);
+  const outputCatalog = parseReleaseOutputCatalog(manifest.outputCatalog, errors);
   const outputFileMetadata = parseOutputFileMetadata(manifest.outputFileMetadata, errors);
 
-  if (!outputs || !outputFileMetadata) {
+  if (!outputs || !outputCatalog || !outputFileMetadata) {
     return {
       releaseRoot,
       manifestPath,
@@ -1053,6 +3126,9 @@ export async function verifyReleaseArtifacts(
       errors.push(`outputFileMetadata ${metadataName} has no matching manifest output`);
     }
   }
+  validateReleaseOutputCatalog(outputs, outputCatalog, outputFileMetadata, errors);
+  validateReleaseAssetIndexes(manifest, outputCatalog, errors);
+  await validateSha256SumsContract(releaseRoot, outputCatalog, errors);
 
   const counts = isRecord(manifest.counts) ? manifest.counts : null;
   if (counts) {
@@ -1106,6 +3182,7 @@ export async function verifyReleaseArtifacts(
         `sha256 mismatch for ${outputName}: expected ${metadata.sha256}, found ${sha256}`,
       );
     }
+    validateOutputFileMetadataAgainstPayload(outputName, outputPath, metadata, bytes, errors);
   }
 
   return {
@@ -1115,6 +3192,54 @@ export async function verifyReleaseArtifacts(
     checkedFileCount,
     errors,
   };
+}
+
+function validateOutputFileMetadataAgainstPayload(
+  outputName: string,
+  outputPath: string,
+  metadata: OutputFileMetadata,
+  bytes: Uint8Array,
+  errors: string[],
+): void {
+  const expectedHeaders = RELEASE_CSV_HEADER_CONTRACTS[outputName as ReleaseOutputName];
+  if (!expectedHeaders) {
+    if (typeof metadata.rowCount === "number") {
+      errors.push(`outputFileMetadata ${outputName}.rowCount is only valid for CSV outputs`);
+    }
+    if (typeof metadata.columnCount === "number") {
+      errors.push(`outputFileMetadata ${outputName}.columnCount is only valid for CSV outputs`);
+    }
+    if (metadata.columns) {
+      errors.push(`outputFileMetadata ${outputName}.columns is only valid for CSV outputs`);
+    }
+    return;
+  }
+
+  if (typeof metadata.rowCount !== "number") {
+    errors.push(`outputFileMetadata ${outputName}.rowCount is required for CSV outputs`);
+  }
+  if (metadata.columnCount !== expectedHeaders.length) {
+    errors.push(
+      `outputFileMetadata ${outputName}.columnCount must be ${expectedHeaders.length}`,
+    );
+  }
+  if (!metadata.columns) {
+    errors.push(`outputFileMetadata ${outputName}.columns is required for CSV outputs`);
+  } else if (!arraysEqual(metadata.columns, [...expectedHeaders])) {
+    errors.push(`outputFileMetadata ${outputName}.columns must match the release CSV contract`);
+  }
+
+  const rows = parseReleaseCsvRows(new TextDecoder().decode(bytes), outputPath, errors);
+  if (!rows || rows.length === 0) {
+    return;
+  }
+  if (typeof metadata.rowCount === "number" && rows.length - 1 !== metadata.rowCount) {
+    errors.push(
+      `outputFileMetadata ${outputName}.rowCount mismatch: expected ${metadata.rowCount}, found ${
+        rows.length - 1
+      }`,
+    );
+  }
 }
 
 async function validateReleaseContract(
@@ -1134,6 +3259,8 @@ async function validateReleaseContract(
     errors.push(`manifest.jurisdiction must be dc, found ${String(manifest.jurisdiction)}`);
   }
   validateUtcIsoTimestamp(manifest.exportedAt, "manifest.exportedAt", errors);
+  validateReleaseProvenance(manifest.provenance, errors);
+  validateManifestFileSummary(manifest.manifestFile, errors);
 
   const manifestGovGraph = readRecordField(manifest, "govGraph", "manifest", errors);
   if (manifestGovGraph) {
@@ -1171,6 +3298,29 @@ async function validateReleaseContract(
   ) {
     errors.push("manifest.govGraph must match govgraph_summary.json");
   }
+  const manifestReviewQueueCounts = readCountRecordField(
+    manifest,
+    "reviewQueueCounts",
+    "manifest",
+    errors,
+  );
+  if (manifestGovGraph && manifestReviewQueueCounts) {
+    const govGraphReviewQueueCounts = readCountRecordField(
+      manifestGovGraph,
+      "reviewQueueCounts",
+      "manifest.govGraph",
+      errors,
+    );
+    if (govGraphReviewQueueCounts) {
+      validateCountRecordAgreement(
+        govGraphReviewQueueCounts,
+        manifestReviewQueueCounts,
+        "manifest.govGraph.reviewQueueCounts",
+        "manifest.reviewQueueCounts",
+        errors,
+      );
+    }
+  }
   const readinessSummary = govGraphSummary ?? manifestGovGraph;
   if (readinessSummary) {
     validateNoGovGraphReleaseBlockers(
@@ -1200,6 +3350,25 @@ async function validateReleaseContract(
 
   await validateReleaseArtifactCounts(releaseRoot, manifest, outputs, errors);
   await validateSourceCoverageContract(releaseRoot, manifest, outputs, errors);
+}
+
+function validateManifestFileSummary(value: unknown, errors: string[]): void {
+  if (!isRecord(value)) {
+    errors.push("manifest.manifestFile must be an object");
+    return;
+  }
+  if (value.path !== "manifest.json") {
+    errors.push(`manifest.manifestFile.path must be manifest.json, found ${String(value.path)}`);
+  }
+  if (value.releaseAsset !== true) {
+    errors.push("manifest.manifestFile.releaseAsset must be true");
+  }
+  if (value.checksumListedInSha256Sums !== false) {
+    errors.push("manifest.manifestFile.checksumListedInSha256Sums must be false");
+  }
+  if (typeof value.note !== "string" || value.note.length === 0) {
+    errors.push("manifest.manifestFile.note must be a non-empty string");
+  }
 }
 
 async function validateReleaseArtifactCounts(
@@ -1236,6 +3405,24 @@ async function validateReleaseArtifactCounts(
         "counts.councilCommitteeMembership",
         "councilCommitteeMembership",
       ] as const,
+      ["dcAgenciesCsv", "counts.dcAgencies", "dcAgencies"] as const,
+      ["dcOfficesCsv", "counts.dcOffices", "dcOffices"] as const,
+      ["dcCouncilmembersCsv", "counts.dcCouncilmembers", "dcCouncilmembers"] as const,
+      ["dcCouncilCommitteesCsv", "counts.dcCouncilCommittees", "dcCouncilCommittees"] as const,
+      ["dcPublicBodiesCsv", "counts.dcPublicBodies", "dcPublicBodies"] as const,
+      [
+        "dcPublicBodyAffiliationsCsv",
+        "counts.dcPublicBodyAffiliations",
+        "dcPublicBodyAffiliations",
+      ] as const,
+      ["dcAncsCsv", "counts.dcAncs", "dcAncs"] as const,
+      ["dcSmdsCsv", "counts.dcSmds", "dcSmds"] as const,
+      ["dcSmdCommissionersCsv", "counts.dcSmdCommissioners", "dcSmdCommissioners"] as const,
+      ["dcWardsCsv", "counts.dcWards", "dcWards"] as const,
+      ["dcCourtsCsv", "counts.dcCourts", "dcCourts"] as const,
+      ["dcLegalAuthoritiesCsv", "counts.dcLegalAuthorities", "dcLegalAuthorities"] as const,
+      ["dcRelationshipsCsv", "counts.dcRelationships", "dcRelationships"] as const,
+      ["dcSourcesCsv", "counts.dcSources", "dcSources"] as const,
     ]
   ) {
     await validateCsvOutputRowCount(
@@ -1322,6 +3509,7 @@ async function validateCsvOutputRowCount(
     errors.push(`${outputPath} must contain a header row`);
     return;
   }
+  validateCsvHeaderContract(outputName, outputPath, rows, errors);
 
   validateIntegerAgreement(
     rows.length - 1,
@@ -1330,6 +3518,31 @@ async function validateCsvOutputRowCount(
     `${outputPath} data rows`,
     errors,
   );
+}
+
+function validateCsvHeaderContract(
+  outputName: string,
+  outputPath: string,
+  rows: string[][],
+  errors: string[],
+): void {
+  const expectedHeaders = RELEASE_CSV_HEADER_CONTRACTS[outputName as ReleaseOutputName];
+  if (!expectedHeaders) {
+    return;
+  }
+  if (!arraysEqual(rows[0], [...expectedHeaders])) {
+    errors.push(`${outputPath} headers must match the release CSV contract`);
+    return;
+  }
+  for (const [index, row] of rows.slice(1).entries()) {
+    if (row.length !== expectedHeaders.length) {
+      errors.push(
+        `${outputPath} row ${
+          index + 2
+        } has ${row.length} fields, expected ${expectedHeaders.length}`,
+      );
+    }
+  }
 }
 
 async function validateJsonArrayOutputCount(
@@ -1811,6 +4024,7 @@ function validateReviewPostureContract(
       "manifest.counts.reviewQueues",
       errors,
     );
+    validateReleaseOpenReviewQueueCounts("manifest.reviewQueueCounts", reviewQueueCounts, errors);
     validateIntegerAgreement(
       sumCountRecord(reviewQueueCounts),
       counts.reviewItems,
@@ -1915,6 +4129,23 @@ function validateExactCountRecordKeys(
   const expectedSortedKeys = [...expectedKeys].sort();
   if (!arraysEqual(actualKeys, expectedSortedKeys)) {
     errors.push(`${label} keys must be exactly ${expectedKeys.join(", ")}`);
+  }
+}
+
+function validateReleaseOpenReviewQueueCounts(
+  label: string,
+  counts: Record<string, number> | null,
+  errors: string[],
+): void {
+  if (!counts) {
+    return;
+  }
+  for (const queue of ["blocking", "actionable", "drafted"] as const) {
+    if ((counts[queue] ?? 0) !== 0) {
+      errors.push(
+        `${label}.${queue} must be 0 for release verification, found ${counts[queue]}`,
+      );
+    }
   }
 }
 
@@ -2112,6 +4343,11 @@ function validateGovGraphSummary(
   summary: Record<string, unknown>,
   errors: string[],
 ): void {
+  if (summary.jurisdiction !== "dc") {
+    errors.push(`${label}.jurisdiction must be dc, found ${String(summary.jurisdiction)}`);
+  }
+  validateUtcIsoTimestamp(summary.exportedAt, `${label}.exportedAt`, errors);
+
   for (
     const field of [
       "nodeCount",
@@ -2119,6 +4355,8 @@ function validateGovGraphSummary(
       "excludedNodeCount",
       "excludedEdgeCount",
       "blockedReviewItemCount",
+      "releaseBlockingReviewItemCount",
+      "nonBlockingDeferredReviewItemCount",
       "mappedRelationCount",
     ]
   ) {
@@ -2128,12 +4366,20 @@ function validateGovGraphSummary(
   const nodeKindCounts = readCountRecordField(summary, "nodeKindCounts", label, errors);
   const nodeCategoryCounts = readCountRecordField(summary, "nodeCategoryCounts", label, errors);
   const edgeVerbCounts = readCountRecordField(summary, "edgeVerbCounts", label, errors);
+  const reviewQueueCounts = readCountRecordField(summary, "reviewQueueCounts", label, errors);
   const blockedReviewCountsByCategory = readCountRecordField(
     summary,
     "blockedReviewCountsByCategory",
     label,
     errors,
   );
+  validateExactCountRecordKeys(
+    reviewQueueCounts,
+    REVIEW_QUEUES,
+    `${label}.reviewQueueCounts`,
+    errors,
+  );
+  validateReleaseOpenReviewQueueCounts(`${label}.reviewQueueCounts`, reviewQueueCounts, errors);
   if (nodeKindCounts) {
     validateIntegerAgreement(
       sumCountRecord(nodeKindCounts),
@@ -2152,6 +4398,13 @@ function validateGovGraphSummary(
       errors,
     );
   }
+  readCountRecordField(summary, "nonGraphLedgerEntryKinds", label, errors);
+  if (
+    typeof summary.nonGraphLedgerEntryNote !== "string" ||
+    summary.nonGraphLedgerEntryNote.length === 0
+  ) {
+    errors.push(`${label}.nonGraphLedgerEntryNote must be a non-empty string`);
+  }
   if (edgeVerbCounts) {
     validateIntegerAgreement(
       sumCountRecord(edgeVerbCounts),
@@ -2169,6 +4422,110 @@ function validateGovGraphSummary(
       `${label}.blockedReviewCountsByCategory total`,
       errors,
     );
+  }
+  if (typeof summary.blockedReviewItemCount === "number") {
+    validateIntegerAgreement(
+      summary.blockedReviewItemCount,
+      summary.releaseBlockingReviewItemCount,
+      `${label}.releaseBlockingReviewItemCount`,
+      `${label}.blockedReviewItemCount`,
+      errors,
+    );
+  }
+  if (reviewQueueCounts) {
+    validateIntegerAgreement(
+      reviewQueueCounts.deferred,
+      summary.nonBlockingDeferredReviewItemCount,
+      `${label}.nonBlockingDeferredReviewItemCount`,
+      `${label}.reviewQueueCounts.deferred`,
+      errors,
+    );
+  }
+  const reviewPosture = readRecordField(summary, "reviewPosture", label, errors);
+  if (reviewPosture) {
+    if (typeof summary.releaseBlockingReviewItemCount === "number") {
+      validateIntegerAgreement(
+        summary.releaseBlockingReviewItemCount,
+        reviewPosture.releaseBlockingReviewItemCount,
+        `${label}.reviewPosture.releaseBlockingReviewItemCount`,
+        `${label}.releaseBlockingReviewItemCount`,
+        errors,
+      );
+    }
+    if (typeof summary.nonBlockingDeferredReviewItemCount === "number") {
+      validateIntegerAgreement(
+        summary.nonBlockingDeferredReviewItemCount,
+        reviewPosture.nonBlockingDeferredReviewItemCount,
+        `${label}.reviewPosture.nonBlockingDeferredReviewItemCount`,
+        `${label}.nonBlockingDeferredReviewItemCount`,
+        errors,
+      );
+    }
+    if (typeof reviewPosture.note !== "string" || reviewPosture.note.length === 0) {
+      errors.push(`${label}.reviewPosture.note must be a non-empty string`);
+    }
+  }
+  const relationFieldDescriptions = readRecordField(
+    summary,
+    "relationFieldDescriptions",
+    label,
+    errors,
+  );
+  if (relationFieldDescriptions) {
+    for (const field of ["relationKind", "verb"]) {
+      if (
+        typeof relationFieldDescriptions[field] !== "string" ||
+        relationFieldDescriptions[field].length === 0
+      ) {
+        errors.push(`${label}.relationFieldDescriptions.${field} must be a non-empty string`);
+      }
+    }
+  }
+  const requiredDescriptionFields = {
+    nodeFieldDescriptions: [
+      "id",
+      "ledgerId",
+      "slug",
+      "name",
+      "category",
+      "kind",
+      "family",
+      "officialUrl",
+      "sourcePageUrl",
+      "legalAuthorityIds",
+      "sourceCitationCount",
+      "publicStatus",
+    ],
+    edgeFieldDescriptions: [
+      "id",
+      "from",
+      "to",
+      "relationKind",
+      "verb",
+      "citations",
+      "publicStatus",
+    ],
+    citationFieldDescriptions: ["source", "sourceRecordId", "locator", "url"],
+  };
+  for (const [fieldName, requiredFields] of Object.entries(requiredDescriptionFields)) {
+    const descriptions = readRecordField(summary, fieldName, label, errors);
+    if (!descriptions) {
+      continue;
+    }
+    for (const field of requiredFields) {
+      if (typeof descriptions[field] !== "string" || descriptions[field].length === 0) {
+        errors.push(`${label}.${fieldName}.${field} must be a non-empty string`);
+      }
+    }
+  }
+  if (!Array.isArray(summary.joinRules) || summary.joinRules.length === 0) {
+    errors.push(`${label}.joinRules must be a non-empty array`);
+  } else {
+    for (const [index, rule] of summary.joinRules.entries()) {
+      if (typeof rule !== "string" || rule.length === 0) {
+        errors.push(`${label}.joinRules[${index}] must be a non-empty string`);
+      }
+    }
   }
 
   const mappedRelationCounts = summary.mappedRelationCounts;
@@ -2241,6 +4598,91 @@ function validateUtcIsoTimestamp(value: unknown, label: string, errors: string[]
   }
 }
 
+function validateReleaseProvenance(value: unknown, errors: string[]): void {
+  if (!isRecord(value)) {
+    errors.push("manifest.provenance must be an object");
+    return;
+  }
+
+  validateNullablePattern(
+    value.gitHeadCommit,
+    "manifest.provenance.gitHeadCommit",
+    /^[0-9a-f]{40}$/,
+    "a 40-character git HEAD commit hash",
+    errors,
+  );
+  validateNullablePattern(
+    value.gitHeadRef,
+    "manifest.provenance.gitHeadRef",
+    /^refs\/[A-Za-z0-9._\/-]+$/,
+    "a git HEAD ref name",
+    errors,
+  );
+  validateNullablePattern(
+    value.gitHeadBranch,
+    "manifest.provenance.gitHeadBranch",
+    /^[A-Za-z0-9._\/-]+$/,
+    "a git HEAD branch name",
+    errors,
+  );
+
+  if (value.gitSource !== "git_metadata" && value.gitSource !== "unavailable") {
+    errors.push("manifest.provenance.gitSource must be git_metadata or unavailable");
+  }
+  if (
+    value.workingTreeStatus !== "clean" && value.workingTreeStatus !== "dirty" &&
+    value.workingTreeStatus !== "unknown"
+  ) {
+    errors.push("manifest.provenance.workingTreeStatus must be clean, dirty, or unknown");
+  }
+  if (
+    value.workingTreeChangedPathCount !== null &&
+    (typeof value.workingTreeChangedPathCount !== "number" ||
+      !Number.isInteger(value.workingTreeChangedPathCount) ||
+      value.workingTreeChangedPathCount < 0)
+  ) {
+    errors.push(
+      "manifest.provenance.workingTreeChangedPathCount must be null or a non-negative integer",
+    );
+  }
+  if (value.workingTreeStatus === "clean" && value.workingTreeChangedPathCount !== 0) {
+    errors.push(
+      "manifest.provenance.workingTreeChangedPathCount must be 0 when workingTreeStatus is clean",
+    );
+  }
+  if (value.workingTreeStatus === "dirty" && value.workingTreeChangedPathCount === 0) {
+    errors.push(
+      "manifest.provenance.workingTreeChangedPathCount must be positive when workingTreeStatus is dirty",
+    );
+  }
+  if (value.workingTreeStatus === "unknown" && value.workingTreeChangedPathCount !== null) {
+    errors.push(
+      "manifest.provenance.workingTreeChangedPathCount must be null when workingTreeStatus is unknown",
+    );
+  }
+  if (value.gitSource === "git_metadata" && typeof value.gitHeadCommit !== "string") {
+    errors.push("manifest.provenance.gitHeadCommit is required when gitSource is git_metadata");
+  }
+  if (value.gitSource === "unavailable" && value.gitHeadCommit !== null) {
+    errors.push("manifest.provenance.gitHeadCommit must be null when gitSource is unavailable");
+  }
+}
+
+function validateNullablePattern(
+  value: unknown,
+  label: string,
+  pattern: RegExp,
+  description: string,
+  errors: string[],
+): void {
+  if (value === null) {
+    return;
+  }
+  if (typeof value !== "string" || !pattern.test(value)) {
+    errors.push(`${label} must be null or ${description}`);
+  }
+}
+
 function buildReleaseReadme(input: {
   schemaVersion: number;
   jurisdiction: string;
@@ -2253,10 +4695,12 @@ function buildReleaseReadme(input: {
   sourceCoverageStatusCounts: Record<string, number>;
   sourceCoverageReleaseStatusCounts: Record<string, number>;
   sourceCoverageFamilyRollup: SourceCoverageFamilyRollup[];
+  provenance: ReleaseProvenance;
   entryKindCounts: Map<string, number>;
   relationKindCounts: Map<string, number>;
   relationExamples: RelationExample[];
   reviewPosture: ReviewPosture;
+  outputRowCounts: Partial<Record<ReleaseOutputName, number>>;
   govGraphSummary: {
     nodeCount: number;
     nodeKindCounts: Record<string, number>;
@@ -2266,6 +4710,8 @@ function buildReleaseReadme(input: {
     excludedNodeCount: number;
     excludedEdgeCount: number;
     blockedReviewItemCount: number;
+    releaseBlockingReviewItemCount: number;
+    nonBlockingDeferredReviewItemCount: number;
     mappedRelationCount: number;
     mappedRelationCounts: Array<{
       relationKind: string;
@@ -2274,128 +4720,113 @@ function buildReleaseReadme(input: {
     }>;
   };
 }): string {
+  const hasCollectedEmptyAuthority = input.sourceCoverageRows.some((row) =>
+    row[SOURCE_COVERAGE_COLUMN.source] === "dcgis.authorities" &&
+    row[SOURCE_COVERAGE_COLUMN.collectionStatus] === "collected_empty"
+  );
   return [
-    "# Civic Ledger release",
+    "# DC Civic Ledger",
     "",
-    "## Release notes",
-    "",
-    "Generated from committed Civic Ledger state.",
-    "Snapshots, records, review items, and workspace databases are not release truth.",
-    "Use `manifest.json` for machine-readable file names, counts, byte sizes, and SHA-256 checksums.",
-    "Because `manifest.json` contains the checksum table, it is not included in its own `outputFileMetadata`; that table covers release payload files and `README.md`.",
-    "`deno task civic release verify <release-root>` checks payload metadata plus schema version, release identity, artifact file/row counts, entity/relation kind rollups, zero GovGraph-blocking review items, review posture/category/deferred-description agreement, source coverage metadata/status/count/rollup agreement, and GovGraph summary/manifest agreement. Add `--json` for machine-readable validity, checked file count, and error details.",
-    "",
-    "## Summary",
+    "Download one CSV, or use SQLite/GovGraph JSON for joins.",
     "",
     `- Jurisdiction: ${input.jurisdiction}`,
-    `- Schema version: ${input.schemaVersion}`,
     `- Exported at: ${input.exportedAt}`,
-    `- Entries: ${input.entryCount}`,
-    `- Relations: ${input.relationCount}`,
-    `- Citations: ${input.citationCount}`,
-    `- Source rows in \`sources.csv\`: ${input.sourceCount}`,
+    "- Export provenance: see [manifest.json](manifest.json)",
+    `- Entries / relations / citations: ${input.entryCount} / ${input.relationCount} / ${input.citationCount}`,
+    `- GovGraph nodes / edges: ${input.govGraphSummary.nodeCount} / ${input.govGraphSummary.edgeCount}`,
+    `- Release-blocking review items: ${input.govGraphSummary.releaseBlockingReviewItemCount}`,
     "",
-    "## Scope and caveats",
+    "## Start Here",
     "",
-    "- This alpha release is a reproducible checkpoint from committed state, not proof that a fresh live scrape will reproduce identical rows.",
-    "- It is source-backed DC civic structure data, not a complete civic database, public website, or legal research product.",
-    "- Legal authority graph facts are limited to explicit D.C. Code, D.C. Law, and Mayor's Order locators found in source-derived citations.",
-    "- Unsupported appoints, oversees, advises, administers, and enforces claims remain out of scope unless a source explicitly supports them.",
-    `- Release-blocking review items in GovGraph projection: ${input.govGraphSummary.blockedReviewItemCount}`,
+    "- Agencies and offices: `dc_agencies.csv`, `dc_offices.csv`",
+    "- Elected officials: `dc_councilmembers.csv`, `dc_wards.csv`",
+    "- Council committees: `dc_council_committees.csv`, `dc_council_committee_memberships.csv`",
+    "- ANCs and SMDs: `dc_ancs.csv`, `dc_smds.csv`",
+    "- Boards and commissions: `dc_public_bodies.csv`, `dc_public_body_affiliations.csv`",
+    "- Legal authority and links: `dc_legal_authorities.csv`, `dc_relationships.csv`",
+    "- Sources and caveats: `dc_sources.csv`",
+    "- Bulk joins: `ledger.sqlite`",
+    "- GovGraph: start with `govgraph_summary.json`, then use `govgraph_nodes.json` and `govgraph_edges.json`.",
     "",
-    "## Source coverage",
+    "## Public CSVs",
     "",
-    `- Source coverage rows: ${input.sourceCoverageRows.length}`,
-    "- Collection statuses:",
-    ...sourceCoverageCountLines(input.sourceCoverageStatusCounts),
-    "- Release statuses:",
-    ...sourceCoverageCountLines(input.sourceCoverageReleaseStatusCounts),
-    `- Source coverage families: ${input.sourceCoverageFamilyRollup.length}`,
-    "- Family rollup:",
-    ...sourceCoverageFamilyRollupLines(input.sourceCoverageFamilyRollup),
-    ...notCollectedSourceCoverageLines(input.sourceCoverageRows),
-    "- `source_coverage.csv` distinguishes publisher, access method, source URL, catalog confidence, collection status, reader/interpreter wiring, release status, scope, contribution, exclusions, and caveats.",
-    "- Catalog confidence is confidence in the source-inventory row and access path, not a completeness claim about the exported civic facts.",
-    "- `manifest.json` records collection counts under `sourceCoverageStatusCounts` / `counts.sourceCoverageStatuses`, release counts under `sourceCoverageReleaseStatusCounts` / `counts.sourceCoverageReleaseStatuses`, and category rollups under `sourceCoverageFamilyRollup`.",
+    ...releaseReadmeAssetOutputLines("public_csv", input.outputRowCounts),
     "",
-    "## Legal scope",
+    "## Machine Files",
     "",
-    "- Legal-source entries (`dc.legal_source`) are official entrypoint anchors for inspection; they are not full legal text ingestion.",
-    "- Legal authority entries (`dc.legal_authority`) are promoted only from explicit D.C. Code, D.C. Law, and Mayor's Order locators already present in source-derived citations.",
-    "- Citations may preserve evidence, URLs, or out-of-scope locators without creating legal authority entries.",
-    "- GovGraph legal-authority nodes expose canonical official Code/Law URLs when the locator maps to one; Mayor's Order authorities remain locator evidence without canonical official URLs in this release.",
-    ...deferredLegalSourceInventoryLines(input.sourceCoverageRows),
+    ...releaseReadmeOutputLines("machine_json", input.outputRowCounts),
+    ...releaseReadmeOutputLines("database", input.outputRowCounts),
+    "- [manifest.json](manifest.json) - file sizes, hashes, row counts, columns, and asset categories.",
+    "- [SHA256SUMS](SHA256SUMS) - checksums for upload assets except `manifest.json` and `SHA256SUMS`.",
     "",
-    "## Entity taxonomy",
+    "## Notes",
     "",
-    "- Entry kinds are counts of exported ledger entries, not claims that every matching DC entity has been discovered.",
-    "- Zero-row or not-yet-automated source families remain visible in `source_coverage.csv`.",
-    "- D.C. is treated as a District jurisdiction; the alpha does not emit synthetic county, state, federal-branch, or city/county placeholder hierarchy without source-backed entries.",
-    ...entryKindSummaryLines(input.entryKindCounts, input.sourceCoverageRows),
+    "- Blank cells mean no current source-backed value.",
+    "- Officeholder names are included for elected seats; contact details are not.",
+    "- `dc_councilmembers.csv` is the 13-member elected Council roster; `dc.council` in GovGraph counts means council-type public bodies.",
+    "- Ledger entries can exceed GovGraph nodes because source/audit anchor kinds listed in `govgraph_summary.json` are not graph nodes.",
+    "- Legal rows use explicit D.C. Code, D.C. Law, and Mayor's Order locators.",
+    "- Committee `member_count` includes chairs; Committee of the Whole has all 13 Councilmembers.",
+    "- Public-body near-duplicates stay distinct unless a tracked merge or suppression says otherwise.",
+    "- `manifest.json` lists upload assets, row counts, columns, and hashes.",
+    "- `ledger.sqlite` includes the public tables plus audit tables; start with `release_table_catalog`.",
+    ...(hasCollectedEmptyAuthority
+      ? [
+        "- DCGIS authorities were collected empty; this release has zero `dc.authority` rows from that source.",
+      ]
+      : []),
     "",
-    "## Relationship evidence",
+    "## Release Checks",
     "",
-    "- Relation kinds are emitted from source-derived records plus tracked revisions; names describe release evidence, not exhaustive civic powers.",
-    ...relationKindSummaryLines(input.relationKindCounts),
-    "- Relation examples:",
-    ...relationExampleSummaryLines(input.relationExamples),
-    "- Contract-facing relationship terms:",
-    ...contractRelationTermLines(),
-    "",
-    "## Review posture",
-    "",
-    "- Review items are regenerated from committed state and current findings during export.",
-    "- Deferred items are parked because they do not currently affect public output or the active release decision path.",
-    "- `manifest.json` records review summaries under `reviewQueueCounts`, `reviewCategoryCounts`, `reviewDeferredGroups`, and matching `counts` fields for machine-readable release checks, including descriptions for each deferred group.",
-    `- Review items: ${input.reviewPosture.total}`,
-    ...reviewQueueSummaryLines(input.reviewPosture),
-    "- Review queue notes:",
-    ...reviewQueueNoteLines(),
-    "- Review categories:",
-    ...reviewCategorySummaryLines(input.reviewPosture),
-    "- Review category notes:",
-    ...reviewCategoryNoteLines(input.reviewPosture),
-    "- Deferred review groups:",
-    ...deferredReviewGroupSummaryLines(input.reviewPosture),
-    ...deferredReviewGroupNoteLines(input.reviewPosture),
-    "",
-    "## Public projection",
-    "",
-    "- `govgraph_nodes.json` and `govgraph_edges.json` are downstream-friendly projections from the same committed state.",
-    `- Projected nodes: ${input.govGraphSummary.nodeCount}`,
-    "- Projected node categories:",
-    ...summaryCountLines(input.govGraphSummary.nodeCategoryCounts),
-    `- Projected edges: ${input.govGraphSummary.edgeCount}`,
-    `- Excluded projection nodes: ${input.govGraphSummary.excludedNodeCount}`,
-    `- Excluded projection edges: ${input.govGraphSummary.excludedEdgeCount}`,
-    `- Projected relation labels remapped for public use: ${input.govGraphSummary.mappedRelationCount}`,
-    "- Remapped relation labels:",
-    ...mappedRelationSummaryLines(input.govGraphSummary.mappedRelationCounts),
-    "- Unsupported or stale relation verbs remain reviewable in raw ledger artifacts but are excluded from GovGraph edges unless they map to an alpha-supported public relationship.",
-    "- Projected edge verbs:",
-    ...summaryCountLines(input.govGraphSummary.edgeVerbCounts),
-    "- `govgraph_summary.json` reports projection counts, node kind/category counts, edge verb counts, mapped relation label counts, excluded nodes/edges, and release-blocking review categories.",
-    "",
-    "## Artifacts",
-    "",
-    "- `entries.csv` - ledger entries with kind, name, attributes, and citations.",
-    "- `relations.csv` - source-backed relation rows between entries.",
-    "- `citations.csv` - entry and relation citation details.",
-    "- `sources.csv` - collected source snapshot and citation counts.",
-    "- `source_coverage.csv` - source inventory publisher/access metadata, catalog confidence, collection/release status, scope, contribution, exclusions, and caveats.",
-    "- `README.md` - human-readable release summary and caveat trail.",
-    "- `dc_board_affiliations.csv` - board-to-agency affiliation view.",
-    "- `dc_commission_affiliations.csv` - commission-to-agency affiliation view.",
-    "- `dc_authority_affiliations.csv` - authority-to-agency affiliation view.",
-    "- `dc_anc_smd_structure.csv` - ANC, SMD, commissioner-seat structure view.",
-    "- `dc_council_committee_membership.csv` - Council committee membership and chair view.",
-    "- `govgraph_nodes.json` - downstream-friendly public node projection.",
-    "- `govgraph_edges.json` - downstream-friendly public edge projection.",
-    "- `govgraph_summary.json` - projection counts, node kind/category counts, edge verbs, mapped relation label counts, excluded nodes/edges, and blocking review counts.",
-    "- `ledger.sqlite` - query-ready SQLite package for the release files and DC-specific views.",
-    "- `manifest.json` - machine-readable release manifest; it describes the manifest-managed outputs but is not included in its own checksum table.",
+    `Review queue: ${input.reviewPosture.total} total; ${input.reviewPosture.queues.blocking} blocking; ${input.reviewPosture.queues.applied} applied; ${input.reviewPosture.queues.deferred} deferred.`,
+    `Sources: ${input.sourceCoverageRows.length}; exported / inventory-only / collected-empty ${
+      input.sourceCoverageReleaseStatusCounts.exported ?? 0
+    } / ${input.sourceCoverageReleaseStatusCounts.inventory_only ?? 0} / ${
+      input.sourceCoverageReleaseStatusCounts.collected_empty ?? 0
+    }.`,
+    "Verify downloaded assets with `sha256sum -c SHA256SUMS` or `shasum -a 256 -c SHA256SUMS`.",
     "",
   ].join("\n");
+}
+
+function releaseReadmeOutputLines(
+  category: ReleaseOutputCategory,
+  outputRowCounts: Partial<Record<ReleaseOutputName, number>>,
+): string[] {
+  return RELEASE_OUTPUT_ORDER
+    .filter((outputName) => RELEASE_OUTPUT_CATALOG_METADATA[outputName].category === category)
+    .map((outputName) => {
+      const path = RELEASE_OUTPUT_PATHS[outputName];
+      const description = RELEASE_OUTPUT_CATALOG_METADATA[outputName].description;
+      return releaseReadmeOutputLine(path, description, outputRowCounts[outputName]);
+    });
+}
+
+function releaseReadmeAssetOutputLines(
+  category: ReleaseOutputCategory,
+  outputRowCounts: Partial<Record<ReleaseOutputName, number>>,
+): string[] {
+  return RELEASE_OUTPUT_ORDER
+    .filter((outputName) => {
+      const metadata = RELEASE_OUTPUT_CATALOG_METADATA[outputName];
+      return metadata.category === category && metadata.releaseAsset;
+    })
+    .map((outputName) => {
+      const path = RELEASE_OUTPUT_PATHS[outputName];
+      const description = RELEASE_OUTPUT_CATALOG_METADATA[outputName].description;
+      return releaseReadmeOutputLine(path, description, outputRowCounts[outputName]);
+    });
+}
+
+function releaseReadmeOutputLine(
+  path: string,
+  description: string,
+  rowCount?: number,
+): string {
+  const rowLabel = typeof rowCount === "number"
+    ? ` (${rowCount} row${rowCount === 1 ? "" : "s"})`
+    : "";
+  return `- [${path}](${path})${rowLabel} - ${description}`;
 }
 
 function buildReviewPosture(reviewItems: ReviewItem[]): ReviewPosture {
@@ -2426,17 +4857,13 @@ function buildReviewPosture(reviewItems: ReviewItem[]): ReviewPosture {
   };
 }
 
-function reviewQueueSummaryLines(posture: ReviewPosture): string[] {
-  return REVIEW_QUEUES.map((queue) => `- ${queue}: ${posture.queues[queue]}`);
-}
-
 function reviewQueueNoteLines(): string[] {
   return [
     "  - blocking: Open items that would block state generation or current public-output release readiness.",
     "  - actionable: Open items that still need an operator decision, but do not currently block the active release path.",
     "  - drafted: A draft revision exists; validate, apply, or revise it before treating the decision as tracked.",
     "  - applied: A tracked revision or imported review decision already accounts for the item and is retained as audit evidence.",
-    "  - deferred: Parked, non-blocking work outside current alpha scope or without public-output impact.",
+    "  - deferred: Parked, non-blocking work outside current release scope or without public-output impact.",
   ];
 }
 
@@ -2547,6 +4974,156 @@ function buildSourceCoverageFamilyRollup(rows: string[][]): SourceCoverageFamily
       collectionStatuses: sortedCountRecord(rollup.collectionStatuses),
       releaseStatuses: sortedCountRecord(rollup.releaseStatuses),
     }));
+}
+
+async function buildReleaseProvenance(): Promise<ReleaseProvenance> {
+  const git = await readGitMetadata(Deno.cwd());
+  if (!git) {
+    return {
+      gitHeadCommit: null,
+      gitHeadRef: null,
+      gitHeadBranch: null,
+      gitSource: "unavailable",
+      workingTreeStatus: "unknown",
+      workingTreeChangedPathCount: null,
+    };
+  }
+  const workingTree = await readGitWorkingTreeStatus(git.workTree);
+
+  return {
+    gitHeadCommit: git.commit,
+    gitHeadRef: git.ref,
+    gitHeadBranch: git.branch,
+    gitSource: "git_metadata",
+    workingTreeStatus: workingTree.status,
+    workingTreeChangedPathCount: workingTree.changedPathCount,
+  };
+}
+
+async function readGitMetadata(
+  startDir: string,
+): Promise<
+  { commit: string; ref: string | null; branch: string | null; workTree: string } | null
+> {
+  const git = await findGitDirectory(startDir);
+  if (!git) {
+    return null;
+  }
+
+  let head: string;
+  try {
+    head = (await Deno.readTextFile(join(git.gitDir, "HEAD"))).trim();
+  } catch {
+    return null;
+  }
+
+  if (/^[0-9a-f]{40}$/.test(head)) {
+    return { commit: head, ref: null, branch: null, workTree: git.workTree };
+  }
+
+  const refPrefix = "ref: ";
+  if (!head.startsWith(refPrefix)) {
+    return null;
+  }
+
+  const ref = head.slice(refPrefix.length).trim();
+  const commit = await readGitRefCommit(git.gitDir, ref);
+  if (!commit) {
+    return null;
+  }
+
+  const branchPrefix = "refs/heads/";
+  return {
+    commit,
+    ref,
+    branch: ref.startsWith(branchPrefix) ? ref.slice(branchPrefix.length) : null,
+    workTree: git.workTree,
+  };
+}
+
+async function readGitWorkingTreeStatus(
+  workTree: string,
+): Promise<{ status: ReleaseProvenance["workingTreeStatus"]; changedPathCount: number | null }> {
+  try {
+    const command = new Deno.Command("git", {
+      args: ["-C", workTree, "status", "--porcelain=v1", "--untracked-files=all"],
+    });
+    const output = await command.output();
+    if (!output.success) {
+      return { status: "unknown", changedPathCount: null };
+    }
+    const statusText = new TextDecoder().decode(output.stdout).trim();
+    if (statusText.length === 0) {
+      return { status: "clean", changedPathCount: 0 };
+    }
+    const changedPathCount = statusText.split(/\r?\n/).filter((line) => line.length > 0).length;
+    return { status: "dirty", changedPathCount };
+  } catch {
+    return { status: "unknown", changedPathCount: null };
+  }
+}
+
+async function findGitDirectory(
+  startDir: string,
+): Promise<{ gitDir: string; workTree: string } | null> {
+  let current = startDir;
+  while (true) {
+    const dotGit = join(current, ".git");
+    try {
+      const info = await Deno.stat(dotGit);
+      if (info.isDirectory) {
+        return { gitDir: dotGit, workTree: current };
+      }
+      if (info.isFile) {
+        const gitFile = await Deno.readTextFile(dotGit);
+        const prefix = "gitdir:";
+        const line = gitFile.trim();
+        if (line.startsWith(prefix)) {
+          const rawPath = line.slice(prefix.length).trim();
+          return {
+            gitDir: isAbsolute(rawPath) ? rawPath : join(current, rawPath),
+            workTree: current,
+          };
+        }
+      }
+    } catch {
+      // Keep walking upward until the filesystem root.
+    }
+
+    const parent = dirname(current);
+    if (parent === current) {
+      return null;
+    }
+    current = parent;
+  }
+}
+
+async function readGitRefCommit(gitDir: string, ref: string): Promise<string | null> {
+  try {
+    const commit = (await Deno.readTextFile(join(gitDir, ref))).trim();
+    if (/^[0-9a-f]{40}$/.test(commit)) {
+      return commit;
+    }
+  } catch {
+    // Fall through to packed refs.
+  }
+
+  try {
+    const packedRefs = await Deno.readTextFile(join(gitDir, "packed-refs"));
+    for (const line of packedRefs.split(/\r?\n/)) {
+      if (line.startsWith("#") || line.startsWith("^") || line.trim().length === 0) {
+        continue;
+      }
+      const [commit, packedRef] = line.trim().split(/\s+/, 2);
+      if (packedRef === ref && /^[0-9a-f]{40}$/.test(commit)) {
+        return commit;
+      }
+    }
+  } catch {
+    // No packed refs available.
+  }
+
+  return null;
 }
 
 function sourceCoverageCountLines(counts: Record<string, number>): string[] {
@@ -2660,7 +5237,7 @@ function relationExampleSummaryLines(examples: RelationExample[]): string[] {
   return examples.map((example) => {
     const evidence = example.source
       ? ` (source: ${example.source}:${example.sourceRecordId})`
-      : " (source: inspect citations.csv)";
+      : " (source: inspect _local/ledger_citations.csv)";
     return `  - ${example.kind}: ${example.from} -> ${example.to}${evidence}`;
   });
 }
@@ -2674,7 +5251,7 @@ function contractRelationTermLines(): string[] {
     "  - elected / office holder: `dc.relation:holds` links people to sourced elected-office entries; `dc.relation:represents` links sourced people, seats, or areas to wards and SMDs.",
     "  - agency / department / office: entity kind plus `dc.relation:reports_to` and `dc.relation:part_of` express explicit hierarchy when source text names it.",
     "  - board / commission / council / authority affiliation: `dc.relation:governs` captures sourced governing or administering agency labels and is projected as `administered_by` only for safe agency or office targets.",
-    "  - advisory / appointing / oversight / enforcement powers: alpha does not infer `advises`, `appoints`, `oversees`, `administers`, or `enforces` edges from names, membership text, or broad enabling prose.",
+    "  - advisory / appointing / oversight / enforcement powers: this release does not infer `advises`, `appoints`, `oversees`, `administers`, or `enforces` edges from names, membership text, or broad enabling prose.",
   ];
 }
 
@@ -2691,7 +5268,7 @@ function relationKindSummaryLines(relationKindCounts: Map<string, number>): stri
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([kind, count]) => {
       const description = dcRelationDescription(kind) ??
-        "Source-backed relation kind; inspect relations.csv and citations.csv before broad use.";
+        "Source-backed relation kind; inspect _local/ledger_relations.csv and _local/ledger_citations.csv before broad use.";
       return `- ${kind}: ${count} - ${description}`;
     });
 }
@@ -2722,11 +5299,11 @@ function entryKindDescription(kind: string, count: number, sourceCoverageRows: s
     count === 0 &&
     sourceCoverageStatus(sourceCoverageRows, "dcgis.authorities") === "collected_empty"
   ) {
-    return "Authority source is collected-empty in this release; see source_coverage.csv for the live-source caveat.";
+    return "Authority source is collected-empty in this release; see _local/source_coverage.csv for the live-source caveat.";
   }
 
   return dcEntityKindDescription(kind) ??
-    "Ledger entry kind; inspect entries.csv for source-specific citations.";
+    "Ledger entry kind; inspect _local/ledger_entries.csv for source-specific citations.";
 }
 
 function sourceCoverageStatus(sourceCoverageRows: string[][], source: string): string | undefined {
@@ -2899,24 +5476,364 @@ function safeJsonParse<T>(value: string | null, fallback: T): T {
 async function buildOutputFileMetadata(
   releaseRoot: string,
   outputs: Record<string, string>,
-): Promise<Record<string, { path: string; byteSize: number; sha256: string }>> {
+  outputRowCounts: Partial<Record<ReleaseOutputName, number>>,
+): Promise<Record<string, OutputFileMetadata>> {
   const metadata = await Promise.all(
     Object.entries(outputs)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(async ([outputName, outputPath]) => {
         const bytes = await Deno.readFile(join(releaseRoot, outputPath));
         const digest = await crypto.subtle.digest("SHA-256", bytes);
+        const columns = RELEASE_CSV_HEADER_CONTRACTS[outputName as ReleaseOutputName];
         return [
           outputName,
           {
             path: outputPath,
             byteSize: bytes.byteLength,
             sha256: hexDigest(digest),
+            ...(columns
+              ? {
+                rowCount: outputRowCounts[outputName as ReleaseOutputName] ?? 0,
+                columnCount: columns.length,
+                columns: [...columns],
+              }
+              : {}),
           },
         ] as const;
       }),
   );
   return Object.fromEntries(metadata);
+}
+
+function buildReleaseOutputCatalog(
+  outputs: Record<string, string>,
+  outputFileMetadata: Record<string, OutputFileMetadata>,
+): ReleaseOutputCatalogItem[] {
+  return Object.entries(outputs)
+    .sort(([left], [right]) => {
+      const leftMetadata = releaseOutputCatalogMetadata(left);
+      const rightMetadata = releaseOutputCatalogMetadata(right);
+      const leftCategoryOrder = releaseOutputCategoryOrder(leftMetadata?.category);
+      const rightCategoryOrder = releaseOutputCategoryOrder(rightMetadata?.category);
+      const leftOutputOrder = releaseOutputOrder(left);
+      const rightOutputOrder = releaseOutputOrder(right);
+      return leftCategoryOrder - rightCategoryOrder || leftOutputOrder - rightOutputOrder ||
+        left.localeCompare(right);
+    })
+    .map(([outputName, path]) => {
+      const metadata = releaseOutputCatalogMetadata(outputName);
+      if (!metadata) {
+        throw new Error(`missing release output catalog metadata for ${outputName}`);
+      }
+      const fileMetadata = outputFileMetadata[outputName];
+      if (!fileMetadata) {
+        throw new Error(`missing release output file metadata for ${outputName}`);
+      }
+      return {
+        outputName,
+        path,
+        category: metadata.category,
+        releaseAsset: metadata.releaseAsset,
+        description: metadata.description,
+        byteSize: fileMetadata.byteSize,
+        sha256: fileMetadata.sha256,
+        ...(typeof fileMetadata.rowCount === "number" ? { rowCount: fileMetadata.rowCount } : {}),
+        ...(typeof fileMetadata.columnCount === "number"
+          ? { columnCount: fileMetadata.columnCount }
+          : {}),
+        ...(Array.isArray(fileMetadata.columns) ? { columns: fileMetadata.columns } : {}),
+      };
+    });
+}
+
+function buildReleaseAssetIndex(outputCatalog: ReleaseOutputCatalogItem[]): ReleaseAssetIndex {
+  const assetItems = outputCatalog.filter((item) => item.releaseAsset);
+  const categories = assetItems.reduce<Record<string, number>>((counts, item) => {
+    counts[item.category] = (counts[item.category] ?? 0) + 1;
+    return counts;
+  }, { machine_json: 1 });
+  return {
+    paths: [...assetItems.map((item) => item.path), "manifest.json"],
+    outputNames: [...assetItems.map((item) => item.outputName), "manifestJson"],
+    items: [
+      ...assetItems.map((item) => ({
+        outputName: item.outputName,
+        path: item.path,
+        category: item.category,
+        releaseAsset: true as const,
+        description: item.description,
+        byteSize: item.byteSize,
+        sha256: item.sha256,
+        ...(typeof item.rowCount === "number" ? { rowCount: item.rowCount } : {}),
+        ...(typeof item.columnCount === "number" ? { columnCount: item.columnCount } : {}),
+        ...(Array.isArray(item.columns) ? { columns: item.columns } : {}),
+      })),
+      {
+        outputName: "manifestJson",
+        path: "manifest.json",
+        category: "machine_json",
+        releaseAsset: true,
+        description: "Release manifest with file sizes, hashes, row counts, and asset categories.",
+      },
+    ],
+    categories,
+    note: "Upload these files as separate GitHub release assets.",
+    count: assetItems.length + 1,
+  };
+}
+
+function buildLocalOnlyOutputIndex(
+  outputCatalog: ReleaseOutputCatalogItem[],
+): LocalOnlyOutputIndex {
+  const localOnlyItems = outputCatalog.filter((item) => !item.releaseAsset);
+  const categories = localOnlyItems.reduce<Record<string, number>>((counts, item) => {
+    counts[item.category] = (counts[item.category] ?? 0) + 1;
+    return counts;
+  }, {});
+  return {
+    paths: localOnlyItems.map((item) => item.path),
+    outputNames: localOnlyItems.map((item) => item.outputName),
+    items: localOnlyItems.map((item) => ({
+      outputName: item.outputName,
+      path: item.path,
+      category: item.category,
+      description: item.description,
+      ...(typeof item.rowCount === "number" ? { rowCount: item.rowCount } : {}),
+      ...(typeof item.columnCount === "number" ? { columnCount: item.columnCount } : {}),
+      ...(Array.isArray(item.columns) ? { columns: item.columns } : {}),
+    })),
+    categories,
+    note:
+      "Kept under _local and bundled into ledger.sqlite for audit; do not upload as separate GitHub assets.",
+    count: localOnlyItems.length,
+  };
+}
+
+function buildReleaseStartHere(
+  outputCatalog: ReleaseOutputCatalogItem[],
+  releaseAssets: ReleaseAssetIndex,
+  localOnlyOutputs: LocalOnlyOutputIndex,
+): ReleaseStartHere {
+  const publicCsvCount =
+    outputCatalog.filter((item) => item.category === "public_csv" && item.releaseAsset).length;
+  return {
+    primaryReadme: "README.md",
+    recommendedEntryPoints: [
+      {
+        label: "Download a CSV",
+        path: "README.md",
+        note: "Short release index with row counts and file descriptions.",
+      },
+      {
+        label: "Check file metadata",
+        path: "manifest.json",
+        note: "Assets, local audit outputs, hashes, row counts, and columns.",
+      },
+      {
+        label: "Query SQLite",
+        path: "ledger.sqlite",
+        note: "Open release_table_catalog first for table groups, row counts, and columns.",
+      },
+      {
+        label: "Use graph JSON",
+        path: "govgraph_summary.json",
+        note: "Field descriptions and join rules for govgraph_nodes.json and govgraph_edges.json.",
+      },
+    ],
+    releaseAssetCount: releaseAssets.count,
+    publicCsvCount,
+    localAuditOutputCount: localOnlyOutputs.count,
+    sqliteCatalogTable: "release_table_catalog",
+    govGraphSchemaFile: "govgraph_summary.json",
+  };
+}
+
+function buildSqliteTableIndex(): SqliteTableIndex {
+  return {
+    description:
+      "ledger.sqlite bundles public tables, audit tables, helper tables, and release_table_catalog.",
+    metadataTables: ["release_table_catalog"],
+    publicTables: RELEASE_OUTPUT_ORDER
+      .filter((outputName) => {
+        const metadata = RELEASE_OUTPUT_CATALOG_METADATA[outputName];
+        return metadata.category === "public_csv" && metadata.releaseAsset;
+      })
+      .map((outputName) => csvOutputTableName(RELEASE_OUTPUT_PATHS[outputName])),
+    traceabilityTables: [
+      "ledger_entries",
+      "ledger_relations",
+      "ledger_citations",
+      "source_counts",
+      "source_coverage",
+    ],
+    compatibilityTables: RELEASE_OUTPUT_ORDER
+      .filter((outputName) =>
+        RELEASE_OUTPUT_CATALOG_METADATA[outputName].category === "compatibility_csv"
+      )
+      .map((outputName) => csvOutputTableName(RELEASE_OUTPUT_PATHS[outputName])),
+    rawLedgerTables: ["entries", "relations", "citations", "sources"],
+  };
+}
+
+function csvOutputTableName(path: string): string {
+  const fileName = path.split(/[\\/]+/).at(-1) ?? path;
+  return fileName.endsWith(".csv") ? fileName.slice(0, -".csv".length) : fileName;
+}
+
+function buildSqliteTableCatalogRows(
+  outputRowCounts: Partial<Record<ReleaseOutputName, number>>,
+): Array<Array<string | number | null>> {
+  const metadataRows: SqliteTableCatalogRow[] = [{
+    tableName: "release_table_catalog",
+    tableGroup: "metadata",
+    tableKind: "table",
+    releasePath: "",
+    isReleaseAsset: false,
+    rowCount: undefined,
+    columnCount: 9,
+    columnsJson: JSON.stringify([
+      "table_name",
+      "table_group",
+      "table_kind",
+      "release_path",
+      "is_release_asset",
+      "row_count",
+      "column_count",
+      "columns_json",
+      "description",
+    ]),
+    description: "SQLite table catalog with release path, public asset, row, and column metadata.",
+  }];
+
+  const outputRows = RELEASE_OUTPUT_ORDER
+    .filter((outputName) => {
+      const metadata = RELEASE_OUTPUT_CATALOG_METADATA[outputName];
+      return metadata.category === "public_csv" || metadata.category === "traceability_csv" ||
+        metadata.category === "compatibility_csv";
+    })
+    .map((outputName): SqliteTableCatalogRow => {
+      const metadata = RELEASE_OUTPUT_CATALOG_METADATA[outputName];
+      const path = RELEASE_OUTPUT_PATHS[outputName];
+      return {
+        tableName: csvOutputTableName(path),
+        tableGroup: sqliteTableGroupForOutput(metadata.category),
+        tableKind: "table",
+        releasePath: path,
+        isReleaseAsset: metadata.releaseAsset,
+        rowCount: outputRowCounts[outputName],
+        columnCount: RELEASE_CSV_HEADER_CONTRACTS[outputName]?.length,
+        columnsJson: JSON.stringify(RELEASE_CSV_HEADER_CONTRACTS[outputName] ?? []),
+        description: metadata.description,
+      };
+    });
+
+  const rawLedgerRows: SqliteTableCatalogRow[] = [
+    {
+      tableName: "entries",
+      tableGroup: "raw_ledger",
+      tableKind: "view",
+      releasePath: "",
+      isReleaseAsset: false,
+      rowCount: outputRowCounts.entriesCsv,
+      columnCount: releaseCsvColumnCount("entriesCsv"),
+      columnsJson: JSON.stringify(RELEASE_CSV_HEADER_CONTRACTS.entriesCsv ?? []),
+      description: "Short alias for ledger_entries inside ledger.sqlite.",
+    },
+    {
+      tableName: "relations",
+      tableGroup: "raw_ledger",
+      tableKind: "view",
+      releasePath: "",
+      isReleaseAsset: false,
+      rowCount: outputRowCounts.relationsCsv,
+      columnCount: releaseCsvColumnCount("relationsCsv"),
+      columnsJson: JSON.stringify(RELEASE_CSV_HEADER_CONTRACTS.relationsCsv ?? []),
+      description: "Short alias for ledger_relations inside ledger.sqlite.",
+    },
+    {
+      tableName: "citations",
+      tableGroup: "raw_ledger",
+      tableKind: "view",
+      releasePath: "",
+      isReleaseAsset: false,
+      rowCount: outputRowCounts.citationsCsv,
+      columnCount: releaseCsvColumnCount("citationsCsv"),
+      columnsJson: JSON.stringify(RELEASE_CSV_HEADER_CONTRACTS.citationsCsv ?? []),
+      description: "Short alias for ledger_citations inside ledger.sqlite.",
+    },
+    {
+      tableName: "sources",
+      tableGroup: "raw_ledger",
+      tableKind: "view",
+      releasePath: "",
+      isReleaseAsset: false,
+      rowCount: outputRowCounts.sourcesCsv,
+      columnCount: releaseCsvColumnCount("sourcesCsv"),
+      columnsJson: JSON.stringify(RELEASE_CSV_HEADER_CONTRACTS.sourcesCsv ?? []),
+      description: "Short alias for source_counts inside ledger.sqlite.",
+    },
+  ];
+
+  const catalogRows = [...metadataRows, ...outputRows, ...rawLedgerRows];
+  metadataRows[0].rowCount = catalogRows.length;
+  return catalogRows.map((row) => [
+    row.tableName,
+    row.tableGroup,
+    row.tableKind,
+    row.releasePath,
+    row.isReleaseAsset ? "1" : "0",
+    row.rowCount ?? null,
+    row.columnCount ?? null,
+    row.columnsJson ?? null,
+    row.description,
+  ]);
+}
+
+function releaseCsvColumnCount(outputName: ReleaseOutputName): number | undefined {
+  return RELEASE_CSV_HEADER_CONTRACTS[outputName]?.length;
+}
+
+function sqliteTableGroupForOutput(
+  category: ReleaseOutputCategory,
+): SqliteTableCatalogRow["tableGroup"] {
+  if (category === "public_csv") {
+    return "public";
+  }
+  if (category === "traceability_csv") {
+    return "traceability";
+  }
+  if (category === "compatibility_csv") {
+    return "compatibility";
+  }
+  throw new Error(`no SQLite table group for release output category ${category}`);
+}
+
+function buildReleaseSha256Sums(outputCatalog: ReleaseOutputCatalogItem[]): string {
+  return outputCatalog
+    .filter((item) => item.releaseAsset)
+    .sort((left, right) =>
+      releaseOutputOrder(left.outputName) - releaseOutputOrder(right.outputName)
+    )
+    .map((item) => `${item.sha256}  ${item.path}`)
+    .join("\n") + "\n";
+}
+
+function releaseOutputCatalogMetadata(
+  outputName: string,
+): { category: ReleaseOutputCategory; releaseAsset: boolean; description: string } | undefined {
+  return RELEASE_OUTPUT_CATALOG_METADATA[outputName as ReleaseOutputName];
+}
+
+function releaseOutputOrder(outputName: string): number {
+  const index = RELEASE_OUTPUT_ORDER.indexOf(outputName as ReleaseOutputName);
+  return index === -1 ? RELEASE_OUTPUT_ORDER.length : index;
+}
+
+function releaseOutputCategoryOrder(category: ReleaseOutputCategory | undefined): number {
+  if (!category) {
+    return RELEASE_OUTPUT_CATEGORIES.length;
+  }
+  return RELEASE_OUTPUT_CATEGORIES.indexOf(category);
 }
 
 function parseManifestOutputs(
@@ -2939,16 +5856,267 @@ function parseManifestOutputs(
   return outputs;
 }
 
+function parseReleaseOutputCatalog(
+  value: unknown,
+  errors: string[],
+): ReleaseOutputCatalogItem[] | null {
+  if (!Array.isArray(value)) {
+    errors.push("manifest outputCatalog must be an array");
+    return null;
+  }
+
+  const catalog: ReleaseOutputCatalogItem[] = [];
+  for (const [index, rawItem] of value.entries()) {
+    const label = `manifest.outputCatalog[${index}]`;
+    if (!isRecord(rawItem)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+    if (typeof rawItem.outputName !== "string" || rawItem.outputName.length === 0) {
+      errors.push(`${label}.outputName must be a non-empty string`);
+      continue;
+    }
+    if (typeof rawItem.path !== "string" || rawItem.path.length === 0) {
+      errors.push(`${label}.path must be a non-empty string`);
+      continue;
+    }
+    if (
+      typeof rawItem.category !== "string" ||
+      !RELEASE_OUTPUT_CATEGORIES.includes(rawItem.category as ReleaseOutputCategory)
+    ) {
+      errors.push(
+        `${label}.category must be one of ${RELEASE_OUTPUT_CATEGORIES.join(", ")}`,
+      );
+      continue;
+    }
+    if (typeof rawItem.releaseAsset !== "boolean") {
+      errors.push(`${label}.releaseAsset must be a boolean`);
+      continue;
+    }
+    if (typeof rawItem.description !== "string" || rawItem.description.length === 0) {
+      errors.push(`${label}.description must be a non-empty string`);
+      continue;
+    }
+    if (typeof rawItem.byteSize !== "number" || !Number.isInteger(rawItem.byteSize)) {
+      errors.push(`${label}.byteSize must be an integer`);
+      continue;
+    }
+    if (typeof rawItem.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(rawItem.sha256)) {
+      errors.push(`${label}.sha256 must be a SHA-256 hex digest`);
+      continue;
+    }
+    const parsedItem: ReleaseOutputCatalogItem = {
+      outputName: rawItem.outputName,
+      path: rawItem.path,
+      category: rawItem.category as ReleaseOutputCategory,
+      releaseAsset: rawItem.releaseAsset,
+      description: rawItem.description,
+      byteSize: rawItem.byteSize,
+      sha256: rawItem.sha256,
+    };
+    if ("rowCount" in rawItem) {
+      if (typeof rawItem.rowCount !== "number" || !Number.isInteger(rawItem.rowCount)) {
+        errors.push(`${label}.rowCount must be an integer`);
+        continue;
+      }
+      parsedItem.rowCount = rawItem.rowCount;
+    }
+    if ("columnCount" in rawItem) {
+      if (typeof rawItem.columnCount !== "number" || !Number.isInteger(rawItem.columnCount)) {
+        errors.push(`${label}.columnCount must be an integer`);
+        continue;
+      }
+      parsedItem.columnCount = rawItem.columnCount;
+    }
+    if ("columns" in rawItem) {
+      if (!Array.isArray(rawItem.columns)) {
+        errors.push(`${label}.columns must be an array`);
+        continue;
+      }
+      const columns: string[] = [];
+      for (const [columnIndex, rawColumn] of rawItem.columns.entries()) {
+        if (typeof rawColumn !== "string" || rawColumn.length === 0) {
+          errors.push(`${label}.columns[${columnIndex}] must be a non-empty string`);
+          continue;
+        }
+        columns.push(rawColumn);
+      }
+      parsedItem.columns = columns;
+    }
+    catalog.push(parsedItem);
+  }
+  return catalog;
+}
+
+function validateReleaseOutputCatalog(
+  outputs: Record<string, string>,
+  outputCatalog: ReleaseOutputCatalogItem[],
+  outputFileMetadata: Record<string, OutputFileMetadata>,
+  errors: string[],
+): void {
+  const seenOutputNames = new Set<string>();
+  for (const item of outputCatalog) {
+    if (seenOutputNames.has(item.outputName)) {
+      errors.push(`manifest outputCatalog has duplicate outputName ${item.outputName}`);
+      continue;
+    }
+    seenOutputNames.add(item.outputName);
+
+    const outputPath = outputs[item.outputName];
+    if (!outputPath) {
+      errors.push(`manifest outputCatalog ${item.outputName} has no matching output`);
+      continue;
+    }
+    if (outputPath !== item.path) {
+      errors.push(
+        `manifest outputCatalog ${item.outputName} path mismatch: expected ${outputPath}, found ${item.path}`,
+      );
+    }
+
+    const expected = releaseOutputCatalogMetadata(item.outputName);
+    if (!expected) {
+      errors.push(`manifest outputCatalog ${item.outputName} is not a known release output`);
+      continue;
+    }
+    if (item.category !== expected.category) {
+      errors.push(
+        `manifest outputCatalog ${item.outputName} category must be ${expected.category}`,
+      );
+    }
+    if (item.releaseAsset !== expected.releaseAsset) {
+      errors.push(
+        `manifest outputCatalog ${item.outputName} releaseAsset must be ${expected.releaseAsset}`,
+      );
+    }
+    if (item.description !== expected.description) {
+      errors.push(`manifest outputCatalog ${item.outputName} description is stale`);
+    }
+    const metadata = outputFileMetadata[item.outputName];
+    if (metadata) {
+      if (item.byteSize !== metadata.byteSize) {
+        errors.push(
+          `manifest outputCatalog ${item.outputName} byteSize mismatch: expected ${metadata.byteSize}, found ${item.byteSize}`,
+        );
+      }
+      if (item.sha256 !== metadata.sha256) {
+        errors.push(`manifest outputCatalog ${item.outputName} sha256 mismatch`);
+      }
+      if (item.rowCount !== metadata.rowCount) {
+        errors.push(
+          `manifest outputCatalog ${item.outputName} rowCount mismatch: expected ${
+            metadata.rowCount ?? "undefined"
+          }, found ${item.rowCount ?? "undefined"}`,
+        );
+      }
+      if (item.columnCount !== metadata.columnCount) {
+        errors.push(
+          `manifest outputCatalog ${item.outputName} columnCount mismatch: expected ${
+            metadata.columnCount ?? "undefined"
+          }, found ${item.columnCount ?? "undefined"}`,
+        );
+      }
+      if (JSON.stringify(item.columns) !== JSON.stringify(metadata.columns)) {
+        errors.push(`manifest outputCatalog ${item.outputName} columns mismatch`);
+      }
+    }
+  }
+
+  for (const outputName of Object.keys(outputs)) {
+    if (!seenOutputNames.has(outputName)) {
+      errors.push(`manifest output ${outputName} is missing outputCatalog`);
+    }
+  }
+}
+
+function validateReleaseAssetIndexes(
+  manifest: Record<string, unknown>,
+  outputCatalog: ReleaseOutputCatalogItem[],
+  errors: string[],
+): void {
+  const expectedReleaseAssets = buildReleaseAssetIndex(outputCatalog);
+  const expectedLocalOnlyOutputs = buildLocalOnlyOutputIndex(outputCatalog);
+  const expectedSqliteTables = buildSqliteTableIndex();
+  validateJsonEqual(
+    manifest.releaseAssets,
+    expectedReleaseAssets,
+    "manifest.releaseAssets",
+    errors,
+  );
+  validateJsonEqual(
+    manifest.localOnlyOutputs,
+    expectedLocalOnlyOutputs,
+    "manifest.localOnlyOutputs",
+    errors,
+  );
+  validateJsonEqual(
+    manifest.sqliteTables,
+    expectedSqliteTables,
+    "manifest.sqliteTables",
+    errors,
+  );
+}
+
+async function validateSha256SumsContract(
+  releaseRoot: string,
+  outputCatalog: ReleaseOutputCatalogItem[],
+  errors: string[],
+): Promise<void> {
+  const sha256SumsItem = outputCatalog.find((item) => item.outputName === "sha256Sums");
+  if (!sha256SumsItem) {
+    errors.push("manifest outputCatalog sha256Sums is required");
+    return;
+  }
+  if (sha256SumsItem.path !== "SHA256SUMS") {
+    errors.push(`SHA256SUMS output path must be SHA256SUMS, found ${sha256SumsItem.path}`);
+    return;
+  }
+
+  let actualContents: string;
+  try {
+    actualContents = await Deno.readTextFile(join(releaseRoot, sha256SumsItem.path));
+  } catch (error) {
+    errors.push(`unable to read SHA256SUMS: ${(error as Error).message}`);
+    return;
+  }
+
+  const expectedContents = buildReleaseSha256Sums(
+    outputCatalog.filter((item) => item.outputName !== "sha256Sums"),
+  );
+  if (actualContents !== expectedContents) {
+    const actualLineCount = countNonEmptyLines(actualContents);
+    const expectedLineCount = countNonEmptyLines(expectedContents);
+    errors.push(
+      `SHA256SUMS must list exactly release upload assets except manifest.json and SHA256SUMS: expected ${expectedLineCount} lines, found ${actualLineCount}`,
+    );
+  }
+}
+
+function countNonEmptyLines(contents: string): number {
+  const trimmed = contents.trimEnd();
+  return trimmed.length === 0 ? 0 : trimmed.split("\n").length;
+}
+
+function validateJsonEqual(
+  actual: unknown,
+  expected: unknown,
+  label: string,
+  errors: string[],
+): void {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    errors.push(`${label} is stale`);
+  }
+}
+
 function parseOutputFileMetadata(
   value: unknown,
   errors: string[],
-): Record<string, { path: string; byteSize: number; sha256: string }> | null {
+): Record<string, OutputFileMetadata> | null {
   if (!isRecord(value)) {
     errors.push("manifest outputFileMetadata must be an object");
     return null;
   }
 
-  const metadata: Record<string, { path: string; byteSize: number; sha256: string }> = {};
+  const metadata: Record<string, OutputFileMetadata> = {};
   for (const [outputName, rawMetadata] of Object.entries(value)) {
     if (!isRecord(rawMetadata)) {
       errors.push(`outputFileMetadata ${outputName} must be an object`);
@@ -2966,10 +6134,50 @@ function parseOutputFileMetadata(
       errors.push(`outputFileMetadata ${outputName}.sha256 must be a SHA-256 hex digest`);
       continue;
     }
-    metadata[outputName] = {
+    const parsedMetadata: OutputFileMetadata = {
       path: rawMetadata.path,
       byteSize: rawMetadata.byteSize,
       sha256: rawMetadata.sha256,
+    };
+    if ("rowCount" in rawMetadata) {
+      if (typeof rawMetadata.rowCount !== "number" || !Number.isInteger(rawMetadata.rowCount)) {
+        errors.push(`outputFileMetadata ${outputName}.rowCount must be an integer`);
+        continue;
+      }
+      parsedMetadata.rowCount = rawMetadata.rowCount;
+    }
+    if ("columnCount" in rawMetadata) {
+      if (
+        typeof rawMetadata.columnCount !== "number" ||
+        !Number.isInteger(rawMetadata.columnCount)
+      ) {
+        errors.push(`outputFileMetadata ${outputName}.columnCount must be an integer`);
+        continue;
+      }
+      parsedMetadata.columnCount = rawMetadata.columnCount;
+    }
+    if ("columns" in rawMetadata) {
+      if (!Array.isArray(rawMetadata.columns)) {
+        errors.push(`outputFileMetadata ${outputName}.columns must be an array`);
+        continue;
+      }
+      const columns: string[] = [];
+      for (const [index, column] of rawMetadata.columns.entries()) {
+        if (typeof column !== "string" || column.length === 0) {
+          errors.push(
+            `outputFileMetadata ${outputName}.columns[${index}] must be a non-empty string`,
+          );
+          continue;
+        }
+        columns.push(column);
+      }
+      if (columns.length !== rawMetadata.columns.length) {
+        continue;
+      }
+      parsedMetadata.columns = columns;
+    }
+    metadata[outputName] = {
+      ...parsedMetadata,
     };
   }
   return metadata;
@@ -3017,6 +6225,7 @@ async function writeCsv(path: string, headers: string[], rows: string[][]): Prom
     headers,
     ...rows,
   ].map((row) => row.map((value) => escapeCsv(value)).join(",")).join("\n") + "\n";
+  await ensureDir(dirname(path));
   await Deno.writeTextFile(path, payload);
 }
 

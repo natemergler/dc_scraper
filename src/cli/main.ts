@@ -100,6 +100,20 @@ type StatusOptions = CliOptions & {
 
 type ReleaseVerifyOptions = {
   json?: boolean;
+  publish?: boolean;
+};
+
+type ReleaseAssetsOptions = {
+  json?: boolean;
+};
+
+type ReleaseUploadPlanOptions = {
+  json?: boolean;
+  allowLocalCandidate?: boolean;
+};
+
+type ReleaseVerifyDownloadedOptions = {
+  json?: boolean;
 };
 
 type AnsiStyle = "green" | "yellow" | "red" | "cyan";
@@ -117,6 +131,15 @@ const REVIEW_QUEUE_SUMMARY_ORDER: ReviewQueue[] = [
   "drafted",
   "applied",
   "deferred",
+];
+
+const RELEASE_ASSET_CATEGORY_ORDER = [
+  "public_csv",
+  "machine_json",
+  "database",
+  "documentation",
+  "traceability_csv",
+  "compatibility_csv",
 ];
 
 interface WorkspaceCoverageStats {
@@ -178,15 +201,41 @@ function operatorFlowForReleaseRoot(releaseRoot: string): string[] {
   ];
 }
 
-const ALPHA_ARTIFACT_HINTS = [
-  "entries.csv / relations.csv / citations.csv",
-  "source_coverage.csv",
-  "manifest.json / README.md",
-  "ledger.sqlite",
-  "dc_board_affiliations.csv / dc_commission_affiliations.csv / dc_authority_affiliations.csv",
-  "dc_anc_smd_structure.csv / dc_council_committee_membership.csv",
-  "govgraph_nodes.json / govgraph_edges.json / govgraph_summary.json",
+const RELEASE_ARTIFACT_HINTS = [
+  "Start here: dc_agencies.csv / dc_councilmembers.csv / dc_public_bodies.csv",
+  "dc_council_committees.csv / dc_council_committee_memberships.csv",
+  "dc_ancs.csv / dc_smds.csv / dc_wards.csv",
+  "dc_public_body_affiliations.csv / dc_relationships.csv",
+  "dc_legal_authorities.csv / dc_sources.csv",
+  "Bulk/audit: ledger.sqlite / govgraph_nodes.json / govgraph_edges.json",
+  "Manifest/docs: manifest.json / SHA256SUMS / README.md",
 ];
+
+interface ReleaseAssetSummary {
+  outputName: string;
+  path: string;
+  category: string;
+  description: string;
+  byteSize: number;
+  sha256: string;
+  rowCount?: number;
+  columnCount?: number;
+  columns?: string[];
+}
+
+interface ReleaseAssetLoadFailure {
+  valid: false;
+  manifestPath: string;
+  errors: string[];
+}
+
+interface ReleaseAssetLoadSuccess {
+  valid: true;
+  manifestPath: string;
+  assets: ReleaseAssetSummary[];
+}
+
+type ReleaseAssetLoadResult = ReleaseAssetLoadFailure | ReleaseAssetLoadSuccess;
 
 export async function runCli(rawArgs: string[] = Deno.args): Promise<number> {
   try {
@@ -377,7 +426,7 @@ async function runSourcesList(options: SourceListOptions): Promise<number> {
   console.log("");
   console.log("Coverage/export inspection:");
   console.log("  deno task civic sources list --json");
-  console.log("  deno task civic export   # writes source_coverage.csv in the release root");
+  console.log("  deno task civic export   # writes public CSVs and _local/source_coverage.csv");
   return 0;
 }
 
@@ -1233,13 +1282,13 @@ async function runExport(
         )
       }`,
     );
-    console.log(colorize("Alpha artifact highlights:", "cyan", color));
-    for (const artifact of ALPHA_ARTIFACT_HINTS) {
+    console.log(colorize("Release artifact highlights:", "cyan", color));
+    for (const artifact of RELEASE_ARTIFACT_HINTS) {
       console.log(`  - ${artifact}`);
     }
     console.log(
       `Inspect source coverage: ${
-        colorize(join(result.releaseRoot, "source_coverage.csv"), "cyan", color)
+        colorize(join(result.releaseRoot, "_local/source_coverage.csv"), "cyan", color)
       }`,
     );
     console.log(
@@ -1257,7 +1306,21 @@ async function runReleaseVerify(
   releaseRoot: string,
   options: ReleaseVerifyOptions = {},
 ): Promise<number> {
-  const result = await verifyReleaseArtifacts(releaseRoot);
+  const verification = await verifyReleaseArtifacts(releaseRoot);
+  const publishErrors = options.publish && verification.valid
+    ? await validatePublishReadyProvenance(verification.manifestPath)
+    : [];
+  const result = {
+    ...verification,
+    valid: verification.valid && publishErrors.length === 0,
+    ...(options.publish
+      ? {
+        publishReady: publishErrors.length === 0,
+        publishErrors,
+      }
+      : {}),
+    errors: [...verification.errors, ...publishErrors],
+  };
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));
     return result.valid ? 0 : 1;
@@ -1270,12 +1333,21 @@ async function runReleaseVerify(
         colorize(String(result.checkedFileCount), "green", color)
       } payload files match ${colorize(result.manifestPath, "cyan", color)}; ${
         colorize(
-          "schema version, release identity, artifact counts, kind rollups, zero blocking review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
+          "schema version, release identity, artifact counts, kind rollups, zero blocking/actionable/drafted review items, review posture/categories/deferred descriptions, source coverage metadata/statuses, and GovGraph summary agreements passed",
           "green",
           color,
         )
       }`,
     );
+    if (options.publish) {
+      console.log(
+        colorize(
+          "publish provenance gate passed: manifest and current git checkout match a clean worktree",
+          "green",
+          color,
+        ),
+      );
+    }
     return 0;
   }
 
@@ -1284,6 +1356,572 @@ async function runReleaseVerify(
     console.error(`  - ${error}`);
   }
   return 1;
+}
+
+async function validatePublishReadyProvenance(manifestPath: string): Promise<string[]> {
+  const errors: string[] = [];
+  let manifest: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(await Deno.readTextFile(manifestPath)) as unknown;
+    if (!isPlainRecord(parsed)) {
+      return ["manifest.json must contain a JSON object for publish provenance verification"];
+    }
+    manifest = parsed;
+  } catch (error) {
+    return [
+      `unable to read manifest for publish provenance verification: ${(error as Error).message}`,
+    ];
+  }
+
+  const provenance = isPlainRecord(manifest.provenance) ? manifest.provenance : null;
+  if (!provenance) {
+    return ["manifest.provenance is required for publish provenance verification"];
+  }
+  if (provenance.gitSource !== "git_metadata") {
+    errors.push("manifest.provenance.gitSource must be git_metadata for publish");
+  }
+  if (typeof provenance.gitHeadCommit !== "string" || provenance.gitHeadCommit.length === 0) {
+    errors.push("manifest.provenance.gitHeadCommit is required for publish");
+  }
+  if (provenance.workingTreeStatus !== "clean") {
+    errors.push(
+      `manifest.provenance.workingTreeStatus must be clean for publish, found ${
+        String(provenance.workingTreeStatus)
+      }`,
+    );
+  }
+  if (provenance.workingTreeChangedPathCount !== 0) {
+    errors.push(
+      `manifest.provenance.workingTreeChangedPathCount must be 0 for publish, found ${
+        String(provenance.workingTreeChangedPathCount)
+      }`,
+    );
+  }
+
+  const currentGit = await readCurrentGitPublishState();
+  if (!currentGit.available) {
+    errors.push(`current git metadata is required for publish: ${currentGit.error}`);
+    return errors;
+  }
+  if (
+    typeof provenance.gitHeadCommit === "string" &&
+    provenance.gitHeadCommit.length > 0 &&
+    currentGit.headCommit !== provenance.gitHeadCommit
+  ) {
+    errors.push(
+      `current git HEAD ${currentGit.headCommit} must match manifest.provenance.gitHeadCommit ${provenance.gitHeadCommit} for publish`,
+    );
+  }
+  if (currentGit.workingTreeStatus !== "clean") {
+    errors.push(
+      `current git working tree must be clean for publish, found ${currentGit.workingTreeStatus}`,
+    );
+  }
+  if (currentGit.workingTreeChangedPathCount !== 0) {
+    errors.push(
+      `current git changed path count must be 0 for publish, found ${currentGit.workingTreeChangedPathCount}`,
+    );
+  }
+  return errors;
+}
+
+type CurrentGitPublishState =
+  | {
+    available: true;
+    headCommit: string;
+    workingTreeStatus: "clean" | "dirty";
+    workingTreeChangedPathCount: number;
+  }
+  | {
+    available: false;
+    error: string;
+  };
+
+async function readCurrentGitPublishState(): Promise<CurrentGitPublishState> {
+  const head = await runGitForPublish(["rev-parse", "HEAD"]);
+  if (!head.ok) {
+    return { available: false, error: head.error };
+  }
+  const headCommit = head.stdout.trim();
+  if (!/^[0-9a-f]{40}$/.test(headCommit)) {
+    return { available: false, error: "git rev-parse HEAD did not return a commit hash" };
+  }
+
+  const status = await runGitForPublish([
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ]);
+  if (!status.ok) {
+    return { available: false, error: status.error };
+  }
+  const changedPathCount = countGitPorcelainStatusLines(status.stdout);
+  return {
+    available: true,
+    headCommit,
+    workingTreeStatus: changedPathCount === 0 ? "clean" : "dirty",
+    workingTreeChangedPathCount: changedPathCount,
+  };
+}
+
+async function runGitForPublish(args: string[]): Promise<
+  | { ok: true; stdout: string }
+  | { ok: false; error: string }
+> {
+  try {
+    const output = await new Deno.Command("git", {
+      args,
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    const stdout = new TextDecoder().decode(output.stdout);
+    const stderr = new TextDecoder().decode(output.stderr).trim();
+    if (!output.success) {
+      return {
+        ok: false,
+        error: stderr.length > 0 ? stderr : `git ${args.join(" ")} exited ${output.code}`,
+      };
+    }
+    return { ok: true, stdout };
+  } catch (error) {
+    return { ok: false, error: (error as Error).message };
+  }
+}
+
+function countGitPorcelainStatusLines(stdout: string): number {
+  const trimmed = stdout.trimEnd();
+  return trimmed.length === 0 ? 0 : trimmed.split("\n").length;
+}
+
+async function runReleaseAssets(
+  releaseRoot: string,
+  options: ReleaseAssetsOptions = {},
+): Promise<number> {
+  const releaseAssets = await loadReleaseAssetSummaries(releaseRoot);
+  if (!releaseAssets.valid) {
+    if (options.json) {
+      console.log(JSON.stringify(
+        {
+          releaseRoot,
+          manifestPath: releaseAssets.manifestPath,
+          valid: false,
+          errors: releaseAssets.errors,
+        },
+        null,
+        2,
+      ));
+    } else {
+      console.error(`${releaseRoot} is not release-ready; run release verify for details.`);
+      for (const error of releaseAssets.errors) {
+        console.error(`  - ${error}`);
+      }
+    }
+    return 1;
+  }
+
+  const assets = releaseAssets.assets;
+  const categoryCounts = assets.reduce<Record<string, number>>((counts, asset) => {
+    counts[asset.category] = (counts[asset.category] ?? 0) + 1;
+    return counts;
+  }, {});
+
+  if (options.json) {
+    console.log(JSON.stringify(
+      {
+        releaseRoot,
+        manifestPath: releaseAssets.manifestPath,
+        valid: true,
+        assetCount: assets.length,
+        categoryCounts,
+        assets,
+      },
+      null,
+      2,
+    ));
+    return 0;
+  }
+
+  const color = cliColorEnabled();
+  console.log(
+    `${colorize("release assets", "green", color)}: ${
+      colorize(String(assets.length), "green", color)
+    } individually uploadable files from ${colorize(releaseRoot, "cyan", color)}`,
+  );
+  for (const category of Object.keys(categoryCounts).sort(releaseAssetCategoryCompare)) {
+    console.log("");
+    console.log(`${category} (${categoryCounts[category]}):`);
+    for (const asset of assets.filter((candidate) => candidate.category === category)) {
+      const rowLabel = typeof asset.rowCount === "number" ? ` (${asset.rowCount} rows)` : "";
+      console.log(`  ${asset.path}${rowLabel} - ${asset.description}`);
+    }
+  }
+  console.log("");
+  console.log(`Manifest: ${colorize(releaseAssets.manifestPath, "cyan", color)}`);
+  return 0;
+}
+
+async function runReleaseUploadPlan(
+  tagName: string,
+  releaseRoot: string,
+  options: ReleaseUploadPlanOptions = {},
+): Promise<number> {
+  const releaseAssets = await loadReleaseAssetSummaries(releaseRoot);
+  if (!releaseAssets.valid) {
+    if (options.json) {
+      console.log(JSON.stringify(
+        {
+          releaseRoot,
+          manifestPath: releaseAssets.manifestPath,
+          valid: false,
+          errors: releaseAssets.errors,
+        },
+        null,
+        2,
+      ));
+    } else {
+      console.error(`${releaseRoot} is not release-ready; run release verify for details.`);
+      for (const error of releaseAssets.errors) {
+        console.error(`  - ${error}`);
+      }
+    }
+    return 1;
+  }
+
+  const publishErrors = options.allowLocalCandidate
+    ? []
+    : await validatePublishReadyProvenance(releaseAssets.manifestPath);
+  if (publishErrors.length > 0) {
+    if (options.json) {
+      console.log(JSON.stringify(
+        {
+          releaseRoot,
+          manifestPath: releaseAssets.manifestPath,
+          valid: false,
+          publishReady: false,
+          publishErrors,
+          errors: publishErrors,
+        },
+        null,
+        2,
+      ));
+    } else {
+      console.error(
+        `${releaseRoot} is not publish-ready; run release verify --publish for details.`,
+      );
+      for (const error of publishErrors) {
+        console.error(`  - ${error}`);
+      }
+      console.error("Use --allow-local-candidate only for dry-run upload-plan rehearsals.");
+    }
+    return 1;
+  }
+
+  const downloadRoot = `.release-download/${tagName.replaceAll(/[^A-Za-z0-9._-]/g, "_")}`;
+  const legacyTarballName = `${tagName}.tar.gz`;
+  const obsoleteAssetCommands =
+    releaseAssets.assets.some((asset) => asset.path === legacyTarballName) ? [] : [[
+      "gh",
+      "release",
+      "delete-asset",
+      tagName,
+      legacyTarballName,
+      "--yes",
+    ]];
+  const uploadCommand = [
+    "gh",
+    "release",
+    "upload",
+    tagName,
+    ...releaseAssets.assets.map((asset) => join(releaseRoot, asset.path)),
+    "--clobber",
+  ];
+  const downloadCommand = [
+    "gh",
+    "release",
+    "download",
+    tagName,
+    "--dir",
+    downloadRoot,
+  ];
+  const verifyDownloadedCommand = [
+    "deno",
+    "task",
+    "civic",
+    "release",
+    "verify-downloaded",
+    releaseRoot,
+    downloadRoot,
+  ];
+
+  if (options.json) {
+    console.log(JSON.stringify(
+      {
+        releaseRoot,
+        manifestPath: releaseAssets.manifestPath,
+        valid: true,
+        publishReady: !options.allowLocalCandidate,
+        allowLocalCandidate: options.allowLocalCandidate === true,
+        tagName,
+        assetCount: releaseAssets.assets.length,
+        assets: releaseAssets.assets,
+        obsoleteAssetCommands,
+        uploadCommand,
+        downloadCommand,
+        verifyDownloadedCommand,
+      },
+      null,
+      2,
+    ));
+    return 0;
+  }
+
+  if (options.allowLocalCandidate) {
+    console.log(
+      "Local-candidate upload plan; rerun without --allow-local-candidate before publish.",
+    );
+    console.log("");
+  }
+  if (obsoleteAssetCommands.length > 0) {
+    console.log("Remove obsolete archive asset if present:");
+    for (const command of obsoleteAssetCommands) {
+      console.log(formatShellCommand(command));
+    }
+    console.log("");
+  }
+  console.log(`Upload ${releaseAssets.assets.length} release assets to ${tagName}:`);
+  console.log(formatShellCommand(uploadCommand));
+  console.log("");
+  console.log("Download and verify uploaded assets:");
+  console.log(formatShellCommand(downloadCommand));
+  console.log(formatShellCommand(verifyDownloadedCommand));
+  return 0;
+}
+
+async function runReleaseVerifyDownloaded(
+  releaseRoot: string,
+  downloadRoot: string,
+  options: ReleaseVerifyDownloadedOptions = {},
+): Promise<number> {
+  const releaseAssets = await loadReleaseAssetSummaries(releaseRoot);
+  if (!releaseAssets.valid) {
+    if (options.json) {
+      console.log(JSON.stringify(
+        {
+          releaseRoot,
+          downloadRoot,
+          manifestPath: releaseAssets.manifestPath,
+          valid: false,
+          errors: releaseAssets.errors,
+        },
+        null,
+        2,
+      ));
+    } else {
+      console.error(`${releaseRoot} is not release-ready; run release verify for details.`);
+      for (const error of releaseAssets.errors) {
+        console.error(`  - ${error}`);
+      }
+    }
+    return 1;
+  }
+
+  const errors: string[] = [];
+  const checkedAssets: Array<{
+    path: string;
+    byteSize: number;
+    sha256: string;
+  }> = [];
+  const expectedPaths = new Set(releaseAssets.assets.map((asset) => asset.path));
+  const downloadedPaths = await listRelativeFiles(downloadRoot).catch((error) => {
+    if (error instanceof Deno.errors.NotFound) {
+      errors.push(`download root not found: ${downloadRoot}`);
+      return [] as string[];
+    }
+    throw error;
+  });
+
+  for (const asset of releaseAssets.assets) {
+    const downloadedPath = join(downloadRoot, asset.path);
+    let bytes: Uint8Array;
+    try {
+      bytes = await Deno.readFile(downloadedPath);
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) {
+        errors.push(`missing downloaded asset: ${asset.path}`);
+        continue;
+      }
+      throw error;
+    }
+    const sha256 = await fileSha256(bytes);
+    checkedAssets.push({ path: asset.path, byteSize: bytes.byteLength, sha256 });
+    if (bytes.byteLength !== asset.byteSize) {
+      errors.push(
+        `downloaded asset ${asset.path} byte size ${bytes.byteLength} does not match manifest ${asset.byteSize}`,
+      );
+    }
+    if (sha256 !== asset.sha256) {
+      errors.push(
+        `downloaded asset ${asset.path} sha256 ${sha256} does not match manifest ${asset.sha256}`,
+      );
+    }
+  }
+
+  for (const downloadedPath of downloadedPaths) {
+    if (!expectedPaths.has(downloadedPath)) {
+      errors.push(`unexpected downloaded asset: ${downloadedPath}`);
+    }
+  }
+
+  const result = {
+    releaseRoot,
+    downloadRoot,
+    manifestPath: releaseAssets.manifestPath,
+    valid: errors.length === 0,
+    expectedAssetCount: releaseAssets.assets.length,
+    downloadedFileCount: downloadedPaths.length,
+    checkedAssetCount: checkedAssets.length,
+    errors,
+    checkedAssets,
+  };
+
+  if (options.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return result.valid ? 0 : 1;
+  }
+
+  if (!result.valid) {
+    console.error(`downloaded release asset verification failed for ${downloadRoot}:`);
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
+    return 1;
+  }
+
+  console.log(
+    `downloaded release assets verified: ${checkedAssets.length} files match ${releaseAssets.manifestPath}`,
+  );
+  return 0;
+}
+
+async function loadReleaseAssetSummaries(releaseRoot: string): Promise<ReleaseAssetLoadResult> {
+  const verification = await verifyReleaseArtifacts(releaseRoot);
+  if (!verification.valid) {
+    return {
+      valid: false,
+      manifestPath: verification.manifestPath,
+      errors: verification.errors,
+    };
+  }
+  const manifest = JSON.parse(await Deno.readTextFile(verification.manifestPath)) as Record<
+    string,
+    unknown
+  >;
+  return {
+    valid: true,
+    manifestPath: verification.manifestPath,
+    assets: await releaseAssetsFromManifest(manifest, releaseRoot, verification.manifestPath),
+  };
+}
+
+async function releaseAssetsFromManifest(
+  manifest: Record<string, unknown>,
+  releaseRoot: string,
+  manifestPath: string,
+): Promise<ReleaseAssetSummary[]> {
+  const outputCatalog = Array.isArray(manifest.outputCatalog) ? manifest.outputCatalog : [];
+  const outputFileMetadata = isPlainRecord(manifest.outputFileMetadata)
+    ? manifest.outputFileMetadata
+    : {};
+  const assets = outputCatalog
+    .filter((item): item is Record<string, unknown> => isPlainRecord(item))
+    .filter((item) => item.releaseAsset === true)
+    .map((item) => {
+      const outputName = String(item.outputName ?? "");
+      const metadata = isPlainRecord(outputFileMetadata[outputName])
+        ? outputFileMetadata[outputName]
+        : {};
+      return {
+        outputName,
+        path: String(item.path ?? ""),
+        category: String(item.category ?? ""),
+        description: String(item.description ?? ""),
+        byteSize: typeof metadata.byteSize === "number" ? metadata.byteSize : 0,
+        sha256: typeof metadata.sha256 === "string" ? metadata.sha256 : "",
+        ...(typeof metadata.rowCount === "number" ? { rowCount: metadata.rowCount } : {}),
+        ...(typeof metadata.columnCount === "number" ? { columnCount: metadata.columnCount } : {}),
+        ...(Array.isArray(metadata.columns) &&
+            metadata.columns.every((column) => typeof column === "string")
+          ? { columns: metadata.columns }
+          : {}),
+      };
+    });
+  assets.push(await buildManifestReleaseAsset(releaseRoot, manifestPath));
+  return assets;
+}
+
+async function buildManifestReleaseAsset(
+  releaseRoot: string,
+  manifestPath: string,
+): Promise<ReleaseAssetSummary> {
+  const bytes = await Deno.readFile(manifestPath);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return {
+    outputName: "manifestJson",
+    path: relativeReleaseAssetPath(releaseRoot, manifestPath),
+    category: "machine_json",
+    description: "Release manifest with file sizes, hashes, row counts, and asset categories.",
+    byteSize: bytes.byteLength,
+    sha256: hexDigest(digest),
+  };
+}
+
+function relativeReleaseAssetPath(releaseRoot: string, path: string): string {
+  if (path === join(releaseRoot, "manifest.json")) {
+    return "manifest.json";
+  }
+  return path;
+}
+
+function hexDigest(digest: ArrayBuffer): string {
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function fileSha256(bytes: Uint8Array): Promise<string> {
+  const source = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(source).set(bytes);
+  return hexDigest(await crypto.subtle.digest("SHA-256", source));
+}
+
+async function listRelativeFiles(root: string, prefix = ""): Promise<string[]> {
+  const paths: string[] = [];
+  for await (const entry of Deno.readDir(join(root, prefix))) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isFile) {
+      paths.push(relativePath);
+    } else if (entry.isDirectory) {
+      paths.push(...await listRelativeFiles(root, relativePath));
+    }
+  }
+  return paths.sort((left, right) => left.localeCompare(right));
+}
+
+function formatShellCommand(command: string[]): string {
+  return command.map(shellQuote).join(" \\\n  ");
+}
+
+function releaseAssetCategoryCompare(left: string, right: string): number {
+  return releaseAssetCategoryOrder(left) - releaseAssetCategoryOrder(right) ||
+    left.localeCompare(right);
+}
+
+function releaseAssetCategoryOrder(category: string): number {
+  const index = RELEASE_ASSET_CATEGORY_ORDER.indexOf(category);
+  return index === -1 ? RELEASE_ASSET_CATEGORY_ORDER.length : index;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function loadCommittedStateForCli(
@@ -2008,7 +2646,7 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
       onExitCode(await runCheck(cliOptions.workspace, cliOptions.stateRoot));
     });
 
-  root.command("export", "Export alpha release artifacts from committed state.")
+  root.command("export", "Export release artifacts from committed state.")
     .action(async (options) => {
       const cliOptions = validateCliOptions(options);
       onExitCode(
@@ -2020,7 +2658,7 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
     .description("Release artifact commands.")
     .action(() => {
       throw new Error(
-        "release requires `verify`; try deno task civic release verify releases/latest",
+        "release requires `verify`, `assets`, `upload-plan`, or `verify-downloaded`; try deno task civic release verify releases/latest",
       );
     });
 
@@ -2029,9 +2667,45 @@ function createCli(onExitCode: (code: number) => void): Command<CliOptions> {
     "Verify release identity, payload metadata, source coverage statuses, review category posture, zero blockers, and manifest contracts.",
   )
     .option("--json", "Emit release verification result as JSON.")
+    .option("--publish", "Require publish-grade provenance with a clean git worktree.")
     .action(async (options, releaseRootArg?: string) => {
       const cliOptions = validateCliOptions(options);
       onExitCode(await runReleaseVerify(releaseRootArg ?? cliOptions.releaseRoot, options));
+    });
+
+  release.command(
+    "assets [releaseRoot:string]",
+    "List individually uploadable release assets from the verified manifest catalog.",
+  )
+    .option("--json", "Emit release asset metadata as JSON.")
+    .action(async (options, releaseRootArg?: string) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(await runReleaseAssets(releaseRootArg ?? cliOptions.releaseRoot, options));
+    });
+
+  release.command(
+    "upload-plan <tagName:string> [releaseRoot:string]",
+    "Print GitHub upload and download-verification commands for a publish-ready release.",
+  )
+    .option("--json", "Emit upload and verification commands as JSON arrays.")
+    .option(
+      "--allow-local-candidate",
+      "Bypass publish provenance checks for local dry-run upload-plan rehearsals.",
+    )
+    .action(async (options, tagName: string, releaseRootArg?: string) => {
+      const cliOptions = validateCliOptions(options);
+      onExitCode(
+        await runReleaseUploadPlan(tagName, releaseRootArg ?? cliOptions.releaseRoot, options),
+      );
+    });
+
+  release.command(
+    "verify-downloaded <releaseRoot:string> <downloadRoot:string>",
+    "Verify downloaded GitHub release assets against the local release manifest.",
+  )
+    .option("--json", "Emit downloaded asset verification result as JSON.")
+    .action(async (options, releaseRoot: string, downloadRoot: string) => {
+      onExitCode(await runReleaseVerifyDownloaded(releaseRoot, downloadRoot, options));
     });
 
   root.command("release", release);
@@ -2396,9 +3070,7 @@ function formatReviewQueueSummary(items: ReviewItem[]): string {
   return [
     `review items: ${items.length}`,
     `inbox ${inboxCount}`,
-    `blocking ${counts.get("blocking") ?? 0}`,
-    `deferred ${counts.get("deferred") ?? 0}`,
-    `applied ${counts.get("applied") ?? 0}`,
+    ...REVIEW_QUEUE_SUMMARY_ORDER.map((queue) => `${queue} ${counts.get(queue) ?? 0}`),
   ].join("; ");
 }
 
