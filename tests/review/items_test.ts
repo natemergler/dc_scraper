@@ -94,7 +94,7 @@ Deno.test("review category descriptions cover every review category", () => {
     true,
   );
   assertEquals(
-    reviewCategoryDescriptions.out_of_scope_candidate.includes("outside alpha scope"),
+    reviewCategoryDescriptions.out_of_scope_candidate.includes("outside current release scope"),
     true,
   );
 });
@@ -168,6 +168,59 @@ Deno.test("generateReviewItems marks items with matching tracked revisions as ap
   );
   assertEquals(candidate?.status, "applied");
   assertEquals(candidate?.trackedRevisionIds, ["eom-preserve-distinct"]);
+  assertEquals(candidate?.blocks.stateGeneration, false);
+  assertEquals(candidate?.blocks.releaseReadiness, false);
+  assertEquals(reviewItemBlocksCurrentOutput(candidate!), false);
+});
+
+Deno.test("generateReviewItems annotates preserve-distinct decisions superseded by suppression", () => {
+  const preserveRevision = preserveDistinctRevision(
+    "eom-preserve-distinct",
+    "dc.office:executive-office-of-the-mayor",
+    "dc.agency:1052",
+    "Preserve office and agency facets.",
+  );
+  const suppressRevision: Revision = {
+    id: "eom-agency-source-shadow",
+    source: "audited_revision",
+    targetKind: "entry",
+    targetId: "dc.agency:1052",
+    rationale: "Later audit found the agency row is a source shadow of the office row.",
+    evidence: [],
+    patch: {
+      suppress: true,
+      review: {
+        decision: "source_shadow",
+        canonicalEntryId: "dc.office:executive-office-of-the-mayor",
+      },
+    },
+  };
+
+  const items = generateReviewItems(
+    state([
+      entry({
+        id: "dc.office:executive-office-of-the-mayor",
+        kind: "dc.office",
+        name: "Executive Office of the Mayor",
+      }),
+    ]),
+    [],
+    { trackedRevisions: [preserveRevision, suppressRevision] },
+  );
+
+  const preserveItem = items.find((item) => item.id === "tracked_revision:eom-preserve-distinct");
+
+  assertEquals(preserveItem?.status, "applied");
+  assertEquals(preserveItem?.category, "preserve_distinct_candidate");
+  assertEquals(preserveItem?.summary.includes("Superseded by later suppression"), true);
+  assertEquals(
+    preserveItem?.rationale.includes("retained as audit history rather than current publication"),
+    true,
+  );
+  assertEquals(preserveItem?.trackedRevisionIds, [
+    "eom-agency-source-shadow",
+    "eom-preserve-distinct",
+  ]);
 });
 
 Deno.test("generateReviewItems surfaces OANC slash profile versus DCGIS ANC suffix", () => {
@@ -299,16 +352,16 @@ Deno.test("finding review items preserve distinct source evidence", async () => 
     const findings: Finding[] = [
       {
         kind: "warn",
-        code: "dc.promotion.opendc_specific_public_body_promoted",
+        code: "dc.promotion.opendc_public_body_review_required",
         message:
-          "Open DC public body dc.board:29 promoted as dc.board; review may still be needed for identity reconciliation",
+          "Open DC public body dc.agency:adult-career-pathways-task-force was not promoted because dc.agency is not a safe Open DC promotion kind",
         citation: cite("open_dc.public_bodies", "board-accountancy"),
       },
       {
         kind: "warn",
-        code: "dc.promotion.opendc_specific_public_body_promoted",
+        code: "dc.promotion.opendc_public_body_review_required",
         message:
-          "Open DC public body dc.board:29 promoted as dc.board; review may still be needed for identity reconciliation",
+          "Open DC public body dc.agency:adult-career-pathways-task-force was not promoted because dc.agency is not a safe Open DC promotion kind",
         citation: cite("open_dc.public_bodies", "board-accountancy-0"),
       },
     ];
@@ -328,6 +381,20 @@ Deno.test("finding review items preserve distinct source evidence", async () => 
   } finally {
     await Deno.remove(workspace, { recursive: true });
   }
+});
+
+Deno.test("successful Open DC public-body promotion findings stay out of the review queue", () => {
+  const findings: Finding[] = [
+    {
+      kind: "warn",
+      code: "dc.promotion.opendc_specific_public_body_promoted",
+      message:
+        "Open DC public body dc.board:29 promoted as dc.board; review may still be needed for identity reconciliation",
+      citation: cite("open_dc.public_bodies", "board-accountancy"),
+    },
+  ];
+
+  assertEquals(generateReviewItems(state([]), findings), []);
 });
 
 Deno.test("relation not promoted findings stay classified as out of scope", () => {
@@ -353,7 +420,7 @@ Deno.test("relation not promoted findings stay classified as out of scope", () =
   assertEquals(reviewItemBlocksCurrentOutput(items[0]), false);
 });
 
-Deno.test("Open DC stale duplicate findings are deferred source ingestion bugs", () => {
+Deno.test("Open DC stale duplicate findings stay out of the review queue", () => {
   const findings: Finding[] = [
     {
       kind: "info",
@@ -366,14 +433,7 @@ Deno.test("Open DC stale duplicate findings are deferred source ingestion bugs",
 
   const items = generateReviewItems(state([]), findings);
 
-  assertEquals(items.length, 1);
-  assertEquals(items[0].category, "source_stale_or_failed");
-  assertEquals(items[0].classification, "source_ingestion_bug");
-  assertEquals(items[0].severity, "low");
-  assertEquals(items[0].suggestedResolutions, ["suppress", "source-shadow"]);
-  assertEquals(reviewQueueForItem(items[0]), "deferred");
-  assertEquals(reviewItemHasPublicOutputImpact(items[0]), false);
-  assertEquals(reviewItemBlocksCurrentOutput(items[0]), false);
+  assertEquals(items, []);
 });
 
 Deno.test("review queues separate blocking, actionable, and deferred work", () => {
@@ -610,4 +670,48 @@ Deno.test("agency and Open DC public-body source facets stay applied preserve-di
     assertEquals(reviewQueueForItem(item), "applied");
     assertEquals(reviewItemBlocksCurrentOutput(item), false);
   }
+});
+
+Deno.test("broad shared agency directory URL is deferred, not treated as fully applied", () => {
+  const item = {
+    id: "shared_url:https-dc-gov-page-agency-list",
+    category: "source_shadow",
+    classification: "curation_conflict",
+    severity: "high",
+    confidence: "low",
+    status: "open",
+    title: "source shadow: https://dc.gov/page/agency-list",
+    summary: "shared_url matched many agency entries",
+    sourceFamilies: ["dcgis", "mayor"],
+    affected: {
+      fragmentIds: [],
+      baselineIds: [],
+      stateIds: Array.from({ length: 12 }, (_, index) => `dc.agency:agency-${index + 1}`),
+      relationEndpoints: [],
+    },
+    candidateEntries: [],
+    sourceRefs: [],
+    citations: [],
+    urls: ["https://dc.gov/page/agency-list"],
+    legalLocators: [],
+    attributesThatAgree: {},
+    attributesThatConflict: {},
+    suggestedResolutions: ["source-shadow"],
+    blocks: {
+      stateGeneration: false,
+      releaseReadiness: false,
+    },
+    draftRevisionIds: [],
+    trackedRevisionIds: ["agency-1-row-level-review"],
+    rationale: "fixture",
+    generatedAt: "2026-06-16T00:00:00.000Z",
+    source: {
+      type: "reconciliation_candidate",
+      id: "shared_url:https-dc-gov-page-agency-list",
+      reason: "shared_url",
+    },
+  } satisfies ReturnType<typeof generateReviewItems>[number];
+
+  assertEquals(reviewQueueForItem(item), "deferred");
+  assertEquals(reviewItemBlocksCurrentOutput(item), false);
 });

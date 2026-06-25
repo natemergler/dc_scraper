@@ -39,7 +39,7 @@ const authorizedByRelationKind = "dc.relation:authorized_by" as const;
  * Derives legal authority fragments from the citation locators an interpreter found on an entry.
  *
  * This keeps the ADR's "derive legal authority from entry citations" rule centralized while the
- * current source interpreters still own source-shaped locator extraction. Only alpha in-scope,
+ * current source interpreters still own source-shaped locator extraction. Only current in-scope,
  * explicit locators become `dc.legal_authority` entries and `dc.relation:authorized_by` links;
  * all other locators remain evidence citations on the civic entry.
  */

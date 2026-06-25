@@ -101,12 +101,32 @@ const legalAuthorityCorrections = new Map<string, OpenDcLegalAuthorityCorrection
     },
   ],
   [
+    "interagency-coordinating-council-icc",
+    {
+      enablingStatute:
+        "Mayor's Order 2012-49: Establishment and Appointments - District of Columbia Interagency Coordinating Council",
+      enablingStatuteUrl:
+        "https://dcregs.dc.gov/Common/MayorOrders.aspx?Type=MayorOrder&OrderNumber=2012-49",
+      rationale:
+        "Open DC detail page has malformed locator Mayor's Order 20012-49; official Open DC PDF and supplemental index identify Mayor's Order 2012-49",
+    },
+  ],
+  [
     "district-columbia-taxicab-commission-dctc",
     {
       enablingStatute: "D.C. Code § 50-301.04",
       enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/50-301.04",
       rationale:
         "live D.C. Code section 50-304 404s as prior codification; section 50-301.04 is the current official section",
+    },
+  ],
+  [
+    "higher-education-licensure-commission-helc",
+    {
+      enablingStatute: "D.C. Code § 38-1303",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303",
+      rationale:
+        "Open DC detail text points at D.C. Code section 6-1103, but the official linked Code URL and live D.C. Code section 38-1303 establish the Higher Education Licensure Commission; section 6-1103 establishes the Historic Preservation Review Board",
     },
   ],
   [

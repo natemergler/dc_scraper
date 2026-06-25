@@ -152,6 +152,26 @@
   {
     "kind": "info",
     "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"Higher Education Licensure Commission (HELC)\" legal authority evidence adjusted: Open DC detail text points at D.C. Code section 6-1103, but the official linked Code URL and live D.C. Code section 38-1303 establish the Higher Education Licensure Commission; section 6-1103 establishes the Historic Preservation Review Board",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "higher-education-licensure-commission-helc",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
+    "message": "Open DC public body \"Interagency Coordinating Council (ICC)\" legal authority evidence adjusted: Open DC detail page has malformed locator Mayor's Order 20012-49; official Open DC PDF and supplemental index identify Mayor's Order 2012-49",
+    "citation": {
+      "source": "open_dc.public_bodies",
+      "sourceRecordId": "interagency-coordinating-council-icc",
+      "locator": "enablingStatute"
+    }
+  },
+  {
+    "kind": "info",
+    "code": "dc.interpreter.opendc_enabling_statute_corrected",
     "message": "Open DC public body \"Opioid Fatality Review Board\" legal authority evidence adjusted: live D.C. Register shows Mayor's Order 2019-026 is a Financial Literacy Council appointment; 2019-024 establishes the Opioid Fatality Review Board",
     "citation": {
       "source": "open_dc.public_bodies",
@@ -246,16 +266,6 @@
     "citation": {
       "source": "open_dc.public_bodies",
       "sourceRecordId": "executive-office-mayor",
-      "locator": "enablingStatute"
-    }
-  },
-  {
-    "kind": "info",
-    "code": "dc.interpreter.opendc_enabling_statute_unparsed",
-    "message": "Could not parse legal citation from enabling statute: \"Mayor's Order 20012-49\"",
-    "citation": {
-      "source": "open_dc.public_bodies",
-      "sourceRecordId": "interagency-coordinating-council-icc",
       "locator": "enablingStatute"
     }
   },

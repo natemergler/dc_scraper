@@ -5,7 +5,7 @@ import {
   buildOpenDcLegalAuthorityLocatorInputs,
 } from "../../../src/jurisdictions/dc/interpreters/legal_authorities.ts";
 
-Deno.test("legal authority artifacts emit entries and authorized_by relations for alpha in-scope locators", () => {
+Deno.test("legal authority artifacts emit entries and authorized_by relations for current in-scope locators", () => {
   const artifacts = buildLegalAuthorityArtifacts({
     source: "test.source",
     sourceRecordId: "record-1",

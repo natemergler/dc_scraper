@@ -4,7 +4,7 @@
   "kind": "dc.commission",
   "name": "Higher Education Licensure Commission (HELC)",
   "attributes": {
-    "enablingStatute": "D.C. Official Code § 6-1103",
+    "enablingStatute": "D.C. Code § 38-1303",
     "enablingStatuteUrl": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303",
     "shortName": "Higher Education Licensure Commission (HELC)",
     "sourceOpenDcSlug": "higher-education-licensure-commission-helc",
@@ -27,17 +27,6 @@
             "sourceRecordId": "higher-education-licensure-commission-helc",
             "locator": "D.C. Code § 38-1303",
             "url": "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303"
-          }
-        ]
-      },
-      {
-        "kind": "dc.relation:authorized_by",
-        "to": "dc.legal_authority:d-c-code-6-1103",
-        "citations": [
-          {
-            "source": "open_dc.public_bodies",
-            "sourceRecordId": "higher-education-licensure-commission-helc",
-            "locator": "D.C. Code § 6-1103"
           }
         ]
       }

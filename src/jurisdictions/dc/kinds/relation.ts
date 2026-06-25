@@ -67,17 +67,17 @@ export const dcRelationSemantics = [
   {
     kind: "dc.relation:advises",
     description:
-      "Only emitted when an explicit source supports an advisory relation; alpha does not infer it from names.",
+      "Only emitted when an explicit source supports an advisory relation; this release does not infer it from names.",
   },
   {
     kind: "dc.relation:appoints",
     description:
-      "Only emitted when an explicit source supports an appointing relation; alpha does not infer it from membership text.",
+      "Only emitted when an explicit source supports an appointing relation; this release does not infer it from membership text.",
   },
   {
     kind: "dc.relation:elects",
     description:
-      "Only emitted when an explicit source supports an election relation; alpha does not infer it from office labels.",
+      "Only emitted when an explicit source supports an election relation; this release does not infer it from office labels.",
   },
   {
     kind: "dc.relation:established_by",
@@ -87,7 +87,7 @@ export const dcRelationSemantics = [
   {
     kind: "dc.relation:oversees",
     description:
-      "Only emitted when an explicit source supports an oversight relation; alpha does not infer it from administration labels.",
+      "Only emitted when an explicit source supports an oversight relation; this release does not infer it from administration labels.",
   },
 ] as const satisfies readonly DcRelationSemantics[];
 

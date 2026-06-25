@@ -209,7 +209,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/6?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS agency table.",
       contributes:
@@ -223,7 +223,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Administrative_Other_Boundaries_WebMercator/MapServer/54",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Administrative_Other_Boundaries_WebMercator/MapServer/54?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS ANC boundary/source table.",
       contributes: "ANC entries and identifiers used by SMD containment relations.",
@@ -236,7 +236,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Authority'.",
       contributes:
@@ -252,7 +252,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Board'.",
       contributes:
@@ -266,7 +266,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Commission'.",
       contributes:
@@ -280,7 +280,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Government_Operations/MapServer/24?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS Government Operations layer filtered to TYPE = 'Council'.",
       contributes:
@@ -295,7 +295,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / OCTO",
       accessMethod: "ArcGIS REST table",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Administrative_Other_Boundaries_WebMercator/MapServer/55",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Administrative_Other_Boundaries_WebMercator/MapServer/55?f=pjson",
       catalogConfidence: "high",
       scope: "DCGIS SMD boundary/source table.",
       contributes:
@@ -370,10 +370,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "high",
       scope: "Open Data DC and District dataset catalog surfaces beyond the wired DCGIS layers.",
       contributes:
-        "Contract-visible inventory row only; no alpha reader or ledger facts are emitted from this category.",
+        "Tracked backlog inventory row only; no current reader or ledger facts are emitted from this category.",
       excludes:
         "Dataset import, schema normalization, portal metadata completeness, and automated dataset freshness checks.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.administrative_datasets",
@@ -384,13 +384,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceUrl: "https://opendata.dc.gov/",
       catalogConfidence: "medium",
       scope:
-        "Administrative, operational, service, and agency dataset surfaces beyond named alpha civic-structure sources.",
+        "Administrative, operational, service, and agency dataset surfaces beyond currently wired civic-structure sources.",
       contributes:
-        "Contract-visible inventory row only; no alpha administrative-dataset reader or ledger facts are wired.",
+        "Tracked backlog inventory row only; no current administrative-dataset reader or ledger facts are wired.",
       excludes:
         "Dataset import, schema normalization, operational record ingestion, service-request records, and automated dataset freshness checks.",
       notes:
-        "Inventoried-only backlog category from the original contract source list; separate from the broader Open Data catalog row so administrative datasets remain visible as a contract category.",
+        "Inventory-only backlog category; separate from the broader Open Data catalog row so administrative datasets remain visible.",
     },
     {
       source: "inventory.budget_finance",
@@ -401,10 +401,11 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceUrl: "https://cfo.dc.gov/budget",
       catalogConfidence: "high",
       scope: "Budget, finance, Open Budget, and Open Checkbook public portals.",
-      contributes: "Contract-visible inventory row only; no alpha budget/spending reader is wired.",
+      contributes:
+        "Tracked backlog inventory row only; no current budget/spending reader is wired.",
       excludes:
         "Budget documents, expenditure transactions, grants, vendor payments, and fiscal relationships.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.procurement_contracting",
@@ -412,13 +413,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "procurement_contracting",
       publisher: "Office of Contracting and Procurement",
       accessMethod: "HTML source index and procurement portal",
-      sourceUrl: "https://ocp.dc.gov/page/doing-business-dc-government",
+      sourceUrl: "https://ocp.dc.gov/page/how-do-business-district",
       catalogConfidence: "high",
       scope: "DC procurement, contracting, solicitation, and vendor-facing portals.",
-      contributes: "Contract-visible inventory row only; no alpha procurement reader is wired.",
+      contributes: "Tracked backlog inventory row only; no current procurement reader is wired.",
       excludes:
         "Solicitation records, awards, vendor profiles, contract amounts, and procurement relationships.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.permits_licenses",
@@ -427,13 +428,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / District agencies",
       accessMethod: "ArcGIS REST service and public search portals",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Business_Licensing_and_Grants_WebMercator/MapServer?f=pjson",
       catalogConfidence: "high",
       scope: "Permits, licenses, inspections, and SCOUT-style public regulatory portals.",
-      contributes: "Contract-visible inventory row only; no alpha permit/license reader is wired.",
+      contributes: "Tracked backlog inventory row only; no current permit/license reader is wired.",
       excludes:
         "Permit applications, inspections, licensed-business records, enforcement actions, and contact data.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.property_land",
@@ -442,13 +443,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / District property agencies",
       accessMethod: "ArcGIS REST service and public search portals",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer?f=pjson",
       catalogConfidence: "high",
       scope: "Property, land, real-property, OTR, and PropertyQuest-style public portals.",
-      contributes: "Contract-visible inventory row only; no alpha property/land reader is wired.",
+      contributes: "Tracked backlog inventory row only; no current property/land reader is wired.",
       excludes:
         "Parcel records, ownership/tax records, assessments, maps, and property transactions.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.public_safety_crime",
@@ -457,13 +458,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       publisher: "DCGIS / public safety agencies",
       accessMethod: "ArcGIS REST service and public dashboards",
       sourceUrl:
-        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer",
+        "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Public_Safety_WebMercator/MapServer?f=pjson",
       catalogConfidence: "high",
       scope: "Public safety, crime cards, incident, and emergency/public-safety data portals.",
-      contributes: "Contract-visible inventory row only; no alpha public-safety reader is wired.",
+      contributes: "Tracked backlog inventory row only; no current public-safety reader is wired.",
       excludes:
         "Incident records, police/fire/EMS operational data, personally identifying details, and public-safety analytics.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.elections",
@@ -474,10 +475,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceUrl: "https://dcboe.org/",
       catalogConfidence: "high",
       scope: "Board of Elections, election results, precinct, district, and election GIS layers.",
-      contributes: "Contract-visible inventory row only; no alpha election reader is wired.",
+      contributes: "Tracked backlog inventory row only; no current election reader is wired.",
       excludes:
         "Election results, candidate/campaign data, voter data, precinct histories, and campaign finance.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.legislation_lims",
@@ -489,10 +490,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "high",
       scope: "Council legislation and LIMS bill, hearing, vote, and legislative-history surfaces.",
       contributes:
-        "Contract-visible inventory row only; no alpha legislation/LIMS reader is wired.",
+        "Tracked backlog inventory row only; no current legislation/LIMS reader is wired.",
       excludes:
         "Bills, votes, hearings, transcripts, legislative histories, and inferred policy relationships.",
-      notes: "Inventoried-only backlog category from the original contract source list.",
+      notes: "Inventory-only backlog category; not collected in this civic-structure release.",
     },
     {
       source: "inventory.dc_laws",
@@ -504,10 +505,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "high",
       scope: "D.C. laws codified in the D.C. Code and grouped by Council period.",
       contributes:
-        "Contract-visible legal-source inventory row only; alpha authority entries remain limited to explicit supported D.C. Law locators already found in source-derived citations.",
+        "Tracked legal-source inventory row only; current authority entries remain limited to explicit supported D.C. Law locators already found in source-derived citations.",
       excludes:
         "Full law text ingestion, legislative history, legal interpretation, and uncodified LIMS material.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.federal_laws_codified",
@@ -515,14 +516,13 @@ export const dcRuntime: DcJurisdictionRuntime = {
       family: "legal_provenance",
       publisher: "D.C. Law Library",
       accessMethod: "Official federal-law corpus website / bulk files",
-      sourceUrl: "https://code.dccouncil.gov/usc",
+      sourceUrl: "https://code.dccouncil.gov/fedlaws",
       catalogConfidence: "high",
       scope: "Federal laws codified in the D.C. Code corpus.",
-      contributes:
-        "Contract-visible legal-source inventory row for federal/DC hybrid authority context.",
+      contributes: "Tracked legal-source inventory row for federal/DC hybrid authority context.",
       excludes:
-        "Full federal-law ingestion, constitutional analysis, legal interpretation, and authority promotion outside supported alpha locators.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+        "Full federal-law ingestion, constitutional analysis, legal interpretation, and authority promotion outside supported current locators.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.dcmr",
@@ -534,10 +534,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "high",
       scope: "District of Columbia Municipal Regulations administrative-law corpus.",
       contributes:
-        "Contract-visible legal-source inventory row for administrative rules and implementation context.",
+        "Tracked legal-source inventory row for administrative rules and implementation context.",
       excludes:
         "Full regulation text ingestion, agency procedure modeling, legal interpretation, and regulatory enforcement relationships.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.dcr",
@@ -549,10 +549,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "high",
       scope: "District of Columbia Register notices, rulemakings, and official publications.",
       contributes:
-        "Contract-visible legal-source inventory row for administrative process and notice history.",
+        "Tracked legal-source inventory row for administrative process and notice history.",
       excludes:
         "Register issue ingestion, notice-to-rule mapping, legal interpretation, and automated rulemaking timelines.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.mayors_orders",
@@ -565,10 +565,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       scope:
         "Mayor's Orders used for executive directives, delegations, appointments, and reorganizations.",
       contributes:
-        "Contract-visible legal-source inventory row; alpha authority entries remain limited to explicit Mayor's Order locators already found in citations.",
+        "Tracked legal-source inventory row; current authority entries remain limited to explicit Mayor's Order locators already found in citations.",
       excludes:
         "Full order text ingestion, appointment modeling, delegation analysis, and inferred executive powers.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.mayors_memoranda",
@@ -579,11 +579,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       sourceUrl: "https://dcregs.dc.gov/",
       catalogConfidence: "medium",
       scope: "Mayor's Memoranda and related executive administrative publications.",
-      contributes:
-        "Contract-visible legal-source inventory row for executive administrative context.",
+      contributes: "Tracked legal-source inventory row for executive administrative context.",
       excludes:
         "Full memorandum text ingestion, legal interpretation, and treating memoranda as equivalent to statutes or regulations.",
-      notes: "Inventoried-only legal publication family from the original contract source list.",
+      notes: "Inventory-only legal publication family; not collected in this release.",
     },
     {
       source: "inventory.oah",
@@ -595,10 +594,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "medium",
       scope: "Office of Administrative Hearings public information and adjudication context.",
       contributes:
-        "Contract-visible legal-source inventory row for administrative adjudication and enforcement architecture.",
+        "Tracked legal-source inventory row for administrative adjudication and enforcement architecture.",
       excludes:
         "Case record scraping, decision corpus ingestion, legal advice, and complete enforcement workflows.",
-      notes: "Inventoried-only legal institution family from the original contract source list.",
+      notes: "Inventory-only legal institution family; not collected in this release.",
     },
     {
       source: "inventory.oag",
@@ -610,10 +609,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "medium",
       scope: "Office of the Attorney General public legal resources and enforcement context.",
       contributes:
-        "Contract-visible legal-source inventory row for legal office and public enforcement context.",
+        "Tracked legal-source inventory row for legal office and public enforcement context.",
       excludes:
         "Litigation corpus ingestion, consumer complaint data, legal advice, and statutory-power inference.",
-      notes: "Inventoried-only legal institution family from the original contract source list.",
+      notes: "Inventory-only legal institution family; not collected in this release.",
     },
     {
       source: "inventory.dc_courts_legal",
@@ -623,9 +622,9 @@ export const dcRuntime: DcJurisdictionRuntime = {
       accessMethod: "Official court website",
       sourceUrl: "https://www.dccourts.gov/",
       catalogConfidence: "medium",
-      scope: "D.C. Courts legal/court publication surfaces beyond alpha court structure entries.",
+      scope: "D.C. Courts legal/court publication surfaces beyond current court structure entries.",
       contributes:
-        "Contract-visible legal-source inventory row for court rules, opinions, records surfaces, and judicial context.",
+        "Tracked legal-source inventory row for court rules, opinions, records surfaces, and judicial context.",
       excludes:
         "Case record scraping, opinions corpus ingestion, court-rule completeness, and legal advice.",
       notes:
@@ -642,10 +641,10 @@ export const dcRuntime: DcJurisdictionRuntime = {
       scope:
         "District of Columbia Home Rule Act framework for Mayor/Council local authority and federal oversight context.",
       contributes:
-        "Contract-visible legal-source inventory row for the federal-district framework and city/county caveats.",
+        "Tracked legal-source inventory row for the federal-district framework and city/county caveats.",
       excludes:
         "Constitutional analysis, complete charter modeling, and inferred authority relationships.",
-      notes: "Inventoried-only legal framework family from the original contract source list.",
+      notes: "Inventory-only legal framework family; not collected in this release.",
     },
     {
       source: "inventory.mota_quickbase",
@@ -657,7 +656,7 @@ export const dcRuntime: DcJurisdictionRuntime = {
       catalogConfidence: "medium",
       scope: "MOTA Quickbase public-body/membership-style surface referenced by the old packet.",
       contributes:
-        "Contract-visible inventory row only; not used for alpha state because of contact/person-data boundaries.",
+        "Tracked backlog inventory row only; not used for current state because of contact/person-data boundaries.",
       excludes:
         "Member/contact details, personal profiles, phone/email fields, and automatic public-body merges.",
       notes:

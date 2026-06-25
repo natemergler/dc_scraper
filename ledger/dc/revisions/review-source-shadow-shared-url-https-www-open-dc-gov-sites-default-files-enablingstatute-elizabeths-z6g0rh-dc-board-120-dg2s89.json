@@ -3,7 +3,7 @@
   "source": "review_cli",
   "targetKind": "entry",
   "targetId": "dc.board:st-elizabeths-east-redevelopment-initiative-advisory-board",
-  "rationale": "Draft source-shadow resolution for shared_url:https-www-open-dc-gov-sites-default-files-enablingstatute-elizabeths-east-redevelopment-pdf; target dc.board:120. Classified as curation_conflict because shared_url produced a source shadow review packet across dcgis, open_dc.",
+  "rationale": "Source-shadow resolution for shared_url:https-www-open-dc-gov-sites-default-files-enablingstatute-elizabeths-east-redevelopment-pdf; canonical entry is dc.board:120. Classified as curation_conflict because the shared URL produced a source-shadow review packet across dcgis and open_dc.",
   "evidence": [
     {
       "source": "dcgis.boards",

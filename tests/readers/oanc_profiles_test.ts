@@ -43,7 +43,7 @@ const HTML_BY_URL = new Map<string, string>([
                 </tr>
                 <tr>
                   <td>4E02</td>
-                  <td>Vince Micone</td>
+                  <td>M&oacute;nica Mart&iacute;nez L&oacute;pez</td>
                   <td>Washington, DC 20011</td>
                   <td>(202) 555-2222</td>
                   <td><a href="mailto:4e02@example.com">4e02@example.com</a></td>
@@ -164,7 +164,7 @@ Deno.test("OancProfilesReader collects profile URLs and represented-neighborhood
     officerRole: "Treasurer",
   }, {
     smdId: "4E02",
-    name: "Vince Micone",
+    name: "Mónica Martínez López",
   }]);
   assertEquals(result.records[1].payload.wardNumbers, ["6", "8"]);
   const payloadKeys = Object.keys(result.records[0].payload);

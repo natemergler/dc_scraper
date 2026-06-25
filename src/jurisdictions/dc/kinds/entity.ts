@@ -42,7 +42,7 @@ export const dcEntityKindSemantics = [
   {
     kind: "dc.council",
     releaseDescription: "Council or council-like public-body organization entries.",
-    publicCategory: "legislative",
+    publicCategory: "public_body",
   },
   {
     kind: "dc.committee",

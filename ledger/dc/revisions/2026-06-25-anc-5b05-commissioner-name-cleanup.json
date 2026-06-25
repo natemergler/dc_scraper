@@ -1,0 +1,39 @@
+{
+  "id": "2026-06-25-anc-5b05-commissioner-name-cleanup",
+  "source": "audited_revision",
+  "targetKind": "entry",
+  "targetId": "dc.anc_commissioner_seat:5B05",
+  "target": {
+    "canonicalId": "dc.anc_commissioner_seat:5B05",
+    "sourceRefs": [
+      {
+        "source": "dcgis.smds",
+        "sourceRecordId": "5B05"
+      },
+      {
+        "source": "oanc.profiles",
+        "sourceRecordId": "5B",
+        "url": "https://oanc.dc.gov/anc-profile/anc-5b"
+      }
+    ],
+    "kind": "dc.anc_commissioner_seat",
+    "name": "Commissioner Seat for SMD 5B05"
+  },
+  "rationale": "Correct an OANC HTML entity decoding artifact in the current commissioner display name. The stored OANC record renders the name as \"M \u00f3nica Mart\u00ednez L\u00f3 pez\", while the DCGIS source fields preserve the same commissioner as MONICA MARTINEZ LOPEZ and the OANC page represents the accented display name.",
+  "evidence": [
+    {
+      "source": "dcgis.smds",
+      "sourceRecordId": "5B05"
+    },
+    {
+      "source": "oanc.profiles",
+      "sourceRecordId": "5B",
+      "url": "https://oanc.dc.gov/anc-profile/anc-5b"
+    }
+  ],
+  "patch": {
+    "attributes": {
+      "currentHolderName": "M\u00f3nica Mart\u00ednez L\u00f3pez"
+    }
+  }
+}

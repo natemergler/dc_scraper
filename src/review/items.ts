@@ -67,7 +67,7 @@ export const reviewCategoryDescriptions: Record<ReviewCategory, string> = {
   incomplete_entry:
     "A source-derived entry or finding is missing required data and cannot be safely promoted as-is.",
   out_of_scope_candidate:
-    "Source-derived candidates are parked because they are outside alpha scope or unsafe to promote.",
+    "Source-derived candidates are parked because they are outside current release scope or unsafe to promote.",
   preserve_distinct_candidate:
     "Similar entries are preserved as distinct until source evidence supports a merge.",
 };
@@ -157,6 +157,7 @@ export function generateReviewItems(
     items.push(item);
     existingIds.add(item.id);
   }
+  annotateSupersededPreserveDistinctItems(items, options.trackedRevisions ?? []);
 
   return items.sort(compareReviewItems);
 }
@@ -322,11 +323,20 @@ export function reviewQueueForItem(item: ReviewItem): ReviewQueue {
   }
   if (
     item.classification === "out_of_scope" || item.category === "out_of_scope_candidate" ||
-    item.category === "source_stale_or_failed"
+    item.category === "source_stale_or_failed" ||
+    isBroadDirectorySharedUrlItem(item)
   ) {
     return "deferred";
   }
   return "actionable";
+}
+
+function isBroadDirectorySharedUrlItem(item: ReviewItem): boolean {
+  return item.source.reason === "shared_url" &&
+    item.category === "source_shadow" &&
+    item.confidence === "low" &&
+    item.affected.stateIds.length >= 10 &&
+    item.urls.includes("https://dc.gov/page/agency-list");
 }
 
 export function reviewQueueLabel(queue: ReviewQueue): string {
@@ -364,9 +374,9 @@ const DEFERRED_REVIEW_GROUP_DESCRIPTIONS: Record<string, string> = {
   "out_of_scope_candidate/dc.promotion.opendc_specific_public_body_promoted":
     "Open DC supplied a more specific public-body page, but the corresponding body is already represented by a promoted ledger entry; the source stays reviewable instead of becoming a duplicate.",
   "out_of_scope_candidate/dc.promotion.opendc_public_body_review_required":
-    "Open DC supplied a public-body candidate that alpha cannot safely promote, merge, or suppress without a tracked source-backed decision.",
+    "Open DC supplied a public-body candidate that the current release cannot safely promote, merge, or suppress without a tracked source-backed decision.",
   "out_of_scope_candidate/compiler.relation_source_not_promoted":
-    "A relation cited an endpoint candidate that was not promoted into alpha state, so the relation is deferred instead of emitted with a missing endpoint.",
+    "A relation cited an endpoint candidate that was not promoted into current state, so the relation is deferred instead of emitted with a missing endpoint.",
   "source_stale_or_failed/dc.interpreter.opendc_stale_or_failed_duplicate":
     "A stale or failed Open DC duplicate fragment was suppressed as a source ingestion bug, not treated as a civic entity or release blocker.",
 };
@@ -461,6 +471,10 @@ function reviewItemFromCandidate(
 }
 
 function reviewItemFromFinding(finding: Finding, generatedAt: string): ReviewItem | null {
+  if (isNonDecisionFinding(finding)) {
+    return null;
+  }
+
   const category = categoryFromFinding(finding);
   if (!category) {
     return null;
@@ -514,6 +528,11 @@ function reviewItemFromFinding(finding: Finding, generatedAt: string): ReviewIte
       id: id,
     },
   };
+}
+
+function isNonDecisionFinding(finding: Finding): boolean {
+  return finding.code === "dc.promotion.opendc_specific_public_body_promoted" ||
+    finding.code === "dc.interpreter.opendc_stale_or_failed_duplicate";
 }
 
 function reviewItemFromTrackedRevision(
@@ -638,6 +657,64 @@ function applyRevisionAwareness(
       : item.draftRevisionIds.length > 0
       ? "drafted"
       : "open";
+    if (item.status === "applied") {
+      item.blocks.stateGeneration = false;
+      item.blocks.releaseReadiness = false;
+    }
+    if (isBroadDirectorySharedUrlItem(item)) {
+      item.status = item.draftRevisionIds.length > 0 ? "drafted" : "open";
+      item.blocks.releaseReadiness = false;
+      item.rationale =
+        `${item.rationale} Generic directory URLs shared by many agency rows are deferred as source-inventory noise; specific row-level curation revisions remain attached but do not mark the broad diagnostic fully applied.`;
+    }
+  }
+}
+
+function annotateSupersededPreserveDistinctItems(
+  items: ReviewItem[],
+  trackedRevisions: Revision[],
+): void {
+  const suppressingRevisionIdsByTarget = new Map<string, string[]>();
+  for (const revision of trackedRevisions) {
+    if (revision.patch.suppress !== true) {
+      continue;
+    }
+    const revisionIds = suppressingRevisionIdsByTarget.get(revision.targetId) ?? [];
+    revisionIds.push(revision.id);
+    suppressingRevisionIdsByTarget.set(revision.targetId, revisionIds);
+  }
+
+  if (suppressingRevisionIdsByTarget.size === 0) {
+    return;
+  }
+
+  for (const item of items) {
+    if (item.status !== "applied" || item.category !== "preserve_distinct_candidate") {
+      continue;
+    }
+
+    const suppressions = item.affected.stateIds.flatMap((id) =>
+      (suppressingRevisionIdsByTarget.get(id) ?? []).map((revisionId) => ({
+        targetId: id,
+        revisionId,
+      }))
+    ).filter(({ revisionId }) => !item.trackedRevisionIds.includes(revisionId));
+
+    if (suppressions.length === 0) {
+      continue;
+    }
+
+    const suppressedIds = uniqueSorted(suppressions.map((suppression) => suppression.targetId));
+    const suppressingRevisionIds = uniqueSorted(
+      suppressions.map((suppression) => suppression.revisionId),
+    );
+    item.summary += ` Superseded by later suppression/source-shadow revision(s) for ${
+      suppressedIds.join(", ")
+    }.`;
+    item.rationale += ` Later revision(s) ${
+      suppressingRevisionIds.join(", ")
+    } suppress one side of this older preserve-distinct decision, so the applied item is retained as audit history rather than current publication intent.`;
+    item.trackedRevisionIds = uniqueSorted([...item.trackedRevisionIds, ...suppressingRevisionIds]);
   }
 }
 

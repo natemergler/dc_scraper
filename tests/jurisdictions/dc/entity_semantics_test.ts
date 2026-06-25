@@ -23,6 +23,7 @@ Deno.test("DC entity semantics keep public projection categories explicit", () =
   assertEquals(dcPublicNodeCategory("dc.agency"), "executive");
   assertEquals(dcPublicNodeCategory("dc.committee"), "legislative");
   assertEquals(dcPublicNodeCategory("dc.board"), "public_body");
+  assertEquals(dcPublicNodeCategory("dc.council"), "public_body");
   assertEquals(dcPublicNodeCategory("dc.anc_commissioner_seat"), "neighborhood");
   assertEquals(dcPublicNodeCategory("dc.court_division"), "judicial");
   assertEquals(dcPublicNodeCategory("dc.councilmember"), "representation");

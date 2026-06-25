@@ -3,7 +3,7 @@ import { assertEquals } from "@std/assert";
 import { sourceCoveragePipelineStatuses } from "../../../src/export/export.ts";
 import { dcRuntime } from "../../../src/jurisdictions/dc/index.ts";
 
-Deno.test("DC source coverage includes contract inventory backlog categories", () => {
+Deno.test("DC source coverage includes tracked inventory backlog categories", () => {
   const coverageBySource = new Map(
     dcRuntime.sourceCoverage.map((coverage) => [coverage.source, coverage]),
   );
@@ -38,7 +38,8 @@ Deno.test("DC source coverage includes contract inventory backlog categories", (
     assertEquals(Boolean(coverage?.accessMethod), true);
     assertEquals(Boolean(coverage?.sourceUrl), true);
     assertEquals(Boolean(coverage?.catalogConfidence), true);
-    assertEquals(coverage?.contributes.includes("Contract-visible"), true);
+    assertEquals(coverage?.contributes.includes("Tracked"), true);
+    assertEquals(coverage?.contributes.includes("inventory row"), true);
   }
 });
 
@@ -53,7 +54,7 @@ Deno.test("DC administrative datasets inventory row stays backlog-only", () => {
   assertEquals(coverage?.sourceType, "inventory.backlog");
   assertEquals(coverage?.family, "administrative_datasets");
   assertEquals(coverage?.sourceUrl, "https://opendata.dc.gov/");
-  assertEquals(coverage?.contributes.includes("no alpha administrative-dataset reader"), true);
+  assertEquals(coverage?.contributes.includes("no current administrative-dataset reader"), true);
   assertEquals(coverage?.excludes.includes("operational record ingestion"), true);
   assertEquals(openDataCoverage?.family, "source_inventory");
 
@@ -70,80 +71,68 @@ Deno.test("DC administrative datasets inventory row stays backlog-only", () => {
   });
 });
 
-Deno.test("README names contract inventory-only backlog categories", async () => {
-  const readme = await Deno.readTextFile(new URL("../../../README.md", import.meta.url));
-  const normalizedReadme = readme.replaceAll(/\s+/g, " ");
+Deno.test("source coverage names tracked inventory-only backlog categories", () => {
   const inventoryRows = dcRuntime.sourceCoverage.filter((coverage) =>
     coverage.sourceType === "inventory.backlog"
   );
 
   assertEquals(inventoryRows.length > 0, true);
   for (
-    const term of [
-      "Open Data catalog surfaces",
-      "administrative datasets",
-      "budget/finance",
-      "procurement/contracting",
-      "permits/licenses",
-      "property/land",
-      "public safety/crime",
-      "elections",
-      "legislation/LIMS",
-      "MOTA Quickbase-style public-body data",
-      "D.C. laws",
-      "federal-law context",
-      "DCMR",
-      "DCR",
-      "Mayor's Orders and Memoranda",
-      "OAH/OAG",
-      "court legal materials",
-      "Home Rule Act",
+    const source of [
+      "inventory.open_data_catalog",
+      "inventory.administrative_datasets",
+      "inventory.budget_finance",
+      "inventory.procurement_contracting",
+      "inventory.permits_licenses",
+      "inventory.property_land",
+      "inventory.public_safety_crime",
+      "inventory.elections",
+      "inventory.legislation_lims",
+      "inventory.mota_quickbase",
+      "inventory.dc_laws",
+      "inventory.federal_laws_codified",
+      "inventory.dcmr",
+      "inventory.dcr",
+      "inventory.mayors_orders",
+      "inventory.mayors_memoranda",
+      "inventory.oah",
+      "inventory.oag",
+      "inventory.dc_courts_legal",
+      "inventory.home_rule_act",
     ]
   ) {
-    assertEquals(normalizedReadme.includes(term), true);
+    assertEquals(inventoryRows.some((row) => row.source === source), true);
   }
 });
 
-Deno.test("README explains evidence trace and old CSV boundary", async () => {
+Deno.test("README keeps the short release shape visible", async () => {
   const readme = await Deno.readTextFile(new URL("../../../README.md", import.meta.url));
   const normalizedReadme = readme.replaceAll(/\s+/g, " ");
 
   for (
     const phrase of [
-      "The old CSV packet remains useful as a checklist and vocabulary seed. It is not treated as current authority.",
-      "source record -> interpreted entry fragment -> citation -> relation -> committed state -> export",
-      "dcgis.ancs record 8F",
-      "oanc.profiles record 6/8F",
-      "ledger/dc/revisions/2026-06-16-anc-8f-oanc-profile-enrichment.json",
-      "dc.anc:8F",
-      "ANC 6/8F",
-      "dc.smd:8F01",
-      "dc.smd:8F05",
-      "preserve the OANC label and profile evidence without silently replacing the DCGIS canonical identity",
+      "DC civic structure data as individual GitHub release files, led by CSV tables.",
+      "dc_relationships.csv",
+      "dc_smds.csv",
+      "Each GitHub release uploads 21 files",
+      "deno task civic release verify releases/latest",
     ]
   ) {
     assertEquals(normalizedReadme.includes(phrase), true);
   }
+  assertEquals(readme.split("\n").length < 55, true);
 });
 
-Deno.test("README and ADR explain collected-empty authority coverage", async () => {
-  const readme = await Deno.readTextFile(new URL("../../../README.md", import.meta.url));
+Deno.test("source coverage and ADR explain collected-empty authority coverage", async () => {
   const adr = await Deno.readTextFile(
     new URL("../../../docs/adr/0001-alpha-release-scope.md", import.meta.url),
   );
-  const normalizedReadme = readme.replaceAll(/\s+/g, " ");
   const normalizedAdr = adr.replaceAll(/\s+/g, " ");
   const authorityCoverage = dcRuntime.sourceCoverage.find((coverage) =>
     coverage.source === "dcgis.authorities"
   );
 
   assertEquals(authorityCoverage?.notes?.includes("collected-empty source coverage"), true);
-  assertEquals(
-    normalizedReadme.includes("current live DCGIS authority layer is collected-empty"),
-    true,
-  );
-  assertEquals(normalizedReadme.includes("zero `dc.authority` entries"), true);
-  assertEquals(normalizedReadme.includes("zero authority affiliation rows"), true);
   assertEquals(
     normalizedAdr.includes("authority affiliation view is still emitted"),
     true,

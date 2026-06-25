@@ -622,6 +622,46 @@ Deno.test("open_dc.public_bodies corrects audited stale Open DC legal locators",
   );
 });
 
+Deno.test("open_dc.public_bodies corrects mismatched HELC legal locator text", () => {
+  const output = interpretOpenDCPublicBodies([{
+    source: openDCPublicBodiesSource.id,
+    snapshotKey: "page-0",
+    key: "higher-education-licensure-commission-helc",
+    payload: {
+      name: "Higher Education Licensure Commission (HELC)",
+      slug: "higher-education-licensure-commission-helc",
+      detailUrl:
+        "https://www.open-dc.gov/public-bodies/higher-education-licensure-commission-helc/",
+      enablingStatute: "D.C. Official Code § 6-1103",
+      enablingStatuteUrl: "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303",
+    },
+  }]);
+
+  const entryFragment = output.entryFragments.find((fragment) =>
+    fragment.kind === "dc.commission"
+  )!;
+  const authorityFragments = output.entryFragments.filter((fragment) =>
+    fragment.kind === "dc.legal_authority"
+  );
+  assertEquals(entryFragment.attributes.enablingStatute, "D.C. Code § 38-1303");
+  assertEquals(
+    entryFragment.attributes.enablingStatuteUrl,
+    "https://code.dccouncil.gov/us/dc/council/code/sections/38-1303",
+  );
+  assertEquals(authorityFragments.map((fragment) => fragment.provisionalId), [
+    "dc.legal_authority:d-c-code-38-1303",
+  ]);
+  assertEquals(output.relationFragments.map((relation) => relation.to), [
+    "dc.legal_authority:d-c-code-38-1303",
+  ]);
+  assertEquals(
+    output.findings.some((finding) =>
+      finding.code === "dc.interpreter.opendc_enabling_statute_corrected"
+    ),
+    true,
+  );
+});
+
 Deno.test("open_dc.public_bodies suppresses audited ambiguous legal authority evidence", () => {
   const output = interpretOpenDCPublicBodies([{
     source: openDCPublicBodiesSource.id,

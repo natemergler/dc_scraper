@@ -69,7 +69,7 @@ Deno.test("DC relation semantics keep public projection verbs explicit", () => {
 Deno.test("DC future relation descriptions do not imply public projection support", () => {
   assertEquals(
     dcRelationDescription("dc.relation:appoints"),
-    "Only emitted when an explicit source supports an appointing relation; alpha does not infer it from membership text.",
+    "Only emitted when an explicit source supports an appointing relation; this release does not infer it from membership text.",
   );
   assertEquals(
     dcPublicRelationVerb({
