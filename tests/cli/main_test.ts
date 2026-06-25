@@ -2977,6 +2977,13 @@ Deno.test("export command indexes committed state and writes release artifacts",
     assertEquals(verifyDownloadedJson.checkedAssetCount, assetsJson.assets.length);
     assertEquals(verifyDownloadedJson.errors, []);
 
+    manifestForPublish.provenance = {
+      ...(originalProvenance as Record<string, unknown>),
+      workingTreeStatus: "dirty",
+      workingTreeChangedPathCount: 1,
+    };
+    await Deno.writeTextFile(manifestPath, JSON.stringify(manifestForPublish, null, 2) + "\n");
+
     const uploadPlanBlockedResult = await captureConsole(() =>
       runCli([
         "--release-root",
