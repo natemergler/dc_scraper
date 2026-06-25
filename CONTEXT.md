@@ -1,334 +1,167 @@
-# CONTEXT.md
-
-This repository is being rebuilt around a new model: **Civic Ledger**.
-
-The old codebase is useful as a prototype and parts bin, but it is not the architecture to preserve.
-Mine it for working functions, source details, fixtures, tests, and release logic. Do not preserve
-`v2` naming, old docs, old CLI shape, or old vocabulary by default.
-
-## What this project is
+# Context
 
 Civic Ledger is a Git-visible ledger for civic structure.
 
-It reads public sources, stores local snapshots and records in a workspace, compiles source-derived
-fragments into a baseline, applies curated revisions, writes committed state, and builds release
-artifacts from that state.
+The old repo is a parts bin, not the architecture to revive. Reuse source details, fixtures, tests,
+and useful functions when they help. Keep the current Civic Ledger language and release shape.
 
-DC is the first jurisdiction. The architecture should allow future jurisdiction packs.
+## Product Shape
 
-## Core idea
+DC is the first jurisdiction.
+
+The project reads public sources, stores local snapshots/records in an ignored workspace, compiles
+source-derived fragments into a baseline, applies tracked revisions, writes committed state, and
+exports release files from that state.
 
 ```text
 sources + readers -> snapshots + records
 records + interpreters -> fragments
 fragments + rules -> baseline
 baseline + revisions -> state
-state -> indexed workspace
-indexed state -> release artifacts
+state -> release files
 ```
 
-The committed `state/` is the human-visible ledger. It is what GitHub users can browse and diff.
-
-The workspace is local and ignored. It contains snapshots, records, fragments, baseline, findings,
-conflicts, and SQLite indexes.
-
-Revisions are tracked curated overlays. They make manual fixes, mappings, merges, suppressions, and
-other intentional changes persist across future source refreshes.
-
-## Important terms
-
-### source
-
-Tracked jurisdiction config describing external public material and how to process it.
-
-A source binds a reader and an interpreter.
-
-### reader
-
-Code that reads a source, captures snapshots, and emits source-shaped records.
-
-Readers should be generic by capture mechanics where possible: ArcGIS table, JSON API, HTML page,
-CSV download, etc.
-
-Readers do not decide civic meaning.
-
-### snapshot
-
-Captured source material at a point in time.
-
-Snapshots live in the workspace and are not committed by default.
-
-### record
-
-A parsed unit from a snapshot.
-
-Records belong to sources. Entries belong to the ledger.
-
-### fragment
-
-Interpreter output. A fragment is entry-shaped or relation-shaped material derived from a
-record/source perspective.
-
-Fragments are workspace data, not committed ledger data.
-
-### baseline
-
-The generated source/rule-derived ledger draft before revisions are applied.
-
-Baseline is a logical ledger state stored in the workspace, not committed.
-
-### revision
-
-A tracked curated overlay over the baseline.
-
-Revisions are not immutable event logs. They may be edited, renamed, split, or squashed while the
-model matures. Git history provides history.
-
-### state
-
-The final resolved ledger: baseline plus revisions.
-
-State is committed, human-visible, Git-diffable, and organized one file per entry.
-
-State can be edited directly as a maintenance workflow, but committed curated state changes must be
-reproducible through revisions.
-
-### alpha release
-
-A reproducible release checkpoint for committed state that is suitable for external evaluation
-without claiming complete civic coverage or product integration.
-
-An alpha release is reproducible from committed state to release artifacts. It does not require a
-fresh live-source collection to reproduce identical state.
-
-Alpha release artifacts are generated distribution outputs. They should be attached to a release or
-regenerated locally, not maintained as committed ledger truth.
-
-An alpha release artifact includes generic ledger files, a SQLite ledger, source coverage, and
-DC-specific views for board affiliations, commission affiliations, authority affiliations, ANC/SMD
-structure, and Council committee membership.
-
-An alpha release artifact presents established state-derived facts. Review items, findings,
-conflicts, draft revisions, and unresolved duplicate reports remain operator/review surfaces rather
-than alpha artifact files.
-
-An alpha release includes a bounded legal authority slice for explicit legal authority locators that
-already appear in source-derived citations.
-
-The alpha legal authority slice includes D.C. Code sections, Mayor's Orders, and D.C. Laws. It
-defers D.C. Acts, DCMR, U.S.C., CFR, court rules, charter provisions, free-text enabling authority,
-and legal entrypoint catalog pages as legal authorities.
-
-Alpha legal authority entries use the single `dc.legal_authority` kind with canonical IDs under
-`dc.legal_authority:*`, while preserving the authority family/type as attributes.
-
-Alpha legal authority links use `dc.relation:authorized_by` from the civic entry to the legal
-authority entry.
-
-Alpha legal authority entries and links are derived from entry citations with explicit in-scope
-legal authority locators.
-
-### entry
-
-A stable ledger object.
-
-Core entry families:
+## Important Surfaces
 
 ```text
-organization
-position
-person
-area
-authority
+ledger/dc/state/       committed ledger, one file per entry
+ledger/dc/revisions/   tracked curation overlays
+.civic/workspace/      ignored snapshots, records, drafts, findings, SQLite indexes
+releases/latest/       generated release files
 ```
 
-Jurisdictions define entry kinds inside those families.
+Committed state is human-visible and diffable. The workspace is disposable scratch. Release files
+are outputs.
 
-### institutional structure
+## Vocabulary
 
-The civic bodies, offices, courts, positions, areas, and relations that define how a jurisdiction is
-organized.
+Source: configured public material plus reader/interpreter wiring.
 
-### relation
+Reader: captures source material and emits source-shaped records.
 
-A directed connection between entries.
+Snapshot: captured source payload.
 
-Relations are first-class graph objects, but in committed state they are authored under their `from`
-entry.
+Record: parsed source unit.
 
-### citation
+Fragment: interpreter output; entry-shaped or relation-shaped source evidence.
 
-A provenance pointer from an entry, relation, or revision back to source material.
+Baseline: generated ledger draft before revisions.
 
-Citation is not legal authority. Legal authority is an `authority` entry.
+Revision: tracked curation overlay for merges, suppressions, mappings, shadows, and corrections.
 
-### legal authority
+State: baseline plus revisions; committed ledger truth.
 
-A legal instrument or legal unit that establishes, authorizes, governs, or otherwise grounds a civic
-fact.
+Entry: stable civic object. Families include organization, position, person, area, and authority.
 
-### finding
+Relation: directed source-backed connection between entries.
 
-Generated workspace-local issue, ambiguity, warning, note, or conflict.
+Citation: provenance pointer back to source material.
 
-This term is provisional.
+Finding: generated warning, ambiguity, conflict, or review item.
 
-### conflict
+Conflict: blocking finding that must be resolved before state generation proceeds.
 
-A blocking finding that prevents generation until a maintainer resolves it.
+## Release Shape
 
-## Core decisions
+The release is a reproducible checkpoint from committed state. It is not complete live DC coverage
+and does not require a fresh live scrape to reproduce byte-identical release files.
 
-### State is editable but not self-justifying
-
-You can edit `state/` directly because it is the most natural maintenance surface.
-
-But a committed curated state change must be explainable by one of:
+Public CSVs now lead the release:
 
 ```text
-source/rule changes
-tracked revisions
-schema/kind changes
+dc_agencies.csv
+dc_offices.csv
+dc_councilmembers.csv
+dc_council_committees.csv
+dc_council_committee_memberships.csv
+dc_public_bodies.csv
+dc_public_body_affiliations.csv
+dc_ancs.csv
+dc_smds.csv
+dc_wards.csv
+dc_courts.csv
+dc_legal_authorities.csv
+dc_relationships.csv
+dc_sources.csv
 ```
 
-Manual changes should be turned into revisions, then state should be regenerated and verified.
+Upload assets should stay reader-facing: those public CSVs, GovGraph JSON, SQLite, manifest,
+`SHA256SUMS`, and the release README. Trace CSVs and compatibility CSVs remain generated and
+verified for audits, but they should not be promoted as one-by-one downloads. `ledger.sqlite`
+bundles those audit and compatibility helper tables with the public tables. `manifest.json` records
+`startHere`, `releaseAssets`, `localOnlyOutputs`, `sqliteTables`, row counts, columns, and hashes so
+the boundary is machine-readable.
 
-### Revisions apply to a fresh baseline
+## Legal Authority Slice
 
-Generation does not patch forward from previous state forever.
+The legal slice is narrow on purpose.
 
-It regenerates baseline from current workspace records and rules, then applies tracked revisions.
+In scope:
 
 ```text
-sources + readers + interpreters + rules -> baseline
-baseline + revisions -> state
+D.C. Code sections
+D.C. Laws
+Mayor's Orders
 ```
 
-### Source-derived changes do not require revisions
-
-If a source changes and the baseline changes, state may change without a curated revision.
-
-A revision is required for human overrides, merges, suppressions, mappings, and curated corrections.
-
-### Conflicts become draft revision work
-
-When a revision can no longer apply cleanly, generation should stop before rewriting committed
-state.
-
-It should create local conflict/draft-revision work in the workspace. The maintainer resolves the
-conflict by editing or adding revisions, then reruns generation.
-
-### Records are not committed by default
-
-Records are useful for explanation, refresh comparison, review, and citations, but they remain
-workspace data.
-
-Committed state can reference source/record keys compactly through citations.
-
-### State is entry-first
-
-Committed state is organized around ledger primitives, not DC-specific folders.
-
-One file per entry.
-
-Each entry owns:
+Deferred as legal authority entries:
 
 ```text
-entry fields
-entry citations
-outgoing relation declarations
+D.C. Acts
+DCMR
+U.S.C.
+CFR
+court rules
+charter provisions
+free-text enabling authority
+legal entrypoint catalog pages
 ```
 
-Backlinks and inverse views are generated.
+Legal authority entries use `dc.legal_authority:*`. Links use `dc.relation:authorized_by` from the
+civic entry to the legal authority entry.
 
-### Typed ledger files are preferred
+## Curation Rules
 
-State and revision files should likely use TypeScript as typed declarative data, not executable
-program logic.
+- Source-derived changes can update state without a revision.
+- Human overrides need revisions.
+- State can be edited during maintenance, but committed curated changes should be reproducible from
+  source/rule changes, revisions, or schema/kind changes.
+- Revisions apply to a fresh baseline. They should not patch forward from old state forever.
+- A malformed or stale revision should stop generation before rewriting committed state.
+- Do not promote source fragments just to silence review noise.
 
-The exact extension is unsettled.
+## DC Scope
 
-Allowed spirit:
+Current focus:
 
 ```text
-declarative objects
-type-only imports
-satisfies SomeEntryType
-cite(...)
-uncited(...)
+agencies
+offices
+Council
+committees
+public bodies
+ANCs/SMDs
+wards
+courts
+explicit legal locators
+source inventory
 ```
 
-Not allowed in ledger files:
+Out of scope unless explicitly modeled:
 
 ```text
-fetch
-Deno.readTextFile
-new Date
-Math.random
-process.env
-arbitrary runtime logic
+contacts
+staff
+meetings
+full law text
+budgets
+procurement
+permits
+property
+public safety
+elections
+full LIMS ingestion
 ```
 
-### Kind definitions produce runtime validators and state types
-
-A jurisdiction kind definition should be the source of truth for both runtime validation and
-TypeScript authoring types.
-
-Example concept:
-
-```ts
-export const dcWardKind = defineEntryKind({
-  kind: "dc.ward",
-  family: "area",
-  attributes: {
-    wardNumber: oneOf([1, 2, 3, 4, 5, 6, 7, 8]),
-  },
-});
-
-export type DcWardEntry = EntryFromKind<typeof dcWardKind>;
-```
-
-## What to mine from the old code
-
-Useful old-code assets include:
-
-```text
-ArcGIS pagination and row fetching
-normalization helpers
-HTML/text utilities
-legal citation parsing ideas
-SQLite helper functions
-release CSV/SQLite writer ideas
-tests and fixtures
-source-specific knowledge
-```
-
-Do not preserve old architecture by default.
-
-## Non-goals for the first pass
-
-```text
-No v2 naming
-No legacy compatibility layer
-No broad source port
-No giant framework before a vertical slice
-No generated prose sprawl
-No committing snapshots, records, workspace DBs, or release artifacts by default
-No pretending everything is complete
-```
-
-## Current implementation
-
-The following slices have landed:
-
-```text
-ArcGIS table reader           -> agencies, boards, commissions, authorities, ANCs, SMDs
-dccouncil.gov HTML readers    -> council members and committees
-agency/board/commission        -> dc.agency, dc.board, dc.commission
-authority                      -> dc.authority
-ANC/SMD                        -> dc.anc, dc.smd
-commissioner seats             -> dc.anc_commissioner_seat (with provenance)
-Council                        -> dc.councilmember, dc.committee
-```
-
-Next work should harden existing paths before adding new sources or entry kinds.
+Review queues distinguish release blockers from deferred source-family work. Applied review items
+are retained as evidence of handled curation decisions.
